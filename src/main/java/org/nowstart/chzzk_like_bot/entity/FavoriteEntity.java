@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Entity
 @Getter
-public class LikeEntity {
+public class FavoriteEntity {
 
     @Id
     private String userId;

@@ -9,5 +9,4 @@ public class ChzzkLikeBotApplication {
     public static void main(String[] args) {
         SpringApplication.run(ChzzkLikeBotApplication.class, args);
     }
-
 }
