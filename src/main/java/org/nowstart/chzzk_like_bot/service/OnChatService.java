@@ -45,16 +45,16 @@ public class OnChatService {
         return favoriteRepository.findByUserId(userId).orElse(new FavoriteEntity()).getFavorite();
     }
 
-    public void addFavorite(String userId, String nickName, int favorite, String history) {
+    private void addFavorite(String userId, String nickName, int addFavorite, String history) {
         FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(
             FavoriteEntity.builder()
                 .userId(userId)
                 .nickName(nickName)
                 .build());
-        favoriteEntity.addFavorite(favorite);
+        favoriteEntity.addFavorite(addFavorite);
         FavoriteHistoryEntity favoriteHistoryEntity = FavoriteHistoryEntity.builder()
             .favoriteEntity(favoriteEntity)
-            .favorite(favorite)
+            .favorite(addFavorite)
             .history(history)
             .build();
         favoriteHistoryRepository.save(favoriteHistoryEntity);

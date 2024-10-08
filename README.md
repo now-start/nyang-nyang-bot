@@ -6,6 +6,10 @@ https://chzzk.nowstart.org
 ## dependency
 - Chzzk API
   - chzzk4j:0.0.9
+- Google API
+  - google-api-client:1.25.0'
+  - google-oauth-client:1.34.1'
+  - google-api-services-sheets:v4-rev612-1.25.0'
 - Security
   - jasypt-spring-boot-starter:3.0.5
   - spring-boot-starter-security
