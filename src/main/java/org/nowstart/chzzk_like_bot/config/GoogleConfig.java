@@ -13,6 +13,7 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,10 +23,11 @@ public class GoogleConfig {
     private static final String APPLICATION_NAME = "google-sheet-project";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
-    private static final String CREDENTIALS_FILE_PATH = "src/main/resources/key/google_spread_sheet_key.json";
+    @Value("${google.spreadsheet.key}")
+    private String credentialsFilePath;
 
-    private static Credential getCredentials() throws IOException {
-        FileInputStream credentialsStream = new FileInputStream(CREDENTIALS_FILE_PATH);
+    private Credential getCredentials() throws IOException {
+        FileInputStream credentialsStream = new FileInputStream(credentialsFilePath);
         return GoogleCredential.fromStream(credentialsStream)
             .createScoped(SCOPES);
     }
