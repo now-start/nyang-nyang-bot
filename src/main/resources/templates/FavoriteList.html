@@ -29,11 +29,27 @@
     .btn-custom {
       width: 100px; /* Set a fixed width for buttons */
       height: 38px; /* Set a fixed height for buttons */
+      text-align: center;
     }
 
-    .history-dropdown {
-      display: none;
-      margin-top: 10px;
+    .toast {
+      min-width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 5px;
+      padding: 10px;
+      opacity: 0.9;
+    }
+
+    /* Right align table cells */
+    .table td, .table th {
+      text-align: right;
+    }
+
+    /* Right align list items in history-details */
+    .history-details ul {
+      text-align: right;
     }
   </style>
 </head>
@@ -41,6 +57,11 @@
 <div class="container">
   <h1 class="mb-4">호감도 목록</h1>
   <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+  <div id="toast" class="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
+    <div class="toast-body">
+      Copied to clipboard: <span id="toast-nickname"></span>
+    </div>
+  </div>
 
   <!-- ID 검색 폼 -->
   <form th:action="@{/favorite/list}" method="get" class="form-inline mb-3">
@@ -55,7 +76,7 @@
   <table class="table table-striped table-hover table-bordered">
     <thead class="thead-spring-admin">
     <tr>
-      <th style="width: 7%;">순위</th>
+      <th style="width: 5%;">ID</th>
       <th style="width: 20%;">닉네임</th>
       <th style="width: 10%;">호감도</th>
       <th style="">사유</th>
@@ -66,18 +87,35 @@
     <tbody>
     <div th:if="${favoriteList != null}">
       <tr th:each="favoriteEntity, iterStat : ${favoriteList.content}">
-        <td th:text="${favoriteList.number * favoriteList.size + iterStat.index + 1}">10</td>
+        <td>
+          <button style="width: 30px;" class="btn btn-secondary btn-sm btn-custom copy-btn" type="button" th:data-nickname="${favoriteEntity.userId}">...</button>
+        </td>
         <td>
           <span th:text="${favoriteEntity.nickName}" class="nickname" th:data-user-id="${favoriteEntity.userId}">테스트</span>
         </td>
         <td>
           <span th:text="${favoriteEntity.favorite}">12200</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group-favorite">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
         </td>
         <td>
           <span th:text="${favoriteEntity.histories.size() > 0 ? favoriteEntity.histories[0].history : '최초 입력'}">최초 입력</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group-history">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
         </td>
         <td>
           <span th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group-modifyDate">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
         </td>
         <td>
           <form th:action="@{/favorite/delete}" method="post" class="d-inline deleteForm">
@@ -145,63 +183,84 @@
     }
   });
 
-  document.addEventListener('DOMContentLoaded', function () {
-    let lastOpenedRow = null;
+  function showToast(nickname) {
+    var toast = document.getElementById('toast');
+    var toastNickname = document.getElementById('toast-nickname');
+    toastNickname.textContent = nickname;
+    toast.style.display = 'block';
+    setTimeout(function () {
+      toast.style.display = 'none';
+    }, 2000);
+  }
 
-    document.querySelectorAll('tbody tr').forEach(function (row) {
-      row.addEventListener('click', function () {
-        var nicknameElement = row.querySelector('.nickname');
-        if (!nicknameElement) return; // Skip if no nickname element found
+  document.querySelectorAll('.copy-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var nickname = this.getAttribute('data-nickname');
+      var tempInput = document.createElement('input');
+      tempInput.value = nickname;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast(nickname);
+    });
+  });
 
-        var userId = nicknameElement.getAttribute('data-user-id');
-        console.log('User ID:', userId); // Debugging log
+  document.querySelectorAll('tbody tr').forEach(function (row) {
+    row.addEventListener('click', function () {
+      var userId = this.querySelector('.nickname').getAttribute('data-user-id');
+      var historyDetails = this.querySelectorAll('.history-details');
+      var historyFavorite = historyDetails[0].querySelector('.list-group-favorite');
+      var historyHistory = historyDetails[1].querySelector('.list-group-history');
+      var historyModifyDate = historyDetails[2].querySelector('.list-group-modifyDate');
 
-        // Hide previously opened history rows
-        if (lastOpenedRow && lastOpenedRow !== row) {
-          var nextRow = lastOpenedRow.nextSibling;
-          while (nextRow && nextRow.classList.contains('history-row')) {
-            nextRow.style.display = 'none';
-            nextRow = nextRow.nextSibling;
-          }
-        }
-
-        if (row.nextSibling && row.nextSibling.classList.contains('history-row') && row.nextSibling.style.display !== 'none') {
-          // Toggle visibility if history rows already exist and are visible
-          var nextRow = row.nextSibling;
-          while (nextRow && nextRow.classList.contains('history-row')) {
-            nextRow.style.display = 'none';
-            nextRow = nextRow.nextSibling;
-          }
-        } else {
-          // Fetch and display history rows if they don't exist or are hidden
+      if (historyFavorite && historyHistory && historyModifyDate) {
+        if (historyDetails[0].style.display === 'none' || historyDetails[0].style.display === '') {
           $.ajax({
             url: '/favorite/history/' + userId,
             method: 'GET',
             success: function (data) {
-              console.log('Fetched data:', data); // Debugging log
+              historyFavorite.innerHTML = '';
+              historyHistory.innerHTML = '';
+              historyModifyDate.innerHTML = '';
+
               data.forEach(function (item) {
-                console.log('Fetched data:', item); // Debugging log
-                var newRow = document.createElement('tr');
-                newRow.classList.add('history-row');
-                newRow.innerHTML = `
-                <td></td>
-                <td></td>
-                <td><span>${item.favorite}</span></td>
-                <td><span>${item.history}</span></td>
-                <td><span>${(new Date(item.modifyDate)).getMonth() + 1}/${(new Date(item.modifyDate)).getDate()}</span></td>
-                <td></td>
-              `;
-                row.parentNode.insertBefore(newRow, row.nextSibling);
+                var listItemFavorite = document.createElement('li');
+                listItemFavorite.className = 'list-group-item';
+                listItemFavorite.textContent = item.favorite;
+                historyFavorite.appendChild(listItemFavorite);
+
+                var listItemHistory = document.createElement('li');
+                listItemHistory.className = 'list-group-item';
+                listItemHistory.textContent = item.history;
+                historyHistory.appendChild(listItemHistory);
+
+                var listItemModifyDate = document.createElement('li');
+                listItemModifyDate.className = 'list-group-item';
+                var date = new Date(item.modifyDate);
+                listItemModifyDate.textContent = (date.getMonth() + 1) + '/' + date.getDate();
+                historyModifyDate.appendChild(listItemModifyDate);
               });
+              historyDetails[0].style.display = 'block';
+              historyDetails[1].style.display = 'block';
+              historyDetails[2].style.display = 'block';
             },
             error: function (error) {
               console.error('Error fetching history:', error);
             }
           });
+        } else {
+          historyDetails[0].style.display = 'none';
+          historyDetails[1].style.display = 'none';
+          historyDetails[2].style.display = 'none';
         }
-
-        lastOpenedRow = row;
-      });
+      } else {
+        console.error('One or more elements not found:', {
+          historyFavorite,
+          historyHistory,
+          historyModifyDate
+        });
+      }
     });
   });
 </script>
