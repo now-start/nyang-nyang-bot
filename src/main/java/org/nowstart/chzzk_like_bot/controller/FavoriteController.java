@@ -35,8 +35,8 @@ public class FavoriteController {
     }
 
     @PostMapping("/favorite/add")
-    public ModelAndView addUser(@RequestParam String nickName, @RequestParam int favorite, @RequestParam String history) {
-        favoriteService.addFavorite(nickName, favorite, history);
+    public ModelAndView addUser(@RequestParam String userId, @RequestParam String nickName, @RequestParam int favorite, @RequestParam String history) {
+        favoriteService.addFavorite(userId, nickName, favorite, history);
         return new ModelAndView("redirect:/favorite/list");
     }
 

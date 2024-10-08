@@ -5,10 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.dto.ResponseChannel.Content.Data.Channel;
 import org.nowstart.chzzk_like_bot.entity.FavoriteEntity;
 import org.nowstart.chzzk_like_bot.entity.FavoriteHistoryEntity;
-import org.nowstart.chzzk_like_bot.repository.ChzzkAPI;
 import org.nowstart.chzzk_like_bot.repository.FavoriteHistoryRepository;
 import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
@@ -23,7 +21,6 @@ public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
-    private final ChzzkAPI chzzkAPI;
 
     public Page<FavoriteEntity> getList(Pageable pageable) {
         return favoriteRepository.findAll(pageable);
@@ -37,18 +34,12 @@ public class FavoriteService {
         return favoriteRepository.findByUserId(nickName);
     }
 
-    public void addFavorite(String nickName, int favorite, String history) {
-        Channel channel = null;
-        try {
-            channel = chzzkAPI.getChannelId(nickName).getContent().getData().get(0).getChannel();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다. [" + nickName + "]");
-        }
-        FavoriteEntity favoriteEntity = getByUserId(channel.getChannelId()).orElse(
+    public void addFavorite(String userId, String nickName, int favorite, String history) {
+        FavoriteEntity favoriteEntity = getByUserId(userId).orElse(
             FavoriteEntity.builder()
-                .userId(channel.getChannelId())
+                .userId(userId)
+                .nickName(nickName)
                 .build());
-        favoriteEntity.updateNickName(channel.getChannelName());
         favoriteEntity.addFavorite(favorite);
         favoriteEntity.setHistory(history, favorite);
         favoriteRepository.save(favoriteEntity);
