@@ -72,27 +72,12 @@
         </td>
         <td>
           <span th:text="${favoriteEntity.favorite}">12200</span>
-          <div class="history-details" style="display: none;">
-            <ul class="list-group">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
-            </ul>
-          </div>
         </td>
         <td>
           <span th:text="${favoriteEntity.histories.size() > 0 ? favoriteEntity.histories[0].history : '최초 입력'}">최초 입력</span>
-          <div class="history-details" style="display: none;">
-            <ul class="list-group">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
-            </ul>
-          </div>
         </td>
         <td>
           <span th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
-          <div class="history-details" style="display: none;">
-            <ul class="list-group">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
-            </ul>
-          </div>
         </td>
         <td>
           <form th:action="@{/favorite/delete}" method="post" class="d-inline deleteForm">
@@ -105,15 +90,17 @@
     <!-- 데이터 추가 폼 -->
     <tr>
       <form th:action="@{/favorite/add}" method="post" class="form-inline">
-        <td></td>
         <td>
-          <input type="text" id="nickName" name="nickName" class="form-control" placeholder="" required>
+          <input type="text" id="userId" name="userId" class="form-control" placeholder="ID" required>
         </td>
         <td>
-          <input type="number" id="favorite" name="favorite" class="form-control" placeholder="" required>
+          <input type="text" id="nickName" name="nickName" class="form-control" placeholder="닉네임" required>
         </td>
         <td>
-          <input type="text" id="history" name="history" class="form-control" placeholder="" required>
+          <input type="number" id="favorite" name="favorite" class="form-control" placeholder="0" required>
+        </td>
+        <td>
+          <input type="text" id="history" name="history" class="form-control" placeholder="최초 입력" required>
         </td>
         <td>
           <span th:text="${#temporals.format(T(java.time.LocalDate).now(), 'M/d')}"></span>
@@ -158,37 +145,62 @@
     }
   });
 
-  document.querySelectorAll('.nickname').forEach(function (element) {
-    element.addEventListener('click', function () {
-      var userId = this.getAttribute('data-user-id');
-      var historyDetails = this.closest('tr').querySelectorAll('.history-details');
-      console.log('User ID:', userId); // Debugging log
-      console.log('History Details:', historyDetails); // Debugging log
-      historyDetails.forEach(function (details) {
-        if (details.style.display === 'none' || details.style.display === '') {
+  document.addEventListener('DOMContentLoaded', function () {
+    let lastOpenedRow = null;
+
+    document.querySelectorAll('tbody tr').forEach(function (row) {
+      row.addEventListener('click', function () {
+        var nicknameElement = row.querySelector('.nickname');
+        if (!nicknameElement) return; // Skip if no nickname element found
+
+        var userId = nicknameElement.getAttribute('data-user-id');
+        console.log('User ID:', userId); // Debugging log
+
+        // Hide previously opened history rows
+        if (lastOpenedRow && lastOpenedRow !== row) {
+          var nextRow = lastOpenedRow.nextSibling;
+          while (nextRow && nextRow.classList.contains('history-row')) {
+            nextRow.style.display = 'none';
+            nextRow = nextRow.nextSibling;
+          }
+        }
+
+        if (row.nextSibling && row.nextSibling.classList.contains('history-row') && row.nextSibling.style.display !== 'none') {
+          // Toggle visibility if history rows already exist and are visible
+          var nextRow = row.nextSibling;
+          while (nextRow && nextRow.classList.contains('history-row')) {
+            nextRow.style.display = 'none';
+            nextRow = nextRow.nextSibling;
+          }
+        } else {
+          // Fetch and display history rows if they don't exist or are hidden
           $.ajax({
             url: '/favorite/history/' + userId,
             method: 'GET',
             success: function (data) {
               console.log('Fetched data:', data); // Debugging log
-              var historyList = details.querySelector('.list-group');
-              historyList.innerHTML = '';
               data.forEach(function (item) {
                 console.log('Fetched data:', item); // Debugging log
-                var listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
-                listItem.textContent = item.history + ' - ' + item.favorite + ' - ' + item.modifyDate;
-                historyList.appendChild(listItem);
+                var newRow = document.createElement('tr');
+                newRow.classList.add('history-row');
+                newRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td><span>${item.favorite}</span></td>
+                <td><span>${item.history}</span></td>
+                <td><span>${(new Date(item.modifyDate)).getMonth() + 1}/${(new Date(item.modifyDate)).getDate()}</span></td>
+                <td></td>
+              `;
+                row.parentNode.insertBefore(newRow, row.nextSibling);
               });
-              details.style.display = 'block';
             },
             error: function (error) {
               console.error('Error fetching history:', error);
             }
           });
-        } else {
-          details.style.display = 'none';
         }
+
+        lastOpenedRow = row;
       });
     });
   });
