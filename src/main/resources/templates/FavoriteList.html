@@ -30,23 +30,14 @@
       width: 100px; /* Set a fixed width for buttons */
       height: 38px; /* Set a fixed height for buttons */
     }
+
+    .history-dropdown {
+      display: none;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-  <a class="navbar-brand" href="#">호감도 관리</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav">
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-      </li>
-    </ul>
-  </div>
-</nav>
-
 <div class="container">
   <h1 class="mb-4">호감도 목록</h1>
   <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
@@ -64,21 +55,48 @@
   <table class="table table-striped table-hover table-bordered">
     <thead class="thead-spring-admin">
     <tr>
-      <th style="width: 10%;">순위</th>
-      <th style="width: 40%;">닉네임</th>
-      <th style="width: 30%;">호감도</th>
-      <th style="width: 20%;">버튼</th>
+      <th style="width: 7%;">순위</th>
+      <th style="width: 20%;">닉네임</th>
+      <th style="width: 10%;">호감도</th>
+      <th style="">사유</th>
+      <th style="width: 7%;">날짜</th>
+      <th style="width: 7%;">버튼</th>
     </tr>
     </thead>
     <tbody>
     <div th:if="${favoriteList != null}">
-      <tr th:each="favorite, iterStat : ${favoriteList.content}">
-        <td th:text="${favoriteList.number * favoriteList.size + iterStat.index + 1}">1</td>
-        <td th:text="${favorite.nickName}">테스트</td>
-        <td th:text="${favorite.favorite}">100</td>
+      <tr th:each="favoriteEntity, iterStat : ${favoriteList.content}">
+        <td th:text="${favoriteList.number * favoriteList.size + iterStat.index + 1}">10</td>
         <td>
-          <form th:action="@{/favorite/delete}" method="post" class="d-inline">
-            <input type="hidden" name="userId" th:value="${favorite.userId}">
+          <span th:text="${favoriteEntity.nickName}" class="nickname" th:data-user-id="${favoriteEntity.userId}">테스트</span>
+        </td>
+        <td>
+          <span th:text="${favoriteEntity.favorite}">12200</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
+        </td>
+        <td>
+          <span th:text="${favoriteEntity.histories.size() > 0 ? favoriteEntity.histories[0].history : '최초 입력'}">최초 입력</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
+        </td>
+        <td>
+          <span th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
+          <div class="history-details" style="display: none;">
+            <ul class="list-group">
+              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            </ul>
+          </div>
+        </td>
+        <td>
+          <form th:action="@{/favorite/delete}" method="post" class="d-inline deleteForm">
+            <input type="hidden" name="userId" th:value="${favoriteEntity.userId}">
             <button type="submit" class="btn btn-danger btn-sm btn-custom">삭제</button>
           </form>
         </td>
@@ -87,14 +105,18 @@
     <!-- 데이터 추가 폼 -->
     <tr>
       <form th:action="@{/favorite/add}" method="post" class="form-inline">
+        <td></td>
         <td>
-
+          <input type="text" id="nickName" name="nickName" class="form-control" placeholder="" required>
         </td>
         <td>
-          <input type="text" id="nickName" name="nickName" class="form-control" placeholder="Enter nickName" required>
+          <input type="number" id="favorite" name="favorite" class="form-control" placeholder="" required>
         </td>
         <td>
-          <input type="number" id="favorite" name="favorite" class="form-control" placeholder="Enter favorite" required>
+          <input type="text" id="history" name="history" class="form-control" placeholder="" required>
+        </td>
+        <td>
+          <span th:text="${#temporals.format(T(java.time.LocalDate).now(), 'M/d')}"></span>
         </td>
         <td>
           <button type="submit" class="btn btn-success btn-custom">변경</button>
@@ -126,8 +148,50 @@
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script>
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
+      event.preventDefault();
+    }
+  });
+
+  document.querySelectorAll('.nickname').forEach(function (element) {
+    element.addEventListener('click', function () {
+      var userId = this.getAttribute('data-user-id');
+      var historyDetails = this.closest('tr').querySelectorAll('.history-details');
+      console.log('User ID:', userId); // Debugging log
+      console.log('History Details:', historyDetails); // Debugging log
+      historyDetails.forEach(function (details) {
+        if (details.style.display === 'none' || details.style.display === '') {
+          $.ajax({
+            url: '/favorite/history/' + userId,
+            method: 'GET',
+            success: function (data) {
+              console.log('Fetched data:', data); // Debugging log
+              var historyList = details.querySelector('.list-group');
+              historyList.innerHTML = '';
+              data.forEach(function (item) {
+                console.log('Fetched data:', item); // Debugging log
+                var listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+                listItem.textContent = item.history + ' - ' + item.favorite + ' - ' + item.modifyDate;
+                historyList.appendChild(listItem);
+              });
+              details.style.display = 'block';
+            },
+            error: function (error) {
+              console.error('Error fetching history:', error);
+            }
+          });
+        } else {
+          details.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
 </body>
 </html>
