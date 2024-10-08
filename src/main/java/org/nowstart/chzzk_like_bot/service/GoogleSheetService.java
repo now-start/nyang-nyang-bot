@@ -33,8 +33,8 @@ public class GoogleSheetService {
 
     public void updateFavorite(List<List<Object>> rows) {
         for (List<Object> row : rows) {
-            String userId = (String) row.get(0);
-            String nickName = (String) row.get(1);
+            String nickName = (String) row.get(0);
+            String userId = (String) row.get(1);
             int totalFavorite = Integer.parseInt((String) row.get(row.size()-1));
 
             if(!StringUtils.isBlank(userId)){

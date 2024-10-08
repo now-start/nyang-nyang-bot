@@ -42,13 +42,13 @@ public class GoogleSheetServiceTest {
 
 
         for (List<Object> row : rows) {
-            String userId = (String) row.get(0);
-//            String nickName = (String) row.get(1);
+            String nickName = (String) row.get(0);
+            String userId = (String) row.get(1);
             int totalFavorite = Integer.parseInt((String) row.get(row.size()-1));
 
             if(!StringUtils.isBlank(userId)){
                 System.out.println("userId = " + userId);
-//                System.out.println("nickName = " + nickName);
+                System.out.println("nickName = " + nickName);
                 System.out.println("totalFavorite = " + totalFavorite);
             }
         }
