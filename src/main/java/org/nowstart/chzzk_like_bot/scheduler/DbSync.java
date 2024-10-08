@@ -15,7 +15,7 @@ public class DbSync {
     private final GoogleSheetService googleSheetService;
     private static final String RANGE = "호감도 순위표!B2:H2000";
 
-    @Scheduled(cron = "0 0 2 * * ?") // Runs daily at 5 AM
+    @Scheduled(cron = "0 0 4 * * ?") // Runs daily at 5 AM
     public void syncDatabase() {
         try {
             log.info("====================[START][DBSync]====================");
