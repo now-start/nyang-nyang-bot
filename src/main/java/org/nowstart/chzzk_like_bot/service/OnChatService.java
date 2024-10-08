@@ -18,21 +18,18 @@ public class OnChatService {
     private final FavoriteRepository favoriteRepository;
 
     public void onChat(ChzzkChat chat, ChatMessage msg) {
-        log.debug("[Chat] {}: {}", msg.getProfile().getNickname(), msg.getContent());
-        if (msg.getContent().contains("ㅋ") || true) {
-            if (msg != null) {
-                log.info("[테스트] msg 아이디 : {}", msg.getUserId());
-                // 명령어 추가
-                // chat.sendChat(msg.getProfile().getNickname() + "님의 호감도는 " + onChatService.getLike(msg.getUserId()) + " 입니다.");
-            }
+        switch (msg.getContent()) {
+            case "!호감도":
+                int favorite = getFavorite(msg.getUserId());
+                log.info("[COMMAND][!호감도][{}][{}][{}]", msg.getUserId(), msg.getProfile().getNickname(), favorite);
+                chat.sendChat("💛💛💛" + msg.getProfile().getNickname() + "님의 호감도는 " + favorite + " 입니다.💛💛💛");
+                break;
+            default:
+                break;
         }
     }
 
     private int getFavorite(String userId) {
-        return favoriteRepository.findByUserId(userId).getFavorite();
-    }
-
-    private void save(FavoriteEntity favorite){
-        favoriteRepository.save(favorite);
+        return favoriteRepository.findByUserId(userId).orElse(new FavoriteEntity()).getFavorite();
     }
 }
