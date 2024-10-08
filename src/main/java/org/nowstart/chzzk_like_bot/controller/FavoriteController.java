@@ -49,6 +49,7 @@ public class FavoriteController {
     @GetMapping("/favorite/history/{userId}")
     @ResponseBody
     public List<FavoriteHistoryEntity> getFavoriteHistory(@PathVariable String userId) {
-        return  favoriteService.getFavoriteHistory(userId);
+        Pageable pageable = PageRequest.of(0, 5, Sort.by("modifyDate").descending());
+        return  favoriteService.getFavoriteHistory(pageable, userId).getContent();
     }
 }

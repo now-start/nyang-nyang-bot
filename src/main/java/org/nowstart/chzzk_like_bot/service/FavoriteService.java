@@ -1,7 +1,6 @@
 package org.nowstart.chzzk_like_bot.service;
 
 import jakarta.transaction.Transactional;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,15 +40,19 @@ public class FavoriteService {
                 .nickName(nickName)
                 .build());
         favoriteEntity.addFavorite(favorite);
-        favoriteEntity.setHistory(history, favorite);
-        favoriteRepository.save(favoriteEntity);
+        FavoriteHistoryEntity favoriteHistoryEntity = FavoriteHistoryEntity.builder()
+            .favoriteEntity(favoriteEntity)
+            .favorite(favorite)
+            .history(history)
+            .build();
+        favoriteHistoryRepository.save(favoriteHistoryEntity);
     }
 
     public void deleteFavorite(String userId) {
         favoriteRepository.deleteById(userId);
     }
 
-    public List<FavoriteHistoryEntity> getFavoriteHistory(String userId) {
-        return favoriteHistoryRepository.findByFavoriteEntityUserId(userId);
+    public Page<FavoriteHistoryEntity> getFavoriteHistory(Pageable pageable, String userId) {
+        return favoriteHistoryRepository.findByFavoriteEntityUserId(pageable, userId);
     }
 }

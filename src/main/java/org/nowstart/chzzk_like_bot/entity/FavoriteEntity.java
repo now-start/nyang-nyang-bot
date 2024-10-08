@@ -44,12 +44,4 @@ public class FavoriteEntity {
     public void updateNickName(String nickName) {
         this.nickName = nickName;
     }
-
-    public void setHistory(String history, int favorite) {
-        this.histories.add(FavoriteHistoryEntity.builder()
-            .favoriteEntity(this)
-            .history(history)
-            .favorite(favorite)
-            .build());
-    }
 }
