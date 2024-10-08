@@ -29,9 +29,7 @@ public class ChzzkChatConfig {
             .build();
         ChzzkChat chat = chzzk.chat(channelId)
             .withChatListener(chatListener)
-            .withAutoReconnect(true)
             .build();
-
-        chat.connectBlocking();
+        chat.connectAsync();
     }
 }

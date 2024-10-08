@@ -1,12 +1,15 @@
 package org.nowstart.chzzk_like_bot.service;
 
 import jakarta.transaction.Transactional;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.chzzk_like_bot.dto.ResponseChannel.Content.Data.Channel;
 import org.nowstart.chzzk_like_bot.entity.FavoriteEntity;
+import org.nowstart.chzzk_like_bot.entity.FavoriteHistoryEntity;
 import org.nowstart.chzzk_like_bot.repository.ChzzkAPI;
+import org.nowstart.chzzk_like_bot.repository.FavoriteHistoryRepository;
 import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
+    private final FavoriteHistoryRepository favoriteHistoryRepository;
     private final ChzzkAPI chzzkAPI;
 
     public Page<FavoriteEntity> getList(Pageable pageable) {
@@ -33,7 +37,7 @@ public class FavoriteService {
         return favoriteRepository.findByUserId(nickName);
     }
 
-    public void addFavorite(String nickName, int favorite) {
+    public void addFavorite(String nickName, int favorite, String history) {
         Channel channel = null;
         try {
             channel = chzzkAPI.getChannelId(nickName).getContent().getData().get(0).getChannel();
@@ -44,12 +48,17 @@ public class FavoriteService {
             FavoriteEntity.builder()
                 .userId(channel.getChannelId())
                 .build());
-        favoriteEntity.addFavorite(favorite);
         favoriteEntity.updateNickName(channel.getChannelName());
+        favoriteEntity.addFavorite(favorite);
+        favoriteEntity.setHistory(history, favorite);
         favoriteRepository.save(favoriteEntity);
     }
 
     public void deleteFavorite(String userId) {
         favoriteRepository.deleteById(userId);
+    }
+
+    public List<FavoriteHistoryEntity> getFavoriteHistory(String userId) {
+        return favoriteHistoryRepository.findByFavoriteEntityUserId(userId);
     }
 }
