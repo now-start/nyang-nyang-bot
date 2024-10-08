@@ -15,4 +15,5 @@ public interface FavoriteRepository extends JpaRepository<FavoriteEntity, String
     @EntityGraph(attributePaths = "histories")
     Page<FavoriteEntity> findByNickNameContains(Pageable pageable, String nickName);
     Optional<FavoriteEntity> findByUserId(String userId);
+    Optional<FavoriteEntity> findByNickName(String nickName);
 }

@@ -1,7 +1,6 @@
 package org.nowstart.chzzk_like_bot.service;
 
 import jakarta.transaction.Transactional;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.chzzk_like_bot.entity.FavoriteEntity;
@@ -29,12 +28,8 @@ public class FavoriteService {
         return favoriteRepository.findByNickNameContains(pageable, nickName);
     }
 
-    public Optional<FavoriteEntity> getByUserId(String nickName) {
-        return favoriteRepository.findByUserId(nickName);
-    }
-
     public void addFavorite(String userId, String nickName, int favorite, String history) {
-        FavoriteEntity favoriteEntity = getByUserId(userId).orElse(
+        FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(
             FavoriteEntity.builder()
                 .userId(userId)
                 .nickName(nickName)
