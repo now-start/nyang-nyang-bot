@@ -27,3 +27,13 @@ https://chzzk.nowstart.org
 | chzzk.aut                 | ``                     | Bot Authenticated   | O        |
 | chzzk.ses                 | ``                     | Bot Session         | O        |
 
+## docker-compose
+```
+version: '3'
+
+services:
+  favorite-bot:
+    image: ghcr.io/now-start/chzzk-favorite-bot:latest
+    ports:
+      - "8080:8080"
+```
