@@ -51,20 +51,41 @@
     .history-details ul {
       text-align: right;
     }
+
+    #loading-spinner {
+       position: fixed;
+       top: 0;
+       left: 0;
+       width: 100vw;
+       height: 100vh;
+       background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+       z-index: 9999; /* Ensure it is on top of other elements */
+       display: none; /* Hide initially */
+       justify-content: center;
+       align-items: center;
+     }
   </style>
 </head>
 <body>
 <div class="container">
   <h1 class="mb-4">호감도 목록</h1>
+  <!-- alert -->
   <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+  <!-- toast -->
   <div id="toast" class="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
     <div class="toast-body">
       <span id="toast-text"></span>
     </div>
   </div>
+  <!-- Loading Spinner --><!-- Loading Spinner -->
+  <div id="loading-spinner">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
 
   <!-- ID 검색 폼 -->
-  <form th:action="@{/favorite/list}" method="get" class="form-inline mb-3">
+  <form th:action="@{/favorite/list}" method="get" class="form-inline mb-3 w-100">
     <div class="form-group mr-2">
       <label for="searchId" class="sr-only">Search by ID:</label>
       <input type="text" id="searchId" name="searchId" th:value="${nickName}" class="form-control" placeholder="Enter nickName">
@@ -72,9 +93,7 @@
     <button type="submit" class="btn btn-primary btn-custom">Search</button>
     <!-- 데이터 동기화 버튼 -->
     <div class="ml-auto">
-      <form th:action="@{/favorite/sync}" method="post" class="form-inline">
-        <button style="width: 125px" type="submit" class="btn btn-primary btn-custom">데이터 동기화</button>
-      </form>
+      <button id="sync-button" style="width: 125px" type="button" class="btn btn-primary btn-custom">데이터 동기화</button>
     </div>
   </form>
 
@@ -199,18 +218,34 @@
     }, 2000);
   }
 
-  document.querySelector('form[action="/favorite/sync"]').addEventListener('submit', function(event) {
-    event.preventDefault();
-    var form = this;
-    $.post(form.action, $(form).serialize())
-    .done(function(response) {
-      if (response === 'success') {
-        showToast("데이터 동기화 완료!");
-      }
-    })
-    .fail(function() {
-      showToast("Error during synchronization");
-    });
+  document.addEventListener('DOMContentLoaded', function() {
+    var syncButton = document.getElementById('sync-button');
+    if (syncButton) {
+      syncButton.addEventListener('click', function(event) {
+        event.preventDefault();
+        var form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/favorite/sync';
+        document.body.appendChild(form);
+        var spinner = document.getElementById('loading-spinner');
+        spinner.style.display = 'flex'; // Show the spinner
+        $.post(form.action, $(form).serialize())
+        .done(function(response) {
+          if (response === 'success') {
+            showToast("데이터 동기화 완료!");
+          }
+        })
+        .fail(function() {
+          showToast("Error during synchronization");
+        })
+        .always(function() {
+          spinner.style.display = 'none'; // Hide the spinner
+          document.body.removeChild(form);
+        });
+      });
+    } else {
+      console.error('Element with ID "sync-button" not found.');
+    }
   });
 
   document.querySelectorAll('.copy-btn').forEach(function (button) {
