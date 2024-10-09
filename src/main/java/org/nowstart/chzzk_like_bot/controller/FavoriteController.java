@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.chzzk_like_bot.entity.FavoriteEntity;
 import org.nowstart.chzzk_like_bot.entity.FavoriteHistoryEntity;
+import org.nowstart.chzzk_like_bot.scheduler.DbSync;
 import org.nowstart.chzzk_like_bot.service.FavoriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class FavoriteController {
 
+    private final DbSync dbSync;
     private final FavoriteService favoriteService;
 
     @GetMapping("/favorite/list")
@@ -51,5 +53,13 @@ public class FavoriteController {
     public List<FavoriteHistoryEntity> getFavoriteHistory(@PathVariable String userId) {
         Pageable pageable = PageRequest.of(0, 5, Sort.by("modifyDate").descending());
         return  favoriteService.getFavoriteHistory(pageable, userId).getContent();
+    }
+
+    @PostMapping("/favorite/sync")
+    @ResponseBody
+    public String sync() {
+        log.info("====================[START][DBSync]====================");
+        dbSync.syncDatabase();
+        return "success";
     }
 }
