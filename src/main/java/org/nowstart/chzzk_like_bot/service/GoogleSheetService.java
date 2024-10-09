@@ -51,11 +51,11 @@ public class GoogleSheetService {
                 .build());
         int addFavorite = totalFavorite - favoriteEntity.getFavorite();
         favoriteEntity.addFavorite(addFavorite);
-        FavoriteHistoryEntity favoriteHistoryEntity = FavoriteHistoryEntity.builder()
+        favoriteRepository.save(favoriteEntity);
+        favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
             .favoriteEntity(favoriteEntity)
             .favorite(addFavorite)
             .history("데이터 동기화")
-            .build();
-        favoriteHistoryRepository.save(favoriteHistoryEntity);
+            .build());
     }
 }

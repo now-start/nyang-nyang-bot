@@ -28,7 +28,7 @@ public class FavoriteHistoryEntity {
     private Long id;
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "userId")
     private FavoriteEntity favoriteEntity;
     private String history;
     private int favorite;
