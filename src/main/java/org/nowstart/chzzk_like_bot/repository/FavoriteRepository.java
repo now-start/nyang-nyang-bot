@@ -1,7 +1,7 @@
 package org.nowstart.chzzk_like_bot.repository;
 
 import java.util.Optional;
-import org.nowstart.chzzk_like_bot.entity.FavoriteEntity;
+import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

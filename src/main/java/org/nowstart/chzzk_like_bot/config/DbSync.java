@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.scheduler;
+package org.nowstart.chzzk_like_bot.config;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;

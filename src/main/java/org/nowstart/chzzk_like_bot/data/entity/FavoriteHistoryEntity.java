@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.entity;
+package org.nowstart.chzzk_like_bot.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;

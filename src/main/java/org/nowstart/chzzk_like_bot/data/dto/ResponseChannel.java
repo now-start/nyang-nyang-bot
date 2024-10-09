@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.dto;
+package org.nowstart.chzzk_like_bot.data.dto;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
