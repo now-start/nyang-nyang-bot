@@ -3,7 +3,6 @@ package org.nowstart.chzzk_like_bot.config;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.chzzk_like_bot.listener.ChatListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import xyz.r2turntrue.chzzk4j.Chzzk;
@@ -20,7 +19,7 @@ public class ChzzkChatConfig {
     private String aut;
     @Value("${chzzk.ses}")
     private String ses;
-    private final ChatListener chatListener;
+    private final ChzzkChatListener chzzkChatListener;
 
     @PostConstruct
     public void startChat() throws IOException {
@@ -28,7 +27,7 @@ public class ChzzkChatConfig {
             .withAuthorization(aut, ses)
             .build();
         ChzzkChat chat = chzzk.chat(channelId)
-            .withChatListener(chatListener)
+            .withChatListener(chzzkChatListener)
             .build();
         chat.connectAsync();
     }
