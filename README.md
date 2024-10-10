@@ -26,14 +26,14 @@ https://chzzk.nowstart.org
 
 ## Enviromnet
 
-| key                       | type       | describe          | required |
-|---------------------------|------------|-------------------|----------|
-| SERVER_BASE_URL           | DOCKER ENV | Base URL          | O        |
-| KEY                       | DOCKER ENV | Google Key        | O        |
-| jasypt.encryptor.password | JAVA ENV   | Encrypt Password  | O        |
-| chzzk.channelId           | PROPERTIES | Apply Channel     | O        |
-| chzzk.aut                 | PROPERTIES | Bot Authenticated | O        |
-| chzzk.ses                 | PROPERTIES | Bot Session       | O        |
+| key             | describe          | required |
+|-----------------|-------------------|----------|
+| PASS            | Encrypt Password  | O        |
+| SERVER_BASE_URL | Base URL          | O        |
+| PATH            | Google Key        | O        |
+| CHANNEL         | Apply Channel     | O        |
+| AUT             | Bot Authenticated | O        |
+| SES             | Bot Session       | O        |
 
 ## docker-compose
 
