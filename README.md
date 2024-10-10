@@ -28,12 +28,12 @@ https://chzzk.nowstart.org
 
 | key             | describe          | required |
 |-----------------|-------------------|----------|
-| PASS            | Encrypt Password  | O        |
+| JASYPT_KEY            | Encrypt Password  | O        |
 | SERVER_BASE_URL | Base URL          | O        |
-| PATH            | Google Key        | O        |
-| CHANNEL         | Apply Channel     | O        |
-| AUT             | Bot Authenticated | O        |
-| SES             | Bot Session       | O        |
+| GOOGLE_PATH            | Google Key        | O        |
+| CHZZK_CHANNEL         | Apply Channel     | O        |
+| CHZZK_AUT             | Bot Authenticated | O        |
+| CHZZK_SES             | Bot Session       | O        |
 
 ## docker-compose
 
@@ -43,14 +43,17 @@ version: '3.8'
 services:
   favorite-bot:
     user: root
-    restart: always
     image: ghcr.io/now-start/chzzk-favorite-bot:latest
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=-Djasypt.encryptor.password=******
+      - TZ=Asia/Seoul
+      - JASYPT_KEY=
       - SERVER_BASE_URL=https://chzzk.nowstart.org
-      - KEY=/resources/google_spread_sheet_key.json
+      - GOOGLE_PATH=/resources/google_spread_sheet_key.json
+      - CHZZK_CHANNEL=
+      - CHZZK_AUT=
+      - CHZZK_SES=
     volumes:
       - ./resources:/resources
 ```
