@@ -127,7 +127,7 @@
           </div>
         </td>
         <td>
-          <span th:text="${favoriteEntity.histories.size() > 0 ? favoriteEntity.histories[0].history : '최초 입력'}">최초 입력</span>
+          <span th:text="${favoriteEntity.histories[0].history}">최초 입력</span>
           <div class="history-details" style="display: none;">
             <ul class="list-group-history">
               <!-- 히스토리 항목이 여기에 추가됩니다 -->
@@ -169,7 +169,7 @@
           <span th:text="${#temporals.format(T(java.time.LocalDate).now(), 'M/d')}"></span>
         </td>
         <td>
-          <button type="submit" class="btn btn-success btn-custom">변경</button>
+          <button type="submit" class="btn btn-success btn-custom">추가</button>
         </td>
       </form>
     </tr>
@@ -233,6 +233,8 @@
         .done(function(response) {
           if (response === 'success') {
             showToast("데이터 동기화 완료!");
+          } else {
+            showToast("데이터 동기화 실패!");
           }
         })
         .fail(function() {

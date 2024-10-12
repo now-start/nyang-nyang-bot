@@ -1,17 +1,15 @@
 package org.nowstart.chzzk_like_bot.service;
 
-import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.model.ValueRange;
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
 import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.chzzk_like_bot.repository.FavoriteHistoryRepository;
 import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,43 +17,35 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class GoogleSheetService {
 
-    @Value("${google.spreadsheet.id}")
-    private String spreadSheetId;
-    private final Sheets sheetsService;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
 
-
-    public List<List<Object>> getSheetValues(String range) throws IOException {
-        ValueRange response = sheetsService.spreadsheets().values().get(spreadSheetId, range).execute();
-        return response.getValues();
-    }
-
     public void updateFavorite(List<List<Object>> rows) {
+        List<FavoriteHistoryEntity> favoriteHistoryEntityList = new ArrayList<>();
+
         for (List<Object> row : rows) {
             String nickName = (String) row.get(0);
             String userId = (String) row.get(1);
-            int totalFavorite = Integer.parseInt((String) row.get(row.size()-1));
+            int sheetFavorite = Integer.parseInt((String) row.get(row.size() - 1));
 
-            if(!StringUtils.isBlank(userId)){
-                updateFavorite(userId, nickName, totalFavorite);
+            if (!StringUtils.isBlank(userId)) {
+                Optional<FavoriteEntity> optionalFavoriteEntity = favoriteRepository.findByUserId(userId);
+                FavoriteEntity favoriteEntity = optionalFavoriteEntity.orElse(FavoriteEntity.builder()
+                    .userId(userId)
+                    .nickName(nickName)
+                    .build());
+
+                int dbFavorite = favoriteEntity.getFavorite();
+                if (optionalFavoriteEntity.isEmpty() || sheetFavorite != dbFavorite) {
+                    favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
+                        .favoriteEntity(favoriteRepository.save(favoriteEntity.addFavorite(sheetFavorite - dbFavorite)))
+                        .favorite(sheetFavorite - dbFavorite)
+                        .history("데이터 동기화")
+                        .build());
+                }
             }
         }
-    }
 
-    private void updateFavorite(String userId, String nickName, int totalFavorite) {
-        FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(
-            FavoriteEntity.builder()
-                .userId(userId)
-                .nickName(nickName)
-                .build());
-        int addFavorite = totalFavorite - favoriteEntity.getFavorite();
-        favoriteEntity.addFavorite(addFavorite);
-        favoriteRepository.save(favoriteEntity);
-        favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-            .favoriteEntity(favoriteEntity)
-            .favorite(addFavorite)
-            .history("데이터 동기화")
-            .build());
+        favoriteHistoryRepository.saveAll(favoriteHistoryEntityList);
     }
 }

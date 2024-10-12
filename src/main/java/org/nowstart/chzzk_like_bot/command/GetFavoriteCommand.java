@@ -1,5 +1,6 @@
 package org.nowstart.chzzk_like_bot.command;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
 import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
@@ -8,6 +9,7 @@ import xyz.r2turntrue.chzzk4j.chat.ChatMessage;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 
 
+@Transactional
 @RequiredArgsConstructor
 @Component("!호감도")
 public class GetFavoriteCommand implements Command {

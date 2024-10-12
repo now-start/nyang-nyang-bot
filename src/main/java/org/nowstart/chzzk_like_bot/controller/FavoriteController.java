@@ -4,7 +4,7 @@ import io.micrometer.common.util.StringUtils;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.config.DbSync;
+import org.nowstart.chzzk_like_bot.config.GoogleConfig;
 import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
 import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.chzzk_like_bot.service.FavoriteService;
@@ -26,7 +26,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class FavoriteController {
 
-    private final DbSync dbSync;
+    private final GoogleConfig googleConfig;
     private final FavoriteService favoriteService;
 
     @GetMapping("/favorite/list")
@@ -59,7 +59,7 @@ public class FavoriteController {
     @ResponseBody
     public String sync() {
         log.info("====================[START][DBSync]====================");
-        dbSync.syncDatabase();
+        googleConfig.syncDatabase();
         return "success";
     }
 }

@@ -27,13 +27,13 @@ https://chzzk.nowstart.org
 ## Enviromnet
 
 | key             | describe          | required |
-|-----------------|-------------------|----------|
-| JASYPT_KEY            | Encrypt Password  | O        |
-| SERVER_BASE_URL | Base URL          | O        |
-| GOOGLE_PATH            | Google Key        | O        |
-| CHZZK_CHANNEL         | Apply Channel     | O        |
-| CHZZK_AUT             | Bot Authenticated | O        |
-| CHZZK_SES             | Bot Session       | O        |
+|-----------------|-------------------|---------|
+| JASYPT_KEY            | Encrypt Password  | O       |
+| SERVER_BASE_URL | Base URL          | O       |
+| CHZZK_CHANNEL         | Apply Channel     | O       |
+| CHZZK_AUT             | Bot Authenticated | O       |
+| CHZZK_SES             | Bot Session       | O       |
+| GOOGLE_PATH            | Google Key        |         |
 
 ## docker-compose
 
@@ -49,8 +49,7 @@ services:
     environment:
       - TZ=Asia/Seoul
       - JASYPT_KEY=
-      - SERVER_BASE_URL=https://chzzk.nowstart.org
-      - GOOGLE_PATH=/resources/google_spread_sheet_key.json
+      - SERVER_BASE_URL=
       - CHZZK_CHANNEL=
       - CHZZK_AUT=
       - CHZZK_SES=
