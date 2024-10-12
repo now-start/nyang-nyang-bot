@@ -28,7 +28,7 @@ public class SecurityConfig {
 
         http.headers(headersConfigurer -> headersConfigurer.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests((authorizeRequests) -> authorizeRequests
+            .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                 .requestMatchers(new AntPathRequestMatcher(this.adminServer.path("/assets/**")))
                 .permitAll()
                 .requestMatchers(new AntPathRequestMatcher(this.adminServer.path("/login")))
@@ -37,12 +37,11 @@ public class SecurityConfig {
                 .permitAll()
                 .anyRequest()
                 .authenticated())
-            .formLogin(
-                (formLogin) -> formLogin.loginPage(this.adminServer.path("/login")).successHandler(successHandler))
-            .logout((logout) -> logout.logoutUrl(this.adminServer.path("/logout")))
+            .formLogin(formLogin -> formLogin.loginPage(this.adminServer.path("/login")).successHandler(successHandler))
+            .logout(logout -> logout.logoutUrl(this.adminServer.path("/logout")))
             .httpBasic(Customizer.withDefaults());
 
-        http.rememberMe((rememberMe) -> rememberMe.key(UUID.randomUUID().toString()).tokenValiditySeconds(1209600));
+        http.rememberMe(rememberMe -> rememberMe.key(UUID.randomUUID().toString()).tokenValiditySeconds(1209600));
 
         return http.build();
 

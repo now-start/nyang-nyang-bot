@@ -19,15 +19,16 @@ public class ChzzkChatConfig {
     private String aut;
     @Value("${chzzk.ses}")
     private String ses;
-    private final ChzzkChatListener chzzkChatListener;
+    private final ChzzkChatListenerConfig chzzkChatListenerConfig;
 
     @PostConstruct
+    //TODO: aut, ses 값을 지속적으로 들고올 방법을 찾아야 됨
     public void startChat() throws IOException {
         Chzzk chzzk = new ChzzkBuilder()
             .withAuthorization(aut, ses)
             .build();
         ChzzkChat chat = chzzk.chat(channelId)
-            .withChatListener(chzzkChatListener)
+            .withChatListener(chzzkChatListenerConfig)
             .build();
         chat.connectAsync();
     }

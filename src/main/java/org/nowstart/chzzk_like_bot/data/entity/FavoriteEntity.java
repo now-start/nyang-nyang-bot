@@ -1,5 +1,6 @@
 package org.nowstart.chzzk_like_bot.data.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
@@ -27,7 +28,7 @@ public class FavoriteEntity {
     private LocalDateTime createDate;
     @LastModifiedDate
     private LocalDateTime modifyDate;
-    @OneToMany(mappedBy = "favoriteEntity")
+    @OneToMany(mappedBy = "favoriteEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FavoriteHistoryEntity> histories;
 
     @Builder
@@ -37,8 +38,9 @@ public class FavoriteEntity {
         this.favorite = favorite;
     }
 
-    public void addFavorite(int addFavorite) {
+    public FavoriteEntity addFavorite(int addFavorite) {
         this.favorite += addFavorite;
+        return this;
     }
 
     public void updateNickName(String nickName) {
