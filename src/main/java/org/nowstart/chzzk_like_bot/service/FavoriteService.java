@@ -34,9 +34,10 @@ public class FavoriteService {
                 .userId(userId)
                 .nickName(nickName)
                 .build());
+        favoriteEntity.addFavorite(addFavorite);
         favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-            .favoriteEntity(favoriteRepository.save(favoriteEntity.addFavorite(addFavorite)))
-            .favorite(addFavorite)
+            .favoriteEntity(favoriteRepository.save(favoriteEntity))
+            .favorite(favoriteEntity.getFavorite())
             .history(history)
             .build());
     }

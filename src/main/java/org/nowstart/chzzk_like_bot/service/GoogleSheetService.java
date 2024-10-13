@@ -35,11 +35,12 @@ public class GoogleSheetService {
                     .nickName(nickName)
                     .build());
 
-                int dbFavorite = favoriteEntity.getFavorite();
-                if (optionalFavoriteEntity.isEmpty() || sheetFavorite != dbFavorite) {
+                int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
+                favoriteEntity.updateNickName(nickName).addFavorite(addFavorite);
+                if (optionalFavoriteEntity.isEmpty() || addFavorite != 0) {
                     favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
-                        .favoriteEntity(favoriteRepository.save(favoriteEntity.addFavorite(sheetFavorite - dbFavorite)))
-                        .favorite(sheetFavorite - dbFavorite)
+                        .favoriteEntity(favoriteRepository.save(favoriteEntity))
+                        .favorite(favoriteEntity.getFavorite())
                         .history("데이터 동기화")
                         .build());
                 }
