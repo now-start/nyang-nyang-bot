@@ -43,7 +43,8 @@ public class FavoriteEntity {
         return this;
     }
 
-    public void updateNickName(String nickName) {
+    public FavoriteEntity updateNickName(String nickName) {
         this.nickName = nickName;
+        return this;
     }
 }
