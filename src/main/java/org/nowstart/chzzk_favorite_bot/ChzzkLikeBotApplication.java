@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot;
+package org.nowstart.chzzk_favorite_bot;
 
 import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.springframework.boot.SpringApplication;

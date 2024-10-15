@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.config;
+package org.nowstart.chzzk_favorite_bot.config;
 
 import jakarta.annotation.PostConstruct;
 import java.util.concurrent.Executors;

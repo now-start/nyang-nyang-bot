@@ -1,9 +1,9 @@
-package org.nowstart.chzzk_like_bot.config;
+package org.nowstart.chzzk_favorite_bot.config;
 
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.command.Command;
+import org.nowstart.chzzk_favorite_bot.command.Command;
 import org.springframework.stereotype.Component;
 import xyz.r2turntrue.chzzk4j.chat.ChatEventListener;
 import xyz.r2turntrue.chzzk4j.chat.ChatMessage;

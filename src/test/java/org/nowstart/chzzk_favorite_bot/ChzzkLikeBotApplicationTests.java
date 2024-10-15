@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot;
+package org.nowstart.chzzk_favorite_bot;
 
 import org.jasypt.util.text.AES256TextEncryptor;
 import org.junit.jupiter.api.Test;

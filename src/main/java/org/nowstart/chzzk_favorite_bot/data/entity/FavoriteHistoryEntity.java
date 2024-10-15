@@ -1,6 +1,6 @@
-package org.nowstart.chzzk_like_bot.data.entity;
+package org.nowstart.chzzk_favorite_bot.data.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
@@ -25,8 +25,7 @@ public class FavoriteHistoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private FavoriteEntity favoriteEntity;
     private String history;
     private int favorite;
