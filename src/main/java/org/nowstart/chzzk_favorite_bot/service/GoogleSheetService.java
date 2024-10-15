@@ -30,16 +30,15 @@ public class GoogleSheetService {
 
             if (!StringUtils.isBlank(userId)) {
                 Optional<FavoriteEntity> optionalFavoriteEntity = favoriteRepository.findByUserId(userId);
-                FavoriteEntity favoriteEntity = optionalFavoriteEntity.orElse(FavoriteEntity.builder()
+                FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()
                     .userId(userId)
                     .nickName(nickName)
                     .build());
 
                 int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
-                favoriteEntity.updateNickName(nickName).addFavorite(addFavorite);
                 if (optionalFavoriteEntity.isEmpty() || addFavorite != 0) {
                     favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
-                        .favoriteEntity(favoriteRepository.save(favoriteEntity))
+                        .favoriteEntity(favoriteEntity.updateNickName(nickName).addFavorite(addFavorite))
                         .favorite(favoriteEntity.getFavorite())
                         .history("데이터 동기화")
                         .build());
