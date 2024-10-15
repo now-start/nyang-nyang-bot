@@ -34,9 +34,9 @@ public class FavoriteService {
                 .userId(userId)
                 .nickName(nickName)
                 .build());
-        favoriteEntity.addFavorite(addFavorite);
+
         favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-            .favoriteEntity(favoriteRepository.save(favoriteEntity))
+            .favoriteEntity(favoriteEntity.addFavorite(addFavorite))
             .favorite(favoriteEntity.getFavorite())
             .history(history)
             .build());
@@ -44,9 +44,5 @@ public class FavoriteService {
 
     public void deleteFavorite(String userId) {
         favoriteRepository.deleteById(userId);
-    }
-
-    public Page<FavoriteHistoryEntity> getFavoriteHistory(Pageable pageable, String userId) {
-        return favoriteHistoryRepository.findByFavoriteEntityUserId(pageable, userId);
     }
 }
