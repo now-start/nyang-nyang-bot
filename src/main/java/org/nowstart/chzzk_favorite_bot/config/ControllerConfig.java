@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.config;
+package org.nowstart.chzzk_favorite_bot.config;
 
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.ModelAndView;
