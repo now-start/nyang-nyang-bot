@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,7 +19,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class FavoriteHistoryEntity {
 
@@ -34,10 +37,4 @@ public class FavoriteHistoryEntity {
     @LastModifiedDate
     private LocalDateTime modifyDate;
 
-    @Builder
-    public FavoriteHistoryEntity(FavoriteEntity favoriteEntity, String history, int favorite) {
-        this.favoriteEntity = favoriteEntity;
-        this.history = history;
-        this.favorite = favorite;
-    }
 }

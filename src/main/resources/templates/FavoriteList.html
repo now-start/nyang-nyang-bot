@@ -53,17 +53,17 @@
     }
 
     #loading-spinner {
-       position: fixed;
-       top: 0;
-       left: 0;
-       width: 100vw;
-       height: 100vh;
-       background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
-       z-index: 9999; /* Ensure it is on top of other elements */
-       display: none; /* Hide initially */
-       justify-content: center;
-       align-items: center;
-     }
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+      z-index: 9999; /* Ensure it is on top of other elements */
+      display: none; /* Hide initially */
+      justify-content: center;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -120,25 +120,28 @@
         </td>
         <td>
           <span th:text="${favoriteEntity.favorite}">12200</span>
+          <!-- 히스토리 항목이 여기에 추가됩니다 -->
           <div class="history-details" style="display: none;">
-            <ul class="list-group-favorite">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}" th:if="${iterStat.index} < 5">
+              <li class="list-group-item" th:text="${favoriteHistoryEntityList.favorite}">12200</li>
             </ul>
           </div>
         </td>
         <td>
-          <span th:text="${favoriteEntity.histories[0].history}">최초 입력</span>
+          <span th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
+          <!-- 히스토리 항목이 여기에 추가됩니다 -->
           <div class="history-details" style="display: none;">
-            <ul class="list-group-history">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}" th:if="${iterStat.index} < 5">
+              <li class="list-group-item" th:text="${favoriteHistoryEntityList.history}">최초 입력</li>
             </ul>
           </div>
         </td>
         <td>
           <span th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
+          <!-- 히스토리 항목이 여기에 추가됩니다 -->
           <div class="history-details" style="display: none;">
-            <ul class="list-group-modifyDate">
-              <!-- 히스토리 항목이 여기에 추가됩니다 -->
+            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList} " th:if="${iterStat.index} < 5">
+              <li class="list-group-item" th:text="${#temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d')}">최초 입력</li>
             </ul>
           </div>
         </td>
@@ -209,8 +212,8 @@
   });
 
   function showToast(text) {
-    var toast = document.getElementById('toast');
-    var toastNickname = document.getElementById('toast-text');
+    let toast = document.getElementById('toast');
+    let toastNickname = document.getElementById('toast-text');
     toastNickname.textContent = text;
     toast.style.display = 'block';
     setTimeout(function () {
@@ -218,29 +221,29 @@
     }, 2000);
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    var syncButton = document.getElementById('sync-button');
+  document.addEventListener('DOMContentLoaded', function () {
+    let syncButton = document.getElementById('sync-button');
     if (syncButton) {
-      syncButton.addEventListener('click', function(event) {
+      syncButton.addEventListener('click', function (event) {
         event.preventDefault();
-        var form = document.createElement('form');
+        let form = document.createElement('form');
         form.method = 'post';
         form.action = '/favorite/sync';
         document.body.appendChild(form);
-        var spinner = document.getElementById('loading-spinner');
+        let spinner = document.getElementById('loading-spinner');
         spinner.style.display = 'flex'; // Show the spinner
         $.post(form.action, $(form).serialize())
-        .done(function(response) {
+        .done(function (response) {
           if (response === 'success') {
             showToast("데이터 동기화 완료!");
           } else {
             showToast("데이터 동기화 실패!");
           }
         })
-        .fail(function() {
+        .fail(function () {
           showToast("Error during synchronization");
         })
-        .always(function() {
+        .always(function () {
           spinner.style.display = 'none'; // Hide the spinner
           document.body.removeChild(form);
         });
@@ -252,8 +255,8 @@
 
   document.querySelectorAll('.copy-btn').forEach(function (button) {
     button.addEventListener('click', function () {
-      var nickname = this.getAttribute('data-nickname');
-      var tempInput = document.createElement('input');
+      let nickname = this.getAttribute('data-nickname');
+      let tempInput = document.createElement('input');
       tempInput.value = nickname;
       document.body.appendChild(tempInput);
       tempInput.select();
@@ -265,58 +268,13 @@
 
   document.querySelectorAll('tbody tr').forEach(function (row) {
     row.addEventListener('click', function () {
-      var userId = this.querySelector('.nickname').getAttribute('data-user-id');
-      var historyDetails = this.querySelectorAll('.history-details');
-      var historyFavorite = historyDetails[0].querySelector('.list-group-favorite');
-      var historyHistory = historyDetails[1].querySelector('.list-group-history');
-      var historyModifyDate = historyDetails[2].querySelector('.list-group-modifyDate');
-
-      if (historyFavorite && historyHistory && historyModifyDate) {
-        if (historyDetails[0].style.display === 'none' || historyDetails[0].style.display === '') {
-          $.ajax({
-            url: '/favorite/history/' + userId,
-            method: 'GET',
-            success: function (data) {
-              historyFavorite.innerHTML = '';
-              historyHistory.innerHTML = '';
-              historyModifyDate.innerHTML = '';
-
-              data.forEach(function (item) {
-                var listItemFavorite = document.createElement('li');
-                listItemFavorite.className = 'list-group-item';
-                listItemFavorite.textContent = item.favorite;
-                historyFavorite.appendChild(listItemFavorite);
-
-                var listItemHistory = document.createElement('li');
-                listItemHistory.className = 'list-group-item';
-                listItemHistory.textContent = item.history;
-                historyHistory.appendChild(listItemHistory);
-
-                var listItemModifyDate = document.createElement('li');
-                listItemModifyDate.className = 'list-group-item';
-                var date = new Date(item.modifyDate);
-                listItemModifyDate.textContent = (date.getMonth() + 1) + '/' + date.getDate();
-                historyModifyDate.appendChild(listItemModifyDate);
-              });
-              historyDetails[0].style.display = 'block';
-              historyDetails[1].style.display = 'block';
-              historyDetails[2].style.display = 'block';
-            },
-            error: function (error) {
-              console.error('Error fetching history:', error);
-            }
-          });
+      let historyDetails = this.querySelectorAll('.history-details');
+      for (let i = 0; i < historyDetails.length; i++) {
+        if (historyDetails[i].style.display === 'block') {
+          historyDetails[i].style.display = 'none';
         } else {
-          historyDetails[0].style.display = 'none';
-          historyDetails[1].style.display = 'none';
-          historyDetails[2].style.display = 'none';
+          historyDetails[i].style.display = 'block';
         }
-      } else {
-        console.error('One or more elements not found:', {
-          historyFavorite,
-          historyHistory,
-          historyModifyDate
-        });
       }
     });
   });

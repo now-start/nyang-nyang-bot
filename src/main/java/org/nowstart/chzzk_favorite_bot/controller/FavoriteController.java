@@ -15,7 +15,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -33,6 +32,10 @@ public class FavoriteController {
     public ModelAndView favoriteList(@PageableDefault(size = 10) Pageable pageable, @RequestParam(required = false) String searchId) {
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
         Page<FavoriteEntity> favoriteList = StringUtils.isBlank(searchId) ? favoriteService.getList(page) : favoriteService.getByNickName(page, searchId);
+        favoriteList.getContent().forEach(favoriteEntity -> {
+            List<FavoriteHistoryEntity> favoriteHistoryEntityList = favoriteEntity.getFavoriteHistoryEntityList();
+            favoriteHistoryEntityList.sort((a, b) -> b.getCreateDate().compareTo(a.getCreateDate()));
+        });
         return new ModelAndView("FavoriteList", "favoriteList", favoriteList);
     }
 
@@ -46,13 +49,6 @@ public class FavoriteController {
     public ModelAndView addUser(@RequestParam String userId) {
         favoriteService.deleteFavorite(userId);
         return new ModelAndView("redirect:/favorite/list");
-    }
-
-    @GetMapping("/favorite/history/{userId}")
-    @ResponseBody
-    public List<FavoriteHistoryEntity> getFavoriteHistory(@PathVariable String userId) {
-        Pageable pageable = PageRequest.of(0, 5, Sort.by("modifyDate").descending());
-        return  favoriteService.getFavoriteHistory(pageable, userId).getContent();
     }
 
     @PostMapping("/favorite/sync")

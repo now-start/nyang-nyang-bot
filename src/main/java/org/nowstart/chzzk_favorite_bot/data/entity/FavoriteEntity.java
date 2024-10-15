@@ -1,9 +1,13 @@
 package org.nowstart.chzzk_favorite_bot.data.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import java.time.LocalDateTime;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +17,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class FavoriteEntity {
 
@@ -25,6 +31,8 @@ public class FavoriteEntity {
     private LocalDateTime createDate;
     @LastModifiedDate
     private LocalDateTime modifyDate;
+    @OneToMany(mappedBy = "favoriteEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<FavoriteHistoryEntity> favoriteHistoryEntityList;
 
     @Builder
     public FavoriteEntity(String userId, String nickName, int favorite) {
