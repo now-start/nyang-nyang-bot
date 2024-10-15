@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.config;
+package org.nowstart.chzzk_favorite_bot.config;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.service.GoogleSheetService;
+import org.nowstart.chzzk_favorite_bot.service.GoogleSheetService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;

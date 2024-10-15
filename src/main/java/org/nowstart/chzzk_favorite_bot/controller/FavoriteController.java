@@ -1,13 +1,13 @@
-package org.nowstart.chzzk_like_bot.controller;
+package org.nowstart.chzzk_favorite_bot.controller;
 
 import io.micrometer.common.util.StringUtils;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.config.GoogleConfig;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
-import org.nowstart.chzzk_like_bot.service.FavoriteService;
+import org.nowstart.chzzk_favorite_bot.config.GoogleConfig;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteEntity;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.chzzk_favorite_bot.service.FavoriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,8 +31,8 @@ public class FavoriteController {
 
     @GetMapping("/favorite/list")
     public ModelAndView favoriteList(@PageableDefault(size = 10) Pageable pageable, @RequestParam(required = false) String searchId) {
-        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite", "histories.modifyDate").descending());
-        Page<FavoriteEntity> favoriteList = StringUtils.isBlank(searchId) ? favoriteService.getList(page) : favoriteService.getByNickName(searchId, page);
+        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
+        Page<FavoriteEntity> favoriteList = StringUtils.isBlank(searchId) ? favoriteService.getList(page) : favoriteService.getByNickName(page, searchId);
         return new ModelAndView("FavoriteList", "favoriteList", favoriteList);
     }
 

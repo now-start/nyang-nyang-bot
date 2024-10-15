@@ -1,7 +1,7 @@
 // FavoriteHistoryRepository.java
-package org.nowstart.chzzk_like_bot.repository;
+package org.nowstart.chzzk_favorite_bot.repository;
 
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteHistoryEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

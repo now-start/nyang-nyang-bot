@@ -1,12 +1,12 @@
-package org.nowstart.chzzk_like_bot.service;
+package org.nowstart.chzzk_favorite_bot.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
-import org.nowstart.chzzk_like_bot.repository.FavoriteHistoryRepository;
-import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteEntity;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.chzzk_favorite_bot.repository.FavoriteHistoryRepository;
+import org.nowstart.chzzk_favorite_bot.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class FavoriteService {
         return favoriteRepository.findAll(pageable);
     }
 
-    public Page<FavoriteEntity> getByNickName(String nickName, Pageable pageable) {
+    public Page<FavoriteEntity> getByNickName(Pageable pageable, String nickName) {
         return favoriteRepository.findByNickNameContains(pageable, nickName);
     }
 

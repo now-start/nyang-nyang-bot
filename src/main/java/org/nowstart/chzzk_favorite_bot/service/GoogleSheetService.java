@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.service;
+package org.nowstart.chzzk_favorite_bot.service;
 
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteEntity;
-import org.nowstart.chzzk_like_bot.data.entity.FavoriteHistoryEntity;
-import org.nowstart.chzzk_like_bot.repository.FavoriteHistoryRepository;
-import org.nowstart.chzzk_like_bot.repository.FavoriteRepository;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteEntity;
+import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.chzzk_favorite_bot.repository.FavoriteHistoryRepository;
+import org.nowstart.chzzk_favorite_bot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
 @Service

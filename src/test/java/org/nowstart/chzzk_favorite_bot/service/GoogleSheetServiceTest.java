@@ -1,4 +1,4 @@
-package org.nowstart.chzzk_like_bot.service;
+package org.nowstart.chzzk_favorite_bot.service;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
