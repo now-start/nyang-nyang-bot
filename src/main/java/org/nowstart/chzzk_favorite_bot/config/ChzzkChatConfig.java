@@ -29,12 +29,13 @@ public class ChzzkChatConfig {
 
     @PostConstruct
     public void startChat() {
-        Chzzk chzzk = new ChzzkBuilder()
-            .withAuthorization(aut, ses)
-            .build();
-
         executor.scheduleAtFixedRate(() -> {
             try {
+                log.info("====================[START]====================");
+                Chzzk chzzk = new ChzzkBuilder()
+                    .withAuthorization(aut, ses)
+                    .build();
+
                 boolean currentBroadcastingStatus = chzzk.getChannel(channelId).isBroadcasting();
                 if (currentBroadcastingStatus && activeChat == null) {
                     log.info("====================[CHAT][START]====================");
@@ -50,9 +51,8 @@ public class ChzzkChatConfig {
                 }
             } catch (Exception e) {
                 log.error("====================[CHAT][ERROR]====================", e);
-                activeChat.closeBlocking();
                 activeChat = null;
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, 10, TimeUnit.SECONDS);
     }
 }
