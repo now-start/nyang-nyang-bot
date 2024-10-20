@@ -53,6 +53,6 @@ public class ChzzkChatConfig {
                 log.error("====================[CHAT][ERROR]====================", e);
                 activeChat = null;
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, 1, TimeUnit.MINUTES);
     }
 }
