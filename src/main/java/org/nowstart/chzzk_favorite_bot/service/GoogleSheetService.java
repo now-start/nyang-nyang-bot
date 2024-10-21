@@ -4,7 +4,6 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteEntity;
 import org.nowstart.chzzk_favorite_bot.data.entity.FavoriteHistoryEntity;
@@ -29,14 +28,13 @@ public class GoogleSheetService {
             int sheetFavorite = Integer.parseInt((String) row.get(row.size() - 1));
 
             if (!StringUtils.isBlank(userId)) {
-                Optional<FavoriteEntity> optionalFavoriteEntity = favoriteRepository.findByUserId(userId);
                 FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()
                     .userId(userId)
                     .nickName(nickName)
                     .build());
 
                 int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
-                if (optionalFavoriteEntity.isEmpty() || addFavorite != 0) {
+                if (addFavorite != 0) {
                     favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
                         .favoriteEntity(favoriteEntity.updateNickName(nickName).addFavorite(addFavorite))
                         .favorite(favoriteEntity.getFavorite())

@@ -32,12 +32,12 @@ public class GoogleConfig {
     @Scheduled(cron = "0 0 4 * * ?") // Runs daily at 4 AM
     public void syncDatabase() {
         try {
-            log.info("====================[DBSync][START]====================");
+            log.info("[DBSync][START]");
             List<List<Object>> rows = getSheetValues();
             googleSheetService.updateFavorite(rows);
-            log.info("====================[DBSync][END]====================");
+            log.info("[DBSync][END]");
         } catch (Exception e) {
-            log.error("====================[DBSync][ERROR]====================", e);
+            log.error("[DBSync][ERROR]", e);
             throw new IllegalArgumentException(e.getMessage());
         }
     }

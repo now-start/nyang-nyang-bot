@@ -30,6 +30,7 @@ public class FavoriteController {
 
     @GetMapping("/favorite/list")
     public ModelAndView favoriteList(@PageableDefault(size = 10) Pageable pageable, @RequestParam(required = false) String searchId) {
+        log.info("[GET][/favorite/list]");
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
         Page<FavoriteEntity> favoriteList = StringUtils.isBlank(searchId) ? favoriteService.getList(page) : favoriteService.getByNickName(page, searchId);
         favoriteList.getContent().forEach(favoriteEntity -> {
@@ -41,20 +42,22 @@ public class FavoriteController {
 
     @PostMapping("/favorite/add")
     public ModelAndView addUser(@RequestParam String userId, @RequestParam String nickName, @RequestParam int favorite, @RequestParam String history) {
+        log.info("[POST][/favorite/add]");
         favoriteService.addFavorite(userId, nickName, favorite, history);
         return new ModelAndView("redirect:/favorite/list");
     }
 
     @PostMapping("/favorite/delete")
     public ModelAndView addUser(@RequestParam String userId) {
+        log.info("[POST][/favorite/delete]");
         favoriteService.deleteFavorite(userId);
         return new ModelAndView("redirect:/favorite/list");
     }
 
-    @PostMapping("/favorite/sync")
     @ResponseBody
+    @PostMapping("/favorite/sync")
     public String sync() {
-        log.info("====================[START][DBSync]====================");
+        log.info("[POST][/favorite/sync]");
         googleConfig.syncDatabase();
         return "success";
     }
