@@ -31,26 +31,26 @@ public class ChzzkChatConfig {
     public void startChat() {
         executor.scheduleAtFixedRate(() -> {
             try {
-                log.info("====================[START]====================");
+                log.info("[CHAT]");
                 Chzzk chzzk = new ChzzkBuilder()
                     .withAuthorization(aut, ses)
                     .build();
 
                 boolean currentBroadcastingStatus = chzzk.getChannel(channelId).isBroadcasting();
                 if (currentBroadcastingStatus && activeChat == null) {
-                    log.info("====================[CHAT][START]====================");
+                    log.info("[CHAT][START]");
                     activeChat = chzzk.chat(channelId)
                         .withChatListener(chzzkChatListenerConfig)
                         .withAutoReconnect(false)
                         .build();
                     activeChat.connectBlocking();
                 } else if (!currentBroadcastingStatus && activeChat != null) {
-                    log.info("====================[CHAT][END]====================");
+                    log.info("[CHAT][END]");
                     activeChat.closeBlocking();
                     activeChat = null;
                 }
             } catch (Exception e) {
-                log.error("====================[CHAT][ERROR]====================", e);
+                log.error("[CHAT][ERROR]", e);
                 activeChat = null;
             }
         }, 0, 1, TimeUnit.MINUTES);

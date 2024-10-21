@@ -26,7 +26,7 @@ public class ChzzkChatListenerConfig implements ChatEventListener {
     public void onChat(ChatMessage msg) {
         Command command = commands.get(msg.getContent().split(" ")[0]);
         if (command != null) {
-            log.info("[Commend][{}]", msg);
+            log.info("[Commend] : {}", msg);
             command.execute(chat, msg);
         }
     }
