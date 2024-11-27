@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Get project version
-        run: echo "VERSION=$(awk -F'=' '/^version/ {gsub(/['"'"'"'"]/, "", $2); print $2}' build.gradle | xargs)" >> $GITHUB_ENV
+        run: echo "VERSION=$(awk -F'=' '/^version/ {gsub(/["'\''"]/, "", $2); print $2}' build.gradle | xargs)" >> $GITHUB_ENV
 
       - name: Create Tag
         uses: softprops/action-gh-release@v2.1.0
