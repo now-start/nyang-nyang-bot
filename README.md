@@ -1,6 +1,6 @@
-# Chzzk-favorite-bot
+# NyangNyangBot
 
-[![Build and Push Docker Image](https://github.com/now-start/chzzk-favorite-bot/actions/workflows/build.yaml/badge.svg)](https://github.com/now-start/chzzk-favorite-bot/actions/workflows/build.yaml)
+[![Build and Push Docker Image](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml/badge.svg)](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml)
 
 https://chzzk.nowstart.org
 
@@ -43,7 +43,7 @@ version: '3.8'
 services:
   favorite-bot:
     user: root
-    image: ghcr.io/now-start/chzzk-favorite-bot:latest
+    image: ghcr.io/now-start/nyang-nyang-bot:latest
     ports:
       - "8080:8080"
     environment:
