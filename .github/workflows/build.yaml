@@ -25,6 +25,13 @@ jobs:
       - name: Get project version
         run: echo "VERSION=$(awk -F'=' '/^version/ {gsub(/["'\''"]/, "", $2); print $2}' build.gradle | xargs)" >> $GITHUB_ENV
 
+      - name: Check if version tag exists
+        run: |
+          if git rev-parse "refs/tags/${{ env.VERSION }}" >/dev/null 2>&1; then
+            echo "Version ${{ env.VERSION }} already exists. Exiting workflow."
+            exit 0
+          fi
+
       - name: Create Tag
         uses: softprops/action-gh-release@v2.1.0
         with:
