@@ -1,16 +1,25 @@
 package org.nowstart.nyangnyangbot.config;
 
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.Cookie;
 import jakarta.annotation.PostConstruct;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 import xyz.r2turntrue.chzzk4j.Chzzk;
 import xyz.r2turntrue.chzzk4j.ChzzkBuilder;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
+import xyz.r2turntrue.chzzk4j.naver.Naver;
 
 @Slf4j
 @Configuration
@@ -19,40 +28,47 @@ public class ChzzkChatConfig {
 
     @Value("${chzzk.channelId}")
     private String channelId;
-    @Value("${chzzk.aut}")
-    private String aut;
-    @Value("${chzzk.ses}")
-    private String ses;
+    @Value("${chzzk.id}")
+    private String id;
+    @Value("${chzzk.password}")
+    private String password;
     private final ChzzkChatListenerConfig chzzkChatListenerConfig;
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private ChzzkChat activeChat;
+    private Chzzk chzzk;
+    private ChzzkChat chzzkChat;
 
     @PostConstruct
-    public void startChat() {
-        executor.scheduleAtFixedRate(() -> {
-            try {
-                log.info("[CHAT]");
-                Chzzk chzzk = new ChzzkBuilder()
-                    .withAuthorization(aut, ses)
-                    .build();
+    public void init() throws IOException {
+        try (Playwright playwright = Playwright.create();
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+            BrowserContext context = browser.newContext();
+            Page page = context.newPage()
+        ) {
+            page.navigate("https://nid.naver.com/nidlogin.login");
+            page.getByLabel("아이디 또는 전화번호").fill(id);
+            page.getByLabel("비밀번호").fill(password);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).click();
 
-                boolean currentBroadcastingStatus = chzzk.getChannel(channelId).isBroadcasting();
-                if (currentBroadcastingStatus && activeChat == null) {
-                    log.info("[CHAT][START]");
-                    activeChat = chzzk.chat(channelId)
-                        .withChatListener(chzzkChatListenerConfig)
-                        .withAutoReconnect(false)
-                        .build();
-                    activeChat.connectBlocking();
-                } else if (!currentBroadcastingStatus && activeChat != null) {
-                    log.info("[CHAT][END]");
-                    activeChat.closeBlocking();
-                    activeChat = null;
-                }
-            } catch (Exception e) {
-                log.error("[CHAT][ERROR]", e);
-                activeChat = null;
+            Map<String, String> cookiesMap = new HashMap<>();
+            for (Cookie cookie : page.context().cookies()) {
+                cookiesMap.put(cookie.name, cookie.value);
             }
-        }, 0, 1, TimeUnit.MINUTES);
+
+            chzzk = new ChzzkBuilder()
+                .withAuthorization(cookiesMap.get(Naver.Cookie.NID_AUT.toString()),cookiesMap.get(Naver.Cookie.NID_SES.toString()))
+                .withDebugMode()
+                .build();
+            chzzkChat = chzzk.chat(channelId)
+                .withChatListener(chzzkChatListenerConfig)
+                .build();
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000 * 60)
+    public void startChat() throws IOException {
+        if (!chzzkChat.isConnectedToChat() && chzzk.getLiveDetail(channelId).isOnline()) {
+            chzzkChat.connectAsync();
+        } else if(chzzkChat.isConnectedToChat() && !chzzk.getLiveDetail(channelId).isOnline()) {
+            chzzkChat.closeAsync();
+        }
     }
 }
