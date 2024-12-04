@@ -1,13 +1,13 @@
 package org.nowstart.nyangnyangbot.config;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -42,17 +42,15 @@ public class GoogleConfig {
         }
     }
 
-    private List<List<Object>> getSheetValues() throws GeneralSecurityException, IOException {
-        return new Sheets
-            .Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), GoogleCredential
-            .fromStream(new FileInputStream(credentialsFilePath))
-            .createScoped(Collections.singletonList(SheetsScopes.SPREADSHEETS)))
+    private List<List<Object>> getSheetValues() throws IOException {
+        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(credentialsFilePath)).createScoped(Collections.singletonList(SheetsScopes.SPREADSHEETS));
+        Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
             .setApplicationName("google-sheet-project")
-            .build()
-            .spreadsheets()
+            .build();
+
+        return sheets.spreadsheets()
             .values()
             .get(spreadSheetId, RANGE)
-            .execute()
-            .getValues();
+            .execute().getValues();
     }
 }
