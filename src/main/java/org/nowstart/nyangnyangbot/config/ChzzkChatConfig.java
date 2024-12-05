@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.config;
 
 import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
@@ -39,15 +38,14 @@ public class ChzzkChatConfig {
     @PostConstruct
     public void init() throws IOException {
         try (Playwright playwright = Playwright.create();
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-            BrowserContext context = browser.newContext();
-            Page page = context.newPage()
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
+            Page page = browser.newPage()
         ) {
             page.navigate("https://nid.naver.com/nidlogin.login");
             page.getByLabel("아이디 또는 전화번호").fill(id);
             page.getByLabel("비밀번호").fill(password);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).click();
-
+            page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
             Map<String, String> cookiesMap = new HashMap<>();
             for (Cookie cookie : page.context().cookies()) {
                 cookiesMap.put(cookie.name, cookie.value);
