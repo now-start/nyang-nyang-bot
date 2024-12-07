@@ -36,7 +36,7 @@ public class ChzzkChatConfig {
     private ChzzkChat chzzkChat;
 
     @PostConstruct
-    public void init() throws IOException {
+    public void init() {
         try (Playwright playwright = Playwright.create();
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
             Page page = browser.newPage()
@@ -55,20 +55,21 @@ public class ChzzkChatConfig {
             chzzk = new ChzzkBuilder()
                 .withAuthorization(cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()))
                 .build();
-            chzzkChat = chzzk.chat(channelId)
-                .withChatListener(chzzkChatListenerConfig)
-                .build();
         }
     }
 
     @Scheduled(fixedDelay = 1000 * 60)
     public void startChat() throws IOException {
-        if (!chzzkChat.isConnectedToChat() && chzzk.getLiveDetail(channelId).isOnline()) {
+        if (chzzkChat == null && chzzk.getLiveDetail(channelId).isOnline()) {
             log.info("[ChzzkChat][START]");
+            chzzkChat = chzzk.chat(channelId)
+                .withChatListener(chzzkChatListenerConfig)
+                .build();
             chzzkChat.connectAsync();
-        } else if (chzzkChat.isConnectedToChat() && !chzzk.getLiveDetail(channelId).isOnline()) {
+        } else if (chzzkChat != null && !chzzk.getLiveDetail(channelId).isOnline()) {
             log.info("[ChzzkChat][END]");
             chzzkChat.closeAsync();
+            chzzkChat = null;
         }
     }
 }
