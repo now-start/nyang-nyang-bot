@@ -18,9 +18,9 @@ spring:
           dialect: org.hibernate.dialect.MariaDBDialect
 
   datasource:
-    url: ENC(aaC2l5twFy36wicAJjFw6dNdgEJUGs6HNHcK9z1YRGV8rRnyjchggGCHwOYJAAWrk/F6SvrUzWvx/DCcp8gJKgooROKrI2fCXWEWNu5x1GM=)
-    username: ENC(8rEbRK5wP4t3G/5uvMuxpYFpjNvQdCszFCB5O47VpKpgMkkZNUMMb98acnZIlPye)
-    password: ENC(E5g3c0TOyhN1ziHJZA1czIyNuz6bVnQZsxQhoAdLOIkbXcoYaucWIxr4YIiG+iUfnw6ctMC7nkw+e+RRk8mr2A==)
+    url: ${DB_URL:ENC(aaC2l5twFy36wicAJjFw6dNdgEJUGs6HNHcK9z1YRGV8rRnyjchggGCHwOYJAAWrk/F6SvrUzWvx/DCcp8gJKgooROKrI2fCXWEWNu5x1GM=)}
+    username: ${DB_USERNAME:ENC(8rEbRK5wP4t3G/5uvMuxpYFpjNvQdCszFCB5O47VpKpgMkkZNUMMb98acnZIlPye)}
+    password: ${DB_PASSWORD:ENC(E5g3c0TOyhN1ziHJZA1czIyNuz6bVnQZsxQhoAdLOIkbXcoYaucWIxr4YIiG+iUfnw6ctMC7nkw+e+RRk8mr2A==)}
 
   security:
     user:

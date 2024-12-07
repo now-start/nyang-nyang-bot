@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'org.nowstart'
-version = 'v3.0.0'
+version = 'v3.0.1'
 
 java {
     toolchain {

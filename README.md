@@ -7,33 +7,35 @@ https://chzzk.nowstart.org
 ## dependency
 
 - Chzzk API
-    - chzzk4j:0.0.9
+  - chzzk4j:0.0.12
+- Play Wright
+  - playwright:1.49.0
 - Google API
-    - google-api-client:1.25.0'
-    - google-oauth-client:1.34.1'
-    - google-api-services-sheets:v4-rev612-1.25.0'
+  - google-api-services-sheets:v4-rev20241008-2.0.0
 - Security
-    - jasypt-spring-boot-starter:3.0.5
-    - spring-boot-starter-security
+  - jasypt-spring-boot-starter:3.0.5
+  - spring-boot-starter-security
 - Repository
-    - spring-boot-starter-data-jpa
-    - spring-cloud-starter-openfeign
+  - spring-boot-starter-data-jpa
+  - spring-cloud-starter-openfeign
 - Admin Page
-    - spring-boot-starter-web
-    - spring-boot-starter-actuator
-    - spring-boot-admin-starter-server
-    - spring-boot-admin-starter-client
+  - spring-boot-starter-web
+  - spring-boot-starter-actuator
+  - spring-boot-admin-starter-server
+  - spring-boot-admin-starter-client
 
-## Enviromnet
+## Environment
 
-| key             | describe          | required |
-|-----------------|-------------------|---------|
-| JASYPT_KEY            | Encrypt Password  | O       |
-| SERVER_BASE_URL | Base URL          | O       |
-| CHZZK_CHANNEL         | Apply Channel     | O       |
-| CHZZK_AUT             | Bot Authenticated | O       |
-| CHZZK_SES             | Bot Session       | O       |
-| GOOGLE_PATH            | Google Key        |         |
+| key             | required |
+|-----------------|----------|
+| SERVER_BASE_URL | O        |
+| DB_URL          | O        |
+| DB_USERNAME     | O        |
+| DB_PASSWORD     | O        |
+| CHZZK_CHANNEL   | O        |
+| CHZZK_ID        | O        |
+| CHZZK_PASSWORD  | O        |
+| GOOGLE_PATH     |          |
 
 ## docker-compose
 
@@ -41,18 +43,20 @@ https://chzzk.nowstart.org
 version: '3.8'
 
 services:
-  favorite-bot:
+  nyang-nyang-bot:
     user: root
     image: ghcr.io/now-start/nyang-nyang-bot:latest
     ports:
       - "8080:8080"
     environment:
       - TZ=Asia/Seoul
-      - JASYPT_KEY=
       - SERVER_BASE_URL=
+      - DB_URL=
+      - DB_USERNAME=
+      - DB_PASSWORD=
       - CHZZK_CHANNEL=
-      - CHZZK_AUT=
-      - CHZZK_SES=
+      - CHZZK_ID=
+      - CHZZK_PASSWORD=
     volumes:
       - ./resources:/resources
 ```

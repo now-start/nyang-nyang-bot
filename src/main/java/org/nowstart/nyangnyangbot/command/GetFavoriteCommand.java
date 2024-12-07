@@ -4,13 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.springframework.stereotype.Component;
 import xyz.r2turntrue.chzzk4j.chat.ChatMessage;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 
 
 @Transactional
 @RequiredArgsConstructor
-//@Component("!호감도")
+@Component("!호감도")
 public class GetFavoriteCommand implements Command {
 
     private final FavoriteRepository favoriteRepository;
