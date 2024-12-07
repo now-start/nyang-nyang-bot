@@ -14,12 +14,12 @@ import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 @RequiredArgsConstructor
 public class ChzzkChatListenerConfig implements ChatEventListener {
 
-    private ChzzkChat chat;
+    private ChzzkChat chzzkChat;
     private final Map<String, Command> commands;
 
     @Override
-    public void onConnect(ChzzkChat chat, boolean isReconnecting) {
-        this.chat = chat;
+    public void onConnect(ChzzkChat chzzkChat, boolean isReconnecting) {
+        this.chzzkChat = chzzkChat;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class ChzzkChatListenerConfig implements ChatEventListener {
         Command command = commands.get(msg.getContent().split(" ")[0]);
         if (command != null) {
             log.info("[Commend] : {}", msg);
-            command.execute(chat, msg);
+            command.execute(chzzkChat, msg);
         }
     }
 }
