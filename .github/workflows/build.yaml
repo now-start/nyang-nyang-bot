@@ -9,8 +9,31 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  check_version:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get project version
+        run: echo "VERSION=$(awk -F'=' '/^version/ {gsub(/["'\''"]/, "", $2); print $2}' build.gradle | xargs)" >> $GITHUB_ENV
+
+      - name: Check if version tag exists remotely
+        run: |
+          echo "Checking if tag ${{ env.VERSION }} exists in remote repository..."
+          if git ls-remote --tags origin "refs/tags/${{ env.VERSION }}" | grep -q "${{ env.VERSION }}"; then
+            echo "Version ${{ env.VERSION }} already exists. Skipping build and tag."
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "Version does not exist. Proceeding with build and tag."
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+  build_and_tag:
+    runs-on: ubuntu-latest
+    needs: check_version
+    if: ${{ env.TAG_EXISTS == 'false' }}
 
     steps:
       - name: Checkout repository
@@ -22,28 +45,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Get project version
-        run: echo "VERSION=$(awk -F'=' '/^version/ {gsub(/["'\''"]/, "", $2); print $2}' build.gradle | xargs)" >> $GITHUB_ENV
-
-      - name: Check if version tag exists remotely
+      - name: Build with Gradle
         run: |
-          if git ls-remote --tags origin "refs/tags/${{ env.VERSION }}" | grep -q "${{ env.VERSION }}"; then
-            echo "Version ${{ env.VERSION }} already exists. Exiting workflow."
-            exit 0
-          else
-            echo "Version does not exist. Proceeding with workflow."
-          fi
+          chmod +x gradlew
+          ./gradlew bootBuildImage --imageName ghcr.io/${{ github.repository }}:${{ env.VERSION }}
 
       - name: Create Tag
         uses: softprops/action-gh-release@v2.1.0
         with:
           tag_name: ${{ env.VERSION }}
           generate_release_notes: true
-
-      - name: Build with Gradle
-        run: |
-          chmod +x gradlew
-          ./gradlew bootBuildImage --imageName ghcr.io/${{ github.repository }}:${{ env.VERSION }}
 
       - name: Tag Docker image with latest
         run: docker tag ghcr.io/${{ github.repository }}:${{ env.VERSION }} ghcr.io/${{ github.repository }}:latest
