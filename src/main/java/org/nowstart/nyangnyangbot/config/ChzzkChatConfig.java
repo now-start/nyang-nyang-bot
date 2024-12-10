@@ -59,18 +59,21 @@ public class ChzzkChatConfig {
     }
 
     @Scheduled(fixedDelay = 1000 * 60)
-    public void startChat() throws IOException {
-        if (chzzkChat == null && chzzk.getLiveDetail(channelId).isOnline()) {
-            log.info("[ChzzkChat][START]");
-            chzzkChat = chzzk.chat(channelId)
-                .withChatListener(chzzkChatListenerConfig)
-                .build();
-            chzzkChat.connectAsync();
-        } else if (chzzkChat != null && !chzzk.getLiveDetail(channelId).isOnline()) {
-            log.info("[ChzzkChat][END]");
-            chzzkChat.closeAsync();
-            chzzkChat = null;
+    public void startChat() {
+        try {
+            if (chzzkChat == null && chzzk.getLiveDetail(channelId).isOnline()) {
+                log.info("[ChzzkChat][START]");
+                chzzkChat = chzzk.chat(channelId)
+                    .withChatListener(chzzkChatListenerConfig)
+                    .build();
+                chzzkChat.connectAsync();
+            } else if (chzzkChat != null && !chzzk.getLiveDetail(channelId).isOnline()) {
+                log.info("[ChzzkChat][END]");
+                chzzkChat.closeAsync();
+                chzzkChat = null;
+            }
+        } catch (IOException e) {
+            // ignore
         }
-
     }
 }
