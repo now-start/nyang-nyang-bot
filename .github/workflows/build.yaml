@@ -23,8 +23,8 @@ jobs:
 
       - name: Check if version tag exists remotely
         id: tag-check
-        run: |
-          VERSION=${{ env.VERSION }}
+        run: | 
+          VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Checking if tag $VERSION exists in remote repository..."
           if git ls-remote --tags origin "refs/tags/$VERSION" | greq -q "$VERSION"; then
             echo "Version $VERSION already exists. Skipping build and tag."
