@@ -19,23 +19,23 @@ jobs:
         id: get_version
         run: |
           VERSION=$(awk -F'=' '/^version/ {gsub(/["'\''"]/, "", $2); print $2}' build.gradle | xargs)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Check if version tag exists remotely
         id: tag-check
         run: | 
-          VERSION=${{ steps.get_version.outputs.VERSION }}
+          VERSION=${{ env.VERSION }}
           echo "Checking if tag $VERSION exists in remote repository..."
           if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "$VERSION"; then
             echo "Version $VERSION already exists. Skipping build and tag."
-            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
           else
             echo "Version does not exist. Proceeding with build and tag."
-            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
           fi
     outputs:
-      VERSION: ${{ steps.get_version.outputs.VERSION }}
-      TAG_EXISTS: ${{ steps.tag-check.outputs.VERSION }}
+      VERSION: ${{ env.VERSION }}
+      TAG_EXISTS: ${{ env.TAG_EXISTS }}
           
   build_and_tag:
     runs-on: ubuntu-latest
