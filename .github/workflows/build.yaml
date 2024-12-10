@@ -33,6 +33,9 @@ jobs:
             echo "Version does not exist. Proceeding with build and tag."
             echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
           fi
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+      TAG_EXISTS: ${{ steps.tag-check.outputs.VERSION }}
           
   build_and_tag:
     runs-on: ubuntu-latest
