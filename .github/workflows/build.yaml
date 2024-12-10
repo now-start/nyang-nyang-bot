@@ -26,7 +26,7 @@ jobs:
         run: | 
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Checking if tag $VERSION exists in remote repository..."
-          if git ls-remote --tags origin "refs/tags/$VERSION" | greq -q "$VERSION"; then
+          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "$VERSION"; then
             echo "Version $VERSION already exists. Skipping build and tag."
             echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
           else
