@@ -32,6 +32,7 @@ jobs:
           else
             echo "Version does not exist. Proceeding with build and tag."
             echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          if
 
   build_and_tag:
     runs-on: ubuntu-latest
