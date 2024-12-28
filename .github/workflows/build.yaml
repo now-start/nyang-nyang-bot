@@ -64,7 +64,7 @@ jobs:
           ./gradlew bootBuildImage --imageName ghcr.io/${{ github.repository }}:$VERSION
 
       - name: Tag Docker image with latest
-        run: docker tag ghcr.io/${{ github.repository }}:${{ needs.check_version.outputs.VERSION }} ghcr.io/${{ github.repository }}:latest
+        run: docker tag ghcr.io/${{ github.repository }}:${{ needs.check.outputs.VERSION }} ghcr.io/${{ github.repository }}:latest
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
