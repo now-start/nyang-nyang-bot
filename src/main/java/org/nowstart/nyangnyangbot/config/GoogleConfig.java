@@ -8,10 +8,13 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.service.GoogleSheetService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -33,8 +36,7 @@ public class GoogleConfig {
     public void syncDatabase() {
         try {
             log.info("[DBSync][START]");
-            List<List<Object>> rows = getSheetValues();
-            googleSheetService.updateFavorite(rows);
+            googleSheetService.updateFavorite(getSheetValues());
             log.info("[DBSync][END]");
         } catch (Exception e) {
             log.error("[DBSync][ERROR]", e);
@@ -42,15 +44,23 @@ public class GoogleConfig {
         }
     }
 
-    private List<List<Object>> getSheetValues() throws IOException {
-        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(credentialsFilePath)).createScoped(Collections.singletonList(SheetsScopes.SPREADSHEETS));
+    private List<GoogleSheetDto> getSheetValues() throws IOException {
+        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(credentialsFilePath)).createScoped(SheetsScopes.SPREADSHEETS);
         Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
             .setApplicationName("google-sheet-project")
             .build();
 
-        return sheets.spreadsheets()
+        List<List<Object>> values = sheets.spreadsheets()
             .values()
             .get(spreadSheetId, RANGE)
             .execute().getValues();
+
+        return values.stream()
+            .map(value -> GoogleSheetDto.builder()
+                .nickName((String) value.get(0))
+                .userId((String) value.get(1))
+                .favorite(Integer.parseInt((String) value.get(value.size() - 1)))
+                .build())
+            .toList();
     }
 }
