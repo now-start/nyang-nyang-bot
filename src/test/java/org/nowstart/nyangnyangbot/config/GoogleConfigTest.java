@@ -7,6 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
+import org.nowstart.nyangnyangbot.service.GoogleSheetService;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -14,8 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 class GoogleConfigTest {
+
     @InjectMocks
     GoogleConfig googleConfig;
+    @Mock
+    GoogleSheetService googleSheetService;
 
     @BeforeEach
     void setUp() {
@@ -26,25 +35,13 @@ class GoogleConfigTest {
     @Test
     void getSheetValuesTest() throws Exception {
         //given
-        Method privateMethod = googleConfig.getClass().getDeclaredMethod("getSheetValues");
-        privateMethod.setAccessible(true);
+        Method method = googleConfig.getClass().getDeclaredMethod("getSheetValues");
+        method.setAccessible(true);
 
         //when
-        List<List<Object>> rows = (List<List<Object>>) privateMethod.invoke(googleConfig);
+        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleConfig);
 
         //then
-        for (List<Object> row : rows) {
-            String nickName = (String) row.get(0);
-            String userId = (String) row.get(1);
-            int totalFavorite = Integer.parseInt((String) row.get(row.size()-1));
-
-            if(!StringUtils.isBlank(userId)){
-                System.out.println("userId = " + userId);
-                System.out.println("nickName = " + nickName);
-                System.out.println("totalFavorite = " + totalFavorite);
-            }
-        }
-
-        assertThat(rows).isNotEmpty();
+        assertThat(list).isNotEmpty();
     }
 }

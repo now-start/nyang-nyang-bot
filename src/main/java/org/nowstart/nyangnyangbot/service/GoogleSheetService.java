@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
@@ -19,13 +20,13 @@ public class GoogleSheetService {
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
 
-    public void updateFavorite(List<List<Object>> rows) {
+    public void updateFavorite(List<GoogleSheetDto> list) {
         List<FavoriteHistoryEntity> favoriteHistoryEntityList = new ArrayList<>();
 
-        for (List<Object> row : rows) {
-            String nickName = (String) row.get(0);
-            String userId = (String) row.get(1);
-            int sheetFavorite = Integer.parseInt((String) row.get(row.size() - 1));
+        for (GoogleSheetDto googleSheetDto : list) {
+            String nickName = googleSheetDto.getNickName();
+            String userId = googleSheetDto.getUserId();
+            int sheetFavorite = googleSheetDto.getFavorite();
 
             if (!StringUtils.isBlank(userId)) {
                 FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()

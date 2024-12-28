@@ -8,8 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface FavoriteRepository extends JpaRepository<FavoriteEntity, String>{
+public interface FavoriteRepository extends JpaRepository<FavoriteEntity, String> {
+
     Page<FavoriteEntity> findByNickNameContains(Pageable pageable, String nickName);
+
     Optional<FavoriteEntity> findByUserId(String userId);
+
     Optional<FavoriteEntity> findByNickName(String nickName);
 }
