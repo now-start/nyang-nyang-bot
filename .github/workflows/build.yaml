@@ -59,7 +59,7 @@ jobs:
 
       - name: Build with Gradle
         run: |
-          VERSION=${{ needs.check_version.outputs.VERSION }}
+          VERSION=${{ needs.check.outputs.VERSION }}
           chmod +x gradlew
           ./gradlew bootBuildImage --imageName ghcr.io/${{ github.repository }}:$VERSION
 
@@ -75,5 +75,5 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}:${{ needs.check_version.outputs.VERSION }}
+          docker push ghcr.io/${{ github.repository }}:${{ needs.check.outputs.VERSION }}
           docker push ghcr.io/${{ github.repository }}:latest
