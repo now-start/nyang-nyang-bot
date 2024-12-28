@@ -65,7 +65,7 @@ jasypt:
 google:
   spreadsheet:
     id: ENC(4hsMJwPVMud5uMCYlsY6AEofkUityI6pU68yrSgEnJHVsdG4bdFOcD6eWe08xkYIruy4deRX1xlIM+A5+lp47fVXaZqTZ8s5EwKzg63zpjU=)
-    key: ${GOOGLE_PATH:src/main/resources/key/google_spread_sheet_key.json}
+    key: ./key/google_spread_sheet_key.json
 
 chzzk:
   channelId: ${CHZZK_CHANNEL:ENC(quG85YdX+oDu/vCBG0Aubp2vv0oNBCj2DGztfUIq58T/o9a4Bdd/YrCnDyE/GkhKZQw6ZaNqam0od0GQ+o2XcnetxVoX7PVqr+ogJ87sr4g=)}
