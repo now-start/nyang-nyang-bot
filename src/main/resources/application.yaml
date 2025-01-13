@@ -91,3 +91,5 @@ management:
 logging:
   file:
     path: ./logs
+  charset:
+    file: UTF-8
