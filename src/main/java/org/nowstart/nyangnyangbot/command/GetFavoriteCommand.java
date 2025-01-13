@@ -19,6 +19,6 @@ public class GetFavoriteCommand implements Command {
     @Override
     public void execute(ChzzkChat chat, ChatMessage msg) {
         int favorite = favoriteRepository.findByUserId(msg.getUserId()).orElse(new FavoriteEntity()).getFavorite();
-        chat.sendChat("💛💛💛" + msg.getProfile().getNickname() + "님의 호감도는 " + favorite + " 입니다.💛💛💛");
+        chat.sendChat( msg.getProfile().getNickname() + "님의 호감도는 " + favorite + " 입니다.💛");
     }
 }

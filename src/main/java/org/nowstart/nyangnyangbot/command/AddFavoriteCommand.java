@@ -31,7 +31,7 @@ public class AddFavoriteCommand implements Command {
                     .favorite(favorite)
                     .history("채팅창에서 추가")
                     .build());
-                chat.sendChat("💛💛💛" + favoriteEntity.getNickName() + "님의 호감도가 " + favorite + " 추가 되었어요.💛💛💛");
+                chat.sendChat(favoriteEntity.getNickName() + "님의 호감도가 " + favorite + " 추가 되었어요.💛");
             } catch (Exception e) {
                 chat.sendChat("호감도 추가를 실패 했어요.😓");
             }
