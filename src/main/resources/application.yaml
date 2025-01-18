@@ -22,37 +22,6 @@ spring:
     username: ${DB_USERNAME:ENC(8rEbRK5wP4t3G/5uvMuxpYFpjNvQdCszFCB5O47VpKpgMkkZNUMMb98acnZIlPye)}
     password: ${DB_PASSWORD:ENC(E5g3c0TOyhN1ziHJZA1czIyNuz6bVnQZsxQhoAdLOIkbXcoYaucWIxr4YIiG+iUfnw6ctMC7nkw+e+RRk8mr2A==)}
 
-  security:
-    user:
-      name: ENC(1DWMT+U4oSOaV8qgepq6ZVrhcrBr2GT9+UNNM4+8PVgTsEIZOlIm7VvcMye7f1IS)
-      password: ENC(jEeUwqRD0EULy1qETRiWRYBk+JeMJcJUb2GBd+VP3goCsIXfsAf7UWlvfmSk+cON)
-
-  boot:
-    admin:
-      client:
-        instance:
-          metadata:
-            user:
-              name: ${spring.security.user.name}
-              password: ${spring.security.user.password}
-        username: ${spring.security.user.name}
-        password: ${spring.security.user.password}
-      ui:
-        available-languages: ko
-        view-settings:
-          - name: wallboard
-            enabled: false
-          - name: journal
-            enabled: false
-        external-views:
-          - label: "\uD638\uAC10\uB3C4"
-            url: ${server.base-url}/favorite/list
-            order: -9999
-            iframe: true
-          - label: "\uC5D1\uC140"
-            url: https://docs.google.com/spreadsheets/d/1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os/edit?gid=1565504110#gid=1565504110
-            order: -9998
-            iframe: true
 eureka:
   instance:
     metadata-map:
