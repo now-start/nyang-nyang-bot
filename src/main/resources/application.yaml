@@ -1,6 +1,6 @@
 server:
   port: 8080
-  forward-headers-strategy: native
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -54,6 +54,9 @@ spring:
             order: -9998
             iframe: true
 eureka:
+  instance:
+    metadata-map:
+      management.port: ${server.port} + 1
   client:
     service-url:
         defaultZone: ${SERVICE_URL}
@@ -73,6 +76,8 @@ chzzk:
   password: ${CHZZK_SES:ENC(IZA+7Meykv3ZwOvi4RYDyNBiNL+Gj8j/m+kL1CSHPztufkasUCq69eoelfTssDwp)}
 
 management:
+  server:
+    port: ${server.port} + 1
   endpoints:
     web:
       exposure:
