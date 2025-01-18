@@ -25,7 +25,7 @@ spring:
 eureka:
   instance:
     metadata-map:
-      management.port: ${server.port} + 1
+      management.port: ${management.server.port}
   client:
     service-url:
         defaultZone: ${SERVICE_URL}
@@ -46,7 +46,7 @@ chzzk:
 
 management:
   server:
-    port: ${server.port} + 1
+    port: 8081
   endpoints:
     web:
       exposure:
