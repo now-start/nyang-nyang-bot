@@ -1,6 +1,5 @@
 server:
   port: 8080
-  base-url: ${SERVER_BASE_URL:http://localhost:8080}
   forward-headers-strategy: native
 
 spring:
@@ -31,9 +30,7 @@ spring:
   boot:
     admin:
       client:
-        url: ${server.base-url}
         instance:
-          prefer-ip: true
           metadata:
             user:
               name: ${spring.security.user.name}
@@ -41,7 +38,6 @@ spring:
         username: ${spring.security.user.name}
         password: ${spring.security.user.password}
       ui:
-        public-url: ${server.base-url}
         available-languages: ko
         view-settings:
           - name: wallboard
@@ -57,6 +53,10 @@ spring:
             url: https://docs.google.com/spreadsheets/d/1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os/edit?gid=1565504110#gid=1565504110
             order: -9998
             iframe: true
+eureka:
+  client:
+    service-url:
+        defaultZone: ${SERVICE_URL}
 
 jasypt:
   encryptor:
