@@ -6,10 +6,9 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import io.micrometer.common.util.StringUtils;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +60,12 @@ public class GoogleConfig {
                 .userId((String) value.get(1))
                 .favorite(Integer.parseInt((String) value.get(value.size() - 1)))
                 .build())
+            .filter(dto -> !StringUtils.isBlank(dto.getUserId()))
+            .collect(Collectors.toMap(
+                GoogleSheetDto::getUserId,
+                dto -> dto,
+                (existing, replacement) -> replacement
+            )).values().stream()
             .toList();
     }
 }
