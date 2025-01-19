@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.service;
 
-import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,20 +27,18 @@ public class GoogleSheetService {
             String userId = googleSheetDto.getUserId();
             int sheetFavorite = googleSheetDto.getFavorite();
 
-            if (!StringUtils.isBlank(userId)) {
-                FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()
-                    .userId(userId)
-                    .nickName(nickName)
-                    .build());
+            FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()
+                .userId(userId)
+                .nickName(nickName)
+                .build());
 
-                int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
-                if (addFavorite != 0) {
-                    favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
-                        .favoriteEntity(favoriteEntity.updateNickName(nickName).addFavorite(addFavorite))
-                        .favorite(favoriteEntity.getFavorite())
-                        .history("데이터 동기화")
-                        .build());
-                }
+            int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
+            if (addFavorite != 0) {
+                favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
+                    .favoriteEntity(favoriteEntity.updateNickName(nickName).addFavorite(addFavorite))
+                    .favorite(favoriteEntity.getFavorite())
+                    .history("데이터 동기화")
+                    .build());
             }
         }
 

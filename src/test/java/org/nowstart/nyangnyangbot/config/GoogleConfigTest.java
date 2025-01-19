@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.config;
 
-import io.micrometer.common.util.StringUtils;
 import java.lang.reflect.Method;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +9,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.service.GoogleSheetService;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -28,7 +24,7 @@ class GoogleConfigTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(googleConfig, "credentialsFilePath", "src/main/resources/key/google_spread_sheet_key.json");
+        ReflectionTestUtils.setField(googleConfig, "credentialsFilePath", "./key/google_spread_sheet_key.json");
         ReflectionTestUtils.setField(googleConfig, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
     }
 
