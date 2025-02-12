@@ -17,13 +17,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FavoriteHistoryEntity extends BaseEntity {
+public class AuthorizationEntity extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private FavoriteEntity favoriteEntity;
-    private String history;
-    private int favorite;
+    private String channelId;
+    private String accessToken;
+    private String refreshToken;
+    private String tokenType;
+    private String expiresIn;
 }

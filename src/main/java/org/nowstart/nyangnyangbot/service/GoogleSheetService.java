@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
@@ -11,6 +12,7 @@ import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor

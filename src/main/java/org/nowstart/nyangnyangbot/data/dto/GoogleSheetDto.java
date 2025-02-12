@@ -1,14 +1,14 @@
 package org.nowstart.nyangnyangbot.data.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+@Data
 @Builder
 public class GoogleSheetDto {
 
-    String nickName;
-    String userId;
-    int favorite;
+    private String nickName;
+    private String userId;
+    private int favorite;
 }
 
