@@ -11,7 +11,7 @@ springBoot {
 }
 
 group = 'org.nowstart'
-version = 'v3.0.14'
+version = 'v3.1.0'
 
 java {
     toolchain {
