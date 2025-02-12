@@ -26,22 +26,20 @@ https://chzzk.nowstart.org
 
 ## Environment
 
-| key             | required |
-|-----------------|----------|
-| SERVER_BASE_URL | O        |
-| DB_URL          | O        |
-| DB_USERNAME     | O        |
-| DB_PASSWORD     | O        |
-| CHZZK_CHANNEL   | O        |
-| CHZZK_ID        | O        |
-| CHZZK_PASSWORD  | O        |
-| GOOGLE_PATH     |          |
+| key              | required |
+|------------------|----------|
+| SERVER_BASE_URL  | O        |
+| DB_URL           | O        |
+| DB_USERNAME      | O        |
+| DB_PASSWORD      | O        |
+| CHZZK_CHANNEL_ID | O        |
+| CHZZK_ID         | O        |
+| CHZZK_PASSWORD   | O        |
+| GOOGLE_PATH      |          |
 
 ## docker-compose
 
 ```
-version: '3.8'
-
 services:
   nyang-nyang-bot:
     user: root
