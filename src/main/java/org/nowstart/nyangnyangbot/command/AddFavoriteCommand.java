@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import xyz.r2turntrue.chzzk4j.chat.ChatMessage;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 
+@Deprecated
 @Transactional
 @RequiredArgsConstructor
 //@Component("!호감도추가")

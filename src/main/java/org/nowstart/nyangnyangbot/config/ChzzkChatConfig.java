@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.nowstart.nyangnyangbot.data.dto.ChzzkDto;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import xyz.r2turntrue.chzzk4j.Chzzk;
@@ -25,12 +25,7 @@ import xyz.r2turntrue.chzzk4j.naver.Naver;
 @RequiredArgsConstructor
 public class ChzzkChatConfig {
 
-    @Value("${chzzk.channelId}")
-    private String channelId;
-    @Value("${chzzk.id}")
-    private String id;
-    @Value("${chzzk.password}")
-    private String password;
+    private final ChzzkDto chzzkDto;
     private final ChzzkChatListenerConfig chzzkChatListenerConfig;
     private Chzzk chzzk;
     private ChzzkChat chzzkChat;
@@ -42,8 +37,8 @@ public class ChzzkChatConfig {
             Page page = browser.newPage()
         ) {
             page.navigate("https://nid.naver.com/nidlogin.login");
-            page.getByLabel("아이디 또는 전화번호").fill(id);
-            page.getByLabel("비밀번호").fill(password);
+            page.getByLabel("아이디 또는 전화번호").fill(chzzkDto.getId());
+            page.getByLabel("비밀번호").fill(chzzkDto.getPassword());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).click();
             page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
             Map<String, String> cookiesMap = new HashMap<>();
@@ -61,13 +56,13 @@ public class ChzzkChatConfig {
     @Scheduled(fixedDelay = 1000 * 60)
     public void startChat() {
         try {
-            if (chzzkChat == null && chzzk.getLiveDetail(channelId).isOnline()) {
+            if (chzzkChat == null && chzzk.getLiveDetail(chzzkDto.getChannelId()).isOnline()) {
                 log.info("[ChzzkChat][START]");
-                chzzkChat = chzzk.chat(channelId)
+                chzzkChat = chzzk.chat(chzzkDto.getChannelId())
                     .withChatListener(chzzkChatListenerConfig)
                     .build();
                 chzzkChat.connectAsync();
-            } else if (chzzkChat != null && !chzzk.getLiveDetail(channelId).isOnline()) {
+            } else if (chzzkChat != null && !chzzk.getLiveDetail(chzzkDto.getChannelId()).isOnline()) {
                 log.info("[ChzzkChat][END]");
                 chzzkChat.closeAsync();
                 chzzkChat = null;

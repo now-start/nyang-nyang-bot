@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.repository;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
