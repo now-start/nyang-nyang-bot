@@ -11,7 +11,7 @@ import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 
 @Transactional
 @RequiredArgsConstructor
-//@Component("!호감도")
+@Component("!호감도")
 public class GetFavoriteCommand implements Command {
 
     private final FavoriteRepository favoriteRepository;
