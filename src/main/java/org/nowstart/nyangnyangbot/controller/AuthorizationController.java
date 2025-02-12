@@ -10,6 +10,9 @@ import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
 @Controller
@@ -29,9 +32,11 @@ public class AuthorizationController {
             + "&state=zxclDasdfA25";
     }
 
+    @ResponseBody
     @GetMapping("/token")
-    public void token(String code, String state) {
+    public String token(String code, String state) {
         log.info("[GET][/token]");
-        authorizationService.getAccessToken(chzzkDto, code, state);
+        authorizationService.getAccessToken(code, state);
+        return "성공";
     }
 }

@@ -21,8 +21,10 @@ public class AuthorizationEntity extends BaseEntity {
 
     @Id
     private String channelId;
+    private String channelName;
     private String accessToken;
     private String refreshToken;
     private String tokenType;
-    private String expiresIn;
+    private int expiresIn;
+    private String scope;
 }

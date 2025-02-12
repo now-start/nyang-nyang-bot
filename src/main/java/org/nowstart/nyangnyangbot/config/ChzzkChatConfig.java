@@ -39,7 +39,7 @@ public class ChzzkChatConfig {
             page.navigate("https://nid.naver.com/nidlogin.login");
             page.getByLabel("아이디 또는 전화번호").fill(chzzkDto.getId());
             page.getByLabel("비밀번호").fill(chzzkDto.getPassword());
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).click();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).nth(0).click();
             page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
             Map<String, String> cookiesMap = new HashMap<>();
             for (Cookie cookie : page.context().cookies()) {
