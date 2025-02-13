@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
-import org.nowstart.nyangnyangbot.config.GoogleConfig;
+import org.nowstart.nyangnyangbot.controller.GoogleController;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,15 +27,15 @@ class FavoriteRepositoryTest {
     @Autowired
     FavoriteRepository favoriteRepository;
     @InjectMocks
-    GoogleConfig googleConfig;
+    GoogleController googleController;
 
     @BeforeEach
     void setUp() throws Exception {
-        ReflectionTestUtils.setField(googleConfig, "credentialsFilePath", "src/main/resources/key/google_spread_sheet_key.json");
-        ReflectionTestUtils.setField(googleConfig, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
-        Method method = googleConfig.getClass().getDeclaredMethod("getSheetValues");
+        ReflectionTestUtils.setField(googleController, "credentialsFilePath", "src/main/resources/key/google_spread_sheet_key.json");
+        ReflectionTestUtils.setField(googleController, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
+        Method method = googleController.getClass().getDeclaredMethod("getSheetValues");
         method.setAccessible(true);
-        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleConfig);
+        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleController);
 
         list.forEach(googleSheetDto -> {
             FavoriteEntity favoriteEntity = FavoriteEntity.builder()
