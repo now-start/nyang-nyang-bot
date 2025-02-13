@@ -33,6 +33,6 @@ public class AuthorizationController {
     public String token(String code, String state) {
         log.info("[GET][/token]");
         authorizationService.getAccessToken(code, state);
-        return "성공";
+        return "SUCCESS";
     }
 }
