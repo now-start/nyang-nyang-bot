@@ -1,18 +1,21 @@
-package org.nowstart.nyangnyangbot.config;
+package org.nowstart.nyangnyangbot.service;
 
 import java.util.Map;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.command.Command;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import xyz.r2turntrue.chzzk4j.chat.ChatEventListener;
 import xyz.r2turntrue.chzzk4j.chat.ChatMessage;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 
 @Slf4j
-@Component
+@Service
+@Transactional
 @RequiredArgsConstructor
-public class ChzzkChatListenerConfig implements ChatEventListener {
+public class ChzzkChatService implements ChatEventListener {
 
     private ChzzkChat chzzkChat;
     private final Map<String, Command> commands;

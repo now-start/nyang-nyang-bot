@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.nowstart.nyangnyangbot.controller.GoogleController;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.service.GoogleSheetService;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -15,27 +16,27 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
-class GoogleConfigTest {
+class GoogleControllerTest {
 
     @InjectMocks
-    GoogleConfig googleConfig;
+    GoogleController googleController;
     @Mock
     GoogleSheetService googleSheetService;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(googleConfig, "credentialsFilePath", "./key/google_spread_sheet_key.json");
-        ReflectionTestUtils.setField(googleConfig, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
+        ReflectionTestUtils.setField(googleController, "credentialsFilePath", "./key/google_spread_sheet_key.json");
+        ReflectionTestUtils.setField(googleController, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
     }
 
     @Test
     void getSheetValuesTest() throws Exception {
         //given
-        Method method = googleConfig.getClass().getDeclaredMethod("getSheetValues");
+        Method method = googleController.getClass().getDeclaredMethod("getSheetValues");
         method.setAccessible(true);
 
         //when
-        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleConfig);
+        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleController);
 
         //then
         assertThat(list).isNotEmpty();

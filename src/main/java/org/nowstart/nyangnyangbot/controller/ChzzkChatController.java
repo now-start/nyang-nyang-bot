@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.config;
+package org.nowstart.nyangnyangbot.controller;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
@@ -12,21 +12,22 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.data.dto.ChzzkDto;
-import org.springframework.context.annotation.Configuration;
+import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
+import org.nowstart.nyangnyangbot.service.ChzzkChatService;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.RestController;
 import xyz.r2turntrue.chzzk4j.Chzzk;
 import xyz.r2turntrue.chzzk4j.ChzzkBuilder;
 import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
 import xyz.r2turntrue.chzzk4j.naver.Naver;
 
 @Slf4j
-@Configuration
+@RestController
 @RequiredArgsConstructor
-public class ChzzkChatConfig {
+public class ChzzkChatController {
 
-    private final ChzzkDto chzzkDto;
-    private final ChzzkChatListenerConfig chzzkChatListenerConfig;
+    private final ChzzkProperty chzzkProperty;
+    private final ChzzkChatService chzzkChatService;
     private Chzzk chzzk;
     private ChzzkChat chzzkChat;
 
@@ -37,8 +38,8 @@ public class ChzzkChatConfig {
             Page page = browser.newPage()
         ) {
             page.navigate("https://nid.naver.com/nidlogin.login");
-            page.getByLabel("아이디 또는 전화번호").fill(chzzkDto.getId());
-            page.getByLabel("비밀번호").fill(chzzkDto.getPassword());
+            page.getByLabel("아이디 또는 전화번호").fill(chzzkProperty.getId());
+            page.getByLabel("비밀번호").fill(chzzkProperty.getPassword());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).nth(0).click();
             page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
             Map<String, String> cookiesMap = new HashMap<>();
@@ -56,13 +57,13 @@ public class ChzzkChatConfig {
     @Scheduled(fixedDelay = 1000 * 60)
     public void startChat() {
         try {
-            if (chzzkChat == null && chzzk.getLiveDetail(chzzkDto.getChannelId()).isOnline()) {
+            if (chzzkChat == null && chzzk.getLiveDetail(chzzkProperty.getChannelId()).isOnline()) {
                 log.info("[ChzzkChat][START]");
-                chzzkChat = chzzk.chat(chzzkDto.getChannelId())
-                    .withChatListener(chzzkChatListenerConfig)
+                chzzkChat = chzzk.chat(chzzkProperty.getChannelId())
+                    .withChatListener(chzzkChatService)
                     .build();
                 chzzkChat.connectAsync();
-            } else if (chzzkChat != null && !chzzk.getLiveDetail(chzzkDto.getChannelId()).isOnline()) {
+            } else if (chzzkChat != null && !chzzk.getLiveDetail(chzzkProperty.getChannelId()).isOnline()) {
                 log.info("[ChzzkChat][END]");
                 chzzkChat.closeAsync();
                 chzzkChat = null;
