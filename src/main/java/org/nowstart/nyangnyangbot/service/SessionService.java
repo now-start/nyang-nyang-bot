@@ -18,6 +18,11 @@ public class SessionService {
 
     public String getSession() {
         AuthorizationEntity accessToken = authorizationService.getAccessToken();
-        return chzzkOpenApi.getSession(accessToken.getAccessToken()).getContent();
+        return chzzkOpenApi.getSession(accessToken.getTokenType() + " " + accessToken.getAccessToken()).getContent().getUrl();
+    }
+
+    public void connectChat(String sessionKey) {
+        AuthorizationEntity accessToken = authorizationService.getAccessToken();
+        chzzkOpenApi.subscribeChatEvent(accessToken.getTokenType() + " " + accessToken.getAccessToken(), sessionKey);
     }
 }
