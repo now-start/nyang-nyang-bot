@@ -9,4 +9,5 @@ public class UserDto {
 
     private String channelId;
     private String channelName;
+    private String status;
 }
