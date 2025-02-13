@@ -22,7 +22,7 @@ public class GoogleController {
             googleSheetService.updateFavorite();
             log.info("[DBSync][END]");
         } catch (Exception e) {
-            log.error("[DBSync][ERROR]", e);
+            log.error("[DBSync][ERROR] : ", e);
             throw new IllegalArgumentException(e.getMessage());
         }
 

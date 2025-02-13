@@ -9,11 +9,11 @@ import com.google.auth.oauth2.GoogleCredentials;
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
@@ -34,7 +34,7 @@ public class GoogleSheetService {
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
 
-    public void updateFavorite() throws IOException {
+    public void updateFavorite() {
         List<GoogleSheetDto> googleSheetDtoList = getSheetValues();
         List<FavoriteHistoryEntity> favoriteHistoryEntityList = new ArrayList<>();
 
@@ -43,7 +43,7 @@ public class GoogleSheetService {
             String userId = googleSheetDto.getUserId();
             int sheetFavorite = googleSheetDto.getFavorite();
 
-            FavoriteEntity favoriteEntity = favoriteRepository.findByUserId(userId).orElse(FavoriteEntity.builder()
+            FavoriteEntity favoriteEntity = favoriteRepository.findById(userId).orElse(FavoriteEntity.builder()
                 .userId(userId)
                 .nickName(nickName)
                 .build());
@@ -61,7 +61,8 @@ public class GoogleSheetService {
         favoriteHistoryRepository.saveAll(favoriteHistoryEntityList);
     }
 
-    private List<GoogleSheetDto> getSheetValues() throws IOException {
+    @SneakyThrows
+    private List<GoogleSheetDto> getSheetValues() {
         GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(googleProperty.getKey())).createScoped(SheetsScopes.SPREADSHEETS);
         Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
             .setApplicationName("google-sheet-project")
