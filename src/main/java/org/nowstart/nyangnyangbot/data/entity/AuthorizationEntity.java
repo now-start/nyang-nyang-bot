@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nowstart.nyangnyangbot.data.dto.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.UserDto;
 
 @Entity
 @Getter
@@ -25,9 +24,7 @@ public class AuthorizationEntity extends BaseEntity {
     private int expiresIn;
     private String scope;
 
-    public void refreshToken(UserDto userDto, AuthorizationDto authorizationDto) {
-        this.channelId = userDto.getChannelId();
-        this.channelName = userDto.getChannelName();
+    public void refreshToken(AuthorizationDto authorizationDto) {
         this.accessToken = authorizationDto.getAccessToken();
         this.refreshToken = authorizationDto.getRefreshToken();
         this.tokenType = authorizationDto.getTokenType();

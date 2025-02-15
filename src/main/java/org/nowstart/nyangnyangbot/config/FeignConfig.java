@@ -19,13 +19,15 @@ public class FeignConfig {
     @Bean
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
-            AuthorizationService authorizationService = authorizationServiceProvider.getIfAvailable();
-            if (authorizationService != null) {
-                AuthorizationEntity authentication = authorizationService.getAccessToken();
-                String token = authentication.getTokenType() + " " + authentication.getAccessToken();
+            if (requestTemplate.path().contains("/open/v1")) {
+                AuthorizationService authorizationService = authorizationServiceProvider.getIfAvailable();
+                if (authorizationService != null) {
+                    AuthorizationEntity authentication = authorizationService.getAccessToken();
+                    String token = authentication.getTokenType() + " " + authentication.getAccessToken();
 
-                requestTemplate.header("Content-Type", "application/json");
-                requestTemplate.header("Authorization", token);
+                    requestTemplate.header("Content-Type", "application/json");
+                    requestTemplate.header("Authorization", token);
+                }
             }
         };
     }
