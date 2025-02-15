@@ -32,7 +32,7 @@ public class AuthorizationService {
             .code(code)
             .state(state)
             .build()).getContent();
-        UserDto userDto = chzzkOpenApi.getUser().getContent();
+        UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
         authorizationRepository.save(AuthorizationEntity.builder()
             .channelId(userDto.getChannelId())
@@ -55,8 +55,9 @@ public class AuthorizationService {
                 .clientSecret(chzzkProperty.getClientSecret())
                 .refreshToken(authorizationEntity.getRefreshToken())
                 .build()).getContent();
+            UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
-            authorizationEntity.refreshToken(authorizationDto);
+            authorizationEntity.refreshToken(userDto, authorizationDto);
         }
 
         return authorizationEntity;
