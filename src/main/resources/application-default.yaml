@@ -26,4 +26,4 @@ chzzk:
   channelId: ${CHZZK_CHANNEL_ID:ENC(quG85YdX+oDu/vCBG0Aubp2vv0oNBCj2DGztfUIq58T/o9a4Bdd/YrCnDyE/GkhKZQw6ZaNqam0od0GQ+o2XcnetxVoX7PVqr+ogJ87sr4g=)}
   clientId: ${CHZZK_CLIENT_ID:ENC(aWyut53qLnkrwiZum0V/8KyJ4xlpAKtq8YaR6h0ERlLbK2YDF0O9ZihGdUGOABUq6fxzUH43uHbIEDyfL/tixPqXOdu+TUX5KlTKoIzUS9s=)}
   clientSecret: ${CHZZK_CLIENT_SECRET:ENC(wG+b5r5ms4bJVAyV0Gn2VxayRdxejJ2KdhttHEhYRrtBcBs2r8qwtdMYBZf8mHsmojCEnOBCStWdwVeov1nOh2Q5MObo8fg0H6hD43kmQqo=)}
-  redirectUri: ${CHZZK_REDIRECT_URI:http://localhost:8080/authorization/token}
+  redirectUri: ${CHZZK_REDIRECT_URI:http://localhost:8080}
