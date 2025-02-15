@@ -192,13 +192,13 @@
     if (syncButton) {
       syncButton.addEventListener('click', function (event) {
         event.preventDefault();
-        let form = document.createElement('form');
-        form.method = 'post';
-        form.action = '/google/sync';
-        document.body.appendChild(form);
+
         let spinner = document.getElementById('loading-spinner');
-        spinner.style.display = 'flex'; // Show the spinner
-        $.post(form.action, $(form).serialize())
+        if (spinner) {
+          spinner.style.display = 'flex'; // Show the spinner
+        }
+
+        $.get('/google/sync')
         .done(function (response) {
           if (response === 'SUCCESS') {
             showToast("데이터 동기화 완료!");
@@ -210,8 +210,9 @@
           showToast("Error during synchronization");
         })
         .always(function () {
-          spinner.style.display = 'none'; // Hide the spinner
-          document.body.removeChild(form);
+          if (spinner) {
+            spinner.style.display = 'none'; // Hide the spinner
+          }
         });
       });
     } else {
