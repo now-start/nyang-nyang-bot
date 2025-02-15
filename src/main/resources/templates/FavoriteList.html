@@ -193,12 +193,11 @@
       syncButton.addEventListener('click', function (event) {
         event.preventDefault();
         let form = document.createElement('form');
-        form.method = 'post';
         form.action = '/google/sync';
         document.body.appendChild(form);
         let spinner = document.getElementById('loading-spinner');
         spinner.style.display = 'flex'; // Show the spinner
-        $.post(form.action, $(form).serialize())
+        $.get(form.action, $(form).serialize())
         .done(function (response) {
           if (response === 'SUCCESS') {
             showToast("데이터 동기화 완료!");
