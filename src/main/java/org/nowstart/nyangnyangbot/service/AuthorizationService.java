@@ -47,18 +47,16 @@ public class AuthorizationService {
 
     public AuthorizationEntity getAccessToken() {
         AuthorizationEntity authorizationEntity = authorizationRepository.findById(chzzkProperty.getChannelId()).orElseThrow();
-        LocalDateTime expiredDate = authorizationEntity.getModifyDate().plusSeconds(authorizationEntity.getExpiresIn());
 
-        if (expiredDate.isBefore(LocalDateTime.now())) {
+        if (authorizationEntity.getModifyDate().plusSeconds(authorizationEntity.getExpiresIn()).isBefore(LocalDateTime.now())) {
             AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(AuthorizationRequestDto.builder()
                 .grantType(GrantType.REFRESH_TOKEN.getData())
                 .clientId(chzzkProperty.getClientId())
                 .clientSecret(chzzkProperty.getClientSecret())
                 .refreshToken(authorizationEntity.getRefreshToken())
                 .build()).getContent();
-            UserDto userDto = chzzkOpenApi.getUser().getContent();
 
-            authorizationEntity.refreshToken(userDto, authorizationDto);
+            authorizationEntity.refreshToken(authorizationDto);
         }
 
         return authorizationEntity;
