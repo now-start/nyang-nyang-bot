@@ -11,9 +11,10 @@ import org.nowstart.nyangnyangbot.service.SystemService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
-//@RestController
+@RestController
 @RequiredArgsConstructor
 @RequestMapping("/chzzk")
 public class ChzzkController {
