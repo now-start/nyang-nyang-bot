@@ -1,8 +1,18 @@
 package org.nowstart.nyangnyangbot.controller;
 
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.Cookie;
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import jakarta.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.data.type.EventType;
@@ -12,6 +22,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import xyz.r2turntrue.chzzk4j.Chzzk;
+import xyz.r2turntrue.chzzk4j.ChzzkBuilder;
+import xyz.r2turntrue.chzzk4j.chat.ChzzkChat;
+import xyz.r2turntrue.chzzk4j.naver.Naver;
 
 @Slf4j
 @RestController
@@ -23,7 +37,33 @@ public class ChzzkController {
     private final ChatService chatService;
     private final SystemService systemService;
     private Socket socket;
+    private Chzzk chzzk;
+    private ChzzkChat chzzkChat;
 
+    @PostConstruct
+    public void init() {
+        try (Playwright playwright = Playwright.create();
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+            Page page = browser.newPage()
+        ) {
+            page.navigate("https://nid.naver.com/nidlogin.login");
+            page.getByLabel("아이디 또는 전화번호").fill(chzzkProperty.getId());
+            page.getByLabel("비밀번호").fill(chzzkProperty.getPassword());
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).nth(0).click();
+            page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
+            Map<String, String> cookiesMap = new HashMap<>();
+            for (Cookie cookie : page.context().cookies()) {
+                cookiesMap.put(cookie.name, cookie.value);
+            }
+
+            log.info("[Chzzk][INIT] : {}\n {}", cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()));
+            chzzk = new ChzzkBuilder()
+                .withAuthorization(cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()))
+                .build();
+        }
+    }
+
+    @SneakyThrows
     @GetMapping("/connect")
     @Scheduled(fixedDelay = 1000 * 60)
     public String connect() {
@@ -42,10 +82,22 @@ public class ChzzkController {
                 log.info("[ChzzkChat][END]");
                 socket.disconnect();
                 socket = null;
+            } else if (chzzkChat != null && !systemService.isOnline(chzzkProperty.getChannelId())) {
+                log.info("[ChzzkChat][END][LEGACY]");
+                chzzkChat.closeAsync();
+                chzzkChat = null;
             }
         } catch (Exception e) {
             log.error("[ChzzkChat][ERROR] : ", e);
             socket = null;
+
+            if (chzzkChat == null && systemService.isOnline(chzzkProperty.getChannelId())) {
+                log.info("[ChzzkChat][START][LEGACY]");
+                chzzkChat = chzzk.chat(chzzkProperty.getChannelId())
+                    .withChatListener(chatService)
+                    .build();
+                chzzkChat.connectAsync();
+            }
         }
 
         return "SUCCESS";
