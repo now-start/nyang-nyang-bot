@@ -9,5 +9,5 @@ public class ApiResponseDto<T> {
 
     private int code;
     private String message;
-    T content;
+    private T content;
 }

@@ -34,7 +34,7 @@ public class ChatService implements ChatEventListener, Emitter.Listener {
     public void onChat(ChatMessage msg) {
         Command command = commands.get(CommandType.findNameByCommand(msg.getContent().split(" ")[0]));
         if (command != null) {
-            log.info("[CHAT] : {}", chzzkChat);
+            log.info("[CHAT] : {}", msg);
             command.v1(chzzkChat, msg);
         }
     }
