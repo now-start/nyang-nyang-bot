@@ -5,12 +5,12 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.Cookie;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import jakarta.annotation.PostConstruct;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -42,25 +42,22 @@ public class ChzzkController {
 
     @PostConstruct
     public void init() {
-        try (Playwright playwright = Playwright.create();
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-            Page page = browser.newPage()
-        ) {
-            page.navigate("https://nid.naver.com/nidlogin.login");
-            page.getByLabel("아이디 또는 전화번호").fill(chzzkProperty.getId());
-            page.getByLabel("비밀번호").fill(chzzkProperty.getPassword());
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).nth(0).click();
-            page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
-            Map<String, String> cookiesMap = new HashMap<>();
-            for (Cookie cookie : page.context().cookies()) {
-                cookiesMap.put(cookie.name, cookie.value);
-            }
+        @Cleanup Playwright playwright = Playwright.create();
+        @Cleanup Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+        @Cleanup Page page = browser.newPage();
 
-            log.info("[Chzzk][INIT] : {}\n {}", cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()));
-            chzzk = new ChzzkBuilder()
-                .withAuthorization(cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()))
-                .build();
-        }
+        page.navigate("https://nid.naver.com/nidlogin.login");
+        page.getByLabel("아이디 또는 전화번호").fill(chzzkProperty.getId());
+        page.getByLabel("비밀번호").fill(chzzkProperty.getPassword());
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("로그인")).nth(0).click();
+        page.waitForSelector("#account > div.MyView-module__my_info___GNmHz > div > button");
+
+        Map<String, String> cookiesMap = page.context().cookies().stream()
+            .collect(Collectors.toMap(cookie -> cookie.name, cookie -> cookie.value, (a, b) -> b));
+
+        chzzk = new ChzzkBuilder()
+            .withAuthorization(cookiesMap.get(Naver.Cookie.NID_AUT.toString()), cookiesMap.get(Naver.Cookie.NID_SES.toString()))
+            .build();
     }
 
     @SneakyThrows
@@ -68,7 +65,7 @@ public class ChzzkController {
     @Scheduled(fixedDelay = 1000 * 60)
     public String connect() {
         try {
-            if (socket == null && systemService.isOnline(chzzkProperty.getChannelId())) {
+            if (chzzkChat == null && socket == null && systemService.isOnline(chzzkProperty.getChannelId())) {
                 log.info("[ChzzkChat][START]");
                 IO.Options option = new IO.Options();
                 option.reconnection = false;
