@@ -23,7 +23,13 @@ google:
     key: ./key/google_spread_sheet_key.json
 
 chzzk:
+  id: ${CHZZK_ID:ENC(Anlj6WYiE+ttaS3+6WFl5gzFyMbPAcd1L60u86Rp2LQaTtGp5nDVc/1ExX33y8C/)}
+  password: ${CHZZK_PASSWORD:ENC(CziDTwuP8udmw3Rj5elsU7Bdf5x7umGM5iH8u0nUJu92wBCFivnuY/FPYdzymA6j)}
   channelId: ${CHZZK_CHANNEL_ID:ENC(quG85YdX+oDu/vCBG0Aubp2vv0oNBCj2DGztfUIq58T/o9a4Bdd/YrCnDyE/GkhKZQw6ZaNqam0od0GQ+o2XcnetxVoX7PVqr+ogJ87sr4g=)}
   clientId: ${CHZZK_CLIENT_ID:ENC(aWyut53qLnkrwiZum0V/8KyJ4xlpAKtq8YaR6h0ERlLbK2YDF0O9ZihGdUGOABUq6fxzUH43uHbIEDyfL/tixPqXOdu+TUX5KlTKoIzUS9s=)}
   clientSecret: ${CHZZK_CLIENT_SECRET:ENC(wG+b5r5ms4bJVAyV0Gn2VxayRdxejJ2KdhttHEhYRrtBcBs2r8qwtdMYBZf8mHsmojCEnOBCStWdwVeov1nOh2Q5MObo8fg0H6hD43kmQqo=)}
   redirectUri: ${CHZZK_REDIRECT_URI:http://localhost:8080}
+
+logging:
+  level:
+    org.springframework.cloud.openfeign: DEBUG
