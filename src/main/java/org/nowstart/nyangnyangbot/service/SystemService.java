@@ -37,7 +37,7 @@ public class SystemService implements Emitter.Listener {
         return chzzkOpenApi.getSession().getContent().getUrl();
     }
 
-    public Boolean isOnline(String channelId) {
+    public boolean isOnline(String channelId) {
         return "open".equalsIgnoreCase(chzzkUnofficialApi.isOnline(channelId).getContent().getStatus());
     }
 }
