@@ -7,7 +7,7 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import jakarta.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Cleanup;
@@ -40,7 +40,7 @@ public class ChzzkController {
     private Chzzk chzzk;
     private ChzzkChat chzzkChat;
 
-    @PostConstruct
+    // @PostConstruct
     public void init() {
         @Cleanup Playwright playwright = Playwright.create();
         @Cleanup Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
@@ -87,16 +87,20 @@ public class ChzzkController {
         } catch (Exception e) {
             log.error("[ChzzkChat][ERROR] : ", e);
             socket = null;
-
-            if (chzzkChat == null && systemService.isOnline(chzzkProperty.getChannelId())) {
-                log.info("[ChzzkChat][START][LEGACY]");
-                chzzkChat = chzzk.chat(chzzkProperty.getChannelId())
-                    .withChatListener(chatService)
-                    .build();
-                chzzkChat.connectAsync();
-            }
+            // legacy();
         }
 
         return "SUCCESS";
+    }
+
+    @Deprecated
+    private void legacy() throws IOException {
+        if (chzzkChat == null && systemService.isOnline(chzzkProperty.getChannelId())) {
+            log.info("[ChzzkChat][START][LEGACY]");
+            chzzkChat = chzzk.chat(chzzkProperty.getChannelId())
+                .withChatListener(chatService)
+                .build();
+            chzzkChat.connectAsync();
+        }
     }
 }
