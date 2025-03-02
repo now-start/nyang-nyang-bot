@@ -23,9 +23,8 @@ public interface ChzzkOpenApi {
     @GetMapping("/open/v1/users/me")
     ApiResponseDto<UserDto> getUser(@RequestHeader("Authorization") String accessToken);
 
-    @Authorization
-    @GetMapping("/open/v1/sessions/auth")
-    ApiResponseDto<SessionDto> getSession();
+    @GetMapping("/open/v1/sessions/auth/client")
+    ApiResponseDto<SessionDto> getSession(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret);
 
     @Authorization
     @PostMapping("/open/v1/sessions/events/subscribe/chat")

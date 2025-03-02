@@ -55,6 +55,7 @@ public class AuthorizationService {
                 .clientSecret(chzzkProperty.getClientSecret())
                 .refreshToken(authorizationEntity.getRefreshToken())
                 .build()).getContent();
+            log.info("[REFRESH_TOKEN] : {}", authorizationDto);
             UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
             authorizationEntity.refreshToken(userDto, authorizationDto);
