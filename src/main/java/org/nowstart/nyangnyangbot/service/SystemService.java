@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.SystemDto;
+import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
-import org.nowstart.nyangnyangbot.repository.ChzzkUnofficialApi;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -17,27 +17,26 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SystemService implements Emitter.Listener {
 
+    private String sessionKey;
     private final ObjectMapper objectMapper;
     private final ChzzkOpenApi chzzkOpenApi;
-    private final ChzzkUnofficialApi chzzkUnofficialApi;
 
     @Override
     @SneakyThrows
     public void call(Object... objects) {
         SystemDto systemDto = objectMapper.readValue((String) objects[0], SystemDto.class);
+        log.info("[SYSTEM] : {}", systemDto);
 
         if ("connected".equalsIgnoreCase(systemDto.getType())) {
-            chzzkOpenApi.subscribeChatEvent(systemDto.getData().getSessionKey());
-        } else {
-            log.info("[SYSTEM] : {}", systemDto);
+            sessionKey = systemDto.getData().getSessionKey();
         }
     }
 
-    public String getSession() {
-        return chzzkOpenApi.getSession().getContent().getUrl();
+    public String getSession(ChzzkProperty chzzkProperty) {
+        return chzzkOpenApi.getSession(chzzkProperty.getClientId(), chzzkProperty.getClientSecret()).getContent().getUrl();
     }
 
-    public boolean isOnline(String channelId) {
-        return "open".equalsIgnoreCase(chzzkUnofficialApi.isOnline(channelId).getContent().getStatus());
+    public void subscribeChatEvent() {
+        chzzkOpenApi.subscribeChatEvent(sessionKey);
     }
 }

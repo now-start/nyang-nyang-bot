@@ -11,7 +11,7 @@ springBoot {
 }
 
 group = 'org.nowstart'
-version = '4.2.2'
+version = '4.3.2'
 
 java {
     toolchain {
@@ -35,10 +35,6 @@ ext {
 }
 
 dependencies {
-    // v1
-    implementation 'io.github.R2turnTrue:chzzk4j:0.0.12'
-    implementation 'com.microsoft.playwright:playwright:1.49.0'
-    // v2
     implementation 'io.socket:socket.io-client:1.0.1'
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20241008-2.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -81,8 +77,4 @@ jacocoTestCoverageVerification {
             }
         }
     }
-}
-
-bootBuildImage {
-    runImage = 'mcr.microsoft.com/playwright/java:v1.49.0-amd64'
 }
