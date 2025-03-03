@@ -43,7 +43,7 @@ public class ChzzkController {
         try {
             systemService.subscribeChatEvent();
         } catch (Exception e) {
-            // ignore
+            log.error("[ChzzkChat][ERROR] : ", e);
         }
 
         return "SUCCESS";
