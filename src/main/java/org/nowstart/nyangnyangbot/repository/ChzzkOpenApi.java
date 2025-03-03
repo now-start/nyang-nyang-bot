@@ -26,6 +26,10 @@ public interface ChzzkOpenApi {
     @GetMapping("/open/v1/sessions/auth/client")
     ApiResponseDto<SessionDto> getSession(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret);
 
+    @GetMapping("/open/v1/sessions/client")
+    ApiResponseDto<SessionDto> getSessionList(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret,
+        @RequestParam("size") String size);
+
     @Authorization
     @PostMapping("/open/v1/sessions/events/subscribe/chat")
     void subscribeChatEvent(@RequestParam("sessionKey") String sessionKey);
@@ -33,5 +37,4 @@ public interface ChzzkOpenApi {
     @Authorization
     @PostMapping("/open/v1/chats/send")
     void sendMessage(@RequestBody MessageRequestDto message);
-
 }

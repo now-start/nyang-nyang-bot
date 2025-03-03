@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.data.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,7 +12,7 @@ public class SessionDto {
     private int page;
     private int totalCount;
     private int totalPages;
-    private SessionData data;
+    private List<SessionData> data;
 
     @Data
     @Builder
@@ -20,7 +21,7 @@ public class SessionDto {
         private String sessionKey;
         private String connectedDate;
         private String disconnectedDate;
-        private SubscribedEvents subscribedEvents;
+        private List<SubscribedEvents> subscribedEvents;
 
         @Data
         @Builder

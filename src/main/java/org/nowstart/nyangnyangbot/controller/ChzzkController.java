@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.controller;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import jakarta.annotation.PostConstruct;
 import java.net.URISyntaxException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,34 +23,22 @@ public class ChzzkController {
     private final ChzzkProperty chzzkProperty;
     private final SystemService systemService;
     private final ChatService chatService;
-
-    @PostConstruct
-    public void init() throws URISyntaxException {
-        log.info("[ChzzkChat][START]");
-        IO.Options option = new IO.Options();
-        option.reconnection = false;
-
-        Socket socket = IO.socket(systemService.getSession(chzzkProperty), option);
-        socket.on(EventType.SYSTEM.name(), systemService);
-        socket.on(EventType.CHAT.name(), chatService);
-        socket.connect();
-    }
+    private Socket socket;
 
     @GetMapping("/connect")
     @Scheduled(fixedDelay = 1000 * 60)
-    public String connect() {
-        try {
-            systemService.subscribeChatEvent();
-        } catch (Exception e) {
-            log.error("[ChzzkChat][ERROR] : ", e);
+    public String connect() throws URISyntaxException {
+        if (!systemService.isConnected(chzzkProperty)) {
+            log.info("[ChzzkChat][START]");
+            IO.Options option = new IO.Options();
+            option.reconnection = false;
+
+            socket = IO.socket(systemService.getSession(chzzkProperty), option);
+
+            socket.on(EventType.SYSTEM.name(), systemService);
+            socket.on(EventType.CHAT.name(), chatService);
+            socket.connect();
         }
-
-        return "SUCCESS";
-    }
-
-    @GetMapping("/reconnect")
-    public String reconnect() throws URISyntaxException {
-        init();
 
         return "SUCCESS";
     }
