@@ -29,14 +29,24 @@ public class SystemService implements Emitter.Listener {
 
         if ("connected".equalsIgnoreCase(systemDto.getType())) {
             sessionKey = systemDto.getData().getSessionKey();
+            chzzkOpenApi.subscribeChatEvent(sessionKey);
         }
+    }
+
+    public boolean isConnected(ChzzkProperty chzzkProperty) {
+        if (sessionKey == null) {
+            return false;
+        }
+
+        return chzzkOpenApi
+            .getSessionList(chzzkProperty.getClientId(), chzzkProperty.getClientSecret(), "50")
+            .getContent().getData().stream()
+            .filter(sessionData -> sessionData.getSessionKey().equals(sessionKey))
+            .anyMatch(sessionData -> sessionData.getDisconnectedDate() == null);
     }
 
     public String getSession(ChzzkProperty chzzkProperty) {
         return chzzkOpenApi.getSession(chzzkProperty.getClientId(), chzzkProperty.getClientSecret()).getContent().getUrl();
     }
 
-    public void subscribeChatEvent() {
-        chzzkOpenApi.subscribeChatEvent(sessionKey);
-    }
 }

@@ -59,7 +59,6 @@ public class AuthorizationService {
             UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
             authorizationEntity.refreshToken(userDto, authorizationDto);
-            authorizationRepository.saveAndFlush(authorizationEntity);
         }
 
         return authorizationEntity;
