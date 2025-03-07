@@ -19,6 +19,7 @@ public class SystemService implements Emitter.Listener {
 
     private String sessionKey;
     private final ObjectMapper objectMapper;
+    private final ChzzkProperty chzzkProperty;
     private final ChzzkOpenApi chzzkOpenApi;
 
     @Override
@@ -33,19 +34,19 @@ public class SystemService implements Emitter.Listener {
         }
     }
 
-    public boolean isConnected(ChzzkProperty chzzkProperty) {
+    public boolean isConnected() {
         if (sessionKey == null) {
             return false;
         }
 
         return chzzkOpenApi
-            .getSessionList(chzzkProperty.getClientId(), chzzkProperty.getClientSecret(), "50")
+            .getSessionList(chzzkProperty.getClientId(), chzzkProperty.getClientSecret())
             .getContent().getData().stream()
             .filter(sessionData -> sessionData.getSessionKey().equals(sessionKey))
             .anyMatch(sessionData -> sessionData.getDisconnectedDate() == null);
     }
 
-    public String getSession(ChzzkProperty chzzkProperty) {
+    public String getSession() {
         return chzzkOpenApi.getSession(chzzkProperty.getClientId(), chzzkProperty.getClientSecret()).getContent().getUrl();
     }
 

@@ -27,8 +27,7 @@ public interface ChzzkOpenApi {
     ApiResponseDto<SessionDto> getSession(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret);
 
     @GetMapping("/open/v1/sessions/client")
-    ApiResponseDto<SessionDto> getSessionList(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret,
-        @RequestParam("size") String size);
+    ApiResponseDto<SessionDto> getSessionList(@RequestHeader("Client-Id") String clientID, @RequestHeader("Client-Secret") String clientSecret);
 
     @Authorization
     @PostMapping("/open/v1/sessions/events/subscribe/chat")
