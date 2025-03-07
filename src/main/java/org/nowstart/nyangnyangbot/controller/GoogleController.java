@@ -16,8 +16,8 @@ public class GoogleController {
 
     private final GoogleSheetService googleSheetService;
 
-    @Scheduled(cron = "0 0 4 * * ?")
     @GetMapping(value = "/sync")
+    @Scheduled(cron = "0 0 4 * * ?")
     public String syncDatabase() {
         try {
             log.info("[DBSync][START]");
