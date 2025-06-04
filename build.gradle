@@ -1,17 +1,17 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.4'
-    id 'io.spring.dependency-management' version '1.1.6'
-    id 'com.gorylenko.gradle-git-properties' version '2.4.2'
+    id 'org.springframework.boot' version '3.5.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.0'
     id 'jacoco'
 }
+
+group = 'org.nowstart'
+version = '4.4.0'
 
 springBoot {
     buildInfo()
 }
-
-group = 'org.nowstart'
-version = '4.3.5'
 
 java {
     toolchain {
@@ -30,8 +30,7 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2023.0.3")
-    springBootAdminVersion = "3.4.0"
+    set('springCloudVersion', "2025.0.0")
 }
 
 dependencies {
@@ -39,13 +38,13 @@ dependencies {
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20241008-2.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
@@ -60,7 +59,6 @@ dependencies {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-        mavenBom "de.codecentric:spring-boot-admin-dependencies:$springBootAdminVersion"
     }
 }
 

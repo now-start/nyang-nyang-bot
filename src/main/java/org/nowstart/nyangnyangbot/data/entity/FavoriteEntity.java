@@ -4,6 +4,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class FavoriteEntity extends BaseEntity {
     private String userId;
     private String nickName;
     private int favorite;
+    @OrderBy("createDate DESC")
     @OneToMany(mappedBy = "favoriteEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     List<FavoriteHistoryEntity> favoriteHistoryEntityList;
 
