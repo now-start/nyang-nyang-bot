@@ -5,26 +5,25 @@ import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.AnnotationUtils;
 
 @Configuration
-@RequiredArgsConstructor
-@EnableFeignClients(basePackages = "org.nowstart.nyangnyangbot.repository", defaultConfiguration = FeignConfig.class)
+@RequiredArgsConstructor(onConstructor_ = @Lazy)
+@EnableFeignClients(basePackages = "org.nowstart.nyangnyangbot.repository")
 public class FeignConfig {
 
-    private final ObjectProvider<AuthorizationService> authorizationServiceProvider;
+    private final AuthorizationService authorizationService;
 
     @Bean
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             if (isAuthorizedMethod(requestTemplate)) {
-                AuthorizationService authorizationService = authorizationServiceProvider.getIfAvailable();
-                if (authorizationService != null) {
-                    AuthorizationEntity authentication = authorizationService.getAccessToken();
+                AuthorizationEntity authentication = authorizationService.getAccessToken();
+                if (authentication != null) {
                     String token = authentication.getTokenType() + " " + authentication.getAccessToken();
 
                     requestTemplate.header("Content-Type", "application/json");
