@@ -1,13 +1,13 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.gorylenko.gradle-git-properties' version '2.5.0'
-    id 'jacoco'
 }
 
 group = 'org.nowstart'
-version = '4.4.1'
+version = '4.5.0'
 
 springBoot {
     buildInfo()
@@ -34,6 +34,7 @@ ext {
 }
 
 dependencies {
+    implementation 'org.jolokia:jolokia-support-spring:2.2.9'
     implementation 'io.socket:socket.io-client:1.0.1'
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20241008-2.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -64,15 +65,4 @@ dependencyManagement {
 
 test {
     useJUnitPlatform()
-    ignoreFailures = true
-}
-
-jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            limit {
-                minimum = 0
-            }
-        }
-    }
 }
