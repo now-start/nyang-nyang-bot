@@ -22,6 +22,7 @@ public class Favorite implements Command {
     @Override
     public void run(ChatDto chatDto) {
         int favorite = favoriteRepository.findById(chatDto.getSenderChannelId()).orElse(new FavoriteEntity()).getFavorite();
+        log.info("[FAVORITE] : {}, {}", favorite, chatDto);
         chzzkOpenApi.sendMessage(MessageRequestDto.builder()
             .message(chatDto.getProfile().getNickname() + "님의 호감도는 " + favorite + " 입니다.💛")
             .build());

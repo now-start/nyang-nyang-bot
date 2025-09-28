@@ -27,7 +27,6 @@ public class ChatService implements Emitter.Listener {
         ChatDto chatDto = objectMapper.readValue((String) objects[0], ChatDto.class);
         Command command = commands.get(CommandType.findNameByCommand(chatDto.getContent().split(" ")[0]));
         if (command != null) {
-            log.info("[CHAT] : {}", chatDto);
             command.run(chatDto);
         }
     }
