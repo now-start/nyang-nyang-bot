@@ -2,4 +2,4 @@ spring:
   application:
     name: nyang-nyang-bot
   config:
-    import: ${SPRING_CONFIG_IMPORT:configserver:https://spring.nowstart.org/config}
+    import: ${SPRING_CONFIG_IMPORT:configserver:http://localhost:8888}
