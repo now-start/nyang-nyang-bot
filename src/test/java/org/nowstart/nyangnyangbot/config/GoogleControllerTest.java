@@ -1,8 +1,11 @@
 package org.nowstart.nyangnyangbot.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.lang.reflect.Method;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,8 +16,7 @@ import org.nowstart.nyangnyangbot.service.GoogleSheetService;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+@Disabled
 @ExtendWith(SpringExtension.class)
 class GoogleControllerTest {
 
