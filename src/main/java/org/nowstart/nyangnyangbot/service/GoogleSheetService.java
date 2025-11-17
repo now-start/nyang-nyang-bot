@@ -9,7 +9,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.io.FileInputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -36,29 +35,25 @@ public class GoogleSheetService {
 
     public void updateFavorite() {
         List<GoogleSheetDto> googleSheetDtoList = getSheetValues();
-        List<FavoriteHistoryEntity> favoriteHistoryEntityList = new ArrayList<>();
 
-        for (GoogleSheetDto googleSheetDto : googleSheetDtoList) {
-            String nickName = googleSheetDto.getNickName();
-            String userId = googleSheetDto.getUserId();
-            int sheetFavorite = googleSheetDto.getFavorite();
+        for (GoogleSheetDto dto : googleSheetDtoList) {
+            FavoriteEntity favoriteEntity = favoriteRepository.findById(dto.getUserId())
+                .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
+                    .userId(dto.getUserId())
+                    .nickName(dto.getNickName())
+                    .favorite(0)
+                    .build()));
 
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(userId).orElse(FavoriteEntity.builder()
-                .userId(userId)
-                .nickName(nickName)
-                .build());
-
-            int addFavorite = sheetFavorite - favoriteEntity.getFavorite();
-            if (addFavorite != 0) {
-                favoriteHistoryEntityList.add(FavoriteHistoryEntity.builder()
-                    .favoriteEntity(favoriteEntity.updateNickName(nickName).addFavorite(addFavorite))
-                    .favorite(favoriteEntity.getFavorite())
+            if (!favoriteEntity.getFavorite().equals(dto.getFavorite())) {
+                favoriteEntity.setNickName(dto.getNickName());
+                favoriteEntity.setFavorite(dto.getFavorite());
+                favoriteEntity.getFavoriteHistoryEntityList().add(FavoriteHistoryEntity.builder()
+                    .favoriteEntity(favoriteEntity)
                     .history("데이터 동기화")
+                    .favorite(dto.getFavorite())
                     .build());
             }
         }
-
-        favoriteHistoryRepository.saveAll(favoriteHistoryEntityList);
     }
 
     @SneakyThrows

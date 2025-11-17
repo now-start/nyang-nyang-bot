@@ -58,7 +58,13 @@ public class AuthorizationService {
             log.info("[REFRESH_TOKEN] : {}", authorizationDto);
             UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
-            authorizationEntity.refreshToken(userDto, authorizationDto);
+            authorizationEntity.setChannelId(userDto.getChannelId());
+            authorizationEntity.setChannelName(userDto.getChannelName());
+            authorizationEntity.setAccessToken(authorizationDto.getAccessToken());
+            authorizationEntity.setRefreshToken(authorizationDto.getRefreshToken());
+            authorizationEntity.setTokenType(authorizationDto.getTokenType());
+            authorizationEntity.setExpiresIn(authorizationDto.getExpiresIn());
+            authorizationEntity.setScope(authorizationDto.getScope());
         }
 
         return authorizationEntity;
