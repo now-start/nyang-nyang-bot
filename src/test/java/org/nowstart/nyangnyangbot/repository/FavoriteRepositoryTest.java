@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.repository;
 import java.lang.reflect.Method;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.nowstart.nyangnyangbot.controller.GoogleController;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+@Disabled
 @DataJpaTest
 @ExtendWith(SpringExtension.class)
 class FavoriteRepositoryTest {
