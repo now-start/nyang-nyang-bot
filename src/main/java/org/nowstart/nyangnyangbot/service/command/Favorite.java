@@ -21,10 +21,19 @@ public class Favorite implements Command {
 
     @Override
     public void run(ChatDto chatDto) {
-        int favorite = favoriteRepository.findById(chatDto.getSenderChannelId()).orElse(new FavoriteEntity()).getFavorite();
-        log.info("[FAVORITE] : {}, {}", favorite, chatDto);
+        FavoriteEntity favoriteEntity = favoriteRepository.findById(chatDto.getSenderChannelId())
+            .orElseGet(() -> {
+                FavoriteEntity newEntity = FavoriteEntity.builder()
+                    .userId(chatDto.getSenderChannelId())
+                    .nickName(chatDto.getProfile().getNickname())
+                    .favorite(0)
+                    .build();
+                return favoriteRepository.save(newEntity);
+            });
+
+        log.info("[FAVORITE] : {}, {}", favoriteEntity.getFavorite(), chatDto);
         chzzkOpenApi.sendMessage(MessageRequestDto.builder()
-            .message(chatDto.getProfile().getNickname() + "님의 호감도는 " + favorite + " 입니다.💛")
+            .message(chatDto.getProfile().getNickname() + "님의 호감도는 " + favoriteEntity.getFavorite() + " 입니다.💛")
             .build());
     }
 }

@@ -5,14 +5,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,18 +24,9 @@ public class FavoriteEntity extends BaseEntity {
     @Id
     private String userId;
     private String nickName;
-    private int favorite;
+    private Integer favorite;
+    @Builder.Default
     @OrderBy("createDate DESC")
     @OneToMany(mappedBy = "favoriteEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<FavoriteHistoryEntity> favoriteHistoryEntityList;
-
-    public FavoriteEntity addFavorite(int addFavorite) {
-        this.favorite += addFavorite;
-        return this;
-    }
-
-    public FavoriteEntity updateNickName(String nickName) {
-        this.nickName = nickName;
-        return this;
-    }
+    private List<FavoriteHistoryEntity> favoriteHistoryEntityList = new ArrayList<>();
 }
