@@ -1,44 +1,73 @@
 package org.nowstart.nyangnyangbot.repository;
 
-import java.lang.reflect.Method;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.nowstart.nyangnyangbot.controller.GoogleController;
+import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
-@Disabled
 @DataJpaTest
-@ExtendWith(SpringExtension.class)
 class FavoriteRepositoryTest {
 
     @Autowired
     FavoriteRepository favoriteRepository;
-    @InjectMocks
-    GoogleController googleController;
+    @Autowired
+    FavoriteHistoryRepository favoriteHistoryRepository;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        ReflectionTestUtils.setField(googleController, "credentialsFilePath", "src/main/resources/key/google_spread_sheet_key.json");
-        ReflectionTestUtils.setField(googleController, "spreadSheetId", "1PKgmtFVrJWw4briZGxlfyKKUd3XaQscsmAGR6LZ12Os");
-        Method method = googleController.getClass().getDeclaredMethod("getSheetValues");
-        method.setAccessible(true);
-        List<GoogleSheetDto> list = (List<GoogleSheetDto>) method.invoke(googleController);
-
-        list.forEach(googleSheetDto -> {
-            FavoriteEntity favoriteEntity = FavoriteEntity.builder()
-                .nickName(googleSheetDto.getNickName())
-                .userId(googleSheetDto.getUserId())
-                .favorite(googleSheetDto.getFavorite())
+    @Test
+    void test1() {
+        //given
+        FavoriteEntity testUser1 = FavoriteEntity.builder()
+                .userId("testUser1")
+                .favorite(1)
                 .build();
-            favoriteRepository.save(favoriteEntity);
-        });
+        favoriteRepository.saveAndFlush(testUser1);
+
+        favoriteHistoryRepository.saveAndFlush(FavoriteHistoryEntity.builder()
+                .history("테스트")
+                .favoriteEntity(testUser1)
+                .favorite(1)
+                .build());
+
+
+        List<GoogleSheetDto> googleSheetDtoList = List.of(
+                GoogleSheetDto.builder()
+                        .userId("testUser1")
+                        .favorite(2)
+                        .build(),
+                GoogleSheetDto.builder()
+                        .userId("testUser2")
+                        .favorite(2)
+                        .build());
+
+
+        //when
+        System.out.println("=================================================");
+        for (GoogleSheetDto dto : googleSheetDtoList) {
+            FavoriteEntity favoriteEntity = favoriteRepository.findById(dto.getUserId())
+                    .orElseGet(() -> favoriteRepository.saveAndFlush(FavoriteEntity.builder()
+                            .userId(dto.getUserId())
+                            .nickName(dto.getNickName())
+                            .favorite(0)
+                            .build()));
+
+            if (!favoriteEntity.getFavorite().equals(dto.getFavorite())) {
+                favoriteEntity.setNickName(dto.getNickName());
+                favoriteEntity.setFavorite(dto.getFavorite());
+                favoriteEntity.getFavoriteHistoryEntityList().add(FavoriteHistoryEntity.builder()
+                        .favoriteEntity(favoriteEntity)
+                        .history("데이터 동기화")
+                        .favorite(dto.getFavorite())
+                        .build());
+            }
+        }
+
+
+        //then
+        System.out.println(favoriteRepository.findById("testUser1"));
+        System.out.println(favoriteRepository.findById("testUser2"));
+
     }
 }

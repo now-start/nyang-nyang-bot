@@ -1,171 +1,213 @@
 package org.nowstart.nyangnyangbot.controller;
 
-import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(AuthorizationController.class)
 class AuthorizationControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private ChzzkProperty chzzkProperty;
 
-    @Mock
+    @MockitoBean
     private AuthorizationService authorizationService;
 
-    @InjectMocks
-    private AuthorizationController authorizationController;
+    @Nested
+    @DisplayName("로그인 요청 시")
+    class LoginTests {
 
-    @BeforeEach
-    void setUp() {
-        given(chzzkProperty.getClientId()).willReturn("testClientId");
-        given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+        @Test
+        @DisplayName("치지직 로그인 페이지로 리다이렉트한다")
+        void redirectToChzzkLoginPage() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("testClientId");
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("https://chzzk.naver.com/account-interlock?*clientId=testClientId*"));
+
+            then(chzzkProperty).should().getClientId();
+            then(chzzkProperty).should().getRedirectUri();
+        }
+
+        @Test
+        @DisplayName("redirectUri를 URL 인코딩하여 전달한다")
+        void encodeRedirectUri() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("testClientId");
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("*redirectUri=http%3A%2F%2Flocalhost%3A8080%2Fauthorization%2Ftoken*"));
+        }
+
+        @Test
+        @DisplayName("고정된 state 값을 포함한다")
+        void includeFixedState() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("testClientId");
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("*state=zxclDasdfA25*"));
+        }
+
+        @Test
+        @DisplayName("프로퍼티에서 제공된 clientId를 사용한다")
+        void useClientIdFromProperty() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("customClientId123");
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("*clientId=customClientId123*"));
+        }
+
+        @Test
+        @DisplayName("올바른 URL 구조를 생성한다")
+        void buildCorrectUrl() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("testClientId");
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("https://chzzk.naver.com/account-interlock?*clientId=*&redirectUri=*&state=*"));
+        }
+
+        @Test
+        @DisplayName("다른 redirectUri를 인코딩하여 전달한다")
+        void encodeCustomRedirectUri() throws Exception {
+            // given
+            given(chzzkProperty.getClientId()).willReturn("testClientId");
+            given(chzzkProperty.getRedirectUri()).willReturn("https://example.com:9000");
+
+            // when & then
+            mockMvc.perform(get("/authorization/login"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("*https%3A%2F%2Fexample.com%3A9000%2Fauthorization%2Ftoken*"));
+        }
     }
 
-    @Test
-    void login_ShouldRedirectToChzzkLoginPage() {
-        // when
-        String result = authorizationController.login();
+    @Nested
+    @DisplayName("토큰 요청 시")
+    class TokenTests {
 
-        // then
-        then(result).startsWith("redirect:https://chzzk.naver.com/account-interlock?");
-        then(result).contains("clientId=testClientId");
-        then(result).contains("state=zxclDasdfA25");
-        BDDMockito.then(chzzkProperty).should().getClientId();
-        BDDMockito.then(chzzkProperty).should().getRedirectUri();
-    }
+        @Test
+        @DisplayName("AuthorizationService를 호출하고 즐겨찾기 목록으로 리다이렉트한다")
+        void callServiceAndRedirect() throws Exception {
+            // given
+            String code = "authCode123";
+            String state = "zxclDasdfA25";
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
 
-    @Test
-    void login_ShouldEncodeRedirectUri() {
-        // when
-        String result = authorizationController.login();
+            // when & then
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", code)
+                            .param("state", state))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("http://localhost:8080/favorite/list"));
 
-        // then
-        then(result).contains("redirectUri=http%3A%2F%2Flocalhost%3A8080%2Fauthorization%2Ftoken");
-    }
+            then(authorizationService).should().getAccessToken(code, state);
+            then(chzzkProperty).should().getRedirectUri();
+        }
 
-    @Test
-    void login_ShouldIncludeFixedState() {
-        // when
-        String result = authorizationController.login();
+        @Test
+        @DisplayName("다른 code 값들을 처리한다")
+        void handleDifferentCodes() throws Exception {
+            // given
+            String code1 = "code123";
+            String code2 = "differentCode456";
+            String state = "state123";
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
 
-        // then
-        then(result).contains("state=zxclDasdfA25");
-    }
+            // when & then
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", code1)
+                            .param("state", state))
+                    .andExpect(status().is3xxRedirection());
 
-    @Test
-    void token_ShouldCallAuthorizationServiceAndRedirect() {
-        // given
-        String code = "authCode123";
-        String state = "zxclDasdfA25";
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", code2)
+                            .param("state", state))
+                    .andExpect(status().is3xxRedirection());
 
-        // when
-        String result = authorizationController.token(code, state);
+            then(authorizationService).should().getAccessToken(code1, state);
+            then(authorizationService).should().getAccessToken(code2, state);
+        }
 
-        // then
-        BDDMockito.then(authorizationService).should().getAccessToken(code, state);
-        then(result).isEqualTo("redirect:http://localhost:8080/favorite/list");
-        BDDMockito.then(chzzkProperty).should().getRedirectUri();
-    }
+        @Test
+        @DisplayName("즐겨찾기 목록 페이지로 리다이렉트한다")
+        void redirectToFavoriteList() throws Exception {
+            // given
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
 
-    @Test
-    void token_ShouldHandleDifferentCodes() {
-        // given
-        String code1 = "code123";
-        String code2 = "differentCode456";
-        String state = "state123";
+            // when & then
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", "code")
+                            .param("state", "state"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("*/favorite/list"));
+        }
 
-        // when
-        authorizationController.token(code1, state);
-        authorizationController.token(code2, state);
+        @Test
+        @DisplayName("빈 code와 state를 처리한다")
+        void handleEmptyCodeAndState() throws Exception {
+            // given
+            String emptyCode = "";
+            String emptyState = "";
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
 
-        // then
-        BDDMockito.then(authorizationService).should().getAccessToken(code1, state);
-        BDDMockito.then(authorizationService).should().getAccessToken(code2, state);
-    }
+            // when & then
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", emptyCode)
+                            .param("state", emptyState))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("http://localhost:8080/favorite/list"));
 
-    @Test
-    void token_ShouldRedirectToFavoriteList() {
-        // given
-        String code = "code";
-        String state = "state";
+            then(authorizationService).should().getAccessToken(emptyCode, emptyState);
+        }
 
-        // when
-        String result = authorizationController.token(code, state);
+        @Test
+        @DisplayName("파라미터를 서비스에 전달한다")
+        void passParametersToService() throws Exception {
+            // given
+            String code = "testCode123";
+            String state = "testState456";
+            given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
 
-        // then
-        then(result).contains("/favorite/list");
-    }
+            // when & then
+            mockMvc.perform(get("/authorization/token")
+                            .param("code", code)
+                            .param("state", state))
+                    .andExpect(status().is3xxRedirection());
 
-    @Test
-    void login_ShouldUseClientIdFromProperty() {
-        // given
-        given(chzzkProperty.getClientId()).willReturn("customClientId123");
-
-        // when
-        String result = authorizationController.login();
-
-        // then
-        then(result).contains("clientId=customClientId123");
-    }
-
-    @Test
-    void login_ShouldBuildCorrectUrl() {
-        // when
-        String result = authorizationController.login();
-
-        // then
-        then(result).matches("redirect:https://chzzk\\.naver\\.com/account-interlock\\?.*");
-        then(result).contains("clientId=");
-        then(result).contains("redirectUri=");
-        then(result).contains("state=");
-    }
-
-    @Test
-    void token_ShouldHandleEmptyCodeAndState() {
-        // given
-        String emptyCode = "";
-        String emptyState = "";
-
-        // when
-        String result = authorizationController.token(emptyCode, emptyState);
-
-        // then
-        BDDMockito.then(authorizationService).should().getAccessToken(emptyCode, emptyState);
-        then(result).isEqualTo("redirect:http://localhost:8080/favorite/list");
-    }
-
-    @Test
-    void token_ShouldPassParametersToService() {
-        // given
-        String code = "testCode123";
-        String state = "testState456";
-
-        // when
-        authorizationController.token(code, state);
-
-        // then
-        BDDMockito.then(authorizationService).should().getAccessToken(code, state);
-    }
-
-    @Test
-    void login_ShouldUseRedirectUriFromProperty() {
-        // given
-        given(chzzkProperty.getRedirectUri()).willReturn("https://example.com:9000");
-
-        // when
-        String result = authorizationController.login();
-
-        // then
-        then(result).contains("https%3A%2F%2Fexample.com%3A9000%2Fauthorization%2Ftoken");
+            then(authorizationService).should().getAccessToken(code, state);
+        }
     }
 }
