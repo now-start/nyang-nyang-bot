@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class GoogleSheetServiceTest {
     @BeforeEach
     void setUp() {
         existingFavorite =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).favoriteHistoryEntityList(new ArrayList<>()).build();
+                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
     }
 
     @Test
@@ -51,7 +50,7 @@ class GoogleSheetServiceTest {
 
         // This is a simplified test to verify the repository interaction logic
         FavoriteEntity newEntity =
-                FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).favoriteHistoryEntityList(new ArrayList<>()).build();
+                FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).build();
 
         given(favoriteRepository.findById("newUser")).willReturn(Optional.empty());
         given(favoriteRepository.save(any(FavoriteEntity.class))).willReturn(newEntity);
@@ -76,7 +75,7 @@ class GoogleSheetServiceTest {
     void updateFavorite_ShouldNotUpdate_WhenFavoriteUnchanged() {
         // This test shows the intention but requires refactoring for proper testing
         FavoriteEntity unchangedEntity =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).favoriteHistoryEntityList(new ArrayList<>()).build();
+                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
 
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(unchangedEntity));
 
@@ -88,7 +87,7 @@ class GoogleSheetServiceTest {
     void updateFavorite_ShouldAddHistory_WhenFavoriteChanges() {
         // This test demonstrates the expected history addition behavior
         FavoriteEntity entityWithHistory =
-                FavoriteEntity.builder().userId("user123").nickName("유저").favorite(100).favoriteHistoryEntityList(new ArrayList<>()).build();
+                FavoriteEntity.builder().userId("user123").nickName("유저").favorite(100).build();
 
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(entityWithHistory));
 
@@ -129,7 +128,7 @@ class GoogleSheetServiceTest {
     void updateFavorite_ShouldUpdateNickname_WhenChanged() {
         // Test verifies that nickname is updated when it changes
         FavoriteEntity entity =
-                FavoriteEntity.builder().userId("user123").nickName("이전닉네임").favorite(100).favoriteHistoryEntityList(new ArrayList<>()).build();
+                FavoriteEntity.builder().userId("user123").nickName("이전닉네임").favorite(100).build();
 
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(entity));
 
