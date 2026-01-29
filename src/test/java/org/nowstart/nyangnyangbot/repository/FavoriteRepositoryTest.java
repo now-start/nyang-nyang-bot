@@ -6,7 +6,7 @@ import org.nowstart.nyangnyangbot.data.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 @DataJpaTest
 class FavoriteRepositoryTest {
