@@ -29,7 +29,7 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2025.0.0")
+    set('springCloudVersion', "2025.0.1")
     set('springDocVersion', "2.8.15")
 }
 
