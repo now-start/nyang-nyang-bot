@@ -25,6 +25,7 @@ public class ChatService implements Emitter.Listener {
     @SneakyThrows
     public void call(Object... objects) {
         ChatDto chatDto = objectMapper.readValue((String) objects[0], ChatDto.class);
+        log.info("[ChzzkChat] socket received: {}", chatDto);
         Command command = commands.get(CommandType.findNameByCommand(chatDto.getContent().split(" ")[0]));
         if (command != null) {
             command.run(chatDto);

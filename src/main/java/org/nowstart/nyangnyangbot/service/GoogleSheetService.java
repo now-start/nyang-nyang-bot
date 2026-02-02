@@ -69,11 +69,15 @@ public class GoogleSheetService {
             .execute().getValues();
 
         return values.stream()
-            .map(value -> GoogleSheetDto.builder()
-                .nickName((String) value.get(0))
-                .userId((String) value.get(1))
-                .favorite(Integer.parseInt((String) value.get(value.size() - 1)))
-                .build())
+                .filter(value -> value.size() >= 3)
+                .map(value -> {
+                    log.info("[GoogleSheet] Row value: {}", value);
+                    return GoogleSheetDto.builder()
+                            .nickName((String) value.get(0))
+                            .userId((String) value.get(1))
+                            .favorite(Integer.parseInt(value.getLast().toString()))
+                            .build();
+                })
             .filter(dto -> !StringUtils.isBlank(dto.getUserId()))
             .collect(Collectors.toMap(
                 GoogleSheetDto::getUserId,
