@@ -5,7 +5,7 @@
     toast.style.display = 'block';
     setTimeout(function () {
         toast.style.display = 'none';
-    }, 2000);
+    }, 5000);
 }
 
 let adjustmentsCache = null;
@@ -38,14 +38,6 @@ function openModal(row) {
         calcAfter.textContent = currentFavorite;
     }
     selectedIds.clear();
-    const adjustmentLabel = document.getElementById('adjustment-label');
-    const adjustmentAmount = document.getElementById('adjustment-amount');
-    if (adjustmentLabel) {
-        adjustmentLabel.value = '';
-    }
-    if (adjustmentAmount) {
-        adjustmentAmount.value = '';
-    }
     const manualAmount = document.getElementById('manual-amount');
     const manualHistory = document.getElementById('manual-history');
     if (manualAmount) {
@@ -76,7 +68,7 @@ function openAttendanceModal() {
             startAttendancePolling();
         })
         .catch(function () {
-            showToast('출석체크 수집 시작에 실패했습니다.');
+            showToast('권한이 없습니다.');
         });
 }
 
@@ -121,6 +113,9 @@ function fetchAttendanceUsers() {
         })
         .then(function (data) {
             attendanceUsers = Array.isArray(data) ? data : [];
+            attendanceSelectedIds = new Set(attendanceUsers.map(function (user) {
+                return user.userId;
+            }));
             const availableIds = new Set(attendanceUsers.map(function (user) {
                 return user.userId;
             }));
@@ -334,46 +329,6 @@ function updateCalc() {
     document.getElementById('calc-after').textContent = currentFavorite + delta;
 }
 
-function createAdjustment() {
-    const label = document.getElementById('adjustment-label').value.trim();
-    const amountRaw = document.getElementById('adjustment-amount').value.trim();
-    const amount = parseInt(amountRaw, 10);
-
-    if (!label || Number.isNaN(amount)) {
-        showToast('항목명과 수치를 입력해 주세요.');
-        return;
-    }
-
-    fetch('/favorite/adjustments', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({label: label, amount: amount})
-    })
-        .then(function (response) {
-            if (response.status === 403) {
-                throw new Error('FORBIDDEN');
-            }
-            if (!response.ok) {
-                throw new Error('Failed to create adjustment');
-            }
-            return response.json();
-        })
-        .then(function () {
-            showToast('항목이 추가되었습니다.');
-            document.getElementById('adjustment-label').value = '';
-            document.getElementById('adjustment-amount').value = '';
-            adjustmentsCache = null;
-            loadAdjustments();
-        })
-        .catch(function (error) {
-            if (error.message === 'FORBIDDEN') {
-                showToast('권한이 없습니다.');
-                return;
-            }
-            showToast('항목 추가에 실패했습니다.');
-        });
-}
-
 function applyAdjustments() {
     if (!currentUserId) {
         return;
@@ -453,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .fail(function () {
-                    showToast('동기화 중 오류가 발생했습니다.');
+                    showToast('권한이 없습니다.');
                 })
                 .always(function () {
                     if (spinner) {
@@ -540,12 +495,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target.id === 'karma-apply') {
             event.preventDefault();
             applyAdjustments();
-            return;
-        }
-
-        if (event.target.id === 'adjustment-add') {
-            event.preventDefault();
-            createAdjustment();
             return;
         }
 

@@ -69,6 +69,20 @@
     --history-columns: var(--board-columns);
     --history-gap: 6px;
     --history-padding: 12px;
+    --space-4: 4px;
+    --space-6: 6px;
+    --space-8: 8px;
+    --space-10: 10px;
+    --space-12: 12px;
+    --space-14: 14px;
+    --space-16: 16px;
+    --space-18: 18px;
+    --space-20: 20px;
+    --space-24: 24px;
+    --space-28: 28px;
+    --space-32: 32px;
+    --space-48: 48px;
+    --space-64: 64px;
     --bg-gradient: radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.18), transparent 55%),
     radial-gradient(circle at 20% 80%, rgba(var(--warn-rgb), 0.15), transparent 45%),
     linear-gradient(160deg, #0a0d12 10%, #131a22 55%, #0b0f14 100%);
@@ -90,7 +104,7 @@ body {
     color: var(--text-100);
     font-size: var(--fs-15);
     background: var(--bg-gradient);
-    padding: 32px 16px 64px;
+    padding: var(--space-32) var(--space-16) var(--space-64);
 }
 
 body::before {
@@ -111,14 +125,14 @@ body::before {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--space-24);
 }
 
 .hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
-    padding: 28px;
+    gap: var(--space-16);
+    padding: var(--space-16);
     border-radius: 24px;
     background: var(--glass);
     border: 1px solid var(--stroke);
@@ -129,18 +143,18 @@ body::before {
 .hero-title {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-8);
 }
 
 .hero-actions {
     display: flex;
     justify-content: flex-end;
-    align-items: stretch;
+    align-items: center;
 }
 
 .btn-attendance {
     min-width: 0;
-    padding: 0 28px;
+    padding: var(--space-12) var(--space-18);
     font-size: var(--fs-16);
     height: 100%;
 }
@@ -148,8 +162,8 @@ body::before {
 .badge {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-12);
     border-radius: 999px;
     background: var(--accent-surface);
     color: var(--accent-500);
@@ -175,28 +189,28 @@ body::before {
 .controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .search-form {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    padding: 16px;
+    gap: var(--space-12);
+    padding: var(--space-16);
     border-radius: 18px;
     background: var(--glass);
     border: 1px solid var(--stroke);
 }
 
 .search-actions {
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .search-field {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-16);
     border-radius: 12px;
     background: var(--surface-2);
     border: 1px solid var(--border-soft);
@@ -205,6 +219,15 @@ body::before {
 .search-field span {
     white-space: nowrap;
     flex-shrink: 0;
+    font-size: var(--fs-12);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-100);
+    background: var(--accent-surface);
+    border: 1px solid var(--accent-border);
+    padding: var(--space-6) var(--space-10);
+    border-radius: 999px;
 }
 
 .search-field input {
@@ -217,12 +240,24 @@ body::before {
     font-size: var(--fs-15);
 }
 
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
 .btn-strong {
     border: none;
     background: var(--accent-gradient);
     color: var(--text-on-accent);
     font-weight: 700;
-    padding: 12px 18px;
+    padding: var(--space-12) var(--space-18);
     border-radius: 12px;
     transition: transform var(--interaction-duration) var(--interaction-ease),
     box-shadow var(--interaction-duration) var(--interaction-ease);
@@ -248,7 +283,7 @@ body::before {
     background: transparent;
     color: var(--text-200);
     font-weight: 600;
-    padding: 12px 18px;
+    padding: var(--space-12) var(--space-18);
     border-radius: 12px;
     min-width: 140px;
     transition: transform var(--interaction-duration) var(--interaction-ease),
@@ -271,7 +306,7 @@ body::before {
 .board {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .board-head {
@@ -316,7 +351,7 @@ body::before {
 .nickname-line {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .karma-button {
@@ -325,7 +360,7 @@ body::before {
     color: var(--warn-500);
     font-weight: 700;
     font-size: var(--fs-12);
-    padding: 6px 10px;
+    padding: var(--space-6) var(--space-10);
     border-radius: 999px;
     white-space: nowrap;
     transition: transform var(--interaction-duration) var(--interaction-ease),
@@ -368,8 +403,8 @@ body::before {
 .score {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-12);
     border-radius: 999px;
     background: var(--accent-surface);
     color: var(--accent-500);
@@ -378,7 +413,7 @@ body::before {
 }
 
 .history-details {
-    margin-top: 10px;
+    margin-top: var(--space-10);
     display: none;
     grid-column: 1 / -1;
     padding: var(--history-padding) var(--board-padding-x);
@@ -405,7 +440,7 @@ body::before {
     background: var(--surface-3);
     border: 1px solid var(--border-soft);
     border-radius: 10px;
-    padding: 6px 10px;
+    padding: var(--space-6) var(--space-10);
     font-size: var(--fs-13);
     color: var(--text-200);
     display: flex;
@@ -472,14 +507,14 @@ body::before {
 }
 
 .history-row.head {
-    padding-bottom: 6px;
-    margin-bottom: 4px;
+    padding-bottom: var(--space-6);
+    margin-bottom: var(--space-4);
     border-bottom: 1px solid var(--border-soft);
 }
 
 .pagination {
-    margin-top: 12px;
-    gap: 6px;
+    margin-top: var(--space-12);
+    gap: var(--space-6);
 }
 
 .page-item .page-link {
@@ -487,7 +522,7 @@ body::before {
     border: 1px solid var(--border-muted);
     color: var(--text-200);
     border-radius: 10px;
-    padding: 8px 12px;
+    padding: var(--space-8) var(--space-12);
     min-width: 40px;
     text-align: center;
     white-space: nowrap;
@@ -521,14 +556,18 @@ body::before {
 }
 
 .toast {
-    min-width: 200px;
-    background-color: var(--toast-bg);
+    min-width: 320px;
+    background: linear-gradient(140deg, rgba(32, 215, 192, 0.18), rgba(13, 19, 26, 0.95));
     color: var(--text-100);
     text-align: center;
     border-radius: 14px;
-    padding: 12px 16px;
-    border: 1px solid var(--border-muted);
-    box-shadow: var(--shadow-toast);
+    padding: var(--space-20) var(--space-24);
+    border: 1px solid rgba(32, 215, 192, 0.75);
+    box-shadow: 0 28px 70px rgba(4, 7, 11, 0.7), 0 0 0 2px rgba(32, 215, 192, 0.2);
+    font-weight: 700;
+    font-size: var(--fs-18);
+    letter-spacing: 0.03em;
+    z-index: 13000;
 }
 
 #loading-spinner {
@@ -558,8 +597,8 @@ body::before {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
-    padding: 16px;
+    z-index: 12000;
+    padding: var(--space-16);
 }
 
 .modal-panel {
@@ -568,16 +607,16 @@ body::before {
     border-radius: 20px;
     border: 1px solid var(--border-muted);
     box-shadow: var(--shadow-modal);
-    padding: 22px;
+    padding: var(--space-24);
     display: grid;
-    gap: 16px;
+    gap: var(--space-16);
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .modal-title {
@@ -590,7 +629,7 @@ body::before {
     border: 1px solid var(--border-stronger);
     color: var(--text-200);
     border-radius: 10px;
-    padding: 6px 10px;
+    padding: var(--space-6) var(--space-10);
     transition: transform var(--interaction-duration) var(--interaction-ease),
     border-color var(--interaction-duration) var(--interaction-ease),
     box-shadow var(--interaction-duration) var(--interaction-ease);
@@ -605,24 +644,24 @@ body::before {
 .adjustment-create {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 120px auto;
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .adjustment-create input {
     background: var(--surface-2);
     border: 1px solid var(--border-muted);
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: var(--space-8) var(--space-10);
     color: var(--text-100);
 }
 
 .adjustment-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--space-10);
     max-height: 280px;
     overflow: auto;
-    padding-right: 4px;
+    padding: var(--space-8) var(--space-6) var(--space-8) 0;
 }
 
 .adjustment-button {
@@ -630,11 +669,11 @@ body::before {
     background: var(--surface-3);
     color: var(--text-200);
     font-weight: 600;
-    padding: 8px 12px;
+    padding: var(--space-8) var(--space-12);
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-6);
     white-space: nowrap;
     transition: transform var(--interaction-duration) var(--interaction-ease),
     border-color var(--interaction-duration) var(--interaction-ease),
@@ -674,15 +713,15 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--space-12);
     flex-wrap: wrap;
 }
 
 .attendance-field {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: var(--space-10);
+    padding: var(--space-10) var(--space-12);
     border-radius: 12px;
     background: var(--surface-2);
     border: 1px solid var(--border-soft);
@@ -699,7 +738,7 @@ body::before {
 
 .attendance-status {
     display: flex;
-    gap: 12px;
+    gap: var(--space-12);
     color: var(--text-200);
     font-weight: 600;
 }
@@ -707,10 +746,12 @@ body::before {
 .attendance-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--space-10);
     max-height: 300px;
     overflow: auto;
-    padding-right: 4px;
+    padding-right: var(--space-4);
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
 }
 
 .attendance-user-button {
@@ -718,7 +759,7 @@ body::before {
     background: var(--surface-3);
     color: var(--text-200);
     font-weight: 600;
-    padding: 8px 14px;
+    padding: var(--space-8) var(--space-16);
     border-radius: 999px;
     white-space: nowrap;
     transition: transform var(--interaction-duration) var(--interaction-ease),
@@ -747,24 +788,24 @@ body::before {
 .manual-adjustment {
     display: grid;
     grid-template-columns: 120px minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--space-10);
 }
 
 .manual-adjustment input {
     background: var(--surface-2);
     border: 1px solid var(--border-muted);
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: var(--space-8) var(--space-10);
     color: var(--text-100);
 }
 
 .calc-panel {
     display: grid;
-    gap: 8px;
+    gap: var(--space-8);
     background: var(--accent-surface-soft);
     border: 1px solid var(--accent-border-faint);
     border-radius: 14px;
-    padding: 12px;
+    padding: var(--space-12);
 }
 
 .calc-row {
@@ -781,7 +822,7 @@ body::before {
 .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: var(--space-10);
     flex-wrap: wrap;
 }
 
@@ -809,7 +850,7 @@ body::before {
 
 @media (max-width: 720px) {
     body {
-        padding: 20px 12px 48px;
+        padding: var(--space-20) var(--space-12) var(--space-48);
     }
 
     .hero-actions {
@@ -822,7 +863,7 @@ body::before {
 
     .btn-attendance {
         height: auto;
-        padding: 14px 18px;
+        padding: var(--space-14) var(--space-18);
     }
 
     .search-form {
@@ -835,7 +876,7 @@ body::before {
 
     .board-row {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: var(--space-10);
     }
 
     .history-details {
@@ -844,7 +885,7 @@ body::before {
 
     .history-row {
         grid-template-columns: minmax(0, 1fr);
-        gap: 6px;
+        gap: var(--space-6);
     }
 
     .history-cell.spacer {
