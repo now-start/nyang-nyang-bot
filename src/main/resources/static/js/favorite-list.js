@@ -8,6 +8,13 @@
     }, 5000);
 }
 
+function buildUrl(path) {
+    const base = window.baseUrl || '/';
+    const baseNormalized = base.endsWith('/') ? base : base + '/';
+    const pathNormalized = path.startsWith('/') ? path.slice(1) : path;
+    return baseNormalized + pathNormalized;
+}
+
 let adjustmentsCache = null;
 let selectedIds = new Set();
 let currentUserId = null;
@@ -92,7 +99,7 @@ function stopAttendancePolling() {
 }
 
 function startAttendanceCapture() {
-    return fetch('/attendance/start', {method: 'POST'}).then(function (response) {
+    return fetch(buildUrl('/attendance/start'), {method: 'POST'}).then(function (response) {
         if (!response.ok) {
             throw new Error('Failed to start attendance');
         }
@@ -100,11 +107,11 @@ function startAttendanceCapture() {
 }
 
 function stopAttendanceCapture() {
-    return fetch('/attendance/stop', {method: 'POST'});
+    return fetch(buildUrl('/attendance/stop'), {method: 'POST'});
 }
 
 function fetchAttendanceUsers() {
-    return fetch('/attendance/users')
+    return fetch(buildUrl('/attendance/users'))
         .then(function (response) {
             if (!response.ok) {
                 throw new Error('Failed to load attendance users');
@@ -201,7 +208,7 @@ function applyAttendance() {
         return;
     }
 
-    fetch('/attendance/apply', {
+    fetch(buildUrl('/attendance/apply'), {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -242,7 +249,7 @@ function loadAdjustments() {
         return Promise.resolve();
     }
 
-    return fetch('/favorite/adjustments')
+    return fetch(buildUrl('/favorite/adjustments'))
         .then(function (response) {
             if (!response.ok) {
                 throw new Error('Failed to load adjustments');
@@ -342,7 +349,7 @@ function applyAdjustments() {
         return;
     }
 
-    fetch('/favorite/adjustments/apply', {
+    fetch(buildUrl('/favorite/adjustments/apply'), {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -396,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 spinner.style.display = 'flex';
             }
 
-            $.get('/google/sync')
+            $.get(buildUrl('/google/sync'))
                 .done(function (response) {
                     if (response === 'SUCCESS') {
                         showToast('데이터 동기화 완료!');
