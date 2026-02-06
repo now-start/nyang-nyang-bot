@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <title>호감도</title>
+    <meta content="website" property="og:type" th:content="'website'">
+    <meta content="치즈냥" property="og:site_name" th:content="'치즈냥'">
+    <meta content="호감도" property="og:title" th:content="'호감도'">
+    <meta content="최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요." property="og:description"
+          th:content="'최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.'">
+    <meta content="" property="og:url" th:content="${#httpServletRequest.requestURL}">
+    <meta content="/assets/index.png" property="og:image" th:content="@{/assets/index.png}">
+    <meta content="summary" name="twitter:card" th:content="'summary'">
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
