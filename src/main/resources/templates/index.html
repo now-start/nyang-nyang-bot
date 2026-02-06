@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <title>호감도 목록</title>
+    <title>호감도</title>
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet">
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/favorite-list.css" rel="stylesheet">
+    <link href="https://nng-phinf.pstatic.net/MjAyNDAzMDlfMjQg/MDAxNzA5OTI3ODk5MTk4.-R_7VTIWynEx4CSWpUvSgqWIGlylkkv-hv8JsHugcvQg.d3Vl9GN584w3__Lxbaq5zWYBBhugPJ-CIZHl6KoZ1-8g.PNG/%ED%95%98%ED%8A%B8%EC%86%90_%EC%95%8C%ED%8A%B8%EB%B8%8C%EC%9D%B4.png?type=f120_120_na"
+          rel="icon">
 </head>
 <body>
 <div class="page">
     <header class="hero">
         <div class="hero-title">
-            <span class="badge">CHZZK VOTE</span>
-            <h1>호감도 목록</h1>
+            <span class="badge">치즈냥</span>
+            <h1>호감도</h1>
             <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn-ghost btn-attendance" id="attendance-button" type="button">출석체크</button>
         </div>
     </header>
 
@@ -160,6 +165,30 @@
         <div class="modal-actions">
             <button class="btn-ghost" id="karma-clear" type="button">선택 초기화</button>
             <button class="btn-strong" id="karma-apply" type="button">수정 적용</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="attendance-modal">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div class="modal-title">출석체크</div>
+            <button class="modal-close" id="attendance-close" type="button">닫기</button>
+        </div>
+        <div class="attendance-meta">
+            <div class="attendance-field">
+                <span>호감도 증가</span>
+                <input id="attendance-amount" min="1" type="number" value="1">
+            </div>
+            <div class="attendance-status">
+                <span id="attendance-count">0명 선택</span>
+                <span id="attendance-total">0명 현재</span>
+            </div>
+        </div>
+        <div class="attendance-list" id="attendance-list"></div>
+        <div class="modal-actions">
+            <button class="btn-ghost" id="attendance-cancel" type="button">닫기</button>
+            <button class="btn-strong" id="attendance-apply" type="button">확인</button>
         </div>
     </div>
 </div>

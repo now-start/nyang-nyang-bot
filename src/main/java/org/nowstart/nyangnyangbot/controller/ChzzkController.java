@@ -13,6 +13,7 @@ import org.nowstart.nyangnyangbot.data.type.EventType;
 import org.nowstart.nyangnyangbot.service.ChatService;
 import org.nowstart.nyangnyangbot.service.SystemService;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chzzk")
+@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Chzzk Chat", description = "치지직 채팅 소켓 연결 관리 API")
 public class ChzzkController {
 

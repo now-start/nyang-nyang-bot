@@ -12,6 +12,9 @@ let adjustmentsCache = null;
 let selectedIds = new Set();
 let currentUserId = null;
 let currentFavorite = 0;
+let attendanceUsers = [];
+let attendanceSelectedIds = new Set();
+let attendancePollingId = null;
 
 function openModal(row) {
     currentUserId = row.getAttribute('data-user-id');
@@ -58,6 +61,184 @@ function openModal(row) {
 
 function closeModal() {
     document.getElementById('karma-modal').style.display = 'none';
+}
+
+function openAttendanceModal() {
+    attendanceSelectedIds.clear();
+    const amountInput = document.getElementById('attendance-amount');
+    if (amountInput) {
+        amountInput.value = '1';
+    }
+    document.getElementById('attendance-modal').style.display = 'flex';
+    startAttendanceCapture()
+        .then(function () {
+            fetchAttendanceUsers();
+            startAttendancePolling();
+        })
+        .catch(function () {
+            showToast('출석체크 수집 시작에 실패했습니다.');
+        });
+}
+
+function closeAttendanceModal() {
+    document.getElementById('attendance-modal').style.display = 'none';
+    attendanceSelectedIds.clear();
+    stopAttendancePolling();
+    stopAttendanceCapture();
+}
+
+function startAttendancePolling() {
+    stopAttendancePolling();
+    attendancePollingId = setInterval(fetchAttendanceUsers, 5000);
+}
+
+function stopAttendancePolling() {
+    if (attendancePollingId) {
+        clearInterval(attendancePollingId);
+        attendancePollingId = null;
+    }
+}
+
+function startAttendanceCapture() {
+    return fetch('/attendance/start', {method: 'POST'}).then(function (response) {
+        if (!response.ok) {
+            throw new Error('Failed to start attendance');
+        }
+    });
+}
+
+function stopAttendanceCapture() {
+    return fetch('/attendance/stop', {method: 'POST'});
+}
+
+function fetchAttendanceUsers() {
+    return fetch('/attendance/users')
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Failed to load attendance users');
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            attendanceUsers = Array.isArray(data) ? data : [];
+            const availableIds = new Set(attendanceUsers.map(function (user) {
+                return user.userId;
+            }));
+            attendanceSelectedIds.forEach(function (userId) {
+                if (!availableIds.has(userId)) {
+                    attendanceSelectedIds.delete(userId);
+                }
+            });
+            renderAttendanceUsers();
+        })
+        .catch(function () {
+            showToast('현재 채팅 사용자 목록을 불러오지 못했습니다.');
+        });
+}
+
+function renderAttendanceUsers() {
+    const list = document.getElementById('attendance-list');
+    if (!list) {
+        return;
+    }
+    list.innerHTML = '';
+    if (!attendanceUsers || attendanceUsers.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'attendance-empty';
+        empty.textContent = '현재 채팅 참여자가 없습니다.';
+        list.appendChild(empty);
+        updateAttendanceStatus();
+        return;
+    }
+    attendanceUsers.forEach(function (user) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'attendance-user-button';
+        if (attendanceSelectedIds.has(user.userId)) {
+            button.classList.add('is-selected');
+        }
+        button.textContent = user.nickName || user.userId;
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            toggleAttendanceSelection(user.userId, button);
+        });
+        list.appendChild(button);
+    });
+    updateAttendanceStatus();
+}
+
+function toggleAttendanceSelection(userId, button) {
+    if (attendanceSelectedIds.has(userId)) {
+        attendanceSelectedIds.delete(userId);
+        button.classList.remove('is-selected');
+    } else {
+        attendanceSelectedIds.add(userId);
+        button.classList.add('is-selected');
+    }
+    updateAttendanceStatus();
+}
+
+function updateAttendanceStatus() {
+    const countEl = document.getElementById('attendance-count');
+    const totalEl = document.getElementById('attendance-total');
+    if (countEl) {
+        countEl.textContent = attendanceSelectedIds.size + '명 선택';
+    }
+    if (totalEl) {
+        totalEl.textContent = (attendanceUsers ? attendanceUsers.length : 0) + '명 현재';
+    }
+}
+
+function applyAttendance() {
+    const amountInput = document.getElementById('attendance-amount');
+    const rawAmount = amountInput ? amountInput.value.trim() : '1';
+    const amount = parseInt(rawAmount, 10);
+    if (Number.isNaN(amount) || amount <= 0) {
+        showToast('1 이상의 값을 입력해 주세요.');
+        return;
+    }
+
+    const selectedUsers = attendanceUsers.filter(function (user) {
+        return attendanceSelectedIds.has(user.userId);
+    });
+    if (selectedUsers.length === 0) {
+        showToast('출석체크 대상을 선택해 주세요.');
+        return;
+    }
+
+    fetch('/attendance/apply', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            amount: amount,
+            users: selectedUsers.map(function (user) {
+                return {userId: user.userId, nickName: user.nickName};
+            })
+        })
+    })
+        .then(function (response) {
+            if (response.status === 403) {
+                throw new Error('FORBIDDEN');
+            }
+            if (!response.ok) {
+                throw new Error('Failed to apply attendance');
+            }
+            return response.json();
+        })
+        .then(function () {
+            showToast('출석체크 완료');
+            closeAttendanceModal();
+            setTimeout(function () {
+                window.location.reload();
+            }, 400);
+        })
+        .catch(function (error) {
+            if (error.message === 'FORBIDDEN') {
+                showToast('권한이 없습니다.');
+                return;
+            }
+            showToast('출석체크에 실패했습니다.');
+        });
 }
 
 function loadAdjustments() {
@@ -278,6 +459,14 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('Element with ID "sync-button" not found.');
     }
 
+    const attendanceButton = document.getElementById('attendance-button');
+    if (attendanceButton) {
+        attendanceButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            openAttendanceModal();
+        });
+    }
+
     document.querySelectorAll('.board-row').forEach(function (row) {
         row.addEventListener('click', function (event) {
             if (event.target.closest('.karma-button')) {
@@ -309,6 +498,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target.id === 'karma-close') {
             event.preventDefault();
             closeModal();
+            return;
+        }
+
+        if (event.target.id === 'attendance-close' || event.target.id === 'attendance-cancel') {
+            event.preventDefault();
+            closeAttendanceModal();
+            return;
+        }
+
+        if (event.target.id === 'attendance-apply') {
+            event.preventDefault();
+            applyAttendance();
             return;
         }
 
@@ -344,6 +545,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (event.target.id === 'karma-modal') {
             closeModal();
+            return;
+        }
+
+        if (event.target.id === 'attendance-modal') {
+            closeAttendanceModal();
         }
     });
 
