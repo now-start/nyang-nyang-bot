@@ -2,54 +2,294 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
   <title>호감도 목록</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <style>
+      :root {
+          --bg-900: #0b0f14;
+          --bg-800: #131a22;
+          --bg-700: #1a2430;
+          --text-100: #eef3f7;
+          --text-200: #c8d2dc;
+          --muted-300: #8ea0b3;
+          --accent-500: #20d7c0;
+          --accent-600: #14b39f;
+          --warn-500: #ffb85c;
+          --glass: rgba(19, 26, 34, 0.7);
+          --stroke: rgba(255, 255, 255, 0.08);
+      }
+
+      * {
+          box-sizing: border-box;
+      }
+
     body {
-      padding-top: 56px;
+        min-height: 100vh;
+        font-family: "Archivo", "Space Grotesk", sans-serif;
+        color: var(--text-100);
+        background: radial-gradient(circle at top left, rgba(32, 215, 192, 0.18), transparent 55%),
+        radial-gradient(circle at 20% 80%, rgba(255, 184, 92, 0.15), transparent 45%),
+        linear-gradient(160deg, #0a0d12 10%, #131a22 55%, #0b0f14 100%);
+        padding: 32px 16px 64px;
     }
 
-    .container {
-      margin-top: 20px;
+      body::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+          background-size: 24px 24px;
+          opacity: 0.2;
+          pointer-events: none;
+          z-index: 0;
+      }
+
+      .page {
+          position: relative;
+          z-index: 1;
+          max-width: 1080px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+      }
+
+      .hero {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 28px;
+          border-radius: 24px;
+          background: var(--glass);
+          border: 1px solid var(--stroke);
+          box-shadow: 0 30px 60px rgba(4, 7, 11, 0.45);
+          animation: rise 0.6s ease-out both;
+      }
+
+      .hero-title {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+      }
+
+      .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(32, 215, 192, 0.15);
+          color: var(--accent-500);
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 12px;
+          width: fit-content;
+      }
+
+      .hero h1 {
+          font-family: "Space Grotesk", "Archivo", sans-serif;
+          font-size: clamp(28px, 4vw, 40px);
+          margin: 0;
+      }
+
+      .hero p {
+          margin: 0;
+          color: var(--text-200);
+          font-size: 15px;
+      }
+
+      .controls {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+      }
+
+      .search-form {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 12px;
+          padding: 16px;
+          border-radius: 18px;
+          background: var(--glass);
+          border: 1px solid var(--stroke);
+      }
+
+      .search-field {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: rgba(9, 12, 18, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .search-field input {
+          border: none;
+          background: transparent;
+          color: var(--text-100);
+          width: 100%;
+          outline: none;
+          font-size: 15px;
+      }
+
+      .btn-strong {
+          border: none;
+          background: linear-gradient(140deg, var(--accent-500), var(--accent-600));
+          color: #04151a;
+          font-weight: 700;
+          padding: 12px 18px;
+          border-radius: 12px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          min-width: 120px;
+      }
+
+      .btn-strong:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 24px rgba(32, 215, 192, 0.35);
+      }
+
+      .btn-ghost {
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: transparent;
+          color: var(--text-200);
+          font-weight: 600;
+          padding: 12px 18px;
+          border-radius: 12px;
+          min-width: 140px;
+      }
+
+      .board {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+      }
+
+      .board-head {
+          display: grid;
+          grid-template-columns: 1.2fr 0.6fr 1.4fr 0.5fr;
+          gap: 12px;
+          padding: 12px 18px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-size: 12px;
+          color: var(--muted-300);
+      }
+
+      .board-row {
+          display: grid;
+          grid-template-columns: 1.2fr 0.6fr 1.4fr 0.5fr;
+          gap: 12px;
+          padding: 18px;
+          border-radius: 18px;
+          background: rgba(10, 15, 21, 0.75);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          align-items: center;
+          transition: transform 0.2s ease, border-color 0.2s ease;
+          animation: fadeIn 0.5s ease both;
+          animation-delay: calc(var(--i) * 0.03s);
     }
 
-    .form-inline .form-control {
-      width: auto;
+      .board-row > div {
+          min-width: 0;
     }
 
-    .table-hover tbody tr:hover {
-      background-color: #f5f5f5;
+      .board-row:hover {
+          transform: translateY(-2px);
+          border-color: rgba(32, 215, 192, 0.4);
     }
 
-    .thead-spring-admin {
-      background-color: #00b19d; /* Spring Boot Admin color */
-      color: #fff; /* White text for contrast */
+      .nickname {
+          font-weight: 700;
+          color: var(--text-100);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
     }
 
-    .btn-custom {
-      width: 100px; /* Set a fixed width for buttons */
-      height: 38px; /* Set a fixed height for buttons */
+      .score {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: rgba(32, 215, 192, 0.15);
+          color: var(--accent-500);
+          font-weight: 700;
+          width: fit-content;
+    }
+
+      .history-details {
+          margin-top: 10px;
+          display: none;
+      }
+
+      .history-details ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: grid;
+          gap: 6px;
+      }
+
+      .history-details li {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+          padding: 6px 10px;
+          font-size: 13px;
+          color: var(--text-200);
+      }
+
+      .pagination {
+          margin-top: 12px;
+          gap: 6px;
+      }
+
+      .page-item .page-link {
+          background: rgba(10, 15, 21, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: var(--text-200);
+          border-radius: 10px;
+          padding: 8px 12px;
+          min-width: 40px;
       text-align: center;
+          white-space: nowrap;
+      }
+
+      .page-item.active .page-link {
+          background: rgba(32, 215, 192, 0.2);
+          border-color: rgba(32, 215, 192, 0.5);
+          color: var(--text-100);
+      }
+
+      .page-item.disabled .page-link {
+          color: var(--muted-300);
+          background: rgba(10, 15, 21, 0.35);
+          border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .alert {
+          background: rgba(255, 90, 90, 0.12);
+          border: 1px solid rgba(255, 90, 90, 0.3);
+          color: #ffb3b3;
     }
 
     .toast {
       min-width: 200px;
-      background-color: #333;
-      color: #fff;
+        background-color: #0d131a;
+        color: var(--text-100);
       text-align: center;
-      border-radius: 5px;
-      padding: 10px;
-      opacity: 0.9;
-    }
-
-    /* Right align table cells */
-    .table td, .table th {
-      text-align: right;
-    }
-
-    /* Right align list items in history-details */
-    .history-details ul {
-      text-align: right;
+        border-radius: 14px;
+        padding: 12px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 18px 40px rgba(4, 7, 11, 0.4);
     }
 
     #loading-spinner {
@@ -58,106 +298,174 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
-      z-index: 9999; /* Ensure it is on top of other elements */
-      display: none; /* Hide initially */
+        background-color: rgba(6, 10, 15, 0.65);
+        z-index: 9999;
+        display: none;
       justify-content: center;
       align-items: center;
+        backdrop-filter: blur(4px);
+    }
+
+      .spinner-border {
+          width: 3rem;
+          height: 3rem;
+          color: var(--accent-500);
+      }
+
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+              transform: translateY(10px);
+          }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      @keyframes rise {
+          from {
+              opacity: 0;
+              transform: translateY(14px);
+          }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      @media (max-width: 720px) {
+          body {
+              padding: 20px 12px 48px;
+          }
+
+          .search-form {
+              grid-template-columns: 1fr;
+          }
+
+          .board-head {
+              display: none;
+          }
+
+          .board-row {
+              grid-template-columns: 1fr;
+              gap: 10px;
+          }
+
+          .btn-strong,
+          .btn-ghost {
+              width: 100%;
+          }
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1 class="mb-4">호감도 목록</h1>
-  <!-- alert -->
-  <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-  <!-- toast -->
-  <div id="toast" class="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
-    <div class="toast-body">
-      <span id="toast-text"></span>
+<div class="page">
+    <header class="hero">
+        <div class="hero-title">
+            <span class="badge">CHZZK VOTE</span>
+            <h1>호감도 목록</h1>
+            <p>최근 변경 내역을 한눈에 확인하고, 필요한 항목만 빠르게 찾아보세요.</p>
     </div>
-  </div>
-  <!-- Loading Spinner -->
-  <div id="loading-spinner">
-    <div class="spinner-border text-primary" role="status">
-      <span class="sr-only">Loading...</span>
-    </div>
-  </div>
+    </header>
 
-  <!-- ID 검색 폼 -->
-  <form th:action="@{/favorite/list}" method="get" class="form-inline mb-3 w-100">
-    <div class="form-group mr-2">
-      <label for="nickName" class="sr-only">Search by ID:</label>
-      <input type="text" id="nickName" name="nickName" th:value="${nickName}" class="form-control" placeholder="Enter nickName">
-    </div>
-    <button type="submit" class="btn btn-primary btn-custom">Search</button>
-    <!-- 데이터 동기화 버튼 -->
-    <div class="ml-auto">
-      <button id="sync-button" style="width: 125px" type="button" class="btn btn-primary btn-custom">데이터 동기화</button>
-    </div>
-  </form>
+    <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-  <!-- 데이터 리스트 -->
-  <table class="table table-striped table-hover table-bordered">
-    <thead class="thead-spring-admin">
-    <tr>
-      <th style="width: 20%;">닉네임</th>
-      <th style="width: 10%;">호감도</th>
-      <th style="">사유</th>
-      <th style="width: 7%;">날짜</th>
-    </tr>
-    </thead>
-    <tbody>
-    <div th:if="${favoriteList != null}">
-      <tr th:each="favoriteEntity, iterStat : ${favoriteList.content}">
-        <td>
-          <span th:text="${favoriteEntity.nickName}" class="nickname" th:data-user-id="${favoriteEntity.userId}">테스트</span>
-        </td>
-        <td>
-          <span th:text="${favoriteEntity.favorite}">12200</span>
-          <!-- 히스토리 항목이 여기에 추가됩니다 -->
-          <div class="history-details" style="display: none;">
-            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}" th:if="${iterStat.index} < 5">
-              <li class="list-group-item" th:text="${favoriteHistoryEntityList.favorite}">12200</li>
+    <section class="controls">
+        <form class="search-form" method="get" th:action="@{/favorite/list}">
+            <div class="search-field">
+                <span>닉네임</span>
+                <input id="nickName" name="nickName" placeholder="Enter nickName" th:value="${nickName}" type="text">
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <button class="btn-strong" type="submit">Search</button>
+                <button class="btn-ghost" id="sync-button" type="button">데이터 동기화</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="board">
+        <div class="board-head">
+            <div>닉네임</div>
+            <div>호감도</div>
+            <div>사유</div>
+            <div>일자</div>
+    </div>
+        <div class="board-body" th:if="${favoriteList != null}">
+            <div class="board-row" th:each="favoriteEntity, iterStat : ${favoriteList.content}"
+                 th:style="'--i:' + ${iterStat.index}">
+                <div>
+                    <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
+                         th:text="${favoriteEntity.nickName}">테스트
+                    </div>
+                </div>
+                <div>
+                    <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
+                    <div class="history-details">
+                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
+                            th:if="${iterStat.index} < 5">
+                            <li th:text="${favoriteHistoryEntityList.favorite}">12200</li>
             </ul>
           </div>
-        </td>
-        <td>
-          <span th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
-          <!-- 히스토리 항목이 여기에 추가됩니다 -->
-          <div class="history-details" style="display: none;">
-            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}" th:if="${iterStat.index} < 5">
-              <li class="list-group-item" th:text="${favoriteHistoryEntityList.history}">최초 입력</li>
+                </div>
+                <div>
+          <span th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}"
+                th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
+                    <span th:if="${#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">-</span>
+                    <div class="history-details">
+                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
+                            th:if="${iterStat.index} < 5">
+                            <li th:text="${favoriteHistoryEntityList.history}">최초 입력</li>
             </ul>
           </div>
-        </td>
-        <td>
-          <span th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
-          <!-- 히스토리 항목이 여기에 추가됩니다 -->
-          <div class="history-details" style="display: none;">
-            <ul class="list-group" th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList} " th:if="${iterStat.index} < 5">
-              <li class="list-group-item" th:text="${#temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d')}">10/08</li>
+                </div>
+                <div>
+          <span th:if="${favoriteEntity.modifyDate != null}"
+                th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
+                    <span th:if="${favoriteEntity.modifyDate == null}">-</span>
+                    <div class="history-details">
+                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
+                            th:if="${iterStat.index} < 5">
+                            <li th:text="${#temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d')}">10/08</li>
             </ul>
           </div>
-        </td>
-      </tr>
+                </div>
+            </div>
     </div>
-    </tbody>
-  </table>
+    </section>
 
-  <!-- 페이지 네비게이션 -->
   <div th:if="${favoriteList != null}">
-    <nav th:if="${favoriteList.totalPages > 1}">
+      <nav th:if="${favoriteList.totalPages > 1}"
+           th:with="blockSize=${10}, start=${(favoriteList.number / blockSize) * blockSize},
+                  end=${T(java.lang.Math).min(favoriteList.totalPages - 1, start + blockSize - 1)}">
       <ul class="pagination justify-content-center">
         <li th:classappend="${favoriteList.number == 0} ? 'disabled'" class="page-item">
           <a th:href="@{/favorite/list(page=${favoriteList.number - 1})}" class="page-link" aria-label="Previous">
             <span aria-hidden="true">&laquo;</span>
           </a>
         </li>
-        <li th:each="i : ${#numbers.sequence(0, favoriteList.totalPages - 1)}" th:classappend="${i == favoriteList.number} ? 'active'" class="page-item">
+
+          <li class="page-item" th:if="${start > 0}">
+              <a class="page-link" th:href="@{/favorite/list(page=0)}">1</a>
+          </li>
+          <li class="page-item disabled" th:if="${start > 1}">
+              <span class="page-link">...</span>
+          </li>
+
+          <li class="page-item"
+              th:classappend="${i == favoriteList.number} ? 'active'" th:each="i : ${#numbers.sequence(start, end)}">
           <a th:href="@{/favorite/list(page=${i})}" class="page-link" th:text="${i + 1}"></a>
         </li>
-        <li th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'" class="page-item">
+
+          <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
+              <span class="page-link">...</span>
+          </li>
+          <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
+              <a class="page-link" th:href="@{/favorite/list(page=${favoriteList.totalPages - 1})}"
+                 th:text="${favoriteList.totalPages}"></a>
+          </li>
+
+          <li class="page-item" th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
           <a th:href="@{/favorite/list(page=${favoriteList.number + 1})}" class="page-link" aria-label="Next">
             <span aria-hidden="true">&raquo;</span>
           </a>
@@ -165,6 +473,18 @@
       </ul>
     </nav>
   </div>
+</div>
+
+<div class="toast" id="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
+    <div class="toast-body">
+        <span id="toast-text"></span>
+    </div>
+</div>
+
+<div id="loading-spinner">
+    <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -195,23 +515,23 @@
 
         let spinner = document.getElementById('loading-spinner');
         if (spinner) {
-          spinner.style.display = 'flex'; // Show the spinner
+            spinner.style.display = 'flex';
         }
 
         $.get('/google/sync')
         .done(function (response) {
           if (response === 'SUCCESS') {
-            showToast("데이터 동기화 완료!");
+              showToast('데이터 동기화 완료!');
           } else {
-            showToast("데이터 동기화 실패!");
+              showToast('데이터 동기화 실패!');
           }
         })
         .fail(function () {
-          showToast("Error during synchronization");
+            showToast('Error during synchronization');
         })
         .always(function () {
           if (spinner) {
-            spinner.style.display = 'none'; // Hide the spinner
+              spinner.style.display = 'none';
           }
         });
       });
@@ -220,7 +540,7 @@
     }
   });
 
-  document.querySelectorAll('tbody tr').forEach(function (row) {
+  document.querySelectorAll('.board-row').forEach(function (row) {
     row.addEventListener('click', function () {
       let historyDetails = this.querySelectorAll('.history-details');
       for (let i = 0; i < historyDetails.length; i++) {

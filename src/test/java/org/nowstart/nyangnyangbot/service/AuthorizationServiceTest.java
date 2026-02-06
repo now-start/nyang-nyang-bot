@@ -85,12 +85,14 @@ class AuthorizationServiceTest {
 
         given(chzzkOpenApi.getAccessToken(any(AuthorizationRequestDto.class))).willReturn(authResponse);
         given(chzzkOpenApi.getUser("Bearer newAccessToken")).willReturn(userResponse);
+        given(authorizationRepository.findById("channel123")).willReturn(Optional.empty());
         given(authorizationRepository.save(any(AuthorizationEntity.class))).willReturn(authorizationEntity);
 
         // when
-        authorizationService.getAccessToken(code, state);
+        AuthorizationEntity result = authorizationService.getAccessToken(code, state);
 
         // then
+        then(result).isNotNull();
         ArgumentCaptor<AuthorizationRequestDto> requestCaptor = ArgumentCaptor.forClass(AuthorizationRequestDto.class);
         BDDMockito.then(chzzkOpenApi).should().getAccessToken(requestCaptor.capture());
 
@@ -176,11 +178,14 @@ class AuthorizationServiceTest {
 
         given(chzzkOpenApi.getAccessToken(any())).willReturn(authResponse);
         given(chzzkOpenApi.getUser(anyString())).willReturn(userResponse);
+        given(authorizationRepository.findById(anyString())).willReturn(Optional.empty());
+        given(authorizationRepository.save(any(AuthorizationEntity.class))).willReturn(authorizationEntity);
 
         // when
-        authorizationService.getAccessToken(code, state);
+        AuthorizationEntity result = authorizationService.getAccessToken(code, state);
 
         // then
+        then(result).isNotNull();
         BDDMockito.then(chzzkOpenApi).should().getAccessToken(any(AuthorizationRequestDto.class));
         BDDMockito.then(chzzkOpenApi).should().getUser("Bearer newAccessToken");
         BDDMockito.then(authorizationRepository).should().save(any(AuthorizationEntity.class));

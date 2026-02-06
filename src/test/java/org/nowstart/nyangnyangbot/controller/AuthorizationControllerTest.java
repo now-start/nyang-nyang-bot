@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.controller;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,7 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
+import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,6 +30,9 @@ class AuthorizationControllerTest {
 
     @MockitoBean
     private AuthorizationService authorizationService;
+
+    @MockitoBean
+    private AuthorizationRepository authorizationRepository;
 
     @Nested
     @DisplayName("로그인 요청 시")
@@ -125,6 +131,9 @@ class AuthorizationControllerTest {
             String code = "authCode123";
             String state = "zxclDasdfA25";
             given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+            given(authorizationService.getAccessToken(code, state)).willReturn(
+                    AuthorizationEntity.builder().channelId("channel123").admin(true).build()
+            );
 
             // when & then
             mockMvc.perform(get("/authorization/token")
@@ -145,6 +154,9 @@ class AuthorizationControllerTest {
             String code2 = "differentCode456";
             String state = "state123";
             given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+            given(authorizationService.getAccessToken(anyString(), anyString())).willReturn(
+                    AuthorizationEntity.builder().channelId("channel123").admin(true).build()
+            );
 
             // when & then
             mockMvc.perform(get("/authorization/token")
@@ -166,6 +178,9 @@ class AuthorizationControllerTest {
         void redirectToFavoriteList() throws Exception {
             // given
             given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+            given(authorizationService.getAccessToken(anyString(), anyString())).willReturn(
+                    AuthorizationEntity.builder().channelId("channel123").admin(true).build()
+            );
 
             // when & then
             mockMvc.perform(get("/authorization/token")
@@ -182,6 +197,9 @@ class AuthorizationControllerTest {
             String emptyCode = "";
             String emptyState = "";
             given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+            given(authorizationService.getAccessToken(emptyCode, emptyState)).willReturn(
+                    AuthorizationEntity.builder().channelId("channel123").admin(true).build()
+            );
 
             // when & then
             mockMvc.perform(get("/authorization/token")
@@ -200,6 +218,9 @@ class AuthorizationControllerTest {
             String code = "testCode123";
             String state = "testState456";
             given(chzzkProperty.getRedirectUri()).willReturn("http://localhost:8080");
+            given(authorizationService.getAccessToken(code, state)).willReturn(
+                    AuthorizationEntity.builder().channelId("channel123").admin(true).build()
+            );
 
             // when & then
             mockMvc.perform(get("/authorization/token")
