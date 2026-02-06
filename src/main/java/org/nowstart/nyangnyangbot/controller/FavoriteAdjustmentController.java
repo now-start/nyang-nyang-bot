@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/favorite/adjustments")
+@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Favorite Adjustment API", description = "호감도 조정 항목 API")
 public class FavoriteAdjustmentController {
 
@@ -32,7 +33,6 @@ public class FavoriteAdjustmentController {
     }
 
     @Operation(summary = "호감도 조정 항목 추가")
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<FavoriteAdjustmentResponse> createAdjustment(
             @RequestBody FavoriteAdjustmentCreateRequest request
@@ -41,7 +41,6 @@ public class FavoriteAdjustmentController {
     }
 
     @Operation(summary = "호감도 조정 적용")
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/apply")
     public ResponseEntity<FavoriteAdjustmentApplyResponse> applyAdjustments(
             @RequestBody FavoriteAdjustmentApplyRequest request
