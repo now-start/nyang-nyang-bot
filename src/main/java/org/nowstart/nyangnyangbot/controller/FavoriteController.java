@@ -41,6 +41,6 @@ public class FavoriteController {
         Page<FavoriteEntity> favoriteList =
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
-        return new ModelAndView("FavoriteList", "favoriteList", favoriteList);
+        return new ModelAndView("index", "favoriteList", favoriteList);
     }
 }

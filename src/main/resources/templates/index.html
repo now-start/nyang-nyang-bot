@@ -1,14 +1,14 @@
 ﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
-  <title>호감도 목록</title>
+    <title>호감도 목록</title>
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/favorite-list.css" rel="stylesheet">
 </head>
 <body>
@@ -18,7 +18,7 @@
             <span class="badge">CHZZK VOTE</span>
             <h1>호감도 목록</h1>
             <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
-    </div>
+        </div>
     </header>
 
     <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
@@ -42,12 +42,12 @@
             <div>호감도</div>
             <div>사유</div>
             <div>일자</div>
-    </div>
+        </div>
         <div class="board-body" th:if="${favoriteList != null}">
-            <div class="board-row" th:each="favoriteEntity, iterStat : ${favoriteList.content}"
-                 th:data-favorite="${favoriteEntity.favorite}"
+            <div class="board-row" th:data-favorite="${favoriteEntity.favorite}"
                  th:data-nick-name="${favoriteEntity.nickName}"
                  th:data-user-id="${favoriteEntity.userId}"
+                 th:each="favoriteEntity, iterStat : ${favoriteList.content}"
                  th:style="'--i:' + ${iterStat.index}">
                 <div>
                     <div class="nickname-line">
@@ -63,22 +63,19 @@
                         <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
                             th:if="${iterStat.index} < 5">
                             <li th:text="${favoriteHistoryEntityList.favorite}">12200</li>
-            </ul>
-          </div>
+                        </ul>
+                    </div>
                 </div>
                 <div>
           <span th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}"
-                th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}"
-                th:title="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
+                th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
                     <span th:if="${#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">-</span>
                     <div class="history-details">
                         <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
                             th:if="${iterStat.index} < 5">
-                            <li th:text="${favoriteHistoryEntityList.history}"
-                                th:title="${favoriteHistoryEntityList.history}">최초 입력
-                            </li>
-            </ul>
-          </div>
+                            <li th:text="${favoriteHistoryEntityList.history}">최초 입력</li>
+                        </ul>
+                    </div>
                 </div>
                 <div>
           <span th:if="${favoriteEntity.modifyDate != null}"
@@ -88,52 +85,55 @@
                         <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
                             th:if="${iterStat.index} < 5">
                             <li th:text="${#temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d')}">10/08</li>
-            </ul>
-          </div>
+                        </ul>
+                    </div>
                 </div>
             </div>
-    </div>
+        </div>
     </section>
 
-  <div th:if="${favoriteList != null}">
-      <nav th:if="${favoriteList.totalPages > 1}"
-           th:with="blockSize=${10}, start=${(favoriteList.number / blockSize) * blockSize},
+    <div th:if="${favoriteList != null}">
+        <nav th:if="${favoriteList.totalPages > 1}"
+             th:with="blockSize=${10}, start=${(favoriteList.number / blockSize) * blockSize},
                   end=${T(java.lang.Math).min(favoriteList.totalPages - 1, start + blockSize - 1)}">
-      <ul class="pagination justify-content-center">
-        <li th:classappend="${favoriteList.number == 0} ? 'disabled'" class="page-item">
-          <a th:href="@{/favorite/list(page=${favoriteList.number - 1})}" class="page-link" aria-label="Previous">
-            <span aria-hidden="true">&laquo;</span>
-          </a>
-        </li>
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${favoriteList.number == 0} ? 'disabled'">
+                    <a aria-label="Previous" class="page-link"
+                       th:href="@{/favorite/list(page=${favoriteList.number - 1})}">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
 
-          <li class="page-item" th:if="${start > 0}">
-              <a class="page-link" th:href="@{/favorite/list(page=0)}">1</a>
-          </li>
-          <li class="page-item disabled" th:if="${start > 1}">
-              <span class="page-link">...</span>
-          </li>
+                <li class="page-item" th:if="${start > 0}">
+                    <a class="page-link" th:href="@{/favorite/list(page=0)}">1</a>
+                </li>
+                <li class="page-item disabled" th:if="${start > 1}">
+                    <span class="page-link">...</span>
+                </li>
 
-          <li class="page-item"
-              th:classappend="${i == favoriteList.number} ? 'active'" th:each="i : ${#numbers.sequence(start, end)}">
-          <a th:href="@{/favorite/list(page=${i})}" class="page-link" th:text="${i + 1}"></a>
-        </li>
+                <li class="page-item"
+                    th:classappend="${i == favoriteList.number} ? 'active'"
+                    th:each="i : ${#numbers.sequence(start, end)}">
+                    <a class="page-link" th:href="@{/favorite/list(page=${i})}" th:text="${i + 1}"></a>
+                </li>
 
-          <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
-              <span class="page-link">...</span>
-          </li>
-          <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
-              <a class="page-link" th:href="@{/favorite/list(page=${favoriteList.totalPages - 1})}"
-                 th:text="${favoriteList.totalPages}"></a>
-          </li>
+                <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
+                    <span class="page-link">...</span>
+                </li>
+                <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
+                    <a class="page-link" th:href="@{/favorite/list(page=${favoriteList.totalPages - 1})}"
+                       th:text="${favoriteList.totalPages}"></a>
+                </li>
 
-          <li class="page-item" th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
-          <a th:href="@{/favorite/list(page=${favoriteList.number + 1})}" class="page-link" aria-label="Next">
-            <span aria-hidden="true">&raquo;</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </div>
+                <li class="page-item"
+                    th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
+                    <a aria-label="Next" class="page-link" th:href="@{/favorite/list(page=${favoriteList.number + 1})}">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </div>
 
 <div class="toast" id="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
@@ -151,19 +151,9 @@
         <div>
             <div class="badge" id="karma-target"></div>
         </div>
-        <div class="adjustment-create">
-            <input id="adjustment-label" placeholder="항목명" type="text">
-            <input id="adjustment-amount" placeholder="수치" type="number">
-            <button class="btn-ghost" id="adjustment-add" type="button">항목 추가</button>
-        </div>
         <div class="adjustment-list" id="adjustment-list"></div>
-        <div class="manual-adjustment">
-            <input id="manual-amount" placeholder="수동 수치" type="number">
-            <input id="manual-history" placeholder="수동 사유" type="text">
-        </div>
         <div class="calc-panel">
             <div class="calc-row"><span>현재 호감도</span><strong id="calc-current">0</strong></div>
-            <div class="calc-row"><span>수동 수치</span><strong id="calc-manual">0</strong></div>
             <div class="calc-row"><span>선택 합계</span><strong id="calc-delta">0</strong></div>
             <div class="calc-row"><span>적용 후</span><strong id="calc-after">0</strong></div>
         </div>
