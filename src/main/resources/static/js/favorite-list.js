@@ -270,13 +270,19 @@ function renderAdjustments(items) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'adjustment-button';
+        const amountValue = typeof item.amount === 'number' ? item.amount : parseInt(item.amount, 10) || 0;
+        if (amountValue < 0) {
+            button.classList.add('is-negative');
+        } else if (amountValue > 0) {
+            button.classList.add('is-positive');
+        }
         if (selectedIds.has(item.id)) {
             button.classList.add('is-selected');
         }
         const label = document.createElement('span');
         label.textContent = item.label;
         const amount = document.createElement('strong');
-        amount.textContent = '+' + item.amount;
+        amount.textContent = amountValue > 0 ? '+' + amountValue : String(amountValue);
         button.appendChild(label);
         button.appendChild(amount);
         button.addEventListener('click', function (event) {

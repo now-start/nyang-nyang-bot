@@ -22,7 +22,7 @@
             <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
         </div>
         <div class="hero-actions">
-            <button class="btn-ghost btn-attendance" id="attendance-button" type="button">출석체크</button>
+            <button class="btn-ghost btn-attendance btn-auth" id="attendance-button" type="button">출석체크</button>
         </div>
     </header>
 
@@ -34,9 +34,9 @@
                 <span>닉네임</span>
                 <input id="nickName" name="nickName" placeholder="Enter nickName" th:value="${nickName}" type="text">
             </div>
-            <div class="d-flex flex-column flex-sm-row gap-2">
+            <div class="d-flex flex-column flex-sm-row gap-2 search-actions">
                 <button class="btn-strong" type="submit">Search</button>
-                <button class="btn-ghost" id="sync-button" type="button">데이터 동기화</button>
+                <button class="btn-ghost btn-auth" id="sync-button" type="button">데이터 동기화</button>
             </div>
         </form>
     </section>
@@ -48,7 +48,7 @@
             <div>사유</div>
             <div>일자</div>
         </div>
-        <div class="board-body" th:if="${favoriteList != null}">
+        <div class="board-body" th:if="${favoriteList != null}" th:with="historyLimit=10">
             <div class="board-row" th:data-favorite="${favoriteEntity.favorite}"
                  th:data-nick-name="${favoriteEntity.nickName}"
                  th:data-user-id="${favoriteEntity.userId}"
@@ -59,38 +59,40 @@
                         <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
                              th:text="${favoriteEntity.nickName}">테스트
                         </div>
-                        <button class="karma-button" type="button">업보</button>
+                        <button class="karma-button btn-auth" type="button">업보</button>
                     </div>
                 </div>
                 <div>
                     <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
-                    <div class="history-details">
-                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
-                            th:if="${iterStat.index} < 5">
-                            <li th:text="${favoriteHistoryEntityList.favorite}">12200</li>
-                        </ul>
-                    </div>
                 </div>
                 <div>
           <span th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}"
                 th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
                     <span th:if="${#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">-</span>
-                    <div class="history-details">
-                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
-                            th:if="${iterStat.index} < 5">
-                            <li th:text="${favoriteHistoryEntityList.history}">최초 입력</li>
-                        </ul>
-                    </div>
                 </div>
                 <div>
           <span th:if="${favoriteEntity.modifyDate != null}"
                 th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
                     <span th:if="${favoriteEntity.modifyDate == null}">-</span>
-                    <div class="history-details">
-                        <ul th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
-                            th:if="${iterStat.index} < 5">
-                            <li th:text="${#temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d')}">10/08</li>
-                        </ul>
+                </div>
+                <div class="history-details">
+                    <div class="history-grid"
+                         th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">
+                        <div class="history-row"
+                             th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
+                             th:if="${iterStat.index < historyLimit}">
+                            <div class="history-cell spacer"></div>
+                            <div class="history-cell score"
+                                 th:text="${favoriteHistoryEntityList.favorite}">12200
+                            </div>
+                            <div class="history-cell reason"
+                                 th:text="${favoriteHistoryEntityList.history}">최초 입력
+                            </div>
+                            <div class="history-cell date"
+                                 th:text="${favoriteHistoryEntityList.modifyDate != null ? #temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d') : '-'}">
+                                10/08
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -141,63 +143,10 @@
     </div>
 </div>
 
-<div class="toast" id="toast" style="position: fixed; bottom: 20px; right: 20px; display: none;">
-    <div class="toast-body">
-        <span id="toast-text"></span>
-    </div>
-</div>
-
-<div class="modal-backdrop" id="karma-modal">
-    <div class="modal-panel">
-        <div class="modal-header">
-            <div class="modal-title">업보 적용</div>
-            <button class="modal-close" id="karma-close" type="button">닫기</button>
-        </div>
-        <div>
-            <div class="badge" id="karma-target"></div>
-        </div>
-        <div class="adjustment-list" id="adjustment-list"></div>
-        <div class="calc-panel">
-            <div class="calc-row"><span>현재 호감도</span><strong id="calc-current">0</strong></div>
-            <div class="calc-row"><span>선택 합계</span><strong id="calc-delta">0</strong></div>
-            <div class="calc-row"><span>적용 후</span><strong id="calc-after">0</strong></div>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-ghost" id="karma-clear" type="button">선택 초기화</button>
-            <button class="btn-strong" id="karma-apply" type="button">수정 적용</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-backdrop" id="attendance-modal">
-    <div class="modal-panel">
-        <div class="modal-header">
-            <div class="modal-title">출석체크</div>
-            <button class="modal-close" id="attendance-close" type="button">닫기</button>
-        </div>
-        <div class="attendance-meta">
-            <div class="attendance-field">
-                <span>호감도 증가</span>
-                <input id="attendance-amount" min="1" type="number" value="1">
-            </div>
-            <div class="attendance-status">
-                <span id="attendance-count">0명 선택</span>
-                <span id="attendance-total">0명 현재</span>
-            </div>
-        </div>
-        <div class="attendance-list" id="attendance-list"></div>
-        <div class="modal-actions">
-            <button class="btn-ghost" id="attendance-cancel" type="button">닫기</button>
-            <button class="btn-strong" id="attendance-apply" type="button">확인</button>
-        </div>
-    </div>
-</div>
-
-<div id="loading-spinner">
-    <div class="spinner-border" role="status">
-        <span class="sr-only">Loading...</span>
-    </div>
-</div>
+<div th:replace="fragments/toast :: toast"></div>
+<div th:replace="fragments/karma-modal :: karma-modal"></div>
+<div th:replace="fragments/attendance-modal :: attendance-modal"></div>
+<div th:replace="fragments/loading :: loading"></div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>

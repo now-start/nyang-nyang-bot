@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="attendance-modal">
+    <div class="modal-backdrop" id="attendance-modal">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-title">출석체크</div>
+                <button class="modal-close" id="attendance-close" type="button">닫기</button>
+            </div>
+            <div class="attendance-meta">
+                <div class="attendance-field">
+                    <span>호감도 증가</span>
+                    <input id="attendance-amount" min="1" type="number" value="1">
+                </div>
+                <div class="attendance-status">
+                    <span id="attendance-count">0명 선택</span>
+                    <span id="attendance-total">0명 현재</span>
+                </div>
+            </div>
+            <div class="attendance-list" id="attendance-list"></div>
+            <div class="modal-actions">
+                <button class="btn-ghost" id="attendance-cancel" type="button">닫기</button>
+                <button class="btn-strong btn-auth" id="attendance-apply" type="button">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

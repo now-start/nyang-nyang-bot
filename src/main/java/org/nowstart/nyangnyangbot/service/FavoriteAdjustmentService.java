@@ -131,7 +131,7 @@ public class FavoriteAdjustmentService {
     ) {
         List<String> parts = new ArrayList<>();
         for (FavoriteAdjustmentEntity entity : adjustments) {
-            parts.add(String.format(Locale.ROOT, "%s(+%d)", entity.getLabel(), entity.getAmount()));
+            parts.add(String.format(Locale.ROOT, "%s(%+d)", entity.getLabel(), entity.getAmount()));
         }
         if (manualAmount != null && manualAmount != 0) {
             String label = StringUtils.isBlank(manualHistory) ? "수동 입력" : manualHistory.trim();
