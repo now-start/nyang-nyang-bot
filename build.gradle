@@ -36,12 +36,15 @@ ext {
 dependencies {
     implementation 'io.socket:socket.io-client:1.0.1'
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20241008-2.0.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.6.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.6.0'
     // default
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-api'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'

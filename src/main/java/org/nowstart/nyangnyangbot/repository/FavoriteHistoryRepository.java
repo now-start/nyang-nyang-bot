@@ -1,5 +1,3 @@
-// FavoriteHistoryRepository.java
-
 package org.nowstart.nyangnyangbot.repository;
 
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;

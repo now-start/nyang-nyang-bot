@@ -26,7 +26,7 @@ class FavoriteRepositoryTest {
         favoriteRepository.saveAndFlush(testUser1);
 
         favoriteHistoryRepository.saveAndFlush(FavoriteHistoryEntity.builder()
-                .history("테스트")
+                .history("test-history")
                 .favoriteEntity(testUser1)
                 .favorite(1)
                 .build());
@@ -58,7 +58,7 @@ class FavoriteRepositoryTest {
                 favoriteEntity.setFavorite(dto.getFavorite());
                 favoriteEntity.getFavoriteHistoryEntityList().add(FavoriteHistoryEntity.builder()
                         .favoriteEntity(favoriteEntity)
-                        .history("데이터 동기화")
+                        .history("test-history")
                         .favorite(dto.getFavorite())
                         .build());
             }
@@ -71,3 +71,8 @@ class FavoriteRepositoryTest {
 
     }
 }
+
+
+
+
+

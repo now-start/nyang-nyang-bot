@@ -26,16 +26,24 @@ https://chzzk.nowstart.org
 
 ## Environment
 
-| key              | required |
-|------------------|----------|
-| SERVER_BASE_URL  | O        |
-| DB_URL           | O        |
-| DB_USERNAME      | O        |
-| DB_PASSWORD      | O        |
-| CHZZK_CHANNEL_ID | O        |
-| CHZZK_ID         | O        |
-| CHZZK_PASSWORD   | O        |
-| GOOGLE_PATH      |          |
+| key                       | required |
+|---------------------------|----------|
+| SERVER_BASE_URL           | O        |
+| DB_URL                    | O        |
+| DB_USERNAME               | O        |
+| DB_PASSWORD               | O        |
+| CHZZK_CHANNEL_ID          | O        |
+| CHZZK_ID                  | O        |
+| CHZZK_PASSWORD            | O        |
+| CHZZK_CLIENT_ID           | O        |
+| CHZZK_CLIENT_SECRET       | O        |
+| CHZZK_REDIRECT_URI        | O        |
+| CHZZK_SCOPE               |          |
+| CHZZK_AUTHORIZATION_URI   |          |
+| CHZZK_TOKEN_URI           |          |
+| CHZZK_USERINFO_URI        |          |
+| CHZZK_USER_NAME_ATTRIBUTE |          |
+| GOOGLE_PATH               |          |
 
 ## docker-compose
 

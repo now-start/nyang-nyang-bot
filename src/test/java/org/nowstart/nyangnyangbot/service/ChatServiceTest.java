@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.data.dto.ChatDto;
-import org.nowstart.nyangnyangbot.service.command.Command;
+import org.nowstart.nyangnyangbot.service.command.Favorite;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -23,10 +23,10 @@ class ChatServiceTest {
     private ObjectMapper objectMapper;
 
     @Mock
-    private Map<String, Command> commands;
+    private Map<String, Favorite> commands;
 
     @Mock
-    private Command mockCommand;
+    private Favorite mockCommand;
 
     @InjectMocks
     private ChatService chatService;

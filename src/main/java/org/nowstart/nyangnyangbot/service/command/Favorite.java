@@ -8,6 +8,7 @@ import org.nowstart.nyangnyangbot.data.dto.MessageRequestDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.service.Command;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -19,7 +20,6 @@ public class Favorite implements Command {
     private final ChzzkOpenApi chzzkOpenApi;
     private final FavoriteRepository favoriteRepository;
 
-    @Override
     public void run(ChatDto chatDto) {
         FavoriteEntity favoriteEntity = favoriteRepository.findById(chatDto.getSenderChannelId())
             .orElseGet(() -> {

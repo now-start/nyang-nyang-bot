@@ -42,9 +42,6 @@ class SystemServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(chzzkProperty.getClientId()).willReturn("testClientId");
-        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
-
         SystemDto.SystemData systemData = SystemDto.SystemData.builder()
                 .sessionKey("session123")
                 .eventType("chat")
@@ -104,8 +101,10 @@ class SystemServiceTest {
     @Test
     void isConnected_ShouldReturnTrue_WhenSessionExistsAndNotDisconnected() throws Exception {
         // given
-        systemService.call(jsonString);
+        given(chzzkProperty.getClientId()).willReturn("testClientId");
+        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
         given(objectMapper.readValue(jsonString, SystemDto.class)).willReturn(connectedSystemDto);
+        systemService.call(jsonString);
 
         SessionDto.SessionData.SubscribedEvents subscribedEvent = SessionDto.SessionData.SubscribedEvents.builder()
                 .eventType("chat")
@@ -139,8 +138,10 @@ class SystemServiceTest {
     @Test
     void isConnected_ShouldReturnFalse_WhenSessionIsDisconnected() throws Exception {
         // given
-        systemService.call(jsonString);
+        given(chzzkProperty.getClientId()).willReturn("testClientId");
+        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
         given(objectMapper.readValue(jsonString, SystemDto.class)).willReturn(connectedSystemDto);
+        systemService.call(jsonString);
 
         SessionDto.SessionData disconnectedSession = SessionDto.SessionData.builder()
                 .sessionKey("session123")
@@ -167,8 +168,10 @@ class SystemServiceTest {
     @Test
     void isConnected_ShouldReturnFalse_WhenSessionKeyNotFound() throws Exception {
         // given
-        systemService.call(jsonString);
+        given(chzzkProperty.getClientId()).willReturn("testClientId");
+        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
         given(objectMapper.readValue(jsonString, SystemDto.class)).willReturn(connectedSystemDto);
+        systemService.call(jsonString);
 
         SessionDto.SessionData otherSession = SessionDto.SessionData.builder()
                 .sessionKey("differentSession")
@@ -194,6 +197,8 @@ class SystemServiceTest {
     @Test
     void getSession_ShouldReturnSessionUrl() {
         // given
+        given(chzzkProperty.getClientId()).willReturn("testClientId");
+        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
         SessionDto sessionDto = SessionDto.builder()
                 .url("wss://chat.chzzk.naver.com/socket")
                 .build();
@@ -233,8 +238,10 @@ class SystemServiceTest {
     @Test
     void isConnected_ShouldHandleMultipleSessions() throws Exception {
         // given
-        systemService.call(jsonString);
+        given(chzzkProperty.getClientId()).willReturn("testClientId");
+        given(chzzkProperty.getClientSecret()).willReturn("testClientSecret");
         given(objectMapper.readValue(jsonString, SystemDto.class)).willReturn(connectedSystemDto);
+        systemService.call(jsonString);
 
         List<SessionDto.SessionData> sessions = Arrays.asList(
                 SessionDto.SessionData.builder()
@@ -267,3 +274,9 @@ class SystemServiceTest {
         then(result).isTrue();
     }
 }
+
+
+
+
+
+

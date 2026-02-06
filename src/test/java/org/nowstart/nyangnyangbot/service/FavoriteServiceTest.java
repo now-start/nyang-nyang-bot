@@ -38,17 +38,17 @@ class FavoriteServiceTest {
         favoriteEntities = Arrays.asList(
                 FavoriteEntity.builder()
                         .userId("user1")
-                        .nickName("테스트유저1")
+                        .nickName("user1")
                         .favorite(100)
                         .build(),
                 FavoriteEntity.builder()
                         .userId("user2")
-                        .nickName("테스트유저2")
+                        .nickName("user2")
                         .favorite(50)
                         .build(),
                 FavoriteEntity.builder()
                         .userId("user3")
-                        .nickName("유저3")
+                        .nickName("user3")
                         .favorite(30)
                         .build()
         );
@@ -89,7 +89,7 @@ class FavoriteServiceTest {
     @Test
     void getByNickName_ShouldReturnFilteredFavorites() {
         // given
-        String nickName = "테스트";
+        String nickName = "user";
         List<FavoriteEntity> filteredList = Arrays.asList(
                 favoriteEntities.get(0),
                 favoriteEntities.get(1)
@@ -110,7 +110,7 @@ class FavoriteServiceTest {
     @Test
     void getByNickName_ShouldReturnEmptyPage_WhenNoMatch() {
         // given
-        String nickName = "존재하지않는유저";
+        String nickName = "missing-user";
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteRepository.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
@@ -126,7 +126,7 @@ class FavoriteServiceTest {
     @Test
     void getByNickName_ShouldHandleSpecialCharacters() {
         // given
-        String nickName = "유저@#$";
+        String nickName = "user-@#$";
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteRepository.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
@@ -154,3 +154,9 @@ class FavoriteServiceTest {
         BDDMockito.then(favoriteRepository).should().findAll(largePageable);
     }
 }
+
+
+
+
+
+

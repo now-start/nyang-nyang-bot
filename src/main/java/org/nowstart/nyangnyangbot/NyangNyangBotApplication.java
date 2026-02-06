@@ -15,6 +15,19 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class NyangNyangBotApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(NyangNyangBotApplication.class, args);
+        run(args, appArgs -> SpringApplication.run(NyangNyangBotApplication.class, appArgs));
+    }
+
+    static void run(String[] args, ApplicationRunner runner) {
+        if (Boolean.getBoolean("app.skipRun")) {
+            return;
+        }
+
+        runner.run(args);
+    }
+
+    @FunctionalInterface
+    interface ApplicationRunner {
+        void run(String... args);
     }
 }

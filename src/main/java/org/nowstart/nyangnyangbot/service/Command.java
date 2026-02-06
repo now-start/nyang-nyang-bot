@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.service.command;
+package org.nowstart.nyangnyangbot.service;
 
 import org.nowstart.nyangnyangbot.data.dto.ChatDto;
 

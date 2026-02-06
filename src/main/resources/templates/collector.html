@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Chat Collector</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1f2b;
+            --text: #e9eef5;
+            --muted: #9aa7b8;
+            --accent: #4dd4ac;
+            --accent-2: #f2b447;
+            --danger: #ff6b6b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 20% 10%, #1c2435 0%, #0f1115 55%);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .card {
+            width: min(560px, 100%);
+            background: linear-gradient(180deg, #1c2331 0%, #151a25 100%);
+            border: 1px solid #2b3242;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 22px;
+            letter-spacing: 0.5px;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.6);
+        }
+
+        .dot.active {
+            background: var(--accent);
+            box-shadow: 0 0 10px rgba(77, 212, 172, 0.6);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .list {
+            background: var(--panel);
+            border: 1px solid #2b3242;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 18px;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        .list-title {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 6px;
+        }
+
+        .list li {
+            padding: 8px 10px;
+            background: #121723;
+            border: 1px solid #222a3a;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+
+        .stat {
+            background: var(--panel);
+            border: 1px solid #2b3242;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .stat label {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .stat span {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 0;
+            color: #0b0f14;
+            background: var(--accent);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        button.stop {
+            background: var(--accent-2);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .message {
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--muted);
+            min-height: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Chat Collector</h1>
+    <div class="meta">버튼을 누르면 채팅 수집을 시작하고, 다시 누르면 수집된 아이디만 호감도가 +1 됩니다.</div>
+    <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <div id="statusText">수집 중지됨</div>
+    </div>
+    <div class="stats">
+        <div class="stat">
+            <label>수집된 아이디</label>
+            <span id="collectedCount">0</span>
+        </div>
+        <div class="stat">
+            <label>적용된 업데이트</label>
+            <span id="updatedCount">0</span>
+        </div>
+    </div>
+    <div class="list">
+        <div class="list-title">수집된 닉네임</div>
+        <ul id="nicknameList"></ul>
+    </div>
+    <button id="toggleBtn">수집 시작</button>
+    <div class="message" id="message"></div>
+</div>
+
+<script>
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const collectedCount = document.getElementById("collectedCount");
+    const updatedCount = document.getElementById("updatedCount");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const message = document.getElementById("message");
+    const nicknameList = document.getElementById("nicknameList");
+
+    const setStatus = (active, collected, updated) => {
+        statusDot.classList.toggle("active", active);
+        statusText.textContent = active ? "수집 중" : "수집 중지됨";
+        collectedCount.textContent = collected ?? 0;
+        updatedCount.textContent = updated ?? 0;
+        toggleBtn.textContent = active ? "수집 종료" : "수집 시작";
+        toggleBtn.classList.toggle("stop", active);
+    };
+
+    const loadStatus = async () => {
+        const res = await fetch("/collector/status", {credentials: "same-origin"});
+        if (!res.ok) {
+            message.textContent = "상태를 불러오지 못했습니다.";
+            return;
+        }
+        const data = await res.json();
+        setStatus(data.active, data.collectedCount, data.updatedCount);
+    };
+
+    const loadNicknames = async () => {
+        const res = await fetch("/collector/nicknames", {credentials: "same-origin"});
+        if (!res.ok) {
+            return;
+        }
+        const data = await res.json();
+        nicknameList.innerHTML = "";
+        if (!data.length) {
+            const item = document.createElement("li");
+            item.textContent = "아직 없음";
+            nicknameList.appendChild(item);
+            return;
+        }
+        data.forEach((name) => {
+            const item = document.createElement("li");
+            item.textContent = name;
+            nicknameList.appendChild(item);
+        });
+    };
+
+    toggleBtn.addEventListener("click", async () => {
+        toggleBtn.disabled = true;
+        message.textContent = "처리 중...";
+        const res = await fetch("/collector/toggle", {
+            method: "POST",
+            credentials: "same-origin"
+        });
+        if (!res.ok) {
+            message.textContent = "요청이 실패했습니다.";
+            toggleBtn.disabled = false;
+            return;
+        }
+        const data = await res.json();
+        setStatus(data.active, data.collectedCount, data.updatedCount);
+        message.textContent = data.active ? "수집을 시작했습니다." : "수집을 종료했습니다.";
+        toggleBtn.disabled = false;
+        loadNicknames();
+    });
+
+    loadStatus();
+    loadNicknames();
+    setInterval(loadNicknames, 5000);
+</script>
+</body>
+</html>
