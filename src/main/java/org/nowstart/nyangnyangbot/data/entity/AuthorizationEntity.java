@@ -24,4 +24,5 @@ public class AuthorizationEntity extends BaseEntity {
     private String tokenType;
     private Integer expiresIn;
     private String scope;
+    private boolean admin;
 }

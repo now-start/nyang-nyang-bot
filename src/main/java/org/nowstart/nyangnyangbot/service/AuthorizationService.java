@@ -42,6 +42,7 @@ public class AuthorizationService {
             .tokenType(authorizationDto.getTokenType())
             .expiresIn(authorizationDto.getExpiresIn())
             .scope(authorizationDto.getScope())
+                .admin(false)
             .build());
     }
 

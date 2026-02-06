@@ -10,12 +10,10 @@ import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Slf4j
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/authorization")
 @Tag(name = "Authorization API", description = "Chzzk 연동 로그인 및 토큰 관련 API")
 public class AuthorizationController {
 
@@ -31,7 +29,7 @@ public class AuthorizationController {
         log.info("[GET][/authorization/login]");
         return "redirect:https://chzzk.naver.com/account-interlock?"
                 + "clientId=" + chzzkProperty.getClientId()
-                + "&redirectUri=" + URLEncoder.encode(chzzkProperty.getRedirectUri() + "/authorization/token", StandardCharsets.UTF_8)
+                + "&redirectUri=" + URLEncoder.encode(chzzkProperty.getRedirectUri() + "/token", StandardCharsets.UTF_8)
                 + "&state=zxclDasdfA25";
     }
 
