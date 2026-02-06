@@ -24,7 +24,7 @@ public class AuthorizationService {
     private final ChzzkOpenApi chzzkOpenApi;
     private final AuthorizationRepository authorizationRepository;
 
-    public void getAccessToken(String code, String state) {
+    public AuthorizationEntity getAccessToken(String code, String state) {
         AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(AuthorizationRequestDto.builder()
             .grantType(GrantType.AUTHORIZATION_CODE.getData())
             .clientId(chzzkProperty.getClientId())
@@ -34,7 +34,11 @@ public class AuthorizationService {
             .build()).getContent();
         UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
 
-        authorizationRepository.save(AuthorizationEntity.builder()
+        boolean admin = authorizationRepository.findById(userDto.getChannelId())
+                .map(AuthorizationEntity::isAdmin)
+                .orElse(false);
+
+        return authorizationRepository.save(AuthorizationEntity.builder()
             .channelId(userDto.getChannelId())
             .channelName(userDto.getChannelName())
             .accessToken(authorizationDto.getAccessToken())
@@ -42,7 +46,7 @@ public class AuthorizationService {
             .tokenType(authorizationDto.getTokenType())
             .expiresIn(authorizationDto.getExpiresIn())
             .scope(authorizationDto.getScope())
-                .admin(false)
+                .admin(admin)
             .build());
     }
 
