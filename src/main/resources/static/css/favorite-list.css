@@ -61,7 +61,7 @@
     --interaction-border-accent: rgba(32, 215, 192, 0.45);
     --interaction-duration: 0.2s;
     --interaction-ease: ease;
-    --board-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+    --board-columns: minmax(0, 1.4fr) minmax(0, 0.6fr) minmax(0, 0.8fr);
     --board-gap: 12px;
     --board-padding-x: 18px;
     --board-padding-y: 18px;

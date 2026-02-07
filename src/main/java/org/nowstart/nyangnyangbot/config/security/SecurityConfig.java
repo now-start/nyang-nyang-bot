@@ -31,9 +31,8 @@ public class SecurityConfig {
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
                 .requestMatchers("/login", "/token", "/authorization/login", "/authorization/token").permitAll()
-                .requestMatchers("/google/**", "/chzzk/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
         );
         http.addFilterBefore(channelIdAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
