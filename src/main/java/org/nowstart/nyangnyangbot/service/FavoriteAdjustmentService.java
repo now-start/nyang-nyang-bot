@@ -3,19 +3,17 @@ package org.nowstart.nyangnyangbot.service;
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.data.dto.FavoriteAdjustmentApplyResponse;
-import org.nowstart.nyangnyangbot.data.dto.FavoriteAdjustmentCreateRequest;
-import org.nowstart.nyangnyangbot.data.dto.FavoriteAdjustmentResponse;
+import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteAdjustmentRepository;
+import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,33 +24,24 @@ public class FavoriteAdjustmentService {
 
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
     private final FavoriteRepository favoriteRepository;
+    private final FavoriteHistoryRepository favoriteHistoryRepository;
 
-    public List<FavoriteAdjustmentResponse> getAdjustments() {
+    public List<FavoriteAdjustmentEntity> getAdjustments() {
         return favoriteAdjustmentRepository.findAll()
                 .stream()
-                .sorted(Comparator.comparing(FavoriteAdjustmentEntity::getAmount))
-                .map(entity -> FavoriteAdjustmentResponse.builder()
-                        .id(entity.getId())
-                        .amount(entity.getAmount())
-                        .label(entity.getLabel())
-                        .build())
+                .sorted((left, right) -> Integer.compare(left.getAmount(), right.getAmount()))
                 .toList();
     }
 
-    public FavoriteAdjustmentResponse createAdjustment(FavoriteAdjustmentCreateRequest request) {
+    public FavoriteAdjustmentEntity createAdjustment(FavoriteAdjustmentDto.CreateRequest request) {
         validateCreateRequest(request);
-        FavoriteAdjustmentEntity saved = favoriteAdjustmentRepository.save(FavoriteAdjustmentEntity.builder()
-                .amount(request.getAmount())
-                .label(request.getLabel().trim())
+        return favoriteAdjustmentRepository.save(FavoriteAdjustmentEntity.builder()
+                .amount(request.amount())
+                .label(request.label().trim())
                 .build());
-        return FavoriteAdjustmentResponse.builder()
-                .id(saved.getId())
-                .amount(saved.getAmount())
-                .label(saved.getLabel())
-                .build();
     }
 
-    public FavoriteAdjustmentApplyResponse applyAdjustments(
+    public FavoriteAdjustmentDto.ApplyResponse applyAdjustments(
             String userId,
             List<Long> adjustmentIds,
             Integer manualAmount,
@@ -97,29 +86,29 @@ public class FavoriteAdjustmentService {
         favoriteEntity.setFavorite(after);
 
         String history = buildHistory(adjustments, manualAmount, manualHistory);
-        favoriteEntity.getFavoriteHistoryEntityList().add(FavoriteHistoryEntity.builder()
+        favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
                 .favoriteEntity(favoriteEntity)
-                .favorite(after)
                 .history(history)
+                .favorite(after)
                 .build());
 
-        return FavoriteAdjustmentApplyResponse.builder()
-                .userId(userId)
-                .beforeFavorite(before)
-                .delta(delta)
-                .afterFavorite(after)
-                .history(history)
-                .build();
+        return new FavoriteAdjustmentDto.ApplyResponse(
+                userId,
+                before,
+                delta,
+                after,
+                history
+        );
     }
 
-    private void validateCreateRequest(FavoriteAdjustmentCreateRequest request) {
+    private void validateCreateRequest(FavoriteAdjustmentDto.CreateRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("request is required");
         }
-        if (request.getAmount() == null) {
+        if (request.amount() == null) {
             throw new IllegalArgumentException("amount is required");
         }
-        if (StringUtils.isBlank(request.getLabel())) {
+        if (StringUtils.isBlank(request.label())) {
             throw new IllegalArgumentException("label is required");
         }
     }

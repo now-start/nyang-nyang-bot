@@ -38,8 +38,8 @@ public class AuthorizationController {
     public String login() {
         log.info("[GET][/authorization/login]");
         return "redirect:https://chzzk.naver.com/account-interlock?"
-                + "clientId=" + chzzkProperty.getClientId()
-                + "&redirectUri=" + URLEncoder.encode(chzzkProperty.getRedirectUri() + "/token", StandardCharsets.UTF_8)
+                + "clientId=" + chzzkProperty.clientId()
+                + "&redirectUri=" + URLEncoder.encode(chzzkProperty.redirectUri() + "/token", StandardCharsets.UTF_8)
                 + "&state=zxclDasdfA25";
     }
 
@@ -60,6 +60,6 @@ public class AuthorizationController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
-        return "redirect:" + chzzkProperty.getRedirectUri() + "/favorite/list";
+        return "redirect:" + chzzkProperty.redirectUri() + "/favorite/list";
     }
 }

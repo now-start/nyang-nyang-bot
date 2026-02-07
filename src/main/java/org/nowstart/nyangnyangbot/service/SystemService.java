@@ -6,7 +6,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.data.dto.SystemDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.SystemDto;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
 import org.springframework.stereotype.Service;
@@ -28,8 +28,8 @@ public class SystemService implements Emitter.Listener {
         SystemDto systemDto = objectMapper.readValue((String) objects[0], SystemDto.class);
         log.info("[SYSTEM] : {}", systemDto);
 
-        if ("connected".equalsIgnoreCase(systemDto.getType())) {
-            sessionKey = systemDto.getData().getSessionKey();
+        if ("connected".equalsIgnoreCase(systemDto.type())) {
+            sessionKey = systemDto.data().sessionKey();
             chzzkOpenApi.subscribeChatEvent(sessionKey);
         }
     }
@@ -40,14 +40,14 @@ public class SystemService implements Emitter.Listener {
         }
 
         return chzzkOpenApi
-            .getSessionList(chzzkProperty.getClientId(), chzzkProperty.getClientSecret())
-            .getContent().getData().stream()
-            .filter(sessionData -> sessionData.getSessionKey().equals(sessionKey))
-            .anyMatch(sessionData -> sessionData.getDisconnectedDate() == null);
+                .getSessionList(chzzkProperty.clientId(), chzzkProperty.clientSecret())
+                .content().data().stream()
+                .filter(sessionData -> sessionData.sessionKey().equals(sessionKey))
+                .anyMatch(sessionData -> sessionData.disconnectedDate() == null);
     }
 
     public String getSession() {
-        return chzzkOpenApi.getSession(chzzkProperty.getClientId(), chzzkProperty.getClientSecret()).getContent().getUrl();
+        return chzzkOpenApi.getSession(chzzkProperty.clientId(), chzzkProperty.clientSecret()).content().url();
     }
 
 }

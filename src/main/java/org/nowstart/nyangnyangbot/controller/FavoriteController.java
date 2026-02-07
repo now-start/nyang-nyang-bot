@@ -3,14 +3,12 @@ package org.nowstart.nyangnyangbot.controller;
 import io.micrometer.common.util.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.data.dto.FavoriteHistoryResponse;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.springframework.data.domain.Page;
@@ -69,21 +67,12 @@ public class FavoriteController {
     @GetMapping("/history")
     @ResponseBody
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.name")
-    public List<FavoriteHistoryResponse> favoriteHistory(
+    public List<FavoriteHistoryEntity> favoriteHistory(
             @RequestParam String userId,
             @RequestParam(defaultValue = "10") int limit,
             Authentication authentication
     ) {
         int safeLimit = Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d", Locale.KOREA);
-        return favoriteService.getHistory(userId, safeLimit).stream()
-                .map(history -> FavoriteHistoryResponse.builder()
-                        .favorite(history.getFavorite())
-                        .history(history.getHistory())
-                        .date(history.getModifyDate() != null
-                                ? history.getModifyDate().format(formatter)
-                                : "-")
-                        .build())
-                .toList();
+        return favoriteService.getHistory(userId, safeLimit);
     }
 }

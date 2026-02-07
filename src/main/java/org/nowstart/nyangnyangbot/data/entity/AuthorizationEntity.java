@@ -10,19 +10,26 @@ import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class AuthorizationEntity extends BaseEntity {
 
     @Id
+    @Setter
     private String channelId;
+    @Setter
     private String channelName;
+    @Setter
     private String accessToken;
+    @Setter
     private String refreshToken;
+    @Setter
     private String tokenType;
+    @Setter
     private Integer expiresIn;
+    @Setter
     private String scope;
     private boolean admin;
+
 }

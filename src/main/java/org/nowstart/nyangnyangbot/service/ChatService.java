@@ -7,7 +7,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.data.dto.ChatDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
 import org.nowstart.nyangnyangbot.data.type.CommandType;
 import org.nowstart.nyangnyangbot.service.command.Command;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class ChatService implements Emitter.Listener {
         ChatDto chatDto = objectMapper.readValue((String) objects[0], ChatDto.class);
         log.info("[ChzzkChat] socket received: {}", chatDto);
         attendanceService.recordChatUser(chatDto);
-        Command command = commands.get(CommandType.findNameByCommand(chatDto.getContent().split(" ")[0]));
+        Command command = commands.get(CommandType.findNameByCommand(chatDto.content().split(" ")[0]));
         if (command != null) {
             command.run(chatDto);
         }

@@ -9,12 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.data.dto.AttendanceApplyRequest;
-import org.nowstart.nyangnyangbot.data.dto.AttendanceApplyResponse;
-import org.nowstart.nyangnyangbot.data.dto.AttendanceUserDto;
-import org.nowstart.nyangnyangbot.data.dto.ChatDto;
+import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +24,7 @@ public class AttendanceService {
 
     private static final long ACTIVE_WINDOW_MILLIS = 10 * 60 * 1000L;
     private final FavoriteRepository favoriteRepository;
+    private final FavoriteHistoryRepository favoriteHistoryRepository;
     private final Map<String, AttendanceUser> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
@@ -45,11 +45,11 @@ public class AttendanceService {
         if (!collecting) {
             return;
         }
-        String userId = chatDto.getSenderChannelId();
+        String userId = chatDto.senderChannelId();
         if (StringUtils.isBlank(userId)) {
             return;
         }
-        String nickName = chatDto.getProfile().getNickname();
+        String nickName = chatDto.profile().nickname();
         long now = System.currentTimeMillis();
         presence.compute(userId, (key, existing) -> {
             if (existing == null) {
@@ -63,20 +63,16 @@ public class AttendanceService {
         });
     }
 
-    public List<AttendanceUserDto> getActiveUsers() {
+    public List<AttendanceDto.User> getActiveUsers() {
         pruneInactive();
         return presence.values().stream()
                 .sorted(Comparator.comparingLong(AttendanceUser::lastMessageTime).reversed())
-                .map(user -> AttendanceUserDto.builder()
-                        .userId(user.userId)
-                        .nickName(user.nickName)
-                        .lastMessageTime(user.lastMessageTime)
-                        .build())
+                .map(user -> new AttendanceDto.User(user.userId, user.nickName, user.lastMessageTime))
                 .toList();
     }
 
-    public AttendanceApplyResponse applyAttendance(AttendanceApplyRequest request) {
-        List<AttendanceUserDto> targets = resolveTargets(request);
+    public AttendanceDto.ApplyResponse applyAttendance(AttendanceDto.ApplyRequest request) {
+        List<AttendanceDto.User> targets = resolveTargets(request);
         if (targets.isEmpty()) {
             throw new IllegalArgumentException("attendance targets are required");
         }
@@ -85,13 +81,13 @@ public class AttendanceService {
             throw new IllegalArgumentException("amount must be positive");
         }
 
-        for (AttendanceUserDto target : targets) {
-            if (target == null || StringUtils.isBlank(target.getUserId())) {
+        for (AttendanceDto.User target : targets) {
+            if (target == null || StringUtils.isBlank(target.userId())) {
                 continue;
             }
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(target.getUserId())
+            FavoriteEntity favoriteEntity = favoriteRepository.findById(target.userId())
                     .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                            .userId(target.getUserId())
+                            .userId(target.userId())
                             .nickName(safeNickname(target))
                             .favorite(0)
                             .build()));
@@ -99,41 +95,38 @@ public class AttendanceService {
             int before = Objects.requireNonNullElse(favoriteEntity.getFavorite(), 0);
             int after = before + amount;
             favoriteEntity.setFavorite(after);
-            if (!StringUtils.isBlank(target.getNickName())) {
-                favoriteEntity.setNickName(target.getNickName());
+            if (!StringUtils.isBlank(target.nickName())) {
+                favoriteEntity.setNickName(target.nickName());
             }
-            favoriteEntity.getFavoriteHistoryEntityList().add(FavoriteHistoryEntity.builder()
+            favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
                     .favoriteEntity(favoriteEntity)
-                    .favorite(after)
                     .history(String.format(Locale.ROOT, "출석체크(+%d)", amount))
+                    .favorite(after)
                     .build());
         }
 
-        return AttendanceApplyResponse.builder()
-                .amount(amount)
-                .count(targets.size())
-                .build();
+        return new AttendanceDto.ApplyResponse(amount, targets.size());
     }
 
-    private List<AttendanceUserDto> resolveTargets(AttendanceApplyRequest request) {
-        if (request != null && request.getUsers() != null && !request.getUsers().isEmpty()) {
-            return request.getUsers();
+    private List<AttendanceDto.User> resolveTargets(AttendanceDto.ApplyRequest request) {
+        if (request != null && request.users() != null && !request.users().isEmpty()) {
+            return request.users();
         }
         return getActiveUsers();
     }
 
-    private int resolveAmount(AttendanceApplyRequest request) {
-        if (request == null || request.getAmount() == null) {
+    private int resolveAmount(AttendanceDto.ApplyRequest request) {
+        if (request == null || request.amount() == null) {
             return 1;
         }
-        return request.getAmount();
+        return request.amount();
     }
 
-    private String safeNickname(AttendanceUserDto user) {
-        if (user == null || StringUtils.isBlank(user.getNickName())) {
+    private String safeNickname(AttendanceDto.User user) {
+        if (user == null || StringUtils.isBlank(user.nickName())) {
             return "";
         }
-        return user.getNickName();
+        return user.nickName();
     }
 
     private void pruneInactive() {
@@ -157,3 +150,7 @@ public class AttendanceService {
         }
     }
 }
+
+
+
+

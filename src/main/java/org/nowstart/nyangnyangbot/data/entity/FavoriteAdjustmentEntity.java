@@ -8,14 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class FavoriteAdjustmentEntity extends BaseEntity {
 
     @Id
@@ -23,4 +21,5 @@ public class FavoriteAdjustmentEntity extends BaseEntity {
     private Long id;
     private Integer amount;
     private String label;
+
 }
