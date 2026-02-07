@@ -25,7 +25,38 @@ let attendanceUsers = [];
 let attendanceSelectedIds = new Set();
 let attendancePollingId = null;
 
+function getUiPermissions() {
+    const root = document.body;
+    if (!root) {
+        return {isAdmin: false, currentUserId: null};
+    }
+    const rawUserId = root.dataset.currentUserId;
+    return {
+        isAdmin: root.dataset.isAdmin === 'true',
+        currentUserId: rawUserId && rawUserId !== 'null' ? rawUserId : null
+    };
+}
+
+function requireAdminPermission() {
+    if (getUiPermissions().isAdmin) {
+        return true;
+    }
+    showToast('권한이 없습니다.');
+    return false;
+}
+
+function canViewHistory(userId) {
+    const permissions = getUiPermissions();
+    if (permissions.isAdmin) {
+        return true;
+    }
+    return Boolean(permissions.currentUserId && permissions.currentUserId === userId);
+}
+
 function openModal(row) {
+    if (!requireAdminPermission()) {
+        return;
+    }
     currentUserId = row.getAttribute('data-user-id');
     currentFavorite = parseInt(row.getAttribute('data-favorite') || '0', 10);
     const nickName = row.getAttribute('data-nick-name') || '';
@@ -148,11 +179,12 @@ function loadHistoryForRow(row) {
     if (!row) {
         return;
     }
-    if (row.dataset.historyLoaded === 'true' || row.dataset.historyLoading === 'true') {
+    const userId = row.getAttribute('data-user-id');
+    if (!userId || !canViewHistory(userId)) {
+        showToast('권한이 없습니다.');
         return;
     }
-    const userId = row.getAttribute('data-user-id');
-    if (!userId) {
+    if (row.dataset.historyLoaded === 'true' || row.dataset.historyLoading === 'true') {
         return;
     }
     row.dataset.historyLoading = 'true';
@@ -176,6 +208,9 @@ function loadHistoryForRow(row) {
 }
 
 function openAttendanceModal() {
+    if (!requireAdminPermission()) {
+        return;
+    }
     attendanceSelectedIds.clear();
     const amountInput = document.getElementById('attendance-amount');
     if (amountInput) {
@@ -305,6 +340,9 @@ function updateAttendanceStatus() {
 }
 
 function applyAttendance() {
+    if (!requireAdminPermission()) {
+        return;
+    }
     const amountInput = document.getElementById('attendance-amount');
     const rawAmount = amountInput ? amountInput.value.trim() : '1';
     const amount = parseInt(rawAmount, 10);
@@ -357,6 +395,10 @@ function applyAttendance() {
 }
 
 function loadAdjustments() {
+    if (!getUiPermissions().isAdmin) {
+        showToast('권한이 없습니다.');
+        return Promise.reject(new Error('FORBIDDEN'));
+    }
     if (adjustmentsCache) {
         renderAdjustments(adjustmentsCache);
         return Promise.resolve();
@@ -450,6 +492,9 @@ function updateCalc() {
 }
 
 function applyAdjustments() {
+    if (!requireAdminPermission()) {
+        return;
+    }
     if (!currentUserId) {
         return;
     }
@@ -510,6 +555,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (syncButton) {
         syncButton.addEventListener('click', function (event) {
             event.preventDefault();
+            if (!requireAdminPermission()) {
+                return;
+            }
 
             let spinner = document.getElementById('loading-spinner');
             if (spinner) {
@@ -551,6 +599,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.board-row').forEach(function (row) {
         row.addEventListener('click', function (event) {
             if (event.target.closest('.karma-button')) {
+                return;
+            }
+            const rowUserId = row.getAttribute('data-user-id');
+            if (!rowUserId || !canViewHistory(rowUserId)) {
+                showToast('권한이 없습니다.');
                 return;
             }
             const details = row.querySelector('.history-details');
