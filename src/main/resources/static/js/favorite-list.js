@@ -374,7 +374,7 @@ function loadAdjustments() {
             renderAdjustments(data);
         })
         .catch(function () {
-            showToast('업보 목록을 불러오지 못했습니다.');
+            showToast('권한이 없습니다.');
         });
 }
 
