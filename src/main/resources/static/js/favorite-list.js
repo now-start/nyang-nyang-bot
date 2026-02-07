@@ -16,6 +16,8 @@ function buildUrl(path) {
 }
 
 let adjustmentsCache = null;
+let historyCache = new Map();
+let historyRequests = new Map();
 let selectedIds = new Set();
 let currentUserId = null;
 let currentFavorite = 0;
@@ -60,6 +62,133 @@ function openModal(row) {
 
 function closeModal() {
     document.getElementById('karma-modal').style.display = 'none';
+}
+
+function loadHistory(userId, limit) {
+    if (historyCache.has(userId)) {
+        return Promise.resolve(historyCache.get(userId));
+    }
+    if (historyRequests.has(userId)) {
+        return historyRequests.get(userId);
+    }
+    const safeLimit = typeof limit === 'number' ? limit : 10;
+    const request = fetch(buildUrl('/favorite/history?userId=' + encodeURIComponent(userId) + '&limit=' + safeLimit))
+        .then(function (response) {
+            if (response.status === 403) {
+                throw new Error('FORBIDDEN');
+            }
+            if (!response.ok) {
+                throw new Error('Failed to load history');
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            const items = Array.isArray(data) ? data : [];
+            historyCache.set(userId, items);
+            historyRequests.delete(userId);
+            return items;
+        })
+        .catch(function (error) {
+            historyRequests.delete(userId);
+            throw error;
+        });
+    historyRequests.set(userId, request);
+    return request;
+}
+
+function buildHistoryCell(className, text) {
+    const cell = document.createElement('div');
+    cell.className = 'history-cell' + (className ? ' ' + className : '');
+    cell.textContent = text;
+    return cell;
+}
+
+function updateHistorySummary(row, item) {
+    const summary = row.querySelector('[data-history-summary]');
+    if (summary) {
+        summary.textContent = item && item.history ? item.history : '-';
+    }
+    const date = row.querySelector('[data-history-date]');
+    if (date) {
+        date.textContent = item && item.date ? item.date : '-';
+    }
+}
+
+function renderHistory(row, items) {
+    const grid = row.querySelector('.history-grid');
+    if (!grid) {
+        return;
+    }
+    grid.innerHTML = '';
+    if (!items || items.length === 0) {
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'history-row';
+        emptyRow.appendChild(buildHistoryCell('spacer', ''));
+        emptyRow.appendChild(buildHistoryCell('score', '-'));
+        emptyRow.appendChild(buildHistoryCell('reason', '히스토리 없음'));
+        emptyRow.appendChild(buildHistoryCell('date', '-'));
+        grid.appendChild(emptyRow);
+        updateHistorySummary(row, null);
+    } else {
+        items.forEach(function (item) {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'history-row';
+            rowEl.appendChild(buildHistoryCell('spacer', ''));
+            rowEl.appendChild(buildHistoryCell('score', item.favorite != null ? String(item.favorite) : '-'));
+            rowEl.appendChild(buildHistoryCell('reason', item.history || '-'));
+            rowEl.appendChild(buildHistoryCell('date', item.date || '-'));
+            grid.appendChild(rowEl);
+        });
+        updateHistorySummary(row, items[0]);
+    }
+    row.dataset.historyLoaded = 'true';
+    row.dataset.historyLoading = 'false';
+}
+
+function showHistoryLoading(row) {
+    const grid = row.querySelector('.history-grid');
+    if (!grid) {
+        return;
+    }
+    grid.innerHTML = '';
+    const loadingRow = document.createElement('div');
+    loadingRow.className = 'history-row';
+    loadingRow.appendChild(buildHistoryCell('spacer', ''));
+    loadingRow.appendChild(buildHistoryCell('score', ''));
+    loadingRow.appendChild(buildHistoryCell('reason', '불러오는 중...'));
+    loadingRow.appendChild(buildHistoryCell('date', ''));
+    grid.appendChild(loadingRow);
+}
+
+function loadHistoryForRow(row) {
+    if (!row) {
+        return;
+    }
+    if (row.dataset.historyLoaded === 'true' || row.dataset.historyLoading === 'true') {
+        return;
+    }
+    const userId = row.getAttribute('data-user-id');
+    if (!userId) {
+        return;
+    }
+    row.dataset.historyLoading = 'true';
+    showHistoryLoading(row);
+    loadHistory(userId, 10)
+        .then(function (items) {
+            renderHistory(row, items);
+        })
+        .catch(function (error) {
+            row.dataset.historyLoading = 'false';
+            const details = row.querySelector('.history-details');
+            if (details) {
+                details.style.display = 'none';
+            }
+            if (error.message === 'FORBIDDEN') {
+                showToast('권한이 없습니다.');
+                return;
+            }
+            showToast('히스토리를 불러오지 못했습니다.');
+        });
 }
 
 function openAttendanceModal() {
@@ -440,14 +569,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (event.target.closest('.karma-button')) {
                 return;
             }
-            let historyDetails = this.querySelectorAll('.history-details');
-            for (let i = 0; i < historyDetails.length; i++) {
-                if (historyDetails[i].style.display === 'block') {
-                    historyDetails[i].style.display = 'none';
-                } else {
-                    historyDetails[i].style.display = 'block';
-                }
+            const details = row.querySelector('.history-details');
+            if (!details) {
+                return;
             }
+            if (details.style.display === 'block') {
+                details.style.display = 'none';
+                return;
+            }
+            details.style.display = 'block';
+            loadHistoryForRow(row);
         });
     });
 
