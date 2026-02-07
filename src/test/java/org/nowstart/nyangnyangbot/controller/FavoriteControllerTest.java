@@ -18,6 +18,7 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
@@ -42,20 +43,25 @@ class FavoriteControllerTest {
 
     private List<FavoriteEntity> favoriteEntities;
     private Pageable pageable;
+    private ChannelEntity ownerChannel;
 
     @BeforeEach
     void setUp() {
         pageable = PageRequest.of(0, 10);
+        ownerChannel = ChannelEntity.builder()
+                .id("owner")
+                .name("Owner")
+                .build();
 
         favoriteEntities = Arrays.asList(
                 FavoriteEntity.builder()
-                        .userId("user1")
-                        .nickName("ìœ ì €1")
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user1", "? ì?1"))
                         .favorite(100)
                         .build(),
                 FavoriteEntity.builder()
-                        .userId("user2")
-                        .nickName("ìœ ì €2")
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user2", "? ì?2"))
                         .favorite(50)
                         .build()
         );
@@ -71,7 +77,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
@@ -80,7 +86,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldReturnFilteredFavorites_WhenNickNameProvided() {
         // given
-        String nickName = "ìœ ì €1";
+        String nickName = "? ì?1";
         List<FavoriteEntity> filteredList = Collections.singletonList(favoriteEntities.get(0));
         Page<FavoriteEntity> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
 
@@ -90,7 +96,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, nickName, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(nickName));
         BDDMockito.then(favoriteService).should(never()).getList(any());
@@ -106,7 +112,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, "", null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
@@ -121,7 +127,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, "   ", null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
     }
 
@@ -187,7 +193,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldHandleSpecialCharactersInNickName() {
         // given
-        String specialNickName = "ìœ ì €@#$%^&*()";
+        String specialNickName = "? ì?@#$%^&*()";
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getByNickName(any(Pageable.class), anyString())).willReturn(emptyPage);
 
@@ -195,7 +201,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), anyString());
     }
 
@@ -209,8 +215,16 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         Page<FavoriteEntity> resultPage = (Page<FavoriteEntity>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();
     }
+
+    private ChannelEntity channel(String id, String name) {
+        return ChannelEntity.builder()
+                .id(id)
+                .name(name)
+                .build();
+    }
 }
+

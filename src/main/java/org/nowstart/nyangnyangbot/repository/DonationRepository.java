@@ -13,13 +13,14 @@ import org.springframework.stereotype.Repository;
 public interface DonationRepository extends JpaRepository<DonationEntity, Long> {
 
     @Query("""
-            select d.donatorNickname as nickname, sum(d.payAmount) as totalAmount
+            select d.donatorChannel.name as nickname, sum(d.payAmount) as totalAmount
             from DonationEntity d
             where d.createDate >= :from
               and d.createDate < :to
-              and d.donatorNickname is not null
-              and d.donatorNickname <> ''
-            group by d.donatorNickname
+              and d.donatorChannel is not null
+              and d.donatorChannel.name is not null
+              and d.donatorChannel.name <> ''
+            group by d.donatorChannel.name
             order by sum(d.payAmount) desc
             """)
     List<DonationRankProjection> findWeeklyRanks(

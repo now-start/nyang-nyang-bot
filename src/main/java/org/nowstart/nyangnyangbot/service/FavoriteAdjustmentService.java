@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
@@ -25,17 +26,18 @@ public class FavoriteAdjustmentService {
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final ChannelService channelService;
 
     public List<FavoriteAdjustmentEntity> getAdjustments() {
-        return favoriteAdjustmentRepository.findAll()
-                .stream()
-                .sorted((left, right) -> Integer.compare(left.getAmount(), right.getAmount()))
-                .toList();
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
+        return favoriteAdjustmentRepository.findByOwnerChannelIdOrderByAmountAsc(ownerChannel.getId());
     }
 
     public FavoriteAdjustmentEntity createAdjustment(FavoriteAdjustmentDto.CreateRequest request) {
         validateCreateRequest(request);
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
         return favoriteAdjustmentRepository.save(FavoriteAdjustmentEntity.builder()
+                .ownerChannel(ownerChannel)
                 .amount(request.amount())
                 .label(request.label().trim())
                 .build());
@@ -55,9 +57,10 @@ public class FavoriteAdjustmentService {
             throw new IllegalArgumentException("adjustmentIds or manualAmount is required");
         }
 
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
         List<FavoriteAdjustmentEntity> adjustments = List.of();
         if (adjustmentIds != null && !adjustmentIds.isEmpty()) {
-            adjustments = favoriteAdjustmentRepository.findAllById(adjustmentIds);
+            adjustments = favoriteAdjustmentRepository.findByOwnerChannelIdAndIdIn(ownerChannel.getId(), adjustmentIds);
             if (adjustments.size() != adjustmentIds.size()) {
                 Map<Long, FavoriteAdjustmentEntity> foundMap = adjustments.stream()
                         .collect(Collectors.toMap(FavoriteAdjustmentEntity::getId, entity -> entity));
@@ -71,7 +74,12 @@ public class FavoriteAdjustmentService {
             }
         }
 
-        FavoriteEntity favoriteEntity = favoriteRepository.findById(userId)
+        ChannelEntity targetChannel = channelService.getOrCreate(userId, null);
+        if (targetChannel == null) {
+            throw new IllegalArgumentException("Favorite user not found");
+        }
+        FavoriteEntity favoriteEntity = favoriteRepository
+                .findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), targetChannel.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Favorite user not found"));
 
         int before = favoriteEntity.getFavorite() == null ? 0 : favoriteEntity.getFavorite();
@@ -87,9 +95,9 @@ public class FavoriteAdjustmentService {
 
         String history = buildHistory(adjustments, manualAmount, manualHistory);
         favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                .favoriteEntity(favoriteEntity)
+                .favorite(favoriteEntity)
                 .history(history)
-                .favorite(after)
+                .favoriteValue(after)
                 .build());
 
         return new FavoriteAdjustmentDto.ApplyResponse(

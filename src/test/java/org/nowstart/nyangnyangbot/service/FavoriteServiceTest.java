@@ -12,6 +12,7 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
@@ -29,40 +30,49 @@ class FavoriteServiceTest {
     @Mock
     private FavoriteHistoryRepository favoriteHistoryRepository;
 
+    @Mock
+    private ChannelService channelService;
+
     @InjectMocks
     private FavoriteService favoriteService;
 
     private List<FavoriteEntity> favoriteEntities;
     private Pageable pageable;
+    private ChannelEntity ownerChannel;
 
     @BeforeEach
     void setUp() {
         pageable = PageRequest.of(0, 10);
+        ownerChannel = ChannelEntity.builder()
+                .id("owner")
+                .name("Owner")
+                .build();
 
         favoriteEntities = Arrays.asList(
                 FavoriteEntity.builder()
-                        .userId("user1")
-                        .nickName("테스트유저1")
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user1", "?�스?�유?�1"))
                         .favorite(100)
                         .build(),
                 FavoriteEntity.builder()
-                        .userId("user2")
-                        .nickName("테스트유저2")
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user2", "?�스?�유?�2"))
                         .favorite(50)
                         .build(),
                 FavoriteEntity.builder()
-                        .userId("user3")
-                        .nickName("유저3")
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user3", "?��?3"))
                         .favorite(30)
                         .build()
         );
+        given(channelService.getDefaultChannel()).willReturn(ownerChannel);
     }
 
     @Test
     void getList_ShouldReturnAllFavorites() {
         // given
         Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
-        given(favoriteRepository.findAll(pageable)).willReturn(expectedPage);
+        given(favoriteRepository.findByOwnerChannelId(pageable, ownerChannel.getId())).willReturn(expectedPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getList(pageable);
@@ -71,14 +81,14 @@ class FavoriteServiceTest {
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
         then(result.getTotalElements()).isEqualTo(3);
-        BDDMockito.then(favoriteRepository).should().findAll(pageable);
+        BDDMockito.then(favoriteRepository).should().findByOwnerChannelId(pageable, ownerChannel.getId());
     }
 
     @Test
     void getList_ShouldReturnEmptyPage_WhenNoFavorites() {
         // given
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        given(favoriteRepository.findAll(pageable)).willReturn(emptyPage);
+        given(favoriteRepository.findByOwnerChannelId(pageable, ownerChannel.getId())).willReturn(emptyPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getList(pageable);
@@ -87,19 +97,20 @@ class FavoriteServiceTest {
         then(result).isNotNull();
         then(result.getContent()).isEmpty();
         then(result.getTotalElements()).isZero();
-        BDDMockito.then(favoriteRepository).should().findAll(pageable);
+        BDDMockito.then(favoriteRepository).should().findByOwnerChannelId(pageable, ownerChannel.getId());
     }
 
     @Test
     void getByNickName_ShouldReturnFilteredFavorites() {
         // given
-        String nickName = "테스트";
+        String nickName = "?�스??;
         List<FavoriteEntity> filteredList = Arrays.asList(
                 favoriteEntities.get(0),
                 favoriteEntities.get(1)
         );
         Page<FavoriteEntity> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
-        given(favoriteRepository.findByNickNameContains(pageable, nickName)).willReturn(expectedPage);
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName))
+                .willReturn(expectedPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getByNickName(pageable, nickName);
@@ -108,15 +119,18 @@ class FavoriteServiceTest {
         then(result).isNotNull();
         then(result.getContent()).hasSize(2);
         then(result.getContent()).allMatch(entity -> entity.getNickName().contains(nickName));
-        BDDMockito.then(favoriteRepository).should().findByNickNameContains(pageable, nickName);
+        BDDMockito.then(favoriteRepository)
+                .should()
+                .findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName);
     }
 
     @Test
     void getByNickName_ShouldReturnEmptyPage_WhenNoMatch() {
         // given
-        String nickName = "존재하지않는유저";
+        String nickName = "존재?��??�는?��?";
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        given(favoriteRepository.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName))
+                .willReturn(emptyPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getByNickName(pageable, nickName);
@@ -124,22 +138,27 @@ class FavoriteServiceTest {
         // then
         then(result).isNotNull();
         then(result.getContent()).isEmpty();
-        BDDMockito.then(favoriteRepository).should().findByNickNameContains(pageable, nickName);
+        BDDMockito.then(favoriteRepository)
+                .should()
+                .findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName);
     }
 
     @Test
     void getByNickName_ShouldHandleSpecialCharacters() {
         // given
-        String nickName = "유저@#$";
+        String nickName = "?��?@#$";
         Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        given(favoriteRepository.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName))
+                .willReturn(emptyPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getByNickName(pageable, nickName);
 
         // then
         then(result).isNotNull();
-        BDDMockito.then(favoriteRepository).should().findByNickNameContains(pageable, nickName);
+        BDDMockito.then(favoriteRepository)
+                .should()
+                .findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName);
     }
 
     @Test
@@ -147,7 +166,7 @@ class FavoriteServiceTest {
         // given
         Pageable largePageable = PageRequest.of(0, 100);
         Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, largePageable, favoriteEntities.size());
-        given(favoriteRepository.findAll(largePageable)).willReturn(expectedPage);
+        given(favoriteRepository.findByOwnerChannelId(largePageable, ownerChannel.getId())).willReturn(expectedPage);
 
         // when
         Page<FavoriteEntity> result = favoriteService.getList(largePageable);
@@ -155,6 +174,15 @@ class FavoriteServiceTest {
         // then
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
-        BDDMockito.then(favoriteRepository).should().findAll(largePageable);
+        BDDMockito.then(favoriteRepository).should().findByOwnerChannelId(largePageable, ownerChannel.getId());
+    }
+
+    private ChannelEntity channel(String id, String name) {
+        return ChannelEntity.builder()
+                .id(id)
+                .name(name)
+                .build();
     }
 }
+
+

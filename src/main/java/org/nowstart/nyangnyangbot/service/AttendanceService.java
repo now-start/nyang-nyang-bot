@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceDto;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceUserDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
@@ -25,6 +26,7 @@ public class AttendanceService {
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final ChannelService channelService;
     private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
@@ -83,15 +85,21 @@ public class AttendanceService {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
 
         for (AttendanceDto.User target : targets) {
             if (target == null || StringUtils.isBlank(target.userId())) {
                 continue;
             }
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(target.userId())
+            ChannelEntity targetChannel = channelService.getOrCreate(target.userId(), safeNickname(target));
+            if (targetChannel == null) {
+                continue;
+            }
+            FavoriteEntity favoriteEntity = favoriteRepository
+                    .findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), targetChannel.getId())
                     .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                            .userId(target.userId())
-                            .nickName(safeNickname(target))
+                            .ownerChannel(ownerChannel)
+                            .targetChannel(targetChannel)
                             .favorite(0)
                             .build()));
 
@@ -102,9 +110,9 @@ public class AttendanceService {
                 favoriteEntity.setNickName(target.nickName());
             }
             favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                    .favoriteEntity(favoriteEntity)
+                    .favorite(favoriteEntity)
                     .history(String.format(Locale.ROOT, "출석체크(+%d)", amount))
-                    .favorite(after)
+                    .favoriteValue(after)
                     .build());
         }
 

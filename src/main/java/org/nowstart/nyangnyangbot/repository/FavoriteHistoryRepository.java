@@ -11,5 +11,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FavoriteHistoryRepository extends JpaRepository<FavoriteHistoryEntity, Long> {
 
-    Page<FavoriteHistoryEntity> findByFavoriteEntityUserId(String userId, Pageable pageable);
+    Page<FavoriteHistoryEntity> findByFavoriteOwnerChannelIdAndFavoriteTargetChannelId(
+            String ownerChannelId,
+            String targetChannelId,
+            Pageable pageable
+    );
 }

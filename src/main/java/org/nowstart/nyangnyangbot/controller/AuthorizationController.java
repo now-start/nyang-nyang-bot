@@ -55,7 +55,7 @@ public class AuthorizationController {
                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                 : Collections.emptyList();
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(authorizationEntity.getChannelId(), "N/A", authorities);
+                new UsernamePasswordAuthenticationToken(authorizationEntity.getChannel().getId(), "N/A", authorities);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

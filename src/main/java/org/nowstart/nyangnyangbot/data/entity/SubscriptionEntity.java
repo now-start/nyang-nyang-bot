@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,9 +20,10 @@ public class SubscriptionEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String channelId;
-    private String subscriberChannelId;
-    private String subscriberNickname;
+    @ManyToOne
+    private ChannelEntity channel;
+    @ManyToOne
+    private ChannelEntity subscriberChannel;
     private Integer tierNo;
     private String tierName;
     private Integer month;

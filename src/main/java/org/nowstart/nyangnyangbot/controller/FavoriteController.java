@@ -64,8 +64,8 @@ public class FavoriteController {
             currentUserId = authentication.getName();
             isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-            authorizationRepository.findById(authentication.getName())
-                    .map(authorization -> authorization.getChannelName())
+            authorizationRepository.findByChannelId(authentication.getName())
+                    .map(authorization -> authorization.getChannel().getName())
                     .filter(name -> !name.isBlank())
                     .ifPresent(name -> modelAndView.addObject("currentNickName", name));
         }

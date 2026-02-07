@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,9 +22,10 @@ public class DonationEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String donationType;
-    private String channelId;
-    private String donatorChannelId;
-    private String donatorNickname;
+    @ManyToOne
+    private ChannelEntity channel;
+    @ManyToOne
+    private ChannelEntity donatorChannel;
     private Long payAmount;
     @Lob
     private String donationText;

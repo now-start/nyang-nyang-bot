@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
@@ -22,17 +23,23 @@ public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final ChannelService channelService;
 
     public Page<FavoriteEntity> getList(Pageable pageable) {
-        return favoriteRepository.findAll(pageable);
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
+        return favoriteRepository.findByOwnerChannelId(pageable, ownerChannel.getId());
     }
 
     public Page<FavoriteEntity> getByNickName(Pageable pageable, String nickName) {
-        return favoriteRepository.findByNickNameContains(pageable, nickName);
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
+        return favoriteRepository.findByOwnerChannelIdAndTargetChannelNameContains(pageable, ownerChannel.getId(), nickName);
     }
 
     public List<FavoriteHistoryEntity> getHistory(String userId, int limit) {
         Pageable page = PageRequest.of(0, limit, Sort.by("modifyDate").descending());
-        return favoriteHistoryRepository.findByFavoriteEntityUserId(userId, page).getContent();
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
+        return favoriteHistoryRepository
+                .findByFavoriteOwnerChannelIdAndFavoriteTargetChannelId(ownerChannel.getId(), userId, page)
+                .getContent();
     }
 }

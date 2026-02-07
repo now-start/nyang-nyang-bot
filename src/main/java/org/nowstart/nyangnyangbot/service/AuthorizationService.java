@@ -8,6 +8,7 @@ import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
 import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.data.type.GrantType;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
@@ -23,6 +24,7 @@ public class AuthorizationService {
     private final ChzzkProperty chzzkProperty;
     private final ChzzkOpenApi chzzkOpenApi;
     private final AuthorizationRepository authorizationRepository;
+    private final ChannelService channelService;
 
     public AuthorizationEntity getAccessToken(String code, String state) {
         AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
@@ -35,9 +37,10 @@ public class AuthorizationService {
         )).content();
         UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-        return authorizationRepository.findById(userDto.channelId())
+        ChannelEntity channel = channelService.getOrCreate(userDto.channelId(), userDto.channelName());
+
+        return authorizationRepository.findByChannelId(channel.getId())
                 .map(existing -> {
-                    existing.setChannelName(userDto.channelName());
                     existing.setAccessToken(authorizationDto.accessToken());
                     existing.setRefreshToken(authorizationDto.refreshToken());
                     existing.setTokenType(authorizationDto.tokenType());
@@ -46,8 +49,7 @@ public class AuthorizationService {
                     return existing;
                 })
                 .orElseGet(() -> authorizationRepository.save(AuthorizationEntity.builder()
-                        .channelId(userDto.channelId())
-                        .channelName(userDto.channelName())
+                        .channel(channel)
                         .accessToken(authorizationDto.accessToken())
                         .refreshToken(authorizationDto.refreshToken())
                         .tokenType(authorizationDto.tokenType())
@@ -58,7 +60,8 @@ public class AuthorizationService {
     }
 
     public AuthorizationEntity getAccessToken() {
-        AuthorizationEntity authorizationEntity = authorizationRepository.findById(chzzkProperty.channelId()).orElseThrow();
+        ChannelEntity channel = channelService.getOrCreate(chzzkProperty.channelId(), null);
+        AuthorizationEntity authorizationEntity = authorizationRepository.findByChannelId(channel.getId()).orElseThrow();
 
         if (authorizationEntity.getModifyDate().plusSeconds(authorizationEntity.getExpiresIn()).isBefore(LocalDateTime.now())) {
             AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
@@ -72,8 +75,7 @@ public class AuthorizationService {
             log.info("[REFRESH_TOKEN] : {}", authorizationDto);
             UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-            authorizationEntity.setChannelId(userDto.channelId());
-            authorizationEntity.setChannelName(userDto.channelName());
+            channelService.getOrCreate(userDto.channelId(), userDto.channelName());
             authorizationEntity.setAccessToken(authorizationDto.accessToken());
             authorizationEntity.setRefreshToken(authorizationDto.refreshToken());
             authorizationEntity.setTokenType(authorizationDto.tokenType());

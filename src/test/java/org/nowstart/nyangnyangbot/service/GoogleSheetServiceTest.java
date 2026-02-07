@@ -13,6 +13,7 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
@@ -30,15 +31,25 @@ class GoogleSheetServiceTest {
     @Mock
     private FavoriteHistoryRepository favoriteHistoryRepository;
 
+    @Mock
+    private ChannelService channelService;
+
     @InjectMocks
     private GoogleSheetService googleSheetService;
 
     private FavoriteEntity existingFavorite;
+    private ChannelEntity ownerChannel;
 
     @BeforeEach
     void setUp() {
+        ownerChannel = channel("owner", "Owner");
+        given(channelService.getDefaultChannel()).willReturn(ownerChannel);
         existingFavorite =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
+                FavoriteEntity.builder()
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user123", "기존?�네??))
+                                .favorite(50)
+                                .build();
     }
 
     @Test
@@ -50,14 +61,20 @@ class GoogleSheetServiceTest {
 
         // This is a simplified test to verify the repository interaction logic
         FavoriteEntity newEntity =
-                FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).build();
+                FavoriteEntity.builder()
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("newUser", "?�유?�"))
+                        .favorite(0)
+                        .build();
 
-        given(favoriteRepository.findById("newUser")).willReturn(Optional.empty());
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), "newUser"))
+                .willReturn(Optional.empty());
         given(favoriteRepository.save(any(FavoriteEntity.class))).willReturn(newEntity);
 
         // We cannot directly test updateFavorite without refactoring to inject Sheets
         // but we can verify the expected behavior through the repository calls
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
@@ -65,38 +82,52 @@ class GoogleSheetServiceTest {
         // Similar to above, this test demonstrates the expected behavior
         // In production, consider refactoring to make this testable
 
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(existingFavorite));
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), "user123"))
+                .willReturn(Optional.of(existingFavorite));
 
         // Cannot fully test without Sheets service injection
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
     void updateFavorite_ShouldNotUpdate_WhenFavoriteUnchanged() {
         // This test shows the intention but requires refactoring for proper testing
         FavoriteEntity unchangedEntity =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
+                FavoriteEntity.builder()
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user123", "기존?�네??))
+                                .favorite(50)
+                                .build();
 
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(unchangedEntity));
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), "user123"))
+                .willReturn(Optional.of(unchangedEntity));
 
         // Cannot fully test without Sheets service injection
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
     void updateFavorite_ShouldAddHistory_WhenFavoriteChanges() {
         // This test demonstrates the expected history addition behavior
         FavoriteEntity entityWithHistory =
-                FavoriteEntity.builder().userId("user123").nickName("유저").favorite(100).build();
+                FavoriteEntity.builder()
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user123", "?��?"))
+                        .favorite(100)
+                        .build();
 
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(entityWithHistory));
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), "user123"))
+                .willReturn(Optional.of(entityWithHistory));
 
         // In a properly refactored version, we would verify that:
-        // 1. History entity is created with "데이터 동기화" message
+        // 1. History entity is created with "?�이???�기?? message
         // 2. New favorite value is set
         // 3. Nickname is updated if changed
 
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
@@ -112,7 +143,8 @@ class GoogleSheetServiceTest {
         // ))
 
         // Cannot fully test without Sheets service, but the logic is clear
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
@@ -121,20 +153,27 @@ class GoogleSheetServiceTest {
         // .filter(dto -> !StringUtils.isBlank(dto.getUserId()))
 
         // This test demonstrates that blank user IDs should be skipped
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     @Test
     void updateFavorite_ShouldUpdateNickname_WhenChanged() {
         // Test verifies that nickname is updated when it changes
         FavoriteEntity entity =
-                FavoriteEntity.builder().userId("user123").nickName("이전닉네임").favorite(100).build();
+                FavoriteEntity.builder()
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(channel("user123", "?�전?�네??))
+                                .favorite(100)
+                                .build();
 
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(entity));
+        given(favoriteRepository.findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), "user123"))
+                .willReturn(Optional.of(entity));
 
         // In a refactored version, we would verify:
-        // entity.setNickName("새닉네임") is called when the name changes
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        // entity.setNickName("?�닉?�임") is called when the name changes
+        BDDMockito.then(favoriteRepository).should(never())
+                .findByOwnerChannelIdAndTargetChannelId(anyString(), anyString());
     }
 
     // Note: To properly test GoogleSheetService, consider refactoring:
@@ -142,4 +181,12 @@ class GoogleSheetServiceTest {
     // 2. Inject the Sheets service as a dependency
     // 3. Create integration tests with a test Google Sheet
     // 4. Or mock the entire Sheets API chain (complex but possible)
+
+    private ChannelEntity channel(String id, String name) {
+        return ChannelEntity.builder()
+                .id(id)
+                .name(name)
+                .build();
+    }
 }
+

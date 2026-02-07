@@ -35,7 +35,7 @@ public class ChannelIdAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String channelId = request.getHeader(CHANNEL_ID_HEADER);
         if (StringUtils.hasText(channelId) && SecurityContextHolder.getContext().getAuthentication() == null) {
-            AuthorizationEntity authorizationEntity = authorizationRepository.findById(channelId).orElse(null);
+            AuthorizationEntity authorizationEntity = authorizationRepository.findByChannelId(channelId).orElse(null);
             if (authorizationEntity != null) {
                 List<GrantedAuthority> authorities = authorizationEntity.isAdmin()
                         ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))

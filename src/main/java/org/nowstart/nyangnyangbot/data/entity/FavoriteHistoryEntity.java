@@ -21,8 +21,8 @@ public class FavoriteHistoryEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String history;
-    private Integer favorite;
+    private Integer favoriteValue;
     @ManyToOne
-    private FavoriteEntity favoriteEntity;
+    private FavoriteEntity favorite;
 
 }

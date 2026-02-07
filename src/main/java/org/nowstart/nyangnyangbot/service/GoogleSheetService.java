@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
+import org.nowstart.nyangnyangbot.data.entity.ChannelEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
@@ -32,25 +33,32 @@ public class GoogleSheetService {
     private final GoogleProperty googleProperty;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final ChannelService channelService;
 
     public void updateFavorite() {
         List<GoogleSheetDto> googleSheetDtoList = getSheetValues();
+        ChannelEntity ownerChannel = channelService.getDefaultChannel();
 
         for (GoogleSheetDto dto : googleSheetDtoList) {
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(dto.userId())
+            ChannelEntity targetChannel = channelService.getOrCreate(dto.userId(), dto.nickName());
+            if (targetChannel == null) {
+                continue;
+            }
+            FavoriteEntity favoriteEntity = favoriteRepository
+                    .findByOwnerChannelIdAndTargetChannelId(ownerChannel.getId(), targetChannel.getId())
                 .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                        .userId(dto.userId())
-                        .nickName(dto.nickName())
-                    .favorite(0)
-                    .build()));
+                        .ownerChannel(ownerChannel)
+                        .targetChannel(targetChannel)
+                        .favorite(0)
+                        .build()));
 
             if (!favoriteEntity.getFavorite().equals(dto.favorite())) {
                 favoriteEntity.setNickName(dto.nickName());
                 favoriteEntity.setFavorite(dto.favorite());
                 favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                    .favoriteEntity(favoriteEntity)
+                        .favorite(favoriteEntity)
                     .history("데이터 동기화")
-                        .favorite(dto.favorite())
+                        .favoriteValue(dto.favorite())
                     .build());
             }
         }
