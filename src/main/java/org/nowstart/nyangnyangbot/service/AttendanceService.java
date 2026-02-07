@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AttendanceService {
 
-    private static final long ACTIVE_WINDOW_MILLIS = 10 * 60 * 1000L;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
     private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
@@ -69,7 +68,6 @@ public class AttendanceService {
     }
 
     public List<AttendanceDto.User> getActiveUsers() {
-        pruneInactive();
         return presence.values().stream()
                 .sorted(Comparator.comparingLong(AttendanceUserDto::getLastMessageTime).reversed())
                 .map(user -> new AttendanceDto.User(user.getUserId(), user.getNickName(), user.getLastMessageTime()))
@@ -134,10 +132,6 @@ public class AttendanceService {
         return user.nickName();
     }
 
-    private void pruneInactive() {
-        long cutoff = System.currentTimeMillis() - ACTIVE_WINDOW_MILLIS;
-        presence.entrySet().removeIf(entry -> entry.getValue().getLastMessageTime() < cutoff);
-    }
 }
 
 
