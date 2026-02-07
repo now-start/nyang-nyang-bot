@@ -4,9 +4,9 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.data.dto.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.AuthorizationRequestDto;
-import org.nowstart.nyangnyangbot.data.dto.UserDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
 import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.data.type.GrantType;
@@ -25,51 +25,54 @@ public class AuthorizationService {
     private final AuthorizationRepository authorizationRepository;
 
     public AuthorizationEntity getAccessToken(String code, String state) {
-        AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(AuthorizationRequestDto.builder()
-            .grantType(GrantType.AUTHORIZATION_CODE.getData())
-            .clientId(chzzkProperty.getClientId())
-            .clientSecret(chzzkProperty.getClientSecret())
-            .code(code)
-            .state(state)
-            .build()).getContent();
-        UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
+        AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
+                GrantType.AUTHORIZATION_CODE.getData(),
+                chzzkProperty.clientId(),
+                chzzkProperty.clientSecret(),
+                code,
+                state,
+                null
+        )).content();
+        UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-        boolean admin = authorizationRepository.findById(userDto.getChannelId())
+        boolean admin = authorizationRepository.findById(userDto.channelId())
                 .map(AuthorizationEntity::isAdmin)
                 .orElse(false);
 
         return authorizationRepository.save(AuthorizationEntity.builder()
-            .channelId(userDto.getChannelId())
-            .channelName(userDto.getChannelName())
-            .accessToken(authorizationDto.getAccessToken())
-            .refreshToken(authorizationDto.getRefreshToken())
-            .tokenType(authorizationDto.getTokenType())
-            .expiresIn(authorizationDto.getExpiresIn())
-            .scope(authorizationDto.getScope())
+                .channelId(userDto.channelId())
+                .channelName(userDto.channelName())
+                .accessToken(authorizationDto.accessToken())
+                .refreshToken(authorizationDto.refreshToken())
+                .tokenType(authorizationDto.tokenType())
+                .expiresIn(authorizationDto.expiresIn())
+                .scope(authorizationDto.scope())
                 .admin(admin)
             .build());
     }
 
     public AuthorizationEntity getAccessToken() {
-        AuthorizationEntity authorizationEntity = authorizationRepository.findById(chzzkProperty.getChannelId()).orElseThrow();
+        AuthorizationEntity authorizationEntity = authorizationRepository.findById(chzzkProperty.channelId()).orElseThrow();
 
         if (authorizationEntity.getModifyDate().plusSeconds(authorizationEntity.getExpiresIn()).isBefore(LocalDateTime.now())) {
-            AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(AuthorizationRequestDto.builder()
-                .grantType(GrantType.REFRESH_TOKEN.getData())
-                .clientId(chzzkProperty.getClientId())
-                .clientSecret(chzzkProperty.getClientSecret())
-                .refreshToken(authorizationEntity.getRefreshToken())
-                .build()).getContent();
+            AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
+                    GrantType.REFRESH_TOKEN.getData(),
+                    chzzkProperty.clientId(),
+                    chzzkProperty.clientSecret(),
+                    null,
+                    null,
+                    authorizationEntity.getRefreshToken()
+            )).content();
             log.info("[REFRESH_TOKEN] : {}", authorizationDto);
-            UserDto userDto = chzzkOpenApi.getUser(authorizationDto.getTokenType() + " " + authorizationDto.getAccessToken()).getContent();
+            UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-            authorizationEntity.setChannelId(userDto.getChannelId());
-            authorizationEntity.setChannelName(userDto.getChannelName());
-            authorizationEntity.setAccessToken(authorizationDto.getAccessToken());
-            authorizationEntity.setRefreshToken(authorizationDto.getRefreshToken());
-            authorizationEntity.setTokenType(authorizationDto.getTokenType());
-            authorizationEntity.setExpiresIn(authorizationDto.getExpiresIn());
-            authorizationEntity.setScope(authorizationDto.getScope());
+            authorizationEntity.setChannelId(userDto.channelId());
+            authorizationEntity.setChannelName(userDto.channelName());
+            authorizationEntity.setAccessToken(authorizationDto.accessToken());
+            authorizationEntity.setRefreshToken(authorizationDto.refreshToken());
+            authorizationEntity.setTokenType(authorizationDto.tokenType());
+            authorizationEntity.setExpiresIn(authorizationDto.expiresIn());
+            authorizationEntity.setScope(authorizationDto.scope());
         }
 
         return authorizationEntity;

@@ -9,14 +9,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class FavoriteHistoryEntity extends BaseEntity {
 
     @Id
@@ -26,4 +24,5 @@ public class FavoriteHistoryEntity extends BaseEntity {
     private Integer favorite;
     @ManyToOne
     private FavoriteEntity favoriteEntity;
+
 }

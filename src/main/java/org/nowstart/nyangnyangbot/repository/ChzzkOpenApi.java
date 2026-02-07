@@ -1,12 +1,12 @@
 package org.nowstart.nyangnyangbot.repository;
 
 import org.nowstart.nyangnyangbot.config.Authorization;
-import org.nowstart.nyangnyangbot.data.dto.ApiResponseDto;
-import org.nowstart.nyangnyangbot.data.dto.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.AuthorizationRequestDto;
-import org.nowstart.nyangnyangbot.data.dto.MessageRequestDto;
-import org.nowstart.nyangnyangbot.data.dto.SessionDto;
-import org.nowstart.nyangnyangbot.data.dto.UserDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.ApiResponseDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.MessageRequestDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.SessionDto;
+import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
