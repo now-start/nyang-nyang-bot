@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
+import org.nowstart.nyangnyangbot.service.DonationRankService;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,8 +35,10 @@ import org.springframework.web.util.HtmlUtils;
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
+    private static final int TICKER_LIMIT = 5;
     private final AuthorizationRepository authorizationRepository;
     private static final int MAX_HISTORY_LIMIT = 50;
+    private final DonationRankService donationRankService;
 
     @Operation(
             summary = "즐겨찾기 리스트 조회",
@@ -54,6 +57,7 @@ public class FavoriteController {
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
         ModelAndView modelAndView = new ModelAndView("index", "favoriteList", favoriteList);
+        modelAndView.addObject("donationRanks", donationRankService.getWeeklyRanks(TICKER_LIMIT));
         if (authentication != null && authentication.isAuthenticated()) {
             authorizationRepository.findById(authentication.getName())
                     .map(authorization -> authorization.getChannelName())

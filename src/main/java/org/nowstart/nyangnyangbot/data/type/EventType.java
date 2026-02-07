@@ -7,5 +7,6 @@ public enum EventType {
 
     SYSTEM,
     CHAT,
-    DONATION
+    DONATION,
+    SUBSCRIPTION
 }
