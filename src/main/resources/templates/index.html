@@ -55,7 +55,7 @@
             <div>사유</div>
             <div>일자</div>
         </div>
-        <div class="board-body" th:if="${favoriteList != null}" th:with="historyLimit=10">
+        <div class="board-body" th:if="${favoriteList != null}">
             <div class="board-row" th:data-favorite="${favoriteEntity.favorite}"
                  th:data-nick-name="${favoriteEntity.nickName}"
                  th:data-user-id="${favoriteEntity.userId}"
@@ -73,34 +73,13 @@
                     <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
                 </div>
                 <div>
-          <span th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}"
-                th:text="${favoriteEntity.favoriteHistoryEntityList[0].history}">최초 입력</span>
-                    <span th:if="${#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">-</span>
+                    <span class="history-summary" data-history-summary>-</span>
                 </div>
                 <div>
-          <span th:if="${favoriteEntity.modifyDate != null}"
-                th:text="${#temporals.format(favoriteEntity.modifyDate, 'M/d')}">10/08</span>
-                    <span th:if="${favoriteEntity.modifyDate == null}">-</span>
+                    <span class="history-date" data-history-date>-</span>
                 </div>
                 <div class="history-details">
-                    <div class="history-grid"
-                         th:if="${!#lists.isEmpty(favoriteEntity.favoriteHistoryEntityList)}">
-                        <div class="history-row"
-                             th:each="favoriteHistoryEntityList, iterStat : ${favoriteEntity.favoriteHistoryEntityList}"
-                             th:if="${iterStat.index < historyLimit}">
-                            <div class="history-cell spacer"></div>
-                            <div class="history-cell score"
-                                 th:text="${favoriteHistoryEntityList.favorite}">12200
-                            </div>
-                            <div class="history-cell reason"
-                                 th:text="${favoriteHistoryEntityList.history}">최초 입력
-                            </div>
-                            <div class="history-cell date"
-                                 th:text="${favoriteHistoryEntityList.modifyDate != null ? #temporals.format(favoriteHistoryEntityList.modifyDate, 'M/d') : '-'}">
-                                10/08
-                            </div>
-                        </div>
-                    </div>
+                    <div class="history-grid"></div>
                 </div>
             </div>
         </div>
