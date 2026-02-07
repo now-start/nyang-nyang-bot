@@ -598,6 +598,8 @@ input[type=number] {
     padding: var(--space-24);
     display: grid;
     gap: var(--space-16);
+    max-height: min(85vh, 820px);
+    overflow: hidden;
 }
 
 .modal-header {
@@ -660,8 +662,9 @@ input[type=number] {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-10);
-    max-height: 280px;
-    overflow: auto;
+    max-height: min(36vh, 280px);
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-8) var(--space-6) var(--space-8) 0;
 }
 
@@ -748,11 +751,35 @@ input[type=number] {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-10);
-    max-height: 300px;
-    overflow: auto;
+    max-height: min(38vh, 300px);
+    overflow-y: auto;
+    overflow-x: hidden;
     padding-right: var(--space-4);
     padding-top: var(--space-10);
     padding-bottom: var(--space-10);
+}
+
+.adjustment-list,
+.attendance-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) rgba(255, 255, 255, 0.04);
+}
+
+.adjustment-list::-webkit-scrollbar,
+.attendance-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.adjustment-list::-webkit-scrollbar-track,
+.attendance-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+}
+
+.adjustment-list::-webkit-scrollbar-thumb,
+.attendance-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
 }
 
 .attendance-user-button {
