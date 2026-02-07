@@ -50,7 +50,8 @@
 
     <section class="board">
         <div class="board-head">
-            <div>닉네임/호감도</div>
+            <div>닉네임</div>
+            <div>호감도</div>
             <div>호감도 수정</div>
         </div>
         <div class="board-body" th:if="${favoriteList != null}">
@@ -64,8 +65,10 @@
                         <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
                              th:text="${favoriteEntity.nickName}">테스트
                         </div>
-                        <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
                     </div>
+                </div>
+                <div>
+                    <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
                 </div>
                 <div>
                     <button class="karma-button btn-auth" type="button">호감도 수정</button>
