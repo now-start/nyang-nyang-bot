@@ -35,20 +35,26 @@ public class AuthorizationService {
         )).content();
         UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-        boolean admin = authorizationRepository.findById(userDto.channelId())
-                .map(AuthorizationEntity::isAdmin)
-                .orElse(false);
-
-        return authorizationRepository.save(AuthorizationEntity.builder()
-                .channelId(userDto.channelId())
-                .channelName(userDto.channelName())
-                .accessToken(authorizationDto.accessToken())
-                .refreshToken(authorizationDto.refreshToken())
-                .tokenType(authorizationDto.tokenType())
-                .expiresIn(authorizationDto.expiresIn())
-                .scope(authorizationDto.scope())
-                .admin(admin)
-            .build());
+        return authorizationRepository.findById(userDto.channelId())
+                .map(existing -> {
+                    existing.setChannelName(userDto.channelName());
+                    existing.setAccessToken(authorizationDto.accessToken());
+                    existing.setRefreshToken(authorizationDto.refreshToken());
+                    existing.setTokenType(authorizationDto.tokenType());
+                    existing.setExpiresIn(authorizationDto.expiresIn());
+                    existing.setScope(authorizationDto.scope());
+                    return existing;
+                })
+                .orElseGet(() -> authorizationRepository.save(AuthorizationEntity.builder()
+                        .channelId(userDto.channelId())
+                        .channelName(userDto.channelName())
+                        .accessToken(authorizationDto.accessToken())
+                        .refreshToken(authorizationDto.refreshToken())
+                        .tokenType(authorizationDto.tokenType())
+                        .expiresIn(authorizationDto.expiresIn())
+                        .scope(authorizationDto.scope())
+                        .admin(false)
+                        .build()));
     }
 
     public AuthorizationEntity getAccessToken() {
