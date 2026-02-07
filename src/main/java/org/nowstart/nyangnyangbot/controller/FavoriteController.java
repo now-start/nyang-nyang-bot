@@ -58,12 +58,19 @@ public class FavoriteController {
 
         ModelAndView modelAndView = new ModelAndView("index", "favoriteList", favoriteList);
         modelAndView.addObject("donationRanks", donationRankService.getWeeklyRanks(TICKER_LIMIT));
+        boolean isAdmin = false;
+        String currentUserId = null;
         if (authentication != null && authentication.isAuthenticated()) {
+            currentUserId = authentication.getName();
+            isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
             authorizationRepository.findById(authentication.getName())
                     .map(authorization -> authorization.getChannelName())
                     .filter(name -> !name.isBlank())
                     .ifPresent(name -> modelAndView.addObject("currentNickName", name));
         }
+        modelAndView.addObject("currentUserId", currentUserId);
+        modelAndView.addObject("isAdmin", isAdmin);
         return modelAndView;
     }
 
