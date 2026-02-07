@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceDto;
+import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceUserDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
@@ -25,7 +26,7 @@ public class AttendanceService {
     private static final long ACTIVE_WINDOW_MILLIS = 10 * 60 * 1000L;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
-    private final Map<String, AttendanceUser> presence = new ConcurrentHashMap<>();
+    private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
     public void startCapture() {
@@ -53,11 +54,15 @@ public class AttendanceService {
         long now = System.currentTimeMillis();
         presence.compute(userId, (key, existing) -> {
             if (existing == null) {
-                return new AttendanceUser(userId, nickName, now);
+                return AttendanceUserDto.builder()
+                        .userId(userId)
+                        .nickName(nickName)
+                        .lastMessageTime(now)
+                        .build();
             }
-            existing.lastMessageTime = now;
+            existing.setLastMessageTime(now);
             if (!StringUtils.isBlank(nickName)) {
-                existing.nickName = nickName;
+                existing.setNickName(nickName);
             }
             return existing;
         });
@@ -66,8 +71,8 @@ public class AttendanceService {
     public List<AttendanceDto.User> getActiveUsers() {
         pruneInactive();
         return presence.values().stream()
-                .sorted(Comparator.comparingLong(AttendanceUser::lastMessageTime).reversed())
-                .map(user -> new AttendanceDto.User(user.userId, user.nickName, user.lastMessageTime))
+                .sorted(Comparator.comparingLong(AttendanceUserDto::getLastMessageTime).reversed())
+                .map(user -> new AttendanceDto.User(user.getUserId(), user.getNickName(), user.getLastMessageTime()))
                 .toList();
     }
 
@@ -131,23 +136,7 @@ public class AttendanceService {
 
     private void pruneInactive() {
         long cutoff = System.currentTimeMillis() - ACTIVE_WINDOW_MILLIS;
-        presence.entrySet().removeIf(entry -> entry.getValue().lastMessageTime < cutoff);
-    }
-
-    private static class AttendanceUser {
-        private final String userId;
-        private String nickName;
-        private long lastMessageTime;
-
-        private AttendanceUser(String userId, String nickName, long lastMessageTime) {
-            this.userId = userId;
-            this.nickName = nickName;
-            this.lastMessageTime = lastMessageTime;
-        }
-
-        private long lastMessageTime() {
-            return lastMessageTime;
-        }
+        presence.entrySet().removeIf(entry -> entry.getValue().getLastMessageTime() < cutoff);
     }
 }
 
