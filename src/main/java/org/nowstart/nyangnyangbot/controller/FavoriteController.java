@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.FavoriteHistoryResponse;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,7 @@ import org.springframework.web.util.HtmlUtils;
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
+    private final AuthorizationRepository authorizationRepository;
     private static final int MAX_HISTORY_LIMIT = 50;
 
     @Operation(
@@ -42,14 +44,25 @@ public class FavoriteController {
             description = "닉네임으로 필터링 가능하며, 페이지네이션과 정렬을 지원합니다."
     )
     @GetMapping("/list")
-    public ModelAndView favoriteList(@PageableDefault Pageable pageable, @RequestParam(required = false) String nickName) {
+    public ModelAndView favoriteList(
+            @PageableDefault Pageable pageable,
+            @RequestParam(required = false) String nickName,
+            Authentication authentication
+    ) {
         log.info("[GET][/favorite/list]");
         String safeNickName = Optional.ofNullable(nickName).map(HtmlUtils::htmlEscape).orElse("");
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
         Page<FavoriteEntity> favoriteList =
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
-        return new ModelAndView("index", "favoriteList", favoriteList);
+        ModelAndView modelAndView = new ModelAndView("index", "favoriteList", favoriteList);
+        if (authentication != null && authentication.isAuthenticated()) {
+            authorizationRepository.findById(authentication.getName())
+                    .map(authorization -> authorization.getChannelName())
+                    .filter(name -> !name.isBlank())
+                    .ifPresent(name -> modelAndView.addObject("currentNickName", name));
+        }
+        return modelAndView;
     }
 
     @Operation(summary = "호감도 히스토리 조회", description = "ADMIN은 전체 조회, 그 외는 본인 계정만 조회 가능합니다.")
