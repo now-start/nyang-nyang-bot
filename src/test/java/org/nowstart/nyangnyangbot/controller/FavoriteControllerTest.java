@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,6 +33,9 @@ class FavoriteControllerTest {
 
     @Mock
     private FavoriteService favoriteService;
+
+    @Mock
+    private AuthorizationRepository authorizationRepository;
 
     @InjectMocks
     private FavoriteController favoriteController;
@@ -64,7 +68,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
@@ -83,7 +87,7 @@ class FavoriteControllerTest {
         given(favoriteService.getByNickName(any(Pageable.class), eq(nickName))).willReturn(expectedPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, nickName);
+        ModelAndView result = favoriteController.favoriteList(pageable, nickName, null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
@@ -99,7 +103,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, "");
+        ModelAndView result = favoriteController.favoriteList(pageable, "", null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
@@ -114,7 +118,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, "   ");
+        ModelAndView result = favoriteController.favoriteList(pageable, "   ", null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
@@ -131,7 +135,7 @@ class FavoriteControllerTest {
         given(favoriteService.getByNickName(any(Pageable.class), eq(escapedNickName))).willReturn(emptyPage);
 
         // when
-        favoriteController.favoriteList(pageable, maliciousNickName);
+        favoriteController.favoriteList(pageable, maliciousNickName, null);
 
         // then
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(escapedNickName));
@@ -144,7 +148,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        favoriteController.favoriteList(pageable, null);
+        favoriteController.favoriteList(pageable, null, null);
 
         // then
         BDDMockito.then(favoriteService).should().getList(argThat(p ->
@@ -160,7 +164,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        favoriteController.favoriteList(page2, null);
+        favoriteController.favoriteList(page2, null, null);
 
         // then
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageNumber() == 2));
@@ -174,7 +178,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
-        favoriteController.favoriteList(customPageable, null);
+        favoriteController.favoriteList(customPageable, null, null);
 
         // then
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageSize() == 50));
@@ -188,7 +192,7 @@ class FavoriteControllerTest {
         given(favoriteService.getByNickName(any(Pageable.class), anyString())).willReturn(emptyPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, specialNickName);
+        ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
@@ -202,7 +206,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(emptyPage);
 
         // when
-        ModelAndView result = favoriteController.favoriteList(pageable, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
         then(result.getViewName()).isEqualTo("FavoriteList");
