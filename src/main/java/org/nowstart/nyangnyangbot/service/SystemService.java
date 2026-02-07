@@ -31,6 +31,10 @@ public class SystemService implements Emitter.Listener {
         if ("connected".equalsIgnoreCase(systemDto.type())) {
             sessionKey = systemDto.data().sessionKey();
             chzzkOpenApi.subscribeChatEvent(sessionKey);
+            // TODO: enable donation event subscription when handling is ready.
+            // chzzkOpenApi.subscribeDonationEvent(sessionKey);
+            // TODO: enable subscription event subscription when handling is ready.
+            // chzzkOpenApi.subscribeSubscriptionEvent(sessionKey);
         }
     }
 

@@ -36,6 +36,42 @@
     <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
     <section class="controls">
+        <section class="ticker-shell">
+            <div class="ticker-header">
+                <span class="ticker-title">주간 후원 랭킹</span>
+                <span class="ticker-subtitle">Top Supporters</span>
+            </div>
+            <div class="ticker-viewport">
+                <div class="ticker-track" th:if="${donationRanks != null and !#lists.isEmpty(donationRanks)}">
+                    <div class="ticker-row">
+                        <span class="rank-badge" th:each="rank : ${donationRanks}">
+                            <span class="rank-emoji" th:switch="${rank.rank}">
+                                <span th:case="1">🥇</span>
+                                <span th:case="2">🥈</span>
+                                <span th:case="3">🥉</span>
+                                <span th:case="*"></span>
+                            </span>
+                            <span th:text="${rank.rank} + '위 ' + ${rank.nickname}">1위 치즈냥</span>
+                        </span>
+                    </div>
+                    <div aria-hidden="true" class="ticker-row">
+                        <span class="rank-badge" th:each="rank : ${donationRanks}">
+                            <span class="rank-emoji" th:switch="${rank.rank}">
+                                <span th:case="1">🥇</span>
+                                <span th:case="2">🥈</span>
+                                <span th:case="3">🥉</span>
+                                <span th:case="*"></span>
+                            </span>
+                            <span th:text="${rank.rank} + '위 ' + ${rank.nickname}">1위 치즈냥</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="ticker-empty" th:if="${donationRanks == null or #lists.isEmpty(donationRanks)}">
+                    이번 주 후원 기록 없음
+                </div>
+            </div>
+        </section>
+
         <form class="search-form" method="get" th:action="@{/favorite/list}">
             <div class="search-field">
                 <span>닉네임</span>

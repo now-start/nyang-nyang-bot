@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.type.EventType;
 import org.nowstart.nyangnyangbot.service.ChatService;
+import org.nowstart.nyangnyangbot.service.DonationService;
+import org.nowstart.nyangnyangbot.service.SubscriptionService;
 import org.nowstart.nyangnyangbot.service.SystemService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,8 @@ public class ChzzkController {
 
     private final SystemService systemService;
     private final ChatService chatService;
+    private final DonationService donationService;
+    private final SubscriptionService subscriptionService;
     private Socket socket;
 
     @Operation(
@@ -63,6 +67,10 @@ public class ChzzkController {
 
         socket.on(EventType.SYSTEM.name(), systemService);
         socket.on(EventType.CHAT.name(), chatService);
+        // TODO: connect donation event when ready.
+        // socket.on(EventType.DONATION.name(), donationService);
+        // TODO: connect subscription event when ready.
+        // socket.on(EventType.SUBSCRIPTION.name(), subscriptionService);
         socket.connect();
     }
 }
