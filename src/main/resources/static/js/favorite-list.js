@@ -103,17 +103,6 @@ function buildHistoryCell(className, text) {
     return cell;
 }
 
-function updateHistorySummary(row, item) {
-    const summary = row.querySelector('[data-history-summary]');
-    if (summary) {
-        summary.textContent = item && item.history ? item.history : '-';
-    }
-    const date = row.querySelector('[data-history-date]');
-    if (date) {
-        date.textContent = item && item.date ? item.date : '-';
-    }
-}
-
 function renderHistory(row, items) {
     const grid = row.querySelector('.history-grid');
     if (!grid) {
@@ -123,23 +112,19 @@ function renderHistory(row, items) {
     if (!items || items.length === 0) {
         const emptyRow = document.createElement('div');
         emptyRow.className = 'history-row';
-        emptyRow.appendChild(buildHistoryCell('spacer', ''));
         emptyRow.appendChild(buildHistoryCell('score', '-'));
         emptyRow.appendChild(buildHistoryCell('reason', '히스토리 없음'));
         emptyRow.appendChild(buildHistoryCell('date', '-'));
         grid.appendChild(emptyRow);
-        updateHistorySummary(row, null);
     } else {
         items.forEach(function (item) {
             const rowEl = document.createElement('div');
             rowEl.className = 'history-row';
-            rowEl.appendChild(buildHistoryCell('spacer', ''));
             rowEl.appendChild(buildHistoryCell('score', item.favorite != null ? String(item.favorite) : '-'));
             rowEl.appendChild(buildHistoryCell('reason', item.history || '-'));
             rowEl.appendChild(buildHistoryCell('date', item.date || '-'));
             grid.appendChild(rowEl);
         });
-        updateHistorySummary(row, items[0]);
     }
     row.dataset.historyLoaded = 'true';
     row.dataset.historyLoading = 'false';
@@ -153,7 +138,6 @@ function showHistoryLoading(row) {
     grid.innerHTML = '';
     const loadingRow = document.createElement('div');
     loadingRow.className = 'history-row';
-    loadingRow.appendChild(buildHistoryCell('spacer', ''));
     loadingRow.appendChild(buildHistoryCell('score', ''));
     loadingRow.appendChild(buildHistoryCell('reason', '불러오는 중...'));
     loadingRow.appendChild(buildHistoryCell('date', ''));
