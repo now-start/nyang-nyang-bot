@@ -1,60 +1,73 @@
-# NyangNyangBot
+# 🐾 Nyang-Nyang Bot
 
-[![Build and Push Docker Image](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml/badge.svg)](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml)
+Spring Boot 기반 서비스 봇  
+CI/CD(GitHub Actions + Docker) 자동 배포
 
-https://chzzk.nowstart.org
+---
 
-## dependency
+## Stack
 
-- Chzzk API
-  - chzzk4j:0.0.12
-- Play Wright
-  - playwright:1.49.0
-- Google API
-  - google-api-services-sheets:v4-rev20241008-2.0.0
-- Security
-  - jasypt-spring-boot-starter:3.0.5
-  - spring-boot-starter-security
-- Repository
-  - spring-boot-starter-data-jpa
-  - spring-cloud-starter-openfeign
-- Admin Page
-  - spring-boot-starter-web
-  - spring-boot-starter-actuator
-  - spring-boot-admin-starter-server
-  - spring-boot-admin-starter-client
+- Java / Spring Boot
+- MySQL
+- Docker
+- GitHub Actions
+- GitHub Container Registry (GHCR)
 
-## Environment
+---
 
-| key              | required |
-|------------------|----------|
-| SERVER_BASE_URL  | O        |
-| DB_URL           | O        |
-| DB_USERNAME      | O        |
-| DB_PASSWORD      | O        |
-| CHZZK_CHANNEL_ID | O        |
-| CHZZK_ID         | O        |
-| CHZZK_PASSWORD   | O        |
-| GOOGLE_PATH      |          |
+## Repository
 
-## docker-compose
+- https://github.com/now-start/nyang-nyang-bot
 
-```
-services:
-  nyang-nyang-bot:
-    user: root
-    image: ghcr.io/now-start/nyang-nyang-bot:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - TZ=Asia/Seoul
-      - SERVER_BASE_URL=
-      - DB_URL=
-      - DB_USERNAME=
-      - DB_PASSWORD=
-      - CHZZK_CHANNEL=
-      - CHZZK_ID=
-      - CHZZK_PASSWORD=
-    volumes:
-      - ./resources:/resources
-```
+---
+
+## Workflow
+
+Fork → feature/* 개발 → PR → main merge
+→ GitHub Actions 자동 실행
+→ Build/Test → Docker Image → GHCR Push → Deploy
+
+- 모든 변경은 PR을 통해서만 `main`에 반영
+- `main` 병합 이후 배포는 전부 자동
+
+**Failure / Rollback**
+
+- Release 버전을 PreRelease로 변경하면 자동 롤백 수행
+
+---
+
+## Environment (DEV)
+
+### Database
+
+| Key     | Value       |
+|---------|-------------|
+| DB_URL  | *********** |
+| DB_USER | *********** |
+| DB_PASS | *********** |
+
+### OAuth
+
+| Key          | Value                       |
+|--------------|-----------------------------|
+| clientId     | ***********                 |
+| clientSecret | ***********                 |
+| redirectUrl  | http://localhost:8080/token |
+
+---
+
+## Monitoring
+
+- Grafana
+  https://dev-grafana.spring.nowstart.org
+
+---
+
+## Access
+
+| Role | Scope                 |
+|------|-----------------------|
+| DEV  | 코드, PR, DEV DB, CI 로그 |
+| OPS  | Secrets, 배포, 운영 DB    |
+
+---
