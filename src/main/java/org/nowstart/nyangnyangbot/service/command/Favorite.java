@@ -30,7 +30,7 @@ public class Favorite implements Command {
 
         log.info("[FAVORITE] : {}, {}", favoriteEntity.getFavorite(), chatDto);
         chzzkOpenApi.sendMessage(new MessageRequestDto(
-                chatDto.profile().nickname() + "?�의 ?�감?�는 " + favoriteEntity.getFavorite() + " ?�니???��"
+                chatDto.profile().nickname() + "님의 호감도는 " + favoriteEntity.getFavorite() + " 입니다.💛"
         ));
     }
 }
