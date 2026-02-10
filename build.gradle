@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.nowstart'
-version = '5.2.4'
+version = '5.3.0'
 
 springBoot {
     buildInfo()
@@ -68,4 +68,13 @@ dependencyManagement {
 test {
     useJUnitPlatform()
     ignoreFailures = true
+}
+
+bootBuildImage {
+    buildpacks = [
+            "docker.io/paketobuildpacks/java",
+            "docker.io/paketobuildpacks/opentelemetry"
+    ]
+
+    environment.put("BP_OPENTELEMETRY_ENABLED", "true")
 }
