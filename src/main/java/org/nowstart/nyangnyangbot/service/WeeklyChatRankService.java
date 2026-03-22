@@ -21,8 +21,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WeeklyChatRankService {
 
-    private static final int MAX_LIMIT = 10;
-
     private final WeeklyChatRankRepository weeklyChatRankRepository;
 
     public synchronized void recordChat(ChatDto chatDto) {
@@ -46,9 +44,8 @@ public class WeeklyChatRankService {
     }
 
     public List<WeeklyChatRankDto> getWeeklyRanks(int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
         List<WeeklyChatRankRepository.WeeklyChatRankProjection> results =
-                weeklyChatRankRepository.findWeeklyRanks(currentWeekStartDate(), PageRequest.of(0, safeLimit));
+                weeklyChatRankRepository.findWeeklyRanks(currentWeekStartDate(), PageRequest.of(0, limit));
 
         List<WeeklyChatRankDto> ranks = new ArrayList<>(results.size());
         int rank = 1;
