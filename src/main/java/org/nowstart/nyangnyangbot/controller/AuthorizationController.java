@@ -36,7 +36,7 @@ public class AuthorizationController {
     )
     @GetMapping("/login")
     public String login() {
-        log.info("[GET][/authorization/login]");
+        log.info("[GET][/login]");
         return "redirect:https://chzzk.naver.com/account-interlock?"
                 + "clientId=" + chzzkProperty.clientId()
                 + "&redirectUri=" + URLEncoder.encode(chzzkProperty.redirectUri() + "/token", StandardCharsets.UTF_8)
@@ -49,7 +49,7 @@ public class AuthorizationController {
     )
     @GetMapping("/token")
     public String token(String code, String state, HttpSession session) {
-        log.info("[GET][/authorization/token]");
+        log.info("[GET][/token]");
         AuthorizationEntity authorizationEntity = authorizationService.getAccessToken(code, state);
         List<GrantedAuthority> authorities = authorizationEntity.isAdmin()
                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))

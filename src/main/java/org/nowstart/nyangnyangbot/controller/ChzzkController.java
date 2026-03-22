@@ -14,6 +14,7 @@ import org.nowstart.nyangnyangbot.service.ChatService;
 import org.nowstart.nyangnyangbot.service.DonationService;
 import org.nowstart.nyangnyangbot.service.SubscriptionService;
 import org.nowstart.nyangnyangbot.service.SystemService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,11 +43,12 @@ public class ChzzkController {
         connectInternal();
     }
 
+    @Operation(summary = "치지직 채팅 수동 연결")
     @GetMapping("/connect")
     @PreAuthorize("hasRole('ADMIN')")
-    public String connect() throws URISyntaxException {
+    public ResponseEntity<String> connect() throws URISyntaxException {
         connectInternal();
-        return "SUCCESS";
+        return ResponseEntity.ok("SUCCESS");
     }
 
     private void connectInternal() throws URISyntaxException {
@@ -63,7 +65,7 @@ public class ChzzkController {
         Options option = new Options();
         option.reconnection = false;
 
-        socket = socket(systemService.getSession(), option);
+        socket = createSocket(systemService.getSession(), option);
 
         socket.on(EventType.SYSTEM.name(), systemService);
         socket.on(EventType.CHAT.name(), chatService);
@@ -72,6 +74,10 @@ public class ChzzkController {
         // TODO: connect subscription event when ready.
         // socket.on(EventType.SUBSCRIPTION.name(), subscriptionService);
         socket.connect();
+    }
+
+    Socket createSocket(String sessionUrl, Options options) throws URISyntaxException {
+        return socket(sessionUrl, options);
     }
 }
 
