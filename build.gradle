@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.10'
+    id 'org.springframework.boot' version '4.0.4'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.gorylenko.gradle-git-properties' version '2.5.4'
 }
@@ -29,52 +29,45 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2025.0.1")
-    set('springDocVersion', "2.8.15")
+    springDocVersion = "3.0.2"
+    opentelemetryVersion = "2.26.0"
+    springCloudVersion = "2025.1.1"
 }
 
 dependencies {
     implementation 'io.socket:socket.io-client:1.0.1'
     implementation 'com.google.apis:google-api-services-sheets:v4-rev20241008-2.0.0'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     // default
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-api'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
-    implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'com.h2database:h2'
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    runtimeOnly 'org.springframework.boot:spring-boot-h2console'
 }
 
 dependencyManagement {
     imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-        mavenBom "org.springdoc:springdoc-openapi-bom:${springDocVersion}"
+        mavenBom "org.springdoc:springdoc-openapi-bom:$springDocVersion"
+        mavenBom "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:$opentelemetryVersion"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
     }
 }
 
 test {
     useJUnitPlatform()
     ignoreFailures = true
-}
-
-bootBuildImage {
-    buildpacks = [
-            "docker.io/paketobuildpacks/java",
-            "docker.io/paketobuildpacks/opentelemetry"
-    ]
-
-    environment.put("BP_OPENTELEMETRY_ENABLED", "true")
 }
