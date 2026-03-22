@@ -32,6 +32,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                 .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
+                .requestMatchers("", "/").permitAll()
                 .requestMatchers("/login", "/token", "/authorization/login", "/authorization/token").permitAll()
                 .anyRequest().authenticated()
         );
