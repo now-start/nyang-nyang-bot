@@ -59,6 +59,7 @@ public class FavoriteController {
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
+        modelAndView.addObject("landingMode", false);
         modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT));
         boolean isAdmin = false;
         String currentUserId = null;

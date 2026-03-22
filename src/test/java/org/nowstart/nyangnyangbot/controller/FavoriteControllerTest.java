@@ -83,6 +83,7 @@ class FavoriteControllerTest {
 
         // then
         then(result.getViewName()).isEqualTo("index");
+        then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRanks);
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);

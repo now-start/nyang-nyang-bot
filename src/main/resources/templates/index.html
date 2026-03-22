@@ -1,20 +1,54 @@
-﻿<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <title>호감도</title>
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <title th:text="${landingMode} ? '치즈냥 호감도' : '호감도'">치즈냥 호감도</title>
+    <meta content="치즈냥의 호감도 보드와 주간 채팅 순위를 확인해 보세요."
+          name="description"
+          th:if="${landingMode}">
+    <meta content="website" property="og:type" th:if="${landingMode}">
+    <meta content="치즈냥" property="og:site_name" th:if="${landingMode}">
+    <meta content="치즈냥 호감도" property="og:title" th:if="${landingMode}">
+    <meta content="치즈냥의 호감도 보드와 주간 채팅 순위를 확인해 보세요."
+          property="og:description"
+          th:if="${landingMode}">
+    <meta content="https://spring.nowstart.org/nyang-nyang-bot/" property="og:url" th:if="${landingMode}">
+    <meta content="https://spring.nowstart.org/nyang-nyang-bot/assets/index.png"
+          property="og:image"
+          th:if="${landingMode}">
+    <meta content="summary_large_image" name="twitter:card" th:if="${landingMode}">
+    <meta content="치즈냥 호감도" name="twitter:title" th:if="${landingMode}">
+    <meta content="치즈냥의 호감도 보드와 주간 채팅 순위를 확인해 보세요."
+          name="twitter:description"
+          th:if="${landingMode}">
+    <meta content="https://spring.nowstart.org/nyang-nyang-bot/assets/index.png"
+          name="twitter:image"
+          th:if="${landingMode}">
+    <link href="https://fonts.googleapis.com" rel="preconnect" th:unless="${landingMode}">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" th:unless="${landingMode}">
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-          rel="stylesheet">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/favorite-list.css" rel="stylesheet" th:href="@{/css/favorite-list.css}">
+          rel="stylesheet"
+          th:unless="${landingMode}">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          rel="stylesheet"
+          th:unless="${landingMode}">
+    <link href="/css/favorite-list.css"
+          rel="stylesheet"
+          th:href="@{/css/favorite-list.css}"
+          th:unless="${landingMode}">
     <link href="https://nng-phinf.pstatic.net/MjAyNDAzMDlfMjQg/MDAxNzA5OTI3ODk5MTk4.-R_7VTIWynEx4CSWpUvSgqWIGlylkkv-hv8JsHugcvQg.d3Vl9GN584w3__Lxbaq5zWYBBhugPJ-CIZHl6KoZ1-8g.PNG/%ED%95%98%ED%8A%B8%EC%86%90_%EC%95%8C%ED%8A%B8%EB%B8%8C%EC%9D%B4.png?type=f120_120_na"
           rel="icon">
 </head>
 <body th:attr="data-current-user-id=${currentUserId},data-is-admin=${isAdmin}">
-<div class="page">
+<noscript th:if="${landingMode}">
+    <p>
+        자바스크립트가 꺼져 있어 자동 이동이 되지 않았습니다.
+        <a href="/login" th:href="@{/login}">로그인하기</a>
+    </p>
+</noscript>
+
+<div class="page" th:unless="${landingMode}">
     <header class="hero">
         <div class="hero-title">
             <span class="badge" th:text="${currentNickName != null ? currentNickName : '치즈냥'}">치즈냥</span>
@@ -153,17 +187,26 @@
     </div>
 </div>
 
-<div th:replace="~{fragments/toast :: toast}"></div>
-<div th:replace="~{fragments/karma-modal :: karma-modal}"></div>
-<div th:replace="~{fragments/attendance-modal :: attendance-modal}"></div>
-<div th:replace="~{fragments/loading :: loading}"></div>
+<div th:replace="~{fragments/toast :: toast}" th:unless="${landingMode}"></div>
+<div th:replace="~{fragments/karma-modal :: karma-modal}" th:unless="${landingMode}"></div>
+<div th:replace="~{fragments/attendance-modal :: attendance-modal}" th:unless="${landingMode}"></div>
+<div th:replace="~{fragments/loading :: loading}" th:unless="${landingMode}"></div>
 
-<script th:inline="javascript">
-    window.baseUrl = [[@{/}]];
+<script th:if="${landingMode}" th:inline="javascript">
+    (function () {
+        var loginUrl = /*[[@{/login}]]*/ '/login';
+        window.location.replace(loginUrl);
+    })();
 </script>
-<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-<script src="/js/favorite-list.js" th:src="@{/js/favorite-list.js}"></script>
+
+<th:block th:unless="${landingMode}">
+    <script th:inline="javascript">
+        window.baseUrl = /*[[@{/}]]*/ '/';
+    </script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="/js/favorite-list.js" th:src="@{/js/favorite-list.js}"></script>
+</th:block>
 </body>
 </html>
