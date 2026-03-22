@@ -18,9 +18,11 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
+import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -37,10 +39,14 @@ class FavoriteControllerTest {
     @Mock
     private AuthorizationRepository authorizationRepository;
 
+    @Mock
+    private WeeklyChatRankService weeklyChatRankService;
+
     @InjectMocks
     private FavoriteController favoriteController;
 
     private List<FavoriteEntity> favoriteEntities;
+    private List<WeeklyChatRankDto> weeklyChatRanks;
     private Pageable pageable;
 
     @BeforeEach
@@ -59,6 +65,11 @@ class FavoriteControllerTest {
                         .favorite(50)
                         .build()
         );
+        weeklyChatRanks = List.of(
+                new WeeklyChatRankDto(1, "채터1", 11L),
+                new WeeklyChatRankDto(2, "채터2", 7L)
+        );
+        given(weeklyChatRankService.getWeeklyRanks(5)).willReturn(weeklyChatRanks);
     }
 
     @Test
@@ -71,8 +82,10 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
+        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRanks);
+        BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
@@ -90,7 +103,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, nickName, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(nickName));
         BDDMockito.then(favoriteService).should(never()).getList(any());
@@ -106,7 +119,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, "", null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
@@ -121,7 +134,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, "   ", null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
     }
 
@@ -195,7 +208,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), anyString());
     }
 
@@ -209,7 +222,7 @@ class FavoriteControllerTest {
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
         // then
-        then(result.getViewName()).isEqualTo("FavoriteList");
+        then(result.getViewName()).isEqualTo("index");
         Page<FavoriteEntity> resultPage = (Page<FavoriteEntity>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();
     }

@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteHistoryDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.service.DonationRankService;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
+import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,11 +36,11 @@ public class FavoriteController {
 
     private static final String FAVORITE_LIST_VIEW = "index";
     private static final int MAX_HISTORY_LIMIT = 50;
-    private static final int TICKER_LIMIT = 5;
+    private static final int WEEKLY_CHAT_RANK_LIMIT = 5;
 
     private final FavoriteService favoriteService;
     private final AuthorizationRepository authorizationRepository;
-    private final DonationRankService donationRankService;
+    private final WeeklyChatRankService weeklyChatRankService;
 
     @Operation(
             summary = "즐겨찾기 리스트 조회",
@@ -59,7 +59,7 @@ public class FavoriteController {
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
-        modelAndView.addObject("donationRanks", donationRankService.getWeeklyRanks(TICKER_LIMIT));
+        modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT));
         boolean isAdmin = false;
         String currentUserId = null;
         if (authentication != null && authentication.isAuthenticated()) {

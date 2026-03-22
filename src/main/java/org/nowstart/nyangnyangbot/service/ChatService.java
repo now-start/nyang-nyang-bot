@@ -21,6 +21,7 @@ public class ChatService implements Emitter.Listener {
     private final ObjectMapper objectMapper;
     private final Map<String, Command> commands;
     private final AttendanceService attendanceService;
+    private final WeeklyChatRankService weeklyChatRankService;
 
     @Override
     @SneakyThrows
@@ -28,7 +29,12 @@ public class ChatService implements Emitter.Listener {
         ChatDto chatDto = objectMapper.readValue((String) objects[0], ChatDto.class);
         log.info("[ChzzkChat] socket received: {}", chatDto);
         attendanceService.recordChatUser(chatDto);
-        Command command = commands.get(CommandType.findNameByCommand(chatDto.content().split(" ")[0]));
+        weeklyChatRankService.recordChat(chatDto);
+        String commandName = CommandType.findNameByCommand(chatDto.content().split(" ")[0]);
+        if (commandName == null) {
+            return;
+        }
+        Command command = commands.get(commandName);
         if (command != null) {
             command.run(chatDto);
         }

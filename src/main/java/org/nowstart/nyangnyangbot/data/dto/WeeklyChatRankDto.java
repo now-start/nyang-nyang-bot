@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.data.dto;
 
-public record DonationRankDto(
+public record WeeklyChatRankDto(
         int rank,
         String nickname,
-        long totalAmount
+        long chatCount
 ) {
 }
