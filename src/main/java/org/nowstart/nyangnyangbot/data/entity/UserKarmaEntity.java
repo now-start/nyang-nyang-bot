@@ -11,25 +11,29 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.nowstart.nyangnyangbot.data.type.FavoriteHistoryType;
+import org.nowstart.nyangnyangbot.data.type.FavoriteKarmaSourceType;
 
 @Entity
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FavoriteHistoryEntity extends BaseEntity {
+public class UserKarmaEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String history;
-    private Integer favorite;
-    private Integer karmaScore;
-    private Integer attendanceCount;
-    @Enumerated(EnumType.STRING)
-    private FavoriteHistoryType type;
+
     @ManyToOne
     private FavoriteEntity favoriteEntity;
 
+    @ManyToOne
+    private FavoriteAdjustmentEntity adjustment;
+
+    private Integer quantity;
+    private String label;
+    private Integer amount;
+
+    @Enumerated(EnumType.STRING)
+    private FavoriteKarmaSourceType sourceType;
 }

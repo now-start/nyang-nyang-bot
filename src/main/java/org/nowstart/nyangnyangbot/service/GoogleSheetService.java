@@ -18,9 +18,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.data.entity.UserKarmaEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
+import org.nowstart.nyangnyangbot.data.type.FavoriteHistoryType;
+import org.nowstart.nyangnyangbot.data.type.FavoriteKarmaSourceType;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.repository.UserKarmaRepository;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -30,9 +34,12 @@ import org.springframework.stereotype.Service;
 public class GoogleSheetService {
 
     private static final String RANGE = "호감도 순위표!B2:H2000";
+    private static final String SYNC_LABEL = "데이터 동기화";
     private final GoogleProperty googleProperty;
     private final FavoriteRepository favoriteRepository;
+    private final UserKarmaRepository userKarmaRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final FavoriteAggregationService favoriteAggregationService;
 
     public void updateFavorite() {
         List<GoogleSheetDto> googleSheetDtoList = getSheetValues();
@@ -40,21 +47,28 @@ public class GoogleSheetService {
         for (GoogleSheetDto dto : googleSheetDtoList) {
             FavoriteEntity favoriteEntity = favoriteRepository.findById(dto.userId())
                     .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                        .userId(dto.userId())
-                        .nickName(dto.nickName())
-                            .favorite(0)
+                            .userId(dto.userId())
+                            .nickName(dto.nickName())
+                            .totalFavorite(0)
+                            .karmaScore(0)
+                            .attendanceCount(0)
                             .build()));
 
             if (!Objects.equals(favoriteEntity.getNickName(), dto.nickName())) {
                 favoriteEntity.setNickName(dto.nickName());
             }
 
-            if (!Objects.equals(favoriteEntity.getFavorite(), dto.favorite())) {
-                favoriteEntity.setFavorite(dto.favorite());
+            int before = favoriteEntity.safeFavorite();
+            syncFavoriteFromSheet(favoriteEntity, dto.favorite());
+            FavoriteAggregationService.FavoriteTotals totals = favoriteAggregationService.recalculate(favoriteEntity);
+            if (before != totals.totalFavorite()) {
                 favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
                         .favoriteEntity(favoriteEntity)
-                        .history("데이터 동기화")
-                        .favorite(dto.favorite())
+                        .history(SYNC_LABEL)
+                        .favorite(totals.totalFavorite())
+                        .karmaScore(totals.karmaScore())
+                        .attendanceCount(totals.attendanceCount())
+                        .type(FavoriteHistoryType.SYNC)
                         .build());
             }
         }
@@ -90,5 +104,25 @@ public class GoogleSheetService {
                         (existing, replacement) -> replacement
                 )).values().stream()
                 .toList();
+    }
+
+    private void syncFavoriteFromSheet(FavoriteEntity favoriteEntity, Integer desiredFavorite) {
+        userKarmaRepository.deleteAllByFavoriteEntityUserIdAndSourceType(
+                favoriteEntity.getUserId(),
+                FavoriteKarmaSourceType.SYNC
+        );
+        int attendanceCount = favoriteEntity.safeAttendanceCount();
+        int nonSyncKarmaScore = favoriteAggregationService.calculateNonSyncKarmaScore(favoriteEntity.getUserId());
+        int syncAmount = desiredFavorite - attendanceCount - nonSyncKarmaScore;
+        if (syncAmount == 0) {
+            return;
+        }
+        userKarmaRepository.save(UserKarmaEntity.builder()
+                .favoriteEntity(favoriteEntity)
+                .quantity(1)
+                .label(SYNC_LABEL)
+                .amount(syncAmount)
+                .sourceType(FavoriteKarmaSourceType.SYNC)
+                .build());
     }
 }

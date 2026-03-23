@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
+import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteListItemDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
@@ -28,6 +29,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.ModelAndView;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,16 +57,8 @@ class FavoriteControllerTest {
         pageable = PageRequest.of(0, 10);
 
         favoriteEntities = Arrays.asList(
-                FavoriteEntity.builder()
-                        .userId("user1")
-                        .nickName("유저1")
-                        .favorite(100)
-                        .build(),
-                FavoriteEntity.builder()
-                        .userId("user2")
-                        .nickName("유저2")
-                        .favorite(50)
-                        .build()
+                favoriteEntity("user1", "유저1", 100),
+                favoriteEntity("user2", "유저2", 50)
         );
         weeklyChatRanks = List.of(
                 new WeeklyChatRankDto(1, "채터1", 11L),
@@ -85,6 +80,10 @@ class FavoriteControllerTest {
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
+        Page<FavoriteListItemDto> favoriteListView = (Page<FavoriteListItemDto>) result.getModel().get("favoriteListView");
+        then(favoriteListView.getContent()).hasSize(2);
+        then(favoriteListView.getContent().get(0).displayFavorite()).isEqualTo(100);
+        then(favoriteListView.getContent().get(0).totalFavorite()).isEqualTo(100);
         then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRanks);
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
@@ -156,7 +155,7 @@ class FavoriteControllerTest {
     }
 
     @Test
-    void favoriteList_ShouldApplyDescendingSort_ByFavorite() {
+    void favoriteList_ShouldApplyDescendingSort_ByTotalFavorite() {
         // given
         Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
@@ -166,7 +165,7 @@ class FavoriteControllerTest {
 
         // then
         BDDMockito.then(favoriteService).should().getList(argThat(p ->
-                p.getSort().equals(Sort.by("favorite").descending())
+                p.getSort().equals(Sort.by("totalFavorite").descending())
         ));
     }
 
@@ -226,5 +225,22 @@ class FavoriteControllerTest {
         then(result.getViewName()).isEqualTo("index");
         Page<FavoriteEntity> resultPage = (Page<FavoriteEntity>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();
+    }
+
+    private FavoriteEntity favoriteEntity(String userId, String nickName, int score) {
+        FavoriteEntity favoriteEntity = FavoriteEntity.builder()
+                .userId(userId)
+                .nickName(nickName)
+                .build();
+        setScore(favoriteEntity, score);
+        return favoriteEntity;
+    }
+
+    private void setScore(FavoriteEntity favoriteEntity, int score) {
+        if (ReflectionUtils.findField(FavoriteEntity.class, "totalFavorite") != null) {
+            ReflectionTestUtils.setField(favoriteEntity, "totalFavorite", score);
+            return;
+        }
+        ReflectionTestUtils.setField(favoriteEntity, "favorite", score);
     }
 }

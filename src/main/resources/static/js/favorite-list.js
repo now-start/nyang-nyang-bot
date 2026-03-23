@@ -25,6 +25,32 @@ let attendanceUsers = [];
 let attendanceSelectedIds = new Set();
 let attendancePollingId = null;
 
+function resolveFavoriteValue(source) {
+    if (!source) {
+        return 0;
+    }
+    const candidateValues = [source.totalFavorite, source.afterFavorite, source.favorite];
+    for (let i = 0; i < candidateValues.length; i += 1) {
+        const candidate = candidateValues[i];
+        if (candidate != null) {
+            const parsed = parseInt(candidate, 10);
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
+        }
+    }
+    return 0;
+}
+
+function setRowFavorite(row, favorite) {
+    if (!row) {
+        return;
+    }
+    const value = Number.isNaN(favorite) ? 0 : favorite;
+    row.setAttribute('data-favorite', String(value));
+    row.setAttribute('data-total-favorite', String(value));
+}
+
 function getUiPermissions() {
     const root = document.body;
     if (!root) {
@@ -58,7 +84,10 @@ function openModal(row) {
         return;
     }
     currentUserId = row.getAttribute('data-user-id');
-    currentFavorite = parseInt(row.getAttribute('data-favorite') || '0', 10);
+    currentFavorite = resolveFavoriteValue({
+        totalFavorite: row.getAttribute('data-total-favorite'),
+        favorite: row.getAttribute('data-favorite')
+    });
     const nickName = row.getAttribute('data-nick-name') || '';
     document.getElementById('karma-target').textContent = nickName || currentUserId;
     const calcCurrent = document.getElementById('calc-current');
@@ -151,7 +180,8 @@ function renderHistory(row, items) {
         items.forEach(function (item) {
             const rowEl = document.createElement('div');
             rowEl.className = 'history-row';
-            rowEl.appendChild(buildHistoryCell('score', item.favorite != null ? String(item.favorite) : '-'));
+            const historyFavorite = item.favorite != null ? item.favorite : item.totalFavorite;
+            rowEl.appendChild(buildHistoryCell('score', historyFavorite != null ? String(historyFavorite) : '-'));
             rowEl.appendChild(buildHistoryCell('reason', item.history || '-'));
             rowEl.appendChild(buildHistoryCell('date', item.date || '-'));
             grid.appendChild(rowEl);
@@ -529,10 +559,11 @@ function applyAdjustments() {
         .then(function (data) {
             const row = document.querySelector('.board-row[data-user-id="' + data.userId + '"]');
             if (row) {
-                row.setAttribute('data-favorite', data.afterFavorite);
+                const nextFavorite = resolveFavoriteValue(data);
+                setRowFavorite(row, nextFavorite);
                 const score = row.querySelector('.score');
                 if (score) {
-                    score.textContent = data.afterFavorite;
+                    score.textContent = String(nextFavorite);
                 }
             }
             showToast('업보 적용 완료');

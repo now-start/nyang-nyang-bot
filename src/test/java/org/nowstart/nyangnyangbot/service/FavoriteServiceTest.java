@@ -19,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.ReflectionUtils;
 
 @ExtendWith(MockitoExtension.class)
 class FavoriteServiceTest {
@@ -40,21 +42,9 @@ class FavoriteServiceTest {
         pageable = PageRequest.of(0, 10);
 
         favoriteEntities = Arrays.asList(
-                FavoriteEntity.builder()
-                        .userId("user1")
-                        .nickName("테스트유저1")
-                        .favorite(100)
-                        .build(),
-                FavoriteEntity.builder()
-                        .userId("user2")
-                        .nickName("테스트유저2")
-                        .favorite(50)
-                        .build(),
-                FavoriteEntity.builder()
-                        .userId("user3")
-                        .nickName("유저3")
-                        .favorite(30)
-                        .build()
+                favoriteEntity("user1", "테스트유저1", 100),
+                favoriteEntity("user2", "테스트유저2", 50),
+                favoriteEntity("user3", "유저3", 30)
         );
     }
 
@@ -156,5 +146,18 @@ class FavoriteServiceTest {
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
         BDDMockito.then(favoriteRepository).should().findAll(largePageable);
+    }
+
+    private FavoriteEntity favoriteEntity(String userId, String nickName, int score) {
+        FavoriteEntity favoriteEntity = FavoriteEntity.builder()
+                .userId(userId)
+                .nickName(nickName)
+                .build();
+        if (ReflectionUtils.findField(FavoriteEntity.class, "totalFavorite") != null) {
+            ReflectionTestUtils.setField(favoriteEntity, "totalFavorite", score);
+            return favoriteEntity;
+        }
+        ReflectionTestUtils.setField(favoriteEntity, "favorite", score);
+        return favoriteEntity;
     }
 }

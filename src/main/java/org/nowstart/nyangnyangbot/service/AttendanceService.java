@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceDto;
@@ -14,8 +13,8 @@ import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceUserDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.data.type.FavoriteHistoryType;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,7 +22,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AttendanceService {
 
-    private final FavoriteRepository favoriteRepository;
+    private final FavoriteAggregationService favoriteAggregationService;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
     private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
@@ -88,23 +87,19 @@ public class AttendanceService {
             if (target == null || StringUtils.isBlank(target.userId())) {
                 continue;
             }
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(target.userId())
-                    .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                            .userId(target.userId())
-                            .nickName(safeNickname(target))
-                            .favorite(0)
-                            .build()));
-
-            int before = Objects.requireNonNullElse(favoriteEntity.getFavorite(), 0);
-            int after = before + amount;
-            favoriteEntity.setFavorite(after);
+            FavoriteEntity favoriteEntity = favoriteAggregationService.getOrCreateFavorite(target.userId(), safeNickname(target));
+            favoriteEntity.setAttendanceCount(favoriteEntity.safeAttendanceCount() + amount);
             if (!StringUtils.isBlank(target.nickName())) {
                 favoriteEntity.setNickName(target.nickName());
             }
+            FavoriteAggregationService.FavoriteTotals totals = favoriteAggregationService.recalculate(favoriteEntity);
             favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
                     .favoriteEntity(favoriteEntity)
                     .history(String.format(Locale.ROOT, "출석체크(+%d)", amount))
-                    .favorite(after)
+                    .favorite(totals.totalFavorite())
+                    .karmaScore(totals.karmaScore())
+                    .attendanceCount(totals.attendanceCount())
+                    .type(FavoriteHistoryType.ATTENDANCE)
                     .build());
         }
 

@@ -8,11 +8,15 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteHistoryDto;
+import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteListItemDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -54,11 +58,17 @@ public class FavoriteController {
     ) {
         log.info("[GET][/favorite/list]");
         String safeNickName = Optional.ofNullable(nickName).map(HtmlUtils::htmlEscape).orElse("");
-        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
+        Pageable page = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(resolveFavoriteSortProperty()).descending()
+        );
         Page<FavoriteEntity> favoriteList =
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
+        Page<FavoriteListItemDto> favoriteListView = toFavoriteListView(favoriteList);
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
+        modelAndView.addObject("favoriteListView", favoriteListView);
         modelAndView.addObject("landingMode", false);
         modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT));
         boolean isAdmin = false;
@@ -89,5 +99,58 @@ public class FavoriteController {
                 .map(FavoriteHistoryDto::from)
                 .toList();
         return ResponseEntity.ok(body);
+    }
+
+    private Page<FavoriteListItemDto> toFavoriteListView(Page<FavoriteEntity> favoriteList) {
+        List<FavoriteListItemDto> content = favoriteList.stream()
+                .map(this::toFavoriteListItem)
+                .toList();
+        return new PageImpl<>(content, favoriteList.getPageable(), favoriteList.getTotalElements());
+    }
+
+    private FavoriteListItemDto toFavoriteListItem(FavoriteEntity favoriteEntity) {
+        Integer legacyFavorite = readIntegerProperty(favoriteEntity, "favorite");
+        Integer totalFavorite = readIntegerProperty(favoriteEntity, "totalFavorite");
+        Integer displayFavorite = totalFavorite != null ? totalFavorite : legacyFavorite;
+        if (displayFavorite == null) {
+            displayFavorite = 0;
+        }
+        if (legacyFavorite == null) {
+            legacyFavorite = displayFavorite;
+        }
+        if (totalFavorite == null) {
+            totalFavorite = displayFavorite;
+        }
+        return new FavoriteListItemDto(
+                favoriteEntity.getUserId(),
+                favoriteEntity.getNickName(),
+                legacyFavorite,
+                totalFavorite
+        );
+    }
+
+    private Integer readIntegerProperty(Object target, String propertyName) {
+        BeanWrapperImpl beanWrapper = new BeanWrapperImpl(target);
+        if (!beanWrapper.isReadableProperty(propertyName)) {
+            return null;
+        }
+        Object value = beanWrapper.getPropertyValue(propertyName);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.valueOf(value.toString());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String resolveFavoriteSortProperty() {
+        return BeanUtils.getPropertyDescriptor(FavoriteEntity.class, "totalFavorite") != null
+                ? "totalFavorite"
+                : "favorite";
     }
 }

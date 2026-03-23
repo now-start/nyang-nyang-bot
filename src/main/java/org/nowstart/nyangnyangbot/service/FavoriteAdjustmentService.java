@@ -12,9 +12,12 @@ import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.data.entity.UserKarmaEntity;
+import org.nowstart.nyangnyangbot.data.type.FavoriteHistoryType;
+import org.nowstart.nyangnyangbot.data.type.FavoriteKarmaSourceType;
 import org.nowstart.nyangnyangbot.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.repository.UserKarmaRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,8 +26,9 @@ import org.springframework.stereotype.Service;
 public class FavoriteAdjustmentService {
 
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
-    private final FavoriteRepository favoriteRepository;
+    private final UserKarmaRepository userKarmaRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final FavoriteAggregationService favoriteAggregationService;
 
     public List<FavoriteAdjustmentEntity> getAdjustments() {
         return favoriteAdjustmentRepository.findAll()
@@ -71,25 +75,21 @@ public class FavoriteAdjustmentService {
             }
         }
 
-        FavoriteEntity favoriteEntity = favoriteRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Favorite user not found"));
-
-        int before = favoriteEntity.getFavorite() == null ? 0 : favoriteEntity.getFavorite();
-        int delta = adjustments.stream()
-                .mapToInt(FavoriteAdjustmentEntity::getAmount)
-                .sum();
-        if (hasManualAmount) {
-            delta += manualAmount;
-        }
-        int after = before + delta;
-
-        favoriteEntity.setFavorite(after);
+        FavoriteEntity favoriteEntity = favoriteAggregationService.getOrCreateFavorite(userId, "");
+        int before = favoriteEntity.safeFavorite();
+        userKarmaRepository.saveAll(buildKarmas(favoriteEntity, adjustments, manualAmount, manualHistory));
+        FavoriteAggregationService.FavoriteTotals totals = favoriteAggregationService.recalculate(favoriteEntity);
+        int after = totals.totalFavorite();
+        int delta = after - before;
 
         String history = buildHistory(adjustments, manualAmount, manualHistory);
         favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
                 .favoriteEntity(favoriteEntity)
                 .history(history)
                 .favorite(after)
+                .karmaScore(totals.karmaScore())
+                .attendanceCount(totals.attendanceCount())
+                .type(FavoriteHistoryType.KARMA)
                 .build());
 
         return new FavoriteAdjustmentDto.ApplyResponse(
@@ -111,6 +111,35 @@ public class FavoriteAdjustmentService {
         if (StringUtils.isBlank(request.label())) {
             throw new IllegalArgumentException("label is required");
         }
+    }
+
+    private List<UserKarmaEntity> buildKarmas(
+            FavoriteEntity favoriteEntity,
+            List<FavoriteAdjustmentEntity> adjustments,
+            Integer manualAmount,
+            String manualHistory
+    ) {
+        List<UserKarmaEntity> karmas = new ArrayList<>();
+        for (FavoriteAdjustmentEntity adjustment : adjustments) {
+            karmas.add(UserKarmaEntity.builder()
+                    .favoriteEntity(favoriteEntity)
+                    .adjustment(adjustment)
+                    .quantity(1)
+                    .label(adjustment.getLabel())
+                    .amount(adjustment.getAmount())
+                    .sourceType(FavoriteKarmaSourceType.ADJUSTMENT)
+                    .build());
+        }
+        if (manualAmount != null && manualAmount != 0) {
+            karmas.add(UserKarmaEntity.builder()
+                    .favoriteEntity(favoriteEntity)
+                    .quantity(1)
+                    .label(StringUtils.isBlank(manualHistory) ? "수동 입력" : manualHistory.trim())
+                    .amount(manualAmount)
+                    .sourceType(FavoriteKarmaSourceType.MANUAL)
+                    .build());
+        }
+        return karmas;
     }
 
     private String buildHistory(

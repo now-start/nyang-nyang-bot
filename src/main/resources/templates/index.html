@@ -111,17 +111,18 @@
         </form>
     </section>
 
-    <section class="board">
+    <section class="board" th:with="favoriteBoard=${favoriteListView != null ? favoriteListView : favoriteList}">
         <div class="board-head">
             <div>닉네임</div>
             <div>호감도</div>
             <div>호감도 수정</div>
         </div>
-        <div class="board-body" th:if="${favoriteList != null}">
-            <div class="board-row" th:data-favorite="${favoriteEntity.favorite}"
+        <div class="board-body" th:if="${favoriteBoard != null}">
+            <div class="board-row" th:data-favorite="${favoriteEntity.displayFavorite}"
+                 th:data-total-favorite="${favoriteEntity.displayFavorite}"
                  th:data-nick-name="${favoriteEntity.nickName}"
                  th:data-user-id="${favoriteEntity.userId}"
-                 th:each="favoriteEntity, iterStat : ${favoriteList.content}"
+                 th:each="favoriteEntity, iterStat : ${favoriteBoard.content}"
                  th:style="'--i:' + ${iterStat.index}">
                 <div>
                     <div class="nickname-line">
@@ -131,7 +132,7 @@
                     </div>
                 </div>
                 <div>
-                    <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
+                    <span class="score" th:text="${favoriteEntity.displayFavorite}">12200</span>
                 </div>
                 <div>
                     <button class="karma-button btn-auth" type="button">호감도 수정</button>
@@ -143,14 +144,14 @@
         </div>
     </section>
 
-    <div th:if="${favoriteList != null}">
-        <nav th:if="${favoriteList.totalPages > 1}"
-             th:with="blockSize=${10}, start=${(favoriteList.number / blockSize) * blockSize},
-                  end=${T(java.lang.Math).min(favoriteList.totalPages - 1, start + blockSize - 1)}">
+    <div th:if="${favoriteBoard != null}">
+        <nav th:if="${favoriteBoard.totalPages > 1}"
+             th:with="blockSize=${10}, start=${(favoriteBoard.number / blockSize) * blockSize},
+                  end=${T(java.lang.Math).min(favoriteBoard.totalPages - 1, start + blockSize - 1)}">
             <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${favoriteList.number == 0} ? 'disabled'">
+                <li class="page-item" th:classappend="${favoriteBoard.number == 0} ? 'disabled'">
                     <a aria-label="Previous" class="page-link"
-                       th:href="@{/favorite/list(page=${favoriteList.number - 1})}">
+                       th:href="@{/favorite/list(page=${favoriteBoard.number - 1})}">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -163,22 +164,23 @@
                 </li>
 
                 <li class="page-item"
-                    th:classappend="${i == favoriteList.number} ? 'active'"
+                    th:classappend="${i == favoriteBoard.number} ? 'active'"
                     th:each="i : ${#numbers.sequence(start, end)}">
                     <a class="page-link" th:href="@{/favorite/list(page=${i})}" th:text="${i + 1}"></a>
                 </li>
 
-                <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
+                <li class="page-item disabled" th:if="${end < favoriteBoard.totalPages - 2}">
                     <span class="page-link">...</span>
                 </li>
-                <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
-                    <a class="page-link" th:href="@{/favorite/list(page=${favoriteList.totalPages - 1})}"
-                       th:text="${favoriteList.totalPages}"></a>
+                <li class="page-item" th:if="${end < favoriteBoard.totalPages - 1}">
+                    <a class="page-link" th:href="@{/favorite/list(page=${favoriteBoard.totalPages - 1})}"
+                       th:text="${favoriteBoard.totalPages}"></a>
                 </li>
 
                 <li class="page-item"
-                    th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
-                    <a aria-label="Next" class="page-link" th:href="@{/favorite/list(page=${favoriteList.number + 1})}">
+                    th:classappend="${favoriteBoard.number == favoriteBoard.totalPages - 1} ? 'disabled'">
+                    <a aria-label="Next" class="page-link"
+                       th:href="@{/favorite/list(page=${favoriteBoard.number + 1})}">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
