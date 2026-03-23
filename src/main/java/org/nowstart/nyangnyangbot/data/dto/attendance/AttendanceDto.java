@@ -7,7 +7,7 @@ public class AttendanceDto {
     public record ApplyRequest(List<User> users, Integer amount) {
     }
 
-    public record ApplyResponse(int amount, int count) {
+    public record ApplyResponse(Integer amount, Integer count) {
     }
 
     public record User(String userId, String nickName, Long lastMessageTime) {

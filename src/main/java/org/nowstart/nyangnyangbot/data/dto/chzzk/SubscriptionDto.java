@@ -4,8 +4,8 @@ public record SubscriptionDto(
         String channelId,
         String subscriberChannelId,
         String subscriberNickname,
-        int tierNo,
+        Integer tierNo,
         String tierName,
-        int month
+        Integer month
 ) {
 }

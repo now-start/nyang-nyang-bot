@@ -1,10 +1,13 @@
 package org.nowstart.nyangnyangbot.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,8 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
@@ -30,6 +36,7 @@ class GoogleSheetServiceTest {
     @Mock
     private FavoriteHistoryRepository favoriteHistoryRepository;
 
+    @Spy
     @InjectMocks
     private GoogleSheetService googleSheetService;
 
@@ -43,103 +50,93 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldCreateNewEntity_WhenUserNotExists() {
-        // Note: This test demonstrates the structure but cannot fully test
-        // the Google Sheets API integration without mocking the entire Sheets service
-        // In a real scenario, you would need to refactor the code to inject the Sheets service
-        // or use integration tests with a test Google Sheet
-
-        // This is a simplified test to verify the repository interaction logic
-        FavoriteEntity newEntity =
-                FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).build();
-
+        FavoriteEntity newEntity = FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).build();
+        doReturn(List.of(new GoogleSheetDto("새유저", "newUser", 10))).when(googleSheetService).getSheetValues();
         given(favoriteRepository.findById("newUser")).willReturn(Optional.empty());
         given(favoriteRepository.save(any(FavoriteEntity.class))).willReturn(newEntity);
 
-        // We cannot directly test updateFavorite without refactoring to inject Sheets
-        // but we can verify the expected behavior through the repository calls
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        googleSheetService.updateFavorite();
+
+        BDDMockito.then(favoriteRepository).should().findById("newUser");
+        BDDMockito.then(favoriteHistoryRepository).should().save(argThat(history ->
+                history.getFavoriteEntity() == newEntity
+                        && Integer.valueOf(10).equals(history.getFavorite())
+                        && "데이터 동기화".equals(history.getHistory())
+        ));
+        assertThat(newEntity.getFavorite()).isEqualTo(10);
     }
 
     @Test
     void updateFavorite_ShouldUpdateExistingEntity_WhenFavoriteChanged() {
-        // Similar to above, this test demonstrates the expected behavior
-        // In production, consider refactoring to make this testable
-
+        doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 70))).when(googleSheetService).getSheetValues();
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(existingFavorite));
 
-        // Cannot fully test without Sheets service injection
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        googleSheetService.updateFavorite();
+
+        assertThat(existingFavorite.getFavorite()).isEqualTo(70);
+        BDDMockito.then(favoriteHistoryRepository).should().save(any(FavoriteHistoryEntity.class));
     }
 
     @Test
     void updateFavorite_ShouldNotUpdate_WhenFavoriteUnchanged() {
-        // This test shows the intention but requires refactoring for proper testing
         FavoriteEntity unchangedEntity =
                 FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
-
+        doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 50))).when(googleSheetService).getSheetValues();
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(unchangedEntity));
 
-        // Cannot fully test without Sheets service injection
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        googleSheetService.updateFavorite();
+
+        BDDMockito.then(favoriteHistoryRepository).should(never()).save(any(FavoriteHistoryEntity.class));
+        assertThat(unchangedEntity.getFavorite()).isEqualTo(50);
     }
 
     @Test
     void updateFavorite_ShouldAddHistory_WhenFavoriteChanges() {
-        // This test demonstrates the expected history addition behavior
         FavoriteEntity entityWithHistory =
                 FavoriteEntity.builder().userId("user123").nickName("유저").favorite(100).build();
-
+        doReturn(List.of(new GoogleSheetDto("유저", "user123", 120))).when(googleSheetService).getSheetValues();
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(entityWithHistory));
 
-        // In a properly refactored version, we would verify that:
-        // 1. History entity is created with "데이터 동기화" message
-        // 2. New favorite value is set
-        // 3. Nickname is updated if changed
+        googleSheetService.updateFavorite();
 
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        BDDMockito.then(favoriteHistoryRepository).should().save(argThat(history ->
+                history.getFavoriteEntity() == entityWithHistory
+                        && Integer.valueOf(120).equals(history.getFavorite())
+                        && "데이터 동기화".equals(history.getHistory())
+        ));
     }
 
     @Test
     void updateFavorite_ShouldHandleDuplicateUsers_KeepingLatest() {
-        // This test verifies the duplicate handling logic using Collectors.toMap
-        // with the replacement function that keeps the latest entry
+        List<GoogleSheetDto> rows = googleSheetService.normalizeRows(List.of(
+                new GoogleSheetDto("예전닉네임", "user123", 30),
+                new GoogleSheetDto("최신닉네임", "user123", 80)
+        ));
 
-        // The implementation uses:
-        // .collect(Collectors.toMap(
-        //     GoogleSheetDto::getUserId,
-        //     dto -> dto,
-        //     (existing, replacement) -> replacement
-        // ))
-
-        // Cannot fully test without Sheets service, but the logic is clear
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        assertThat(rows).containsExactly(new GoogleSheetDto("최신닉네임", "user123", 80));
     }
 
     @Test
     void updateFavorite_ShouldSkipEmptyUserIds() {
-        // The implementation filters out blank userIds using:
-        // .filter(dto -> !StringUtils.isBlank(dto.getUserId()))
+        List<GoogleSheetDto> rows = googleSheetService.normalizeRows(java.util.Arrays.asList(
+                new GoogleSheetDto("빈값", "", 10),
+                new GoogleSheetDto("정상", "user123", 20),
+                null
+        ));
 
-        // This test demonstrates that blank user IDs should be skipped
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
+        assertThat(rows).containsExactly(new GoogleSheetDto("정상", "user123", 20));
     }
 
     @Test
     void updateFavorite_ShouldUpdateNickname_WhenChanged() {
-        // Test verifies that nickname is updated when it changes
         FavoriteEntity entity =
                 FavoriteEntity.builder().userId("user123").nickName("이전닉네임").favorite(100).build();
-
+        doReturn(List.of(new GoogleSheetDto("새닉네임", "user123", 100))).when(googleSheetService).getSheetValues();
         given(favoriteRepository.findById("user123")).willReturn(Optional.of(entity));
 
-        // In a refactored version, we would verify:
-        // entity.setNickName("새닉네임") is called when the name changes
-        BDDMockito.then(favoriteRepository).should(never()).findById(anyString());
-    }
+        googleSheetService.updateFavorite();
 
-    // Note: To properly test GoogleSheetService, consider refactoring:
-    // 1. Extract Sheets service creation to a separate factory/builder
-    // 2. Inject the Sheets service as a dependency
-    // 3. Create integration tests with a test Google Sheet
-    // 4. Or mock the entire Sheets API chain (complex but possible)
+        assertThat(entity.getNickName()).isEqualTo("새닉네임");
+        BDDMockito.then(favoriteHistoryRepository).should(never()).save(any(FavoriteHistoryEntity.class));
+    }
 }

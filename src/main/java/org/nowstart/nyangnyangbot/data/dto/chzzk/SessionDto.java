@@ -4,9 +4,9 @@ import java.util.List;
 
 public record SessionDto(
         String url,
-        int page,
-        int totalCount,
-        int totalPages,
+        Integer page,
+        Integer totalCount,
+        Integer totalPages,
         List<SessionData> data
 ) {
     public record SessionData(

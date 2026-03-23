@@ -10,6 +10,7 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.io.FileInputStream;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -38,43 +39,51 @@ public class GoogleSheetService {
 
         for (GoogleSheetDto dto : googleSheetDtoList) {
             FavoriteEntity favoriteEntity = favoriteRepository.findById(dto.userId())
-                .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
+                    .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
                         .userId(dto.userId())
                         .nickName(dto.nickName())
-                    .favorite(0)
-                    .build()));
+                            .favorite(0)
+                            .build()));
 
-            if (!favoriteEntity.getFavorite().equals(dto.favorite())) {
+            if (!Objects.equals(favoriteEntity.getNickName(), dto.nickName())) {
                 favoriteEntity.setNickName(dto.nickName());
+            }
+
+            if (!Objects.equals(favoriteEntity.getFavorite(), dto.favorite())) {
                 favoriteEntity.setFavorite(dto.favorite());
                 favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                    .favoriteEntity(favoriteEntity)
-                    .history("데이터 동기화")
+                        .favoriteEntity(favoriteEntity)
+                        .history("데이터 동기화")
                         .favorite(dto.favorite())
-                    .build());
+                        .build());
             }
         }
     }
 
     @SneakyThrows
-    private List<GoogleSheetDto> getSheetValues() {
+    List<GoogleSheetDto> getSheetValues() {
         GoogleCredentials credentials =
                 GoogleCredentials.fromStream(new FileInputStream(googleProperty.key())).createScoped(SheetsScopes.SPREADSHEETS);
         Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
-            .setApplicationName("google-sheet-project")
-            .build();
+                .setApplicationName("google-sheet-project")
+                .build();
 
         List<List<Object>> values = sheets.spreadsheets()
-            .values()
+                .values()
                 .get(googleProperty.id(), RANGE)
-            .execute().getValues();
+                .execute().getValues();
 
-        return values.stream()
+        return normalizeRows(values.stream()
                 .map(value -> {
                     log.info("[GoogleSheet] Row value: {}", value);
                     return GoogleSheetDto.fromRow(value);
                 })
-                .filter(dto -> dto != null && !StringUtils.isBlank(dto.userId()))
+                .toList());
+    }
+
+    List<GoogleSheetDto> normalizeRows(List<GoogleSheetDto> rows) {
+        return rows.stream()
+                .filter(dto -> dto != null && !StringUtils.isBlank(dto.userId()) && dto.favorite() != null)
                 .collect(Collectors.toMap(
                         GoogleSheetDto::userId,
                         dto -> dto,

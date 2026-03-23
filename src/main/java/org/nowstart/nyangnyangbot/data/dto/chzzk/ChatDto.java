@@ -9,7 +9,7 @@ public record ChatDto(
         Profile profile,
         String content,
         Map<String, String> emojis,
-        long messageTime
+        Long messageTime
 ) {
     public record Profile(
             String nickname,

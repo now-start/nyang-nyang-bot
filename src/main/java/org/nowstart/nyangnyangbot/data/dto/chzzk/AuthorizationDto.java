@@ -4,7 +4,7 @@ public record AuthorizationDto(
         String accessToken,
         String refreshToken,
         String tokenType,
-        int expiresIn,
+        Integer expiresIn,
         String scope
 ) {
 }
