@@ -18,7 +18,7 @@
 ## 2. 개요
 
 Nyang-Nyang Bot은 CHZZK 채널 커뮤니티의 참여도를 관리하기 위한 Spring Boot 기반 채팅봇 및 웹 관리 서비스이다. 핵심 제품 가치는 `호감도`라고 부르는 잔액형 포인트 제도이며, 출석, 채팅, 관리자 조정, 업보, 후원 룰렛, 이벤트 참여 결과를 하나의 원장으로 관리한다.
-
+https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&next=%2Fauth%2Fendpoint%2Flogin%2Fresult%3Fnext%3D%252F%26d%3Dcahl60vup5xv
 최종 목표는 빵떡이처럼 스트리머가 채팅 명령어, 방송 관리, 오버레이, 미니게임, 외부 연동, 커뮤니티 이벤트를 운영할 수 있는 채팅봇 플랫폼이 되는 것이다. 다만 초기 차별화 중심은 범용 채팅봇 기능이 아니라 호감도 포인트 제도에 둔다.
 
 ## 3. 현재 구현 범위
@@ -177,6 +177,31 @@ Nyang-Nyang Bot은 CHZZK 채널 커뮤니티의 참여도를 관리하기 위한
 - 스트리머/매니저/조회 전용 관리자 권한 체계 확장
 - 장기적으로 다중 채널 운영 모델 검토
 
-## 10. 결정 상태
+## 10. 결정 사항 인덱스
 
-현재 핵심 출시 범위와 주요 포인트 정책은 결정되었다. 이후 상세 구현 전에는 API/DB 설계와 화면 플로우 단계에서 추가 질문을 정리한다.
+세부 정책은 각 서브 문서에서 다루며, 본 절은 결정 위치만 빠르게 찾기 위한 인덱스이다.
+
+| 분류 | 결정 | 위치 |
+| --- | --- | --- |
+| 동시성 | 호감도 잔액은 사용자별 비관적 락(SELECT FOR UPDATE)으로 직렬화 | [point-system.md §6](prd/point-system.md) |
+| 동시성 | 다회차 룰렛은 결과 일괄 확정(한 TX) + 원장 반영 회차별 분리 | [roulette-overlay.md §6.1](prd/roulette-overlay.md) |
+| 동시성 | 잔액-원장 정합성 별도 검증 batch 없음, 사후 수동 보정 | [point-system.md §6](prd/point-system.md) |
+| 룰렛 | 명령어 매칭은 토큰 단위 정확 일치 | [roulette-overlay.md §4.1](prd/roulette-overlay.md) |
+| 룰렛 | 후원 시점 활성/항목/확률 스냅샷을 RouletteEvent에 저장 | [roulette-overlay.md §4.2](prd/roulette-overlay.md) |
+| 룰렛 | idempotency key는 CHZZK 후원 이벤트 ID 단일 값 | [roulette-overlay.md §4.3](prd/roulette-overlay.md) |
+| 룰렛 | 환불/취소 이벤트는 발행되지 않는 것으로 간주, 사후 수동 보정 | [roulette-overlay.md §4.4](prd/roulette-overlay.md) |
+| 룰렛 | 자동 안내 채팅 발송 안 함 | [roulette-overlay.md §4.5](prd/roulette-overlay.md) |
+| 룰렛 | 활성화 전 가상 1만 회 시뮬레이션 미리보기, 실 통계 알람 없음 | [roulette-overlay.md §3.1](prd/roulette-overlay.md) |
+| 룰렛 | 후원 1건당 회차 상한 두지 않음 | [roulette-overlay.md §5](prd/roulette-overlay.md) |
+| 사용자 UX | 음수 잔액 그대로 표시 + 빨간색 등 시각 시그널 (랭킹 포함) | [point-system.md §4](prd/point-system.md) |
+| 사용자 UX | 신규 보유/정정은 미확인 배지(`lastSeenAt`) 단일 메커니즘 | [point-system.md §4.1](prd/point-system.md) |
+| 사용자 UX | 보유 목록 기본 최신순 + 상태 필터(기본 OWNED) | [point-system.md §4.2](prd/point-system.md) |
+| 사용자 UX | 후원자 결과 확인은 마이페이지 + `!룰렛결과` 채팅 명령어 | [reward-catalog.md §6](prd/reward-catalog.md) |
+| 사용자 UX | 채팅 명령어 사용자별 쿨타임 30초 기본, 명령어별 관리자 설정 | [reward-catalog.md §7](prd/reward-catalog.md) |
+| 운영 | 출석체크는 활성화 사이클 단위, 한 사이클 내 1회 부여 | [reward-catalog.md §2.0](prd/reward-catalog.md) |
+| 운영 | 일반 사용자 검색 없음, 관리자만 닉네임 부분 일치 검색 | [point-system.md §4](prd/point-system.md), [technical-appendix.md §4.1](prd/technical-appendix.md) |
+| 운영 | 사용자 탈퇴 자동 처리 없음, 데이터 보존 | [point-system.md §7](prd/point-system.md) |
+| 운영 | 권한 분리(STREAMER/MANAGER 등)는 실 수요 발생 시 도입 | [technical-appendix.md §4.1](prd/technical-appendix.md) |
+| 운영 | 오버레이 토큰 무기한 + 관리자 수동 폐기, lastUsedAt Grafana | [technical-appendix.md §4.1](prd/technical-appendix.md) |
+| 운영 | 운영 로그는 logfmt 표준 키, 별도 AdminAuditLog 테이블 없음 | [technical-appendix.md §4.4](prd/technical-appendix.md) |
+| 미정 | 등업 단계명, 주간 캐쉬백, 인증 업로드 등은 TBD 표로 추적 | [technical-appendix.md §8](prd/technical-appendix.md) |
