@@ -2,7 +2,7 @@
 
 - 문서 상태: MVP PRD v1
 - 작성일: 2026-05-07
-- 상위 문서: [Nyang-Nyang Bot PRD](../nyang-nyang-bot-prd.md)
+- 상위 문서: [Nyang-Nyang Bot Spec](index.md)
 
 ## 1. 참고 링크
 
