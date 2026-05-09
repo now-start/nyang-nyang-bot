@@ -50,6 +50,9 @@ class RouletteServiceTest {
     @Mock
     private RouletteRoundApplyService rouletteRoundApplyService;
 
+    @Mock
+    private OverlayDisplayService overlayDisplayService;
+
     @Test
     void activateTable_ShouldRejectTableWithoutLosingItem() {
         RouletteService rouletteService = createService();
@@ -152,6 +155,7 @@ class RouletteServiceTest {
         assertThat(result.roundCount()).isEqualTo(2);
         then(rouletteRoundApplyService).should().applyRound(30L);
         then(rouletteRoundApplyService).should().applyRound(31L);
+        then(overlayDisplayService).should().enqueue(20L);
         ArgumentCaptor<RouletteEventEntity> eventCaptor = ArgumentCaptor.forClass(RouletteEventEntity.class);
         then(rouletteEventRepository).should(times(2)).save(eventCaptor.capture());
         assertThat(eventCaptor.getAllValues().getFirst().getItemsSnapshotJson()).contains("호감도 +10", "꽝");
@@ -164,7 +168,8 @@ class RouletteServiceTest {
                 rouletteItemRepository,
                 rouletteEventRepository,
                 rouletteRoundResultRepository,
-                rouletteRoundApplyService
+                rouletteRoundApplyService,
+                overlayDisplayService
         );
     }
 

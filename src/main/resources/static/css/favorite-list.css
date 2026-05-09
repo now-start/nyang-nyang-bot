@@ -1036,6 +1036,20 @@ input[type=number] {
     font-variant-numeric: tabular-nums;
 }
 
+.roulette-overlay-admin {
+    display: grid;
+    gap: var(--space-10);
+}
+
+.roulette-overlay-form {
+    grid-template-columns: auto minmax(0, 1fr) 160px auto;
+}
+
+.roulette-overlay-form input[readonly] {
+    color: var(--accent-500);
+    font-weight: 700;
+}
+
 .roulette-empty {
     color: var(--muted-300);
     font-size: var(--fs-14);
@@ -1188,6 +1202,7 @@ input[type=number] {
     .roulette-layout,
     .roulette-table-form,
     .roulette-item-form,
+    .roulette-overlay-form,
     .roulette-status-grid,
     .roulette-item-row {
         grid-template-columns: 1fr;

@@ -42,6 +42,7 @@ public class RouletteService {
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
     private final RouletteRoundApplyService rouletteRoundApplyService;
+    private final OverlayDisplayService overlayDisplayService;
 
     @Transactional
     public RouletteTableDto.Response createTable(RouletteTableDto.CreateRequest request) {
@@ -170,6 +171,7 @@ public class RouletteService {
         List<RouletteRoundResultEntity> rounds = rouletteRoundResultRepository.saveAll(confirmRounds(event, items));
         rounds.forEach(round -> rouletteRoundApplyService.applyRound(round.getId()));
         refreshEventStatus(event.getId());
+        overlayDisplayService.enqueue(event.getId());
         return RouletteRunDto.Response.confirmed(event, rounds);
     }
 

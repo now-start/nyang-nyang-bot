@@ -697,6 +697,41 @@ function simulateRouletteTable() {
         });
 }
 
+function issueOverlayToken() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    fetch(buildUrl('/admin/overlay/roulette/token'), {method: 'POST'})
+        .then(requireOk)
+        .then(function (data) {
+            const tokenUrl = window.location.origin + buildUrl('/overlay/roulette') + '#token=' + data.token;
+            setValue('overlay-token-url', tokenUrl);
+            showToast('오버레이 토큰 발급 완료');
+        })
+        .catch(function () {
+            showToast('오버레이 토큰 발급에 실패했습니다.');
+        });
+}
+
+function replayOverlayEvent() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    const rouletteEventId = parseInt(valueOf('overlay-replay-event-id'), 10);
+    if (Number.isNaN(rouletteEventId) || rouletteEventId <= 0) {
+        showToast('룰렛 이벤트 ID를 입력해 주세요.');
+        return;
+    }
+    fetch(buildUrl('/admin/overlay/roulette/events/' + rouletteEventId + '/replay'), {method: 'POST'})
+        .then(requireOk)
+        .then(function () {
+            showToast('오버레이 재송출 대기열에 추가했습니다.');
+        })
+        .catch(function () {
+            showToast('오버레이 재송출에 실패했습니다.');
+        });
+}
+
 function renderRouletteSimulation(data) {
     const simulationEl = document.getElementById('roulette-simulation');
     if (!simulationEl) {
@@ -1060,6 +1095,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target.id === 'roulette-simulate') {
             event.preventDefault();
             simulateRouletteTable();
+            return;
+        }
+
+        if (event.target.id === 'overlay-token-issue') {
+            event.preventDefault();
+            issueOverlayToken();
+            return;
+        }
+
+        if (event.target.id === 'overlay-replay') {
+            event.preventDefault();
+            replayOverlayEvent();
             return;
         }
 
