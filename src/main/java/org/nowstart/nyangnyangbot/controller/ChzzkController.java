@@ -69,8 +69,7 @@ public class ChzzkController {
 
         socket.on(EventType.SYSTEM.name(), systemService);
         socket.on(EventType.CHAT.name(), chatService);
-        // TODO: connect donation event when ready.
-        // socket.on(EventType.DONATION.name(), donationService);
+        socket.on(EventType.DONATION.name(), donationService);
         // TODO: connect subscription event when ready.
         // socket.on(EventType.SUBSCRIPTION.name(), subscriptionService);
         socket.connect();

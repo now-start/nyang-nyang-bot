@@ -7,7 +7,8 @@ import org.apache.commons.lang.StringUtils;
 @Getter
 @RequiredArgsConstructor
 public enum CommandType {
-    FAVORITE("!호감도");
+    FAVORITE("!호감도"),
+    ROULETTE_RESULT("!룰렛결과");
 
     private final String command;
 

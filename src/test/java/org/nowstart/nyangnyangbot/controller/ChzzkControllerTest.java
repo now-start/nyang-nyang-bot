@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.type.EventType;
 import org.nowstart.nyangnyangbot.service.ChatService;
 import org.nowstart.nyangnyangbot.service.DonationService;
 import org.nowstart.nyangnyangbot.service.SubscriptionService;
@@ -153,5 +154,19 @@ class ChzzkControllerTest {
         // then
         BDDMockito.then(systemService).should(times(2)).isConnected();
         BDDMockito.then(systemService).should(times(2)).getSession();
+    }
+
+    @Test
+    void connect_ShouldSubscribeDonationEvent_WhenSocketConnects() throws URISyntaxException {
+        // given
+        chzzkController = createController();
+        given(systemService.isConnected()).willReturn(false);
+        given(systemService.getSession()).willReturn("https://example.com");
+
+        // when
+        chzzkController.connect();
+
+        // then
+        BDDMockito.then(socket).should().on(EventType.DONATION.name(), donationService);
     }
 }
