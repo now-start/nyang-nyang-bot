@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.emitter.Emitter;
 import jakarta.transaction.Transactional;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +20,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ChatService implements Emitter.Listener {
 
+    private static final long DEFAULT_COMMAND_COOLDOWN_MILLIS = 30_000L;
+
     private final ObjectMapper objectMapper;
     private final Map<String, Command> commands;
     private final AttendanceService attendanceService;
     private final WeeklyChatRankService weeklyChatRankService;
+    private final ConcurrentMap<String, Long> lastCommandTimes = new ConcurrentHashMap<>();
 
     @Override
     @SneakyThrows
@@ -35,8 +40,26 @@ public class ChatService implements Emitter.Listener {
             return;
         }
         Command command = commands.get(commandName);
-        if (command != null) {
+        if (command != null && !isInCooldown(chatDto.senderChannelId(), commandName)) {
             command.run(chatDto);
         }
+    }
+
+    boolean isInCooldown(String userId, String commandName) {
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+        String key = userId + ":" + commandName;
+        long now = currentTimeMillis();
+        Long previous = lastCommandTimes.get(key);
+        if (previous != null && now - previous < DEFAULT_COMMAND_COOLDOWN_MILLIS) {
+            return true;
+        }
+        lastCommandTimes.put(key, now);
+        return false;
+    }
+
+    long currentTimeMillis() {
+        return System.currentTimeMillis();
     }
 }
