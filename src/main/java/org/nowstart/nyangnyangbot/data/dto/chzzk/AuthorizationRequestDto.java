@@ -8,4 +8,10 @@ public record AuthorizationRequestDto(
         String state,
         String refreshToken
 ) {
+
+    @Override
+    public String toString() {
+        return "AuthorizationRequestDto[grantType=%s, clientId=%s, clientSecret=<masked>, code=<masked>, state=<masked>, refreshToken=<masked>]"
+                .formatted(grantType, clientId);
+    }
 }

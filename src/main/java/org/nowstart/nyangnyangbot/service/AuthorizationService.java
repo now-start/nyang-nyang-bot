@@ -70,7 +70,7 @@ public class AuthorizationService {
                     null,
                     authorizationEntity.getRefreshToken()
             )).content();
-            log.info("[REFRESH_TOKEN] : {}", authorizationDto);
+            log.info("[REFRESH_TOKEN] token refreshed");
             UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
             authorizationEntity.setChannelId(userDto.channelId());

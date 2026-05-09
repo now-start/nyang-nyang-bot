@@ -56,6 +56,40 @@ class ChzzkDtoDeserializationTest {
     }
 
     @Test
+    void authorizationDto_ToStringShouldMaskSensitiveTokens() {
+        AuthorizationDto dto = new AuthorizationDto("access-secret", "refresh-secret", "Bearer", 3600, "chat");
+
+        String result = dto.toString();
+
+        assertThat(result).doesNotContain("access-secret", "refresh-secret");
+        assertThat(result).contains("accessToken=<masked>", "refreshToken=<masked>");
+    }
+
+    @Test
+    void authorizationRequestDto_ToStringShouldMaskSensitiveValues() {
+        AuthorizationRequestDto dto = new AuthorizationRequestDto(
+                "authorization_code",
+                "client-id",
+                "client-secret",
+                "code-secret",
+                "state-secret",
+                "refresh-secret"
+        );
+
+        String result = dto.toString();
+
+        assertThat(result).doesNotContain("client-secret", "code-secret", "state-secret", "refresh-secret");
+        assertThat(result).contains(
+                "grantType=authorization_code",
+                "clientId=client-id",
+                "clientSecret=<masked>",
+                "code=<masked>",
+                "state=<masked>",
+                "refreshToken=<masked>"
+        );
+    }
+
+    @Test
     void subscriptionDto_ShouldAllowNullTierFields() throws Exception {
         String json = """
                 {
