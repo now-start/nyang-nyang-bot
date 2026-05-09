@@ -15,13 +15,17 @@
 
 ## 2. 배포 전 체크리스트
 
-- `./gradlew test` 통과.
+- `./gradlew test --no-daemon` 통과.
+- WSL에서 wrapper 실행 권한 또는 line ending 문제가 있으면 `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain test --no-daemon`로 동일 검증을 수행한다.
 - CHZZK OAuth 로그인 수동 검증.
 - 관리자 권한 계정으로 관리자 화면/API 접근 검증.
 - 일반 사용자 계정으로 관리자 API 거부 검증.
 - 민감 설정 값이 로그에 출력되지 않는지 확인.
+- OAuth state, access token, refresh token, overlay token 원문이 로그에 출력되지 않는지 확인.
 - DB migration 적용 계획 확인.
 - Google Sheets 마이그레이션 실행 여부 확인.
+- 후원 룰렛 `!룰렛` 명령어 exact token 매칭과 중복 후원 이벤트 ID 재수신을 확인.
+- OBS 오버레이 URL이 `/overlay/roulette#token=...` fragment 형식인지 확인.
 - Grafana/Actuator 상태 확인.
 - 롤백 대상 release 또는 image tag 확인.
 
@@ -206,11 +210,22 @@
 | 룰렛 실행 | `action=roulette.run` |
 | 룰렛 고회차 | `action=roulette.high_round` |
 | 오버레이 토큰 변경 | `action=overlay_token.rotate` 또는 `action=overlay_token.revoke` |
+| 오버레이 재송출 | `action=overlay.replay` |
+| 룰렛 테이블 활성화 | `action=roulette_table.activate` |
 
 라벨 정책:
 
 - Loki 라벨은 `level`, `action`, `result`처럼 카디널리티가 낮은 값 위주로 둔다.
 - `actor`, `target`, `trace_id`, 닉네임은 라벨이 아니라 메시지 페이로드로 둔다.
+
+릴리즈 직후 확인 query:
+
+```text
+{app="nyang-nyang-bot"} |= "result=success"
+{app="nyang-nyang-bot"} |= "action=roulette.run"
+{app="nyang-nyang-bot"} |= "action=overlay_token.rotate"
+{app="nyang-nyang-bot"} |= "level=ERROR"
+```
 
 ## 13. 민감 값 노출 대응
 
