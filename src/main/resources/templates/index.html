@@ -56,6 +56,7 @@
             <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
         </div>
         <div class="hero-actions">
+            <button class="btn-ghost btn-auth" id="roulette-button" th:if="${isAdmin}" type="button">룰렛 관리</button>
             <button class="btn-ghost btn-attendance btn-auth" id="attendance-button" type="button">출석체크</button>
         </div>
     </header>
@@ -190,6 +191,7 @@
 <div th:replace="~{fragments/toast :: toast}" th:unless="${landingMode}"></div>
 <div th:replace="~{fragments/karma-modal :: karma-modal}" th:unless="${landingMode}"></div>
 <div th:replace="~{fragments/attendance-modal :: attendance-modal}" th:unless="${landingMode}"></div>
+<div th:replace="~{fragments/roulette-modal :: roulette-modal}" th:unless="${landingMode}"></div>
 <div th:replace="~{fragments/loading :: loading}" th:unless="${landingMode}"></div>
 
 <script th:if="${landingMode}" th:inline="javascript">

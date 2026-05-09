@@ -150,6 +150,8 @@ body::before {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: var(--space-10);
+    flex-wrap: wrap;
 }
 
 .btn-attendance {
@@ -812,6 +814,257 @@ input[type=number] {
     font-size: var(--fs-14);
 }
 
+.roulette-panel {
+    width: min(980px, 100%);
+}
+
+.roulette-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: var(--space-16);
+    min-height: 0;
+}
+
+.roulette-section {
+    display: grid;
+    gap: var(--space-10);
+    min-width: 0;
+}
+
+.roulette-section-title {
+    color: var(--text-200);
+    font-size: var(--fs-13);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.roulette-form {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.roulette-table-form {
+    grid-template-columns: minmax(0, 1fr) 110px 110px auto;
+}
+
+.roulette-item-form {
+    grid-template-columns: minmax(0, 1.2fr) 96px 78px minmax(0, 120px) minmax(0, 120px) 96px auto;
+}
+
+.roulette-form input,
+.roulette-form select {
+    min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: 10px;
+    color: var(--text-100);
+    padding: var(--space-8) var(--space-10);
+    outline: none;
+}
+
+.roulette-form select {
+    color: var(--text-100);
+}
+
+.roulette-checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+    min-width: 0;
+    margin: 0;
+    padding: var(--space-8) var(--space-10);
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: 10px;
+    color: var(--text-200);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.roulette-table-list,
+.roulette-item-list {
+    display: grid;
+    gap: var(--space-8);
+    max-height: min(30vh, 260px);
+    overflow-y: auto;
+    padding-right: var(--space-4);
+}
+
+.roulette-table-button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-10);
+    align-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    background: var(--surface-3);
+    color: var(--text-100);
+    padding: var(--space-10) var(--space-12);
+    text-align: left;
+}
+
+.roulette-table-button span,
+.roulette-table-button strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.roulette-table-button strong {
+    color: var(--text-200);
+    font-size: var(--fs-12);
+    justify-self: end;
+}
+
+.roulette-table-button.is-selected {
+    background: var(--accent-surface-strong);
+    border-color: var(--accent-border);
+}
+
+.roulette-table-button.is-active strong {
+    color: var(--accent-500);
+}
+
+.roulette-item-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 140px);
+    gap: var(--space-8);
+    align-items: center;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: var(--surface-3);
+    padding: var(--space-10) var(--space-12);
+}
+
+.roulette-item-label,
+.roulette-item-reward {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.roulette-item-probability {
+    justify-self: end;
+    color: var(--accent-500);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.roulette-item-reward {
+    color: var(--text-200);
+    text-align: right;
+    font-size: var(--fs-13);
+}
+
+.roulette-status {
+    display: grid;
+    gap: var(--space-10);
+    background: var(--accent-surface-soft);
+    border: 1px solid var(--accent-border-faint);
+    border-radius: 14px;
+    padding: var(--space-12);
+}
+
+.roulette-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-10);
+}
+
+.roulette-status-grid div {
+    display: grid;
+    gap: var(--space-4);
+    background: var(--surface-3);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: var(--space-8) var(--space-10);
+}
+
+.roulette-status-grid span {
+    color: var(--muted-300);
+    font-size: var(--fs-12);
+    font-weight: 700;
+}
+
+.roulette-status-grid strong {
+    color: var(--text-100);
+    font-size: var(--fs-15);
+}
+
+.roulette-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.roulette-reasons span {
+    border: 1px solid var(--danger-border);
+    background: var(--danger-surface);
+    color: #ffb3b3;
+    border-radius: 999px;
+    padding: var(--space-6) var(--space-10);
+    font-size: var(--fs-12);
+    font-weight: 700;
+}
+
+.roulette-reasons .roulette-ok {
+    border-color: var(--accent-border);
+    background: var(--accent-surface);
+    color: var(--accent-500);
+}
+
+.roulette-simulation {
+    display: grid;
+    gap: var(--space-6);
+}
+
+.roulette-simulation-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-10);
+    color: var(--text-200);
+    font-size: var(--fs-13);
+}
+
+.roulette-simulation-row strong {
+    color: var(--text-100);
+    font-variant-numeric: tabular-nums;
+}
+
+.roulette-empty {
+    color: var(--muted-300);
+    font-size: var(--fs-14);
+    padding: var(--space-10) 0;
+}
+
+.roulette-table-list,
+.roulette-item-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) rgba(255, 255, 255, 0.04);
+}
+
+.roulette-table-list::-webkit-scrollbar,
+.roulette-item-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.roulette-table-list::-webkit-scrollbar-track,
+.roulette-item-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+}
+
+.roulette-table-list::-webkit-scrollbar-thumb,
+.roulette-item-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
 
 .manual-adjustment {
     display: grid;
@@ -883,6 +1136,7 @@ input[type=number] {
 
     .hero-actions {
         width: 100%;
+        justify-content: stretch;
     }
 
     .hero {
@@ -929,6 +1183,20 @@ input[type=number] {
     .btn-strong,
     .btn-ghost {
         width: 100%;
+    }
+
+    .roulette-layout,
+    .roulette-table-form,
+    .roulette-item-form,
+    .roulette-status-grid,
+    .roulette-item-row {
+        grid-template-columns: 1fr;
+    }
+
+    .roulette-item-probability,
+    .roulette-item-reward {
+        justify-self: start;
+        text-align: left;
     }
 }
 
