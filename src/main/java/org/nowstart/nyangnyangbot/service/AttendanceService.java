@@ -6,16 +6,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceDto;
 import org.nowstart.nyangnyangbot.data.dto.attendance.AttendanceUserDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,8 +21,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AttendanceService {
 
-    private final FavoriteRepository favoriteRepository;
-    private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final GrantFavoriteUseCase grantFavoriteUseCase;
     private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
@@ -88,23 +85,15 @@ public class AttendanceService {
             if (target == null || StringUtils.isBlank(target.userId())) {
                 continue;
             }
-            FavoriteEntity favoriteEntity = favoriteRepository.findById(target.userId())
-                    .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                            .userId(target.userId())
-                            .nickName(safeNickname(target))
-                            .favorite(0)
-                            .build()));
-
-            int before = Objects.requireNonNullElse(favoriteEntity.getFavorite(), 0);
-            int after = before + amount;
-            favoriteEntity.setFavorite(after);
-            if (!StringUtils.isBlank(target.nickName())) {
-                favoriteEntity.setNickName(target.nickName());
-            }
-            favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                    .favoriteEntity(favoriteEntity)
-                    .history(String.format(Locale.ROOT, "출석체크(+%d)", amount))
-                    .favorite(after)
+            grantFavoriteUseCase.grant(AdjustFavoriteCommand.builder()
+                    .userId(target.userId())
+                    .nickName(safeNickname(target))
+                    .delta(amount)
+                    .sourceType(FavoriteSourceType.ATTENDANCE)
+                    .displayCategory("ATTENDANCE")
+                    .publicDescription(String.format(Locale.ROOT, "출석체크(+%d)", amount))
+                    .allowNegativeBalance(false)
+                    .createIfMissing(true)
                     .build());
         }
 
@@ -133,7 +122,6 @@ public class AttendanceService {
     }
 
 }
-
 
 
 

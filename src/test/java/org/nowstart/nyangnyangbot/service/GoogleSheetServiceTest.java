@@ -17,11 +17,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +35,7 @@ class GoogleSheetServiceTest {
     private FavoriteRepository favoriteRepository;
 
     @Mock
-    private FavoriteHistoryRepository favoriteHistoryRepository;
+    private AdjustFavoriteUseCase adjustFavoriteUseCase;
 
     @Spy
     @InjectMocks
@@ -58,12 +59,14 @@ class GoogleSheetServiceTest {
         googleSheetService.updateFavorite();
 
         BDDMockito.then(favoriteRepository).should().findById("newUser");
-        BDDMockito.then(favoriteHistoryRepository).should().save(argThat(history ->
-                history.getFavoriteEntity() == newEntity
-                        && Integer.valueOf(10).equals(history.getFavorite())
-                        && "데이터 동기화".equals(history.getHistory())
+        BDDMockito.then(adjustFavoriteUseCase).should().adjust(argThat(command ->
+                "newUser".equals(command.userId())
+                        && "새유저".equals(command.nickName())
+                        && command.delta() == 10
+                        && command.sourceType() == FavoriteSourceType.SHEET_MIGRATION
+                        && "데이터 동기화".equals(command.publicDescription())
+                        && command.createIfMissing()
         ));
-        assertThat(newEntity.getFavorite()).isEqualTo(10);
     }
 
     @Test
@@ -73,8 +76,11 @@ class GoogleSheetServiceTest {
 
         googleSheetService.updateFavorite();
 
-        assertThat(existingFavorite.getFavorite()).isEqualTo(70);
-        BDDMockito.then(favoriteHistoryRepository).should().save(any(FavoriteHistoryEntity.class));
+        BDDMockito.then(adjustFavoriteUseCase).should().adjust(argThat(command ->
+                "user123".equals(command.userId())
+                        && command.delta() == 20
+                        && command.sourceType() == FavoriteSourceType.SHEET_MIGRATION
+        ));
     }
 
     @Test
@@ -86,7 +92,7 @@ class GoogleSheetServiceTest {
 
         googleSheetService.updateFavorite();
 
-        BDDMockito.then(favoriteHistoryRepository).should(never()).save(any(FavoriteHistoryEntity.class));
+        BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
         assertThat(unchangedEntity.getFavorite()).isEqualTo(50);
     }
 
@@ -99,10 +105,11 @@ class GoogleSheetServiceTest {
 
         googleSheetService.updateFavorite();
 
-        BDDMockito.then(favoriteHistoryRepository).should().save(argThat(history ->
-                history.getFavoriteEntity() == entityWithHistory
-                        && Integer.valueOf(120).equals(history.getFavorite())
-                        && "데이터 동기화".equals(history.getHistory())
+        BDDMockito.then(adjustFavoriteUseCase).should().adjust(argThat(command ->
+                "user123".equals(command.userId())
+                        && "유저".equals(command.nickName())
+                        && command.delta() == 20
+                        && "데이터 동기화".equals(command.publicDescription())
         ));
     }
 
@@ -137,6 +144,6 @@ class GoogleSheetServiceTest {
         googleSheetService.updateFavorite();
 
         assertThat(entity.getNickName()).isEqualTo("새닉네임");
-        BDDMockito.then(favoriteHistoryRepository).should(never()).save(any(FavoriteHistoryEntity.class));
+        BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
     }
 }

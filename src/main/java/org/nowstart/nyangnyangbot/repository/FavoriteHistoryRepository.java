@@ -12,4 +12,6 @@ import org.springframework.stereotype.Repository;
 public interface FavoriteHistoryRepository extends JpaRepository<FavoriteHistoryEntity, Long> {
 
     Page<FavoriteHistoryEntity> findByFavoriteEntityUserId(String userId, Pageable pageable);
+
+    boolean existsByIdempotencyKey(String idempotencyKey);
 }
