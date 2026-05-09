@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteHistoryDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
@@ -89,5 +90,11 @@ public class FavoriteController {
                 .map(FavoriteHistoryDto::from)
                 .toList();
         return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "본인 호감도 요약 조회", description = "인증 사용자의 현재 호감도와 최근 히스토리를 조회하고 미확인 내역을 읽음 처리합니다.")
+    @GetMapping("/me")
+    public ResponseEntity<FavoriteMeDto> favoriteMe(Authentication authentication) {
+        return ResponseEntity.ok(favoriteService.getMyFavorite(authentication.getName()));
     }
 }

@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.data.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,6 +31,8 @@ public class AuthorizationEntity extends BaseEntity {
     private Integer expiresIn;
     @Setter
     private String scope;
+    @Setter
+    private LocalDateTime favoriteHistoryLastSeenAt;
     private boolean admin;
 
 }

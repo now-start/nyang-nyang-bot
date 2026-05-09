@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +13,11 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
+import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
@@ -28,6 +33,9 @@ class FavoriteServiceTest {
 
     @Mock
     private FavoriteHistoryRepository favoriteHistoryRepository;
+
+    @Mock
+    private AuthorizationRepository authorizationRepository;
 
     @InjectMocks
     private FavoriteService favoriteService;
@@ -156,5 +164,39 @@ class FavoriteServiceTest {
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
         BDDMockito.then(favoriteRepository).should().findAll(largePageable);
+    }
+
+    @Test
+    void getMyFavorite_ShouldReturnSummaryAndMarkSeen() {
+        AuthorizationEntity authorization = AuthorizationEntity.builder()
+                .channelId("user1")
+                .channelName("치즈냥")
+                .admin(false)
+                .build();
+        FavoriteEntity favorite = FavoriteEntity.builder()
+                .userId("user1")
+                .nickName("치즈냥")
+                .favorite(42)
+                .build();
+        FavoriteHistoryEntity history = FavoriteHistoryEntity.builder()
+                .favorite(42)
+                .history("출석체크(+1)")
+                .build();
+        Page<FavoriteHistoryEntity> historyPage = new PageImpl<>(List.of(history));
+
+        given(authorizationRepository.findById("user1")).willReturn(Optional.of(authorization));
+        given(favoriteRepository.findById("user1")).willReturn(Optional.of(favorite));
+        given(favoriteHistoryRepository.countByFavoriteEntityUserId("user1")).willReturn(1L);
+        given(favoriteHistoryRepository.findByFavoriteEntityUserId(BDDMockito.eq("user1"), BDDMockito.any(Pageable.class)))
+                .willReturn(historyPage);
+
+        FavoriteMeDto result = favoriteService.getMyFavorite("user1");
+
+        then(result.userId()).isEqualTo("user1");
+        then(result.nickName()).isEqualTo("치즈냥");
+        then(result.favorite()).isEqualTo(42);
+        then(result.unseenCount()).isEqualTo(1L);
+        then(result.histories()).hasSize(1);
+        then(authorization.getFavoriteHistoryLastSeenAt()).isNotNull();
     }
 }
