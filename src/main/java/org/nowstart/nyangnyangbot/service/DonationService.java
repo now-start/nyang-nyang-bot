@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.emitter.Emitter;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,27 +12,32 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class DonationService implements Emitter.Listener {
 
     private final ObjectMapper objectMapper;
     private final DonationRepository donationRepository;
+    private final RouletteService rouletteService;
 
     @Override
     @SneakyThrows
     public void call(Object... objects) {
         DonationDto donationDto = objectMapper.readValue((String) objects[0], DonationDto.class);
         log.info("[ChzzkDonation] socket received: {}", donationDto);
-        donationRepository.save(DonationEntity.builder()
-                .donationType(donationDto.donationType())
-                .channelId(donationDto.channelId())
-                .donatorChannelId(donationDto.donatorChannelId())
-                .donatorNickname(donationDto.donatorNickname())
-                .payAmount(parseAmount(donationDto.payAmount()))
-                .donationText(donationDto.donationText())
-                .emojisJson(toJson(donationDto.emojis()))
-                .build());
+        if (isBlank(donationDto.donationEventId())
+                || !donationRepository.existsByDonationEventId(donationDto.donationEventId())) {
+            donationRepository.save(DonationEntity.builder()
+                    .donationEventId(donationDto.donationEventId())
+                    .donationType(donationDto.donationType())
+                    .channelId(donationDto.channelId())
+                    .donatorChannelId(donationDto.donatorChannelId())
+                    .donatorNickname(donationDto.donatorNickname())
+                    .payAmount(parseAmount(donationDto.payAmount()))
+                    .donationText(donationDto.donationText())
+                    .emojisJson(toJson(donationDto.emojis()))
+                    .build());
+        }
+        rouletteService.processDonation(donationDto);
     }
 
     @SneakyThrows
@@ -57,5 +61,9 @@ public class DonationService implements Emitter.Listener {
         } catch (NumberFormatException ex) {
             return 0L;
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

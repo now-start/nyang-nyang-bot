@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DonationRepository extends JpaRepository<DonationEntity, Long> {
+
+    boolean existsByDonationEventId(String donationEventId);
 }
