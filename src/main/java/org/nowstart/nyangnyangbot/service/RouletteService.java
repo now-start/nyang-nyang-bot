@@ -107,7 +107,9 @@ public class RouletteService {
                 .filter(activeTable -> !activeTable.getId().equals(table.getId()))
                 .forEach(RouletteTableEntity::deactivate);
         table.activate();
-        return RouletteTableDto.Response.from(rouletteTableRepository.save(table), validation, items);
+        RouletteTableEntity saved = rouletteTableRepository.save(table);
+        log.info("level=AUDIT action=roulette_table.activate result=success tableId={}", saved.getId());
+        return RouletteTableDto.Response.from(saved, validation, items);
     }
 
     @Transactional
@@ -115,6 +117,7 @@ public class RouletteService {
         RouletteTableEntity table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         table.deactivate();
+        log.info("level=AUDIT action=roulette_table.deactivate result=success tableId={}", table.getId());
         return tableResponse(table);
     }
 
@@ -172,6 +175,8 @@ public class RouletteService {
         rounds.forEach(round -> rouletteRoundApplyService.applyRound(round.getId()));
         refreshEventStatus(event.getId());
         overlayDisplayService.enqueue(event.getId());
+        log.info("action=roulette.run result=confirmed donationEventId={} rouletteEventId={} roundCount={}",
+                donationDto.donationEventId(), event.getId(), roundCount);
         return RouletteRunDto.Response.confirmed(event, rounds);
     }
 

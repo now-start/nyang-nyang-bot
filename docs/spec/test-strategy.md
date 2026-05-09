@@ -123,7 +123,8 @@ External adapter:
 
 ## 9. 릴리즈 체크리스트
 
-- `./gradlew test` 통과.
+- `./gradlew test --no-daemon` 통과.
+- WSL wrapper 문제가 있으면 `java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain test --no-daemon`로 동일 검증.
 - OAuth state 성공/실패 수동 검증.
 - 관리자/일반 사용자 권한 수동 검증.
 - 호감도 원장 거래와 잔액 일치 검증.
@@ -131,8 +132,9 @@ External adapter:
 - 출석체크 적용/취소 검증.
 - 룰렛 다회차 확정/반영/재처리 검증.
 - 오버레이 토큰 발급/재발급/폐기 검증.
-- 민감 값 로그 미노출 확인.
+- OAuth token, OAuth state, overlay token 원문 로그 미노출 확인.
 - Grafana/Loki query 확인.
+- ArchitectureBoundaryTest 통과.
 
 ## 10. 미결정 사항
 

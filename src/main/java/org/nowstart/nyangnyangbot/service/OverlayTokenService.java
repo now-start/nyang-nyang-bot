@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.overlay.OverlayTokenDto;
 import org.nowstart.nyangnyangbot.data.entity.OverlayTokenEntity;
 import org.nowstart.nyangnyangbot.repository.OverlayTokenRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OverlayTokenService {
 
@@ -31,6 +33,7 @@ public class OverlayTokenService {
                 .active(true)
                 .issuedBy(actorId)
                 .build());
+        log.info("level=AUDIT action=overlay_token.rotate result=success actor={} tokenId={}", actorId, saved.getId());
         return new OverlayTokenDto.IssueResponse(saved.getId(), rawToken);
     }
 

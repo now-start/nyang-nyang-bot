@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.data.dto.overlay.OverlayDisplayDto;
 import org.nowstart.nyangnyangbot.data.entity.OverlayDisplayEventEntity;
 import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OverlayDisplayService {
 
@@ -52,6 +54,8 @@ public class OverlayDisplayService {
                 .status(OverlayDisplayStatus.PENDING)
                 .expiresAt(now().plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS))
                 .build());
+        log.info("level=AUDIT action=overlay.replay result=success rouletteEventId={} displayEventId={}",
+                rouletteEventId, saved.getId());
         return toResponse(saved);
     }
 
