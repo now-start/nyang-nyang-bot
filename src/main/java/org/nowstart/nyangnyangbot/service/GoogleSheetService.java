@@ -15,11 +15,12 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class GoogleSheetService {
     private static final String RANGE = "호감도 순위표!B2:H2000";
     private final GoogleProperty googleProperty;
     private final FavoriteRepository favoriteRepository;
-    private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final AdjustFavoriteUseCase adjustFavoriteUseCase;
 
     public void updateFavorite() {
         List<GoogleSheetDto> googleSheetDtoList = getSheetValues();
@@ -50,11 +51,17 @@ public class GoogleSheetService {
             }
 
             if (!Objects.equals(favoriteEntity.getFavorite(), dto.favorite())) {
-                favoriteEntity.setFavorite(dto.favorite());
-                favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                        .favoriteEntity(favoriteEntity)
-                        .history("데이터 동기화")
-                        .favorite(dto.favorite())
+                int before = favoriteEntity.getFavorite() == null ? 0 : favoriteEntity.getFavorite();
+                adjustFavoriteUseCase.adjust(AdjustFavoriteCommand.builder()
+                        .userId(dto.userId())
+                        .nickName(dto.nickName())
+                        .delta(dto.favorite() - before)
+                        .sourceType(FavoriteSourceType.SHEET_MIGRATION)
+                        .sourceId("google-sheet")
+                        .displayCategory("MIGRATION")
+                        .publicDescription("데이터 동기화")
+                        .allowNegativeBalance(true)
+                        .createIfMissing(true)
                         .build());
             }
         }

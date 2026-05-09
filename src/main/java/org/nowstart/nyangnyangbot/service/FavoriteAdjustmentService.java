@@ -8,13 +8,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.favorite.FavoriteLedgerResult;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
 import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.repository.FavoriteAdjustmentRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,8 +23,7 @@ import org.springframework.stereotype.Service;
 public class FavoriteAdjustmentService {
 
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
-    private final FavoriteRepository favoriteRepository;
-    private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final AdjustFavoriteUseCase adjustFavoriteUseCase;
 
     public List<FavoriteAdjustmentEntity> getAdjustments() {
         return favoriteAdjustmentRepository.findAll()
@@ -71,32 +70,29 @@ public class FavoriteAdjustmentService {
             }
         }
 
-        FavoriteEntity favoriteEntity = favoriteRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Favorite user not found"));
-
-        int before = favoriteEntity.getFavorite() == null ? 0 : favoriteEntity.getFavorite();
         int delta = adjustments.stream()
                 .mapToInt(FavoriteAdjustmentEntity::getAmount)
                 .sum();
         if (hasManualAmount) {
             delta += manualAmount;
         }
-        int after = before + delta;
-
-        favoriteEntity.setFavorite(after);
 
         String history = buildHistory(adjustments, manualAmount, manualHistory);
-        favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                .favoriteEntity(favoriteEntity)
-                .history(history)
-                .favorite(after)
+        FavoriteLedgerResult result = adjustFavoriteUseCase.adjust(AdjustFavoriteCommand.builder()
+                .userId(userId)
+                .delta(delta)
+                .sourceType(FavoriteSourceType.ADMIN_ADJUSTMENT)
+                .displayCategory("ADMIN")
+                .publicDescription(history)
+                .allowNegativeBalance(true)
+                .createIfMissing(false)
                 .build());
 
         return new FavoriteAdjustmentDto.ApplyResponse(
                 userId,
-                before,
-                delta,
-                after,
+                result.beforeBalance(),
+                result.delta(),
+                result.afterBalance(),
                 history
         );
     }
