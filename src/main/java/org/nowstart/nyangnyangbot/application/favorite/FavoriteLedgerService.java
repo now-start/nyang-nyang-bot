@@ -42,7 +42,7 @@ public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavori
         saveFavoriteAccountPort.save(account);
 
         String history = resolveHistory(command);
-        saveFavoriteLedgerPort.save(FavoriteLedgerEntry.builder()
+        FavoriteLedgerEntry savedLedger = saveFavoriteLedgerPort.save(FavoriteLedgerEntry.builder()
                 .userId(account.getUserId())
                 .delta(change.delta())
                 .balanceAfter(change.afterBalance())
@@ -63,7 +63,8 @@ public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavori
                 change.delta(),
                 change.afterBalance(),
                 history,
-                false
+                false,
+                savedLedger.id()
         );
     }
 
