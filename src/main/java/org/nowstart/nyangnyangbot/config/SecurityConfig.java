@@ -20,6 +20,7 @@ public class SecurityConfig {
                         .requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
                         .requestMatchers("/", "/login", "/token").permitAll()
+                        .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll()
                         .anyRequest().authenticated()
                 ).exceptionHandling(exception -> exception
                         .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
