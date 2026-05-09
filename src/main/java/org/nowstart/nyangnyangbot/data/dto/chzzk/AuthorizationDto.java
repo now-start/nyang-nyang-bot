@@ -7,4 +7,10 @@ public record AuthorizationDto(
         Integer expiresIn,
         String scope
 ) {
+
+    @Override
+    public String toString() {
+        return "AuthorizationDto[accessToken=<masked>, refreshToken=<masked>, tokenType=%s, expiresIn=%s, scope=%s]"
+                .formatted(tokenType, expiresIn, scope);
+    }
 }
