@@ -72,6 +72,9 @@ public class AttendanceService {
     }
 
     public AttendanceDto.ApplyResponse applyAttendance(AttendanceDto.ApplyRequest request) {
+        if (!collecting) {
+            throw new IllegalStateException("attendance cycle is not active");
+        }
         List<AttendanceDto.User> targets = resolveTargets(request);
         if (targets.isEmpty()) {
             throw new IllegalArgumentException("attendance targets are required");
@@ -97,6 +100,8 @@ public class AttendanceService {
                     .build());
         }
 
+        collecting = false;
+        presence.clear();
         return new AttendanceDto.ApplyResponse(amount, targets.size());
     }
 
@@ -122,6 +127,5 @@ public class AttendanceService {
     }
 
 }
-
 
 
