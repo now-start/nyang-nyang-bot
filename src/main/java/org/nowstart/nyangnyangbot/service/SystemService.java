@@ -6,9 +6,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.SystemDto;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
-import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -20,7 +20,7 @@ public class SystemService implements Emitter.Listener {
     private String sessionKey;
     private final ObjectMapper objectMapper;
     private final ChzzkProperty chzzkProperty;
-    private final ChzzkOpenApi chzzkOpenApi;
+    private final ChzzkClientPort chzzkClientPort;
 
     @Override
     @SneakyThrows
@@ -30,7 +30,7 @@ public class SystemService implements Emitter.Listener {
 
         if ("connected".equalsIgnoreCase(systemDto.type())) {
             sessionKey = systemDto.data().sessionKey();
-            chzzkOpenApi.subscribeChatEvent(sessionKey);
+            chzzkClientPort.subscribeChatEvent(sessionKey);
             // TODO: enable donation event subscription when handling is ready.
             // chzzkOpenApi.subscribeDonationEvent(sessionKey);
             // TODO: enable subscription event subscription when handling is ready.
@@ -43,7 +43,7 @@ public class SystemService implements Emitter.Listener {
             return false;
         }
 
-        return chzzkOpenApi
+        return chzzkClientPort
                 .getSessionList(chzzkProperty.clientId(), chzzkProperty.clientSecret())
                 .content().data().stream()
                 .filter(sessionData -> sessionData.sessionKey().equals(sessionKey))
@@ -51,7 +51,7 @@ public class SystemService implements Emitter.Listener {
     }
 
     public String getSession() {
-        return chzzkOpenApi.getSession(chzzkProperty.clientId(), chzzkProperty.clientSecret()).content().url();
+        return chzzkClientPort.getSession(chzzkProperty.clientId(), chzzkProperty.clientSecret()).content().url();
     }
 
 }

@@ -5,9 +5,8 @@ import io.socket.emitter.Emitter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.DonationDto;
-import org.nowstart.nyangnyangbot.data.entity.DonationEntity;
-import org.nowstart.nyangnyangbot.repository.DonationRepository;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class DonationService implements Emitter.Listener {
 
     private final ObjectMapper objectMapper;
-    private final DonationRepository donationRepository;
+    private final DonationPort donationPort;
     private final RouletteService rouletteService;
 
     @Override
@@ -25,17 +24,8 @@ public class DonationService implements Emitter.Listener {
         DonationDto donationDto = objectMapper.readValue((String) objects[0], DonationDto.class);
         log.info("[ChzzkDonation] socket received: {}", donationDto);
         if (isBlank(donationDto.donationEventId())
-                || !donationRepository.existsByDonationEventId(donationDto.donationEventId())) {
-            donationRepository.save(DonationEntity.builder()
-                    .donationEventId(donationDto.donationEventId())
-                    .donationType(donationDto.donationType())
-                    .channelId(donationDto.channelId())
-                    .donatorChannelId(donationDto.donatorChannelId())
-                    .donatorNickname(donationDto.donatorNickname())
-                    .payAmount(parseAmount(donationDto.payAmount()))
-                    .donationText(donationDto.donationText())
-                    .emojisJson(toJson(donationDto.emojis()))
-                    .build());
+                || !donationPort.existsByDonationEventId(donationDto.donationEventId())) {
+            donationPort.save(donationDto, parseAmount(donationDto.payAmount()), toJson(donationDto.emojis()));
         }
         rouletteService.processDonation(donationDto);
     }

@@ -8,7 +8,6 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +17,8 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
@@ -37,15 +35,12 @@ class FavoriteControllerTest {
     private FavoriteService favoriteService;
 
     @Mock
-    private AuthorizationRepository authorizationRepository;
-
-    @Mock
     private WeeklyChatRankService weeklyChatRankService;
 
     @InjectMocks
     private FavoriteController favoriteController;
 
-    private List<FavoriteEntity> favoriteEntities;
+    private List<FavoriteSummary> favoriteEntities;
     private List<WeeklyChatRankDto> weeklyChatRanks;
     private Pageable pageable;
 
@@ -53,17 +48,9 @@ class FavoriteControllerTest {
     void setUp() {
         pageable = PageRequest.of(0, 10);
 
-        favoriteEntities = Arrays.asList(
-                FavoriteEntity.builder()
-                        .userId("user1")
-                        .nickName("유저1")
-                        .favorite(100)
-                        .build(),
-                FavoriteEntity.builder()
-                        .userId("user2")
-                        .nickName("유저2")
-                        .favorite(50)
-                        .build()
+        favoriteEntities = List.of(
+                new FavoriteSummary("user1", "유저1", 100),
+                new FavoriteSummary("user2", "유저2", 50)
         );
         weeklyChatRanks = List.of(
                 new WeeklyChatRankDto(1, "채터1", 11L),
@@ -75,7 +62,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsNull() {
         // given
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -95,8 +82,8 @@ class FavoriteControllerTest {
     void favoriteList_ShouldReturnFilteredFavorites_WhenNickNameProvided() {
         // given
         String nickName = "유저1";
-        List<FavoriteEntity> filteredList = Collections.singletonList(favoriteEntities.get(0));
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
+        List<FavoriteSummary> filteredList = Collections.singletonList(favoriteEntities.get(0));
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
 
         given(favoriteService.getByNickName(any(Pageable.class), eq(nickName))).willReturn(expectedPage);
 
@@ -113,7 +100,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsEmpty() {
         // given
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -128,7 +115,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsBlank() {
         // given
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -145,7 +132,7 @@ class FavoriteControllerTest {
         String maliciousNickName = "<script>alert('xss')</script>";
         String escapedNickName = "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;";
 
-        Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getByNickName(any(Pageable.class), eq(escapedNickName))).willReturn(emptyPage);
 
         // when
@@ -158,7 +145,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldApplyDescendingSort_ByFavorite() {
         // given
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -174,7 +161,7 @@ class FavoriteControllerTest {
     void favoriteList_ShouldPreservePageNumber() {
         // given
         Pageable page2 = PageRequest.of(2, 10);
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, page2, 100);
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, page2, 100);
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -188,7 +175,7 @@ class FavoriteControllerTest {
     void favoriteList_ShouldPreservePageSize() {
         // given
         Pageable customPageable = PageRequest.of(0, 50);
-        Page<FavoriteEntity> expectedPage = new PageImpl<>(favoriteEntities, customPageable, favoriteEntities.size());
+        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, customPageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // when
@@ -202,7 +189,7 @@ class FavoriteControllerTest {
     void favoriteList_ShouldHandleSpecialCharactersInNickName() {
         // given
         String specialNickName = "유저@#$%^&*()";
-        Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getByNickName(any(Pageable.class), anyString())).willReturn(emptyPage);
 
         // when
@@ -216,7 +203,7 @@ class FavoriteControllerTest {
     @Test
     void favoriteList_ShouldReturnEmptyPage_WhenNoResults() {
         // given
-        Page<FavoriteEntity> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getList(any(Pageable.class))).willReturn(emptyPage);
 
         // when
@@ -224,7 +211,7 @@ class FavoriteControllerTest {
 
         // then
         then(result.getViewName()).isEqualTo("index");
-        Page<FavoriteEntity> resultPage = (Page<FavoriteEntity>) result.getModel().get("favoriteList");
+        Page<FavoriteSummary> resultPage = (Page<FavoriteSummary>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();
     }
 }

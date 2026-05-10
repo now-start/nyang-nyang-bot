@@ -10,7 +10,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.auth.OAuthStateService;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.http.HttpStatus;
@@ -63,12 +63,12 @@ public class AuthorizationController {
         if (!oAuthStateService.matches(expectedState, state)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OAuth state");
         }
-        AuthorizationEntity authorizationEntity = authorizationService.getAccessToken(code, state);
-        List<GrantedAuthority> authorities = authorizationEntity.isAdmin()
+        AuthorizationAccount authorization = authorizationService.getAccessToken(code, state);
+        List<GrantedAuthority> authorities = authorization.admin()
                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                 : Collections.emptyList();
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(authorizationEntity.getChannelId(), "N/A", authorities);
+                new UsernamePasswordAuthenticationToken(authorization.channelId(), "N/A", authorities);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

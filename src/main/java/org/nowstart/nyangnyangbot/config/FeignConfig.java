@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.config;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
@@ -22,9 +22,9 @@ public class FeignConfig {
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             if (isAuthorizedMethod(requestTemplate)) {
-                AuthorizationEntity authentication = authorizationService.getAccessToken();
+                AuthorizationAccount authentication = authorizationService.getAccessToken();
                 if (authentication != null) {
-                    String token = authentication.getTokenType() + " " + authentication.getAccessToken();
+                    String token = authentication.tokenType() + " " + authentication.accessToken();
 
                     requestTemplate.header("Content-Type", "application/json");
                     requestTemplate.header("Authorization", token);

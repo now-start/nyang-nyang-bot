@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.auth.OAuthStateService;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.service.AuthorizationService;
 import org.springframework.http.HttpStatus;
@@ -83,14 +83,21 @@ class AuthorizationControllerTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE, "expected-state");
         AuthorizationController controller = newController();
-        AuthorizationEntity authorizationEntity = AuthorizationEntity.builder()
-                .channelId("channel-1")
-                .channelName("tester")
-                .admin(true)
-                .build();
+        AuthorizationAccount authorization = new AuthorizationAccount(
+                "channel-1",
+                "tester",
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null
+        );
 
         given(oAuthStateService.matches("expected-state", "expected-state")).willReturn(true);
-        given(authorizationService.getAccessToken("code", "expected-state")).willReturn(authorizationEntity);
+        given(authorizationService.getAccessToken("code", "expected-state")).willReturn(authorization);
         given(chzzkProperty.redirectUri()).willReturn("http://localhost:8080");
 
         String result = controller.token("code", "expected-state", session);

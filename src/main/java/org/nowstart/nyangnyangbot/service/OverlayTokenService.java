@@ -8,9 +8,8 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.data.dto.overlay.OverlayTokenDto;
-import org.nowstart.nyangnyangbot.data.entity.OverlayTokenEntity;
-import org.nowstart.nyangnyangbot.repository.OverlayTokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,20 +20,16 @@ public class OverlayTokenService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private final OverlayTokenRepository overlayTokenRepository;
+    private final OverlayTokenPort overlayTokenPort;
 
     @Transactional
     public OverlayTokenDto.IssueResponse issueToken(String actorId) {
         LocalDateTime now = LocalDateTime.now();
-        overlayTokenRepository.findByActiveTrue().forEach(token -> token.revoke(now));
+        overlayTokenPort.revokeActive(now);
         String rawToken = generateToken();
-        OverlayTokenEntity saved = overlayTokenRepository.save(OverlayTokenEntity.builder()
-                .tokenHash(hashToken(rawToken))
-                .active(true)
-                .issuedBy(actorId)
-                .build());
-        log.info("level=AUDIT action=overlay_token.rotate result=success actor={} tokenId={}", actorId, saved.getId());
-        return new OverlayTokenDto.IssueResponse(saved.getId(), rawToken);
+        Long tokenId = overlayTokenPort.saveIssuedToken(hashToken(rawToken), actorId);
+        log.info("level=AUDIT action=overlay_token.rotate result=success actor={} tokenId={}", actorId, tokenId);
+        return new OverlayTokenDto.IssueResponse(tokenId, rawToken);
     }
 
     @Transactional(readOnly = true)
@@ -42,7 +37,7 @@ public class OverlayTokenService {
         if (rawToken == null || rawToken.isBlank()) {
             return false;
         }
-        return overlayTokenRepository.existsByTokenHashAndActiveTrue(hashToken(rawToken));
+        return overlayTokenPort.existsActiveTokenHash(hashToken(rawToken));
     }
 
     String hashToken(String rawToken) {

@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.data.dto.upbo;
 
-import org.nowstart.nyangnyangbot.data.entity.UpboTemplateEntity;
+import org.nowstart.nyangnyangbot.application.model.UpboTemplate;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 
@@ -27,16 +27,16 @@ public class UpboTemplateDto {
             ConversionMode conversionMode
     ) {
 
-        public static Response from(UpboTemplateEntity entity) {
+        public static Response from(UpboTemplate entity) {
             return new Response(
-                    entity.getId(),
-                    entity.getLabel(),
-                    entity.getDescription(),
-                    entity.isActive(),
-                    entity.getDisplayOrder(),
-                    entity.getExchangeFavoriteValue(),
-                    entity.getRewardType(),
-                    entity.getConversionMode()
+                    entity.id(),
+                    entity.label(),
+                    entity.description(),
+                    entity.active(),
+                    entity.displayOrder(),
+                    entity.exchangeFavoriteValue(),
+                    entity.rewardType(),
+                    entity.conversionMode()
             );
         }
     }

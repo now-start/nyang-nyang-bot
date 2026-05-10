@@ -19,11 +19,11 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.data.dto.sheet.GoogleSheetDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
 import org.nowstart.nyangnyangbot.data.property.GoogleProperty;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 
 @ExtendWith(MockitoExtension.class)
 class GoogleSheetServiceTest {
@@ -32,7 +32,7 @@ class GoogleSheetServiceTest {
     private GoogleProperty googleProperty;
 
     @Mock
-    private FavoriteRepository favoriteRepository;
+    private FavoriteQueryPort favoriteQueryPort;
 
     @Mock
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
@@ -41,24 +41,22 @@ class GoogleSheetServiceTest {
     @InjectMocks
     private GoogleSheetService googleSheetService;
 
-    private FavoriteEntity existingFavorite;
+    private FavoriteSummary existingFavorite;
 
     @BeforeEach
     void setUp() {
-        existingFavorite =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
+        existingFavorite = new FavoriteSummary("user123", "기존닉네임", 50);
     }
 
     @Test
     void updateFavorite_ShouldCreateNewEntity_WhenUserNotExists() {
-        FavoriteEntity newEntity = FavoriteEntity.builder().userId("newUser").nickName("새유저").favorite(0).build();
         doReturn(List.of(new GoogleSheetDto("새유저", "newUser", 10))).when(googleSheetService).getSheetValues();
-        given(favoriteRepository.findById("newUser")).willReturn(Optional.empty());
-        given(favoriteRepository.save(any(FavoriteEntity.class))).willReturn(newEntity);
+        given(favoriteQueryPort.getOrCreate("newUser", "새유저"))
+                .willReturn(new FavoriteSummary("newUser", "새유저", 0));
 
         googleSheetService.updateFavorite();
 
-        BDDMockito.then(favoriteRepository).should().findById("newUser");
+        BDDMockito.then(favoriteQueryPort).should().getOrCreate("newUser", "새유저");
         BDDMockito.then(adjustFavoriteUseCase).should().adjust(argThat(command ->
                 "newUser".equals(command.userId())
                         && "새유저".equals(command.nickName())
@@ -72,7 +70,7 @@ class GoogleSheetServiceTest {
     @Test
     void updateFavorite_ShouldUpdateExistingEntity_WhenFavoriteChanged() {
         doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 70))).when(googleSheetService).getSheetValues();
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(existingFavorite));
+        given(favoriteQueryPort.getOrCreate("user123", "기존닉네임")).willReturn(existingFavorite);
 
         googleSheetService.updateFavorite();
 
@@ -85,23 +83,21 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldNotUpdate_WhenFavoriteUnchanged() {
-        FavoriteEntity unchangedEntity =
-                FavoriteEntity.builder().userId("user123").nickName("기존닉네임").favorite(50).build();
+        FavoriteSummary unchangedEntity = new FavoriteSummary("user123", "기존닉네임", 50);
         doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 50))).when(googleSheetService).getSheetValues();
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(unchangedEntity));
+        given(favoriteQueryPort.getOrCreate("user123", "기존닉네임")).willReturn(unchangedEntity);
 
         googleSheetService.updateFavorite();
 
         BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
-        assertThat(unchangedEntity.getFavorite()).isEqualTo(50);
+        assertThat(unchangedEntity.favorite()).isEqualTo(50);
     }
 
     @Test
     void updateFavorite_ShouldAddHistory_WhenFavoriteChanges() {
-        FavoriteEntity entityWithHistory =
-                FavoriteEntity.builder().userId("user123").nickName("유저").favorite(100).build();
+        FavoriteSummary entityWithHistory = new FavoriteSummary("user123", "유저", 100);
         doReturn(List.of(new GoogleSheetDto("유저", "user123", 120))).when(googleSheetService).getSheetValues();
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(entityWithHistory));
+        given(favoriteQueryPort.getOrCreate("user123", "유저")).willReturn(entityWithHistory);
 
         googleSheetService.updateFavorite();
 
@@ -136,14 +132,13 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldUpdateNickname_WhenChanged() {
-        FavoriteEntity entity =
-                FavoriteEntity.builder().userId("user123").nickName("이전닉네임").favorite(100).build();
+        FavoriteSummary entity = new FavoriteSummary("user123", "이전닉네임", 100);
         doReturn(List.of(new GoogleSheetDto("새닉네임", "user123", 100))).when(googleSheetService).getSheetValues();
-        given(favoriteRepository.findById("user123")).willReturn(Optional.of(entity));
+        given(favoriteQueryPort.getOrCreate("user123", "새닉네임")).willReturn(entity);
 
         googleSheetService.updateFavorite();
 
-        assertThat(entity.getNickName()).isEqualTo("새닉네임");
+        BDDMockito.then(favoriteQueryPort).should().updateNickName("user123", "새닉네임");
         BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
     }
 }

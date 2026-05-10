@@ -1,17 +1,12 @@
 package org.nowstart.nyangnyangbot.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.OverlayDisplayEvent;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.data.dto.overlay.OverlayDisplayDto;
-import org.nowstart.nyangnyangbot.data.entity.OverlayDisplayEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.type.OverlayDisplayStatus;
-import org.nowstart.nyangnyangbot.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,38 +19,21 @@ public class OverlayDisplayService {
     private static final int DEFAULT_MAX_ANIMATED_ROUNDS = 5;
 
     private final OverlayTokenService overlayTokenService;
-    private final OverlayDisplayEventRepository overlayDisplayEventRepository;
-    private final RouletteEventRepository rouletteEventRepository;
-    private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final OverlayDisplayPort overlayDisplayPort;
 
     @Transactional
     public void enqueue(Long rouletteEventId) {
-        RouletteEventEntity rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        overlayDisplayEventRepository.save(OverlayDisplayEventEntity.builder()
-                .rouletteEvent(rouletteEvent)
-                .status(OverlayDisplayStatus.PENDING)
-                .expiresAt(now().plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS))
-                .build());
+        overlayDisplayPort.enqueueRouletteEvent(rouletteEventId, now().plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS));
     }
 
     @Transactional
     public OverlayDisplayDto.EventResponse replayRouletteEvent(Long rouletteEventId) {
-        RouletteEventEntity rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        Long replayOf = overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(rouletteEventId)
-                .stream()
-                .findFirst()
-                .map(OverlayDisplayEventEntity::getId)
-                .orElse(null);
-        OverlayDisplayEventEntity saved = overlayDisplayEventRepository.save(OverlayDisplayEventEntity.builder()
-                .rouletteEvent(rouletteEvent)
-                .replayOfDisplayEventId(replayOf)
-                .status(OverlayDisplayStatus.PENDING)
-                .expiresAt(now().plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS))
-                .build());
+        OverlayDisplayEvent saved = overlayDisplayPort.replayRouletteEvent(
+                rouletteEventId,
+                now().plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS)
+        );
         log.info("level=AUDIT action=overlay.replay result=success rouletteEventId={} displayEventId={}",
-                rouletteEventId, saved.getId());
+                rouletteEventId, saved.id());
         return toResponse(saved);
     }
 
@@ -63,32 +41,20 @@ public class OverlayDisplayService {
     public Optional<OverlayDisplayDto.EventResponse> claimNextEvent(String authorizationHeader) {
         validateAuthorization(authorizationHeader);
         LocalDateTime current = now();
-        overlayDisplayEventRepository.findByStatusAndExpiresAtBefore(OverlayDisplayStatus.PENDING, current)
-                .forEach(OverlayDisplayEventEntity::markMissed);
-        return overlayDisplayEventRepository.findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
-                        OverlayDisplayStatus.PENDING,
-                        current
-                )
-                .map(displayEvent -> {
-                    displayEvent.markDisplaying(current);
-                    return toResponse(displayEvent);
-                });
+        overlayDisplayPort.markPendingExpiredBefore(current);
+        return overlayDisplayPort.claimNextPending(current).map(this::toResponse);
     }
 
     @Transactional
     public void markDisplayed(Long displayEventId, String authorizationHeader) {
         validateAuthorization(authorizationHeader);
-        OverlayDisplayEventEntity displayEvent = overlayDisplayEventRepository.findById(displayEventId)
-                .orElseThrow(() -> new IllegalArgumentException("overlay display event not found"));
-        displayEvent.markDisplayed(now());
+        overlayDisplayPort.markDisplayed(displayEventId, now());
     }
 
-    OverlayDisplayDto.EventResponse toResponse(OverlayDisplayEventEntity displayEvent) {
+    OverlayDisplayDto.EventResponse toResponse(OverlayDisplayEvent displayEvent) {
         return OverlayDisplayDto.EventResponse.from(
                 displayEvent,
-                rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(
-                        displayEvent.getRouletteEvent().getId()
-                ),
+                displayEvent.rounds(),
                 DEFAULT_MAX_ANIMATED_ROUNDS
         );
     }

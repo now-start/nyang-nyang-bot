@@ -13,24 +13,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.model.FavoriteHistoryView;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class FavoriteControllerHistoryTest {
 
     @Mock
     private FavoriteService favoriteService;
-
-    @Mock
-    private AuthorizationRepository authorizationRepository;
 
     @Mock
     private WeeklyChatRankService weeklyChatRankService;
@@ -40,7 +35,7 @@ class FavoriteControllerHistoryTest {
 
     @BeforeEach
     void setUp() {
-        favoriteController = new FavoriteController(favoriteService, authorizationRepository, weeklyChatRankService);
+        favoriteController = new FavoriteController(favoriteService, weeklyChatRankService);
         objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -48,11 +43,20 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() throws Exception {
-        FavoriteHistoryEntity history = FavoriteHistoryEntity.builder()
-                .favorite(12)
-                .history("출석체크(+1)")
-                .build();
-        ReflectionTestUtils.setField(history, "createDate", LocalDateTime.of(2026, 3, 22, 14, 30));
+        FavoriteHistoryView history = new FavoriteHistoryView(
+                null,
+                null,
+                null,
+                null,
+                12,
+                null,
+                null,
+                "출석체크(+1)",
+                false,
+                12,
+                "출석체크(+1)",
+                LocalDateTime.of(2026, 3, 22, 14, 30)
+        );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
 
         ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);
@@ -67,19 +71,20 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeLedgerFields() throws Exception {
-        FavoriteHistoryEntity history = FavoriteHistoryEntity.builder()
-                .id(7L)
-                .favorite(20)
-                .history("출석체크(+5)")
-                .delta(5)
-                .balanceAfter(20)
-                .sourceType(FavoriteSourceType.ATTENDANCE)
-                .displayCategory("ATTENDANCE")
-                .publicDescription("출석체크(+5)")
-                .correctionOfLedgerId(null)
-                .nickNameSnapshot("치즈냥")
-                .build();
-        ReflectionTestUtils.setField(history, "createDate", LocalDateTime.of(2026, 5, 9, 13, 20));
+        FavoriteHistoryView history = new FavoriteHistoryView(
+                7L,
+                null,
+                "치즈냥",
+                5,
+                20,
+                FavoriteSourceType.ATTENDANCE,
+                "ATTENDANCE",
+                "출석체크(+5)",
+                false,
+                20,
+                "출석체크(+5)",
+                LocalDateTime.of(2026, 5, 9, 13, 20)
+        );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
 
         ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);

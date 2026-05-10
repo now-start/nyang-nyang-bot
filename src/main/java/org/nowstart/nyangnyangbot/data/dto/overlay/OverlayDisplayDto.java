@@ -2,9 +2,9 @@ package org.nowstart.nyangnyangbot.data.dto.overlay;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.nowstart.nyangnyangbot.application.model.OverlayDisplayEvent;
+import org.nowstart.nyangnyangbot.application.model.RouletteRound;
 import org.nowstart.nyangnyangbot.data.dto.roulette.RouletteRunDto;
-import org.nowstart.nyangnyangbot.data.entity.OverlayDisplayEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
 
 public class OverlayDisplayDto {
 
@@ -21,17 +21,17 @@ public class OverlayDisplayDto {
         private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
         public static EventResponse from(
-                OverlayDisplayEventEntity displayEvent,
-                List<RouletteRoundResultEntity> rounds,
+                OverlayDisplayEvent displayEvent,
+                List<RouletteRound> rounds,
                 int maxAnimatedRounds
         ) {
             return new EventResponse(
-                    displayEvent.getId(),
-                    displayEvent.getRouletteEvent().getId(),
-                    displayEvent.getRouletteEvent().getNickNameSnapshot(),
-                    displayEvent.getRouletteEvent().getRoundCount(),
+                    displayEvent.id(),
+                    displayEvent.rouletteEventId(),
+                    displayEvent.nickName(),
+                    displayEvent.roundCount(),
                     maxAnimatedRounds,
-                    displayEvent.getExpiresAt() == null ? null : displayEvent.getExpiresAt().format(DATE_FORMATTER),
+                    displayEvent.expiresAt() == null ? null : displayEvent.expiresAt().format(DATE_FORMATTER),
                     rounds.stream().map(RouletteRunDto.RoundResponse::from).toList()
             );
         }

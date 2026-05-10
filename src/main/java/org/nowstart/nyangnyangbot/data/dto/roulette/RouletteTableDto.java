@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.data.dto.roulette;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.data.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.application.model.RouletteItem;
+import org.nowstart.nyangnyangbot.application.model.RouletteTable;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 
@@ -40,18 +40,18 @@ public class RouletteTableDto {
     ) {
 
         public static Response from(
-                RouletteTableEntity table,
+                RouletteTable table,
                 ValidationResponse validation,
-                List<RouletteItemEntity> items
+                List<RouletteItem> items
         ) {
             return new Response(
-                    table.getId(),
-                    table.getTitle(),
-                    table.getCommand(),
-                    table.getPricePerRound(),
-                    table.isActive(),
-                    table.getVersion(),
-                    table.getHighRoundThreshold(),
+                    table.id(),
+                    table.title(),
+                    table.command(),
+                    table.pricePerRound(),
+                    table.active(),
+                    table.version(),
+                    table.highRoundThreshold(),
                     validation,
                     items.stream().map(ItemResponse::from).toList()
             );
@@ -70,17 +70,17 @@ public class RouletteTableDto {
             Integer displayOrder
     ) {
 
-        public static ItemResponse from(RouletteItemEntity item) {
+        public static ItemResponse from(RouletteItem item) {
             return new ItemResponse(
-                    item.getId(),
-                    item.getLabel(),
-                    item.getProbabilityBasisPoints(),
-                    item.isLosingItem(),
-                    item.getRewardType(),
-                    item.getConversionMode(),
-                    item.getExchangeFavoriteValue(),
-                    item.isActive(),
-                    item.getDisplayOrder()
+                    item.id(),
+                    item.label(),
+                    item.probabilityBasisPoints(),
+                    item.losingItem(),
+                    item.rewardType(),
+                    item.conversionMode(),
+                    item.exchangeFavoriteValue(),
+                    item.active(),
+                    item.displayOrder()
             );
         }
     }

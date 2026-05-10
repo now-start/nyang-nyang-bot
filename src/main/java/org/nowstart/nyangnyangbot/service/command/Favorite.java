@@ -3,11 +3,11 @@ package org.nowstart.nyangnyangbot.service.command;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.MessageRequestDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -16,21 +16,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class Favorite implements Command {
 
-    private final ChzzkOpenApi chzzkOpenApi;
-    private final FavoriteRepository favoriteRepository;
+    private final ChzzkClientPort chzzkClientPort;
+    private final FavoriteQueryPort favoriteQueryPort;
 
     @Override
     public void run(ChatDto chatDto) {
-        FavoriteEntity favoriteEntity = favoriteRepository.findById(chatDto.senderChannelId())
-                .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                        .userId(chatDto.senderChannelId())
-                        .nickName(chatDto.profile().nickname())
-                        .favorite(0)
-                        .build()));
+        FavoriteSummary favorite = favoriteQueryPort.getOrCreate(chatDto.senderChannelId(), chatDto.profile().nickname());
 
-        log.info("[FAVORITE] : {}, {}", favoriteEntity.getFavorite(), chatDto);
-        chzzkOpenApi.sendMessage(new MessageRequestDto(
-                chatDto.profile().nickname() + "님의 호감도는 " + favoriteEntity.getFavorite() + " 입니다.💛"
+        log.info("[FAVORITE] : {}, {}", favorite.favorite(), chatDto);
+        chzzkClientPort.sendMessage(new MessageRequestDto(
+                chatDto.profile().nickname() + "님의 호감도는 " + favorite.favorite() + " 입니다.💛"
         ));
     }
 }
