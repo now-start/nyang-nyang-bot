@@ -4,7 +4,7 @@ import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.service.AuthorizationService;
+import org.nowstart.nyangnyangbot.application.service.AuthorizationService;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +13,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 @Configuration
 @RequiredArgsConstructor(onConstructor_ = @Lazy)
-@EnableFeignClients(basePackages = "org.nowstart.nyangnyangbot.repository")
+@EnableFeignClients(basePackages = "org.nowstart.nyangnyangbot.adapter.out.external.chzzk")
 public class FeignConfig {
 
     private final AuthorizationService authorizationService;

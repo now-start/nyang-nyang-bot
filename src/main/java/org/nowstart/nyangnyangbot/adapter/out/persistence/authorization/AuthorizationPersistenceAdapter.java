@@ -5,10 +5,10 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.UserDto;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.AuthorizationRepository;
 import org.springframework.stereotype.Component;
 
 @Component

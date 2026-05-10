@@ -10,17 +10,17 @@ import org.nowstart.nyangnyangbot.application.model.RouletteTable;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteEventCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteRoundCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteTableEntity;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
-import org.nowstart.nyangnyangbot.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteItemEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteItemRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteTableRepository;
 import org.springframework.stereotype.Component;
 
 @Component

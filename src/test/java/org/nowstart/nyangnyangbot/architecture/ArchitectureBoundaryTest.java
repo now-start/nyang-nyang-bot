@@ -12,14 +12,35 @@ import org.junit.jupiter.api.Test;
 class ArchitectureBoundaryTest {
 
     private static final Path SOURCE_ROOT = Path.of("src/main/java/org/nowstart/nyangnyangbot");
+    private static final List<String> ALLOWED_TOP_LEVEL_PACKAGES = List.of(
+            "adapter",
+            "application",
+            "config",
+            "domain"
+    );
+
+    @Test
+    void sourceRoot_ShouldOnlyContainHexagonalTopLevelPackages() throws IOException {
+        List<String> violations;
+        try (Stream<Path> paths = Files.list(SOURCE_ROOT)) {
+            violations = paths
+                    .filter(Files::isDirectory)
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> !ALLOWED_TOP_LEVEL_PACKAGES.contains(name))
+                    .toList();
+        }
+
+        assertThat(violations).isEmpty();
+    }
 
     @Test
     void domainLayer_ShouldNotDependOnAdaptersOrPersistence() throws IOException {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
                 .filter(path -> containsAny(path,
+                        "org.nowstart.nyangnyangbot.application.",
                         "org.nowstart.nyangnyangbot.adapter.",
-                        "org.nowstart.nyangnyangbot.repository",
-                        "org.nowstart.nyangnyangbot.data.entity",
+                        "jakarta.persistence",
+                        "org.springframework.",
                         "org.springframework.web"
                 ))
                 .toList();
@@ -32,21 +53,7 @@ class ArchitectureBoundaryTest {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.adapter.",
-                        "org.nowstart.nyangnyangbot.repository",
-                        "org.nowstart.nyangnyangbot.data.entity",
                         "org.springframework.web.bind.annotation"
-                ))
-                .toList();
-
-        assertThat(violations).isEmpty();
-    }
-
-    @Test
-    void serviceLayer_ShouldDependOnPortsInsteadOfPersistence() throws IOException {
-        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("service"))
-                .filter(path -> containsAny(path,
-                        "org.nowstart.nyangnyangbot.repository",
-                        "org.nowstart.nyangnyangbot.data.entity"
                 ))
                 .toList();
 
@@ -57,8 +64,8 @@ class ArchitectureBoundaryTest {
     void inboundWebAdapters_ShouldNotDependOnPersistence() throws IOException {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
                 .filter(path -> containsAny(path,
-                        "org.nowstart.nyangnyangbot.repository",
-                        "org.nowstart.nyangnyangbot.data.entity"
+                        "org.nowstart.nyangnyangbot.adapter.out.persistence.repository",
+                        "org.nowstart.nyangnyangbot.adapter.out.persistence.entity"
                 ))
                 .toList();
 
@@ -66,8 +73,11 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void legacyControllerPackage_ShouldNotContainJavaSources() throws IOException {
-        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("controller")).toList();
+    void legacyTopLevelPackages_ShouldNotContainJavaSources() throws IOException {
+        List<Path> javaSources = Stream.of("controller", "data", "repository", "service")
+                .map(SOURCE_ROOT::resolve)
+                .flatMap(this::javaFilesUnchecked)
+                .toList();
 
         assertThat(javaSources).isEmpty();
     }
@@ -77,6 +87,14 @@ class ArchitectureBoundaryTest {
             return Stream.empty();
         }
         return Files.walk(root).filter(path -> path.toString().endsWith(".java"));
+    }
+
+    private Stream<Path> javaFilesUnchecked(Path root) {
+        try {
+            return javaFiles(root);
+        } catch (IOException ex) {
+            throw new IllegalStateException("failed to walk source root " + root, ex);
+        }
     }
 
     private boolean containsAny(Path path, String... needles) {

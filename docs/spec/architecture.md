@@ -18,7 +18,7 @@
 
 Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문서는 PRD의 기능 요구사항을 구현할 때 따라야 하는 레이어, 의존성 방향, 패키지 구조, 포트/어댑터 경계, 테스트 기준을 정의한다.
 
-현재 코드베이스의 web controller는 `adapter/in/web` inbound adapter로 이동했다. 남아 있는 `service`, `repository`, `data/entity`, `data/dto` 중심의 Spring MVC 구조는 신규 P0/P1 기능과 수정 범위에 닿는 기존 기능부터 점진적으로 클린 아키텍처로 이동한다.
+현재 코드베이스의 루트 패키지는 `adapter`, `application`, `domain`, `config` 네 개로 제한한다. 기존 `controller`, `service`, `repository`, `data` 루트 패키지는 각각 inbound adapter, application service, outbound adapter, application/domain/persistence/config 세부 모델로 이동했다.
 
 ## 2. 목표
 
@@ -72,6 +72,10 @@ org.nowstart.nyangnyangbot
   application
     auth
     favorite
+    command
+    dto
+    model
+    service
     upbo
     attendance
     chat
@@ -88,20 +92,26 @@ org.nowstart.nyangnyangbot
       scheduler
     out
       persistence
-      chzzk
-      google
+        entity
+        repository
+      external
+        chzzk
+        google
       monitoring
   config
+    property
 ```
 
 패키지 전환 원칙:
 
 - 신규 기능은 위 구조에 맞춰 작성한다.
 - 기존 기능은 수정 범위에 닿을 때 application/use case와 adapter를 분리한다.
-- 현행 `service`는 application service 후보로 본다.
-- 현행 `repository`는 persistence adapter 또는 external adapter 후보로 본다.
-- 현행 `data/entity`는 JPA persistence model로 분리하고, domain model과 직접 공유하지 않는 방향으로 전환한다.
-- 현행 `data/dto`는 web DTO, external DTO, application result로 분리한다.
+- use case 구현은 `application/service`에 둔다.
+- Spring Data repository는 `adapter/out/persistence/repository`에 둔다.
+- Feign client와 외부 API 어댑터는 `adapter/out/external` 하위에 둔다.
+- JPA entity는 `adapter/out/persistence/entity`에 둔다.
+- 공통 비즈니스 enum과 정책 타입은 `domain/type` 또는 기능별 domain 패키지에 둔다.
+- 요청/응답 호환 DTO는 전환기에는 `application/dto`에 두되, 신규 web 전용 DTO는 `adapter/in/web` 하위에서 application command/result와 분리한다.
 
 ## 6. 네이밍 규칙
 
@@ -324,12 +334,12 @@ Monitoring:
 3. 기존 `FavoriteService`의 잔액 변경 로직을 application use case로 이동한다.
 4. 출석, 업보, 룰렛은 Favorite use case를 호출해 잔액을 변경한다.
 5. 채팅/후원/오버레이 입출력은 adapter로 격리한다.
-6. 기존 `repository`, `data/dto`는 수정 범위에 닿는 시점마다 새 구조로 이동한다.
-7. 아키텍처 경계 테스트를 추가해 역방향 의존성 회귀를 막는다.
+6. 기존 루트 `controller`, `service`, `repository`, `data` 패키지가 다시 생기지 않도록 아키텍처 테스트로 막는다.
+7. 신규 기능은 네 개 루트 패키지 하위에서 세부 책임에 맞춰 작성한다.
 
 ## 15. 결정 상태
 
 - 기준 구조는 클린 아키텍처이다.
 - 신규 P0/P1 기능은 이 문서의 레이어와 의존성 규칙을 따른다.
-- 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환하되, web controller는 `adapter/in/web` inbound adapter로 유지한다.
+- 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환하되, 루트 패키지는 `adapter`, `application`, `domain`, `config`로 유지한다.
 - 도메인 규칙은 프레임워크와 분리하고, 외부 시스템은 포트/어댑터로 격리한다.

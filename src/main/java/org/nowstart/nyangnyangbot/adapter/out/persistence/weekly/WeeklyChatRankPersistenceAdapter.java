@@ -7,9 +7,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.model.WeeklyChatRankRecord;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
-import org.nowstart.nyangnyangbot.data.entity.WeeklyChatRankEntity;
-import org.nowstart.nyangnyangbot.repository.WeeklyChatRankRepository;
+import org.nowstart.nyangnyangbot.application.dto.WeeklyChatRankDto;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.WeeklyChatRankRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 

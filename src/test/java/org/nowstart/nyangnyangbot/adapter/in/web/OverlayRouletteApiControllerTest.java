@@ -10,8 +10,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.data.dto.overlay.OverlayDisplayDto;
-import org.nowstart.nyangnyangbot.service.OverlayDisplayService;
+import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayDisplayDto;
+import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)

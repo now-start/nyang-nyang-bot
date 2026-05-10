@@ -6,9 +6,9 @@ import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
 import org.nowstart.nyangnyangbot.application.model.RouletteItem;
 import org.nowstart.nyangnyangbot.application.model.RouletteRound;
 import org.nowstart.nyangnyangbot.application.model.RouletteTable;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 
 public interface RoulettePort {
 

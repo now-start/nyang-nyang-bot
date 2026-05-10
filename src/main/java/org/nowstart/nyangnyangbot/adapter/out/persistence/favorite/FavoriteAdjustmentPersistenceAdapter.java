@@ -4,8 +4,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.model.FavoriteAdjustmentOption;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
-import org.nowstart.nyangnyangbot.repository.FavoriteAdjustmentRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteAdjustmentEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteAdjustmentRepository;
 import org.springframework.stereotype.Component;
 
 @Component

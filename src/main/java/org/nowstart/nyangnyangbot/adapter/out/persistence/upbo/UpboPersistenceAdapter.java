@@ -7,13 +7,13 @@ import org.nowstart.nyangnyangbot.application.model.UpboTemplate;
 import org.nowstart.nyangnyangbot.application.model.UserUpbo;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
-import org.nowstart.nyangnyangbot.data.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.data.entity.UserUpboEntity;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.UpboStatus;
-import org.nowstart.nyangnyangbot.repository.UpboTemplateRepository;
-import org.nowstart.nyangnyangbot.repository.UserUpboRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.UpboTemplateEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.UpboTemplateRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.UserUpboRepository;
 import org.springframework.stereotype.Component;
 
 @Component

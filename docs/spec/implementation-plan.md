@@ -47,7 +47,7 @@
 
 ### 2.3 권장 패키지 구조
 
-현재 코드의 web controller는 `adapter/in/web`으로 이동했다. 남아 있는 `service`, `repository`, `data/entity` 구조는 신규 P0/P1 기능부터 아래 구조로 작성하고, 기존 기능은 작업 범위에 닿는 부분부터 점진적으로 이동한다.
+현재 코드의 루트 패키지는 `adapter`, `application`, `domain`, `config` 네 개로 제한한다. 기존 `controller`, `service`, `repository`, `data` 루트 패키지는 세부 책임에 맞춰 아래 구조로 이동했다.
 
 ```text
 org.nowstart.nyangnyangbot
@@ -63,6 +63,10 @@ org.nowstart.nyangnyangbot
     roulette
     attendance
     auth
+    command
+    dto
+    model
+    service
     port
       in
       out
@@ -73,10 +77,14 @@ org.nowstart.nyangnyangbot
       chat
     out
       persistence
-      chzzk
-      google
+        entity
+        repository
+      external
+        chzzk
+        google
       monitoring
   config
+    property
 ```
 
 ### 2.4 네이밍 규칙
@@ -108,10 +116,12 @@ org.nowstart.nyangnyangbot
 - PRD 요구사항과 현재 구현 기능을 기능 ID 기준으로 매핑한다.
 - 현재 패키지를 클린 아키텍처 레이어 기준으로 분류한다.
   - `adapter/in/web`: inbound web adapter
-  - `service`: application use case 후보
-  - `repository`: outbound persistence/external adapter 후보
-  - `data/entity`: persistence model 또는 domain model 분리 대상
-  - `data/dto`: web/external/application DTO 분리 대상
+  - `application/service`: application use case 구현
+  - `adapter/out/persistence/repository`: Spring Data repository
+  - `adapter/out/persistence/entity`: JPA persistence model
+  - `adapter/out/external`: Feign client와 외부 API adapter
+  - `application/dto`: 전환기 request/response/result DTO
+  - `domain/type`: 공통 비즈니스 enum과 정책 타입
 - 신규 기능의 기준 패키지와 기존 기능의 점진적 이동 원칙을 확정한다.
 - 문서 내 이상 항목을 정리한다.
   - `docs/spec/index.md`의 Skilljar URL은 의도된 참고 링크인지 확인 후 제거 또는 별도 참고 링크로 이동한다.

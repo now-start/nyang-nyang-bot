@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.model;
 
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
 public record UpboTemplate(
         Long id,

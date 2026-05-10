@@ -7,13 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.model.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.application.model.RouletteRound;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.data.entity.OverlayDisplayEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.data.type.OverlayDisplayStatus;
-import org.nowstart.nyangnyangbot.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.OverlayDisplayEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.OverlayDisplayEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteRoundResultRepository;
 import org.springframework.stereotype.Component;
 
 @Component
