@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.dto.upbo;
 
-import org.nowstart.nyangnyangbot.application.model.UpboTemplate;
+import org.nowstart.nyangnyangbot.domain.model.UpboTemplate;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 

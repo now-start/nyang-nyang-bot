@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.config;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.application.service.AuthorizationService;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;

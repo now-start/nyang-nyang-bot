@@ -5,7 +5,7 @@ import io.socket.emitter.Emitter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.donation.DonationPort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.DonationDto;
 import org.springframework.stereotype.Service;
 

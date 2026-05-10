@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.model.FavoriteAdjustmentOption;
+import org.nowstart.nyangnyangbot.domain.model.FavoriteAdjustmentOption;
 import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteAdjustmentDto;
 import org.nowstart.nyangnyangbot.application.service.FavoriteAdjustmentService;
 import org.springframework.http.ResponseEntity;

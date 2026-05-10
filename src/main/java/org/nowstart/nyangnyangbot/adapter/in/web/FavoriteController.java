@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
+import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteMeDto;
 import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteHistoryDto;
 import org.nowstart.nyangnyangbot.application.service.FavoriteService;

@@ -2,8 +2,8 @@ package org.nowstart.nyangnyangbot.application.dto.overlay;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.model.OverlayDisplayEvent;
-import org.nowstart.nyangnyangbot.application.model.RouletteRound;
+import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
+import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
 import org.nowstart.nyangnyangbot.application.dto.roulette.RouletteRunDto;
 
 public class OverlayDisplayDto {

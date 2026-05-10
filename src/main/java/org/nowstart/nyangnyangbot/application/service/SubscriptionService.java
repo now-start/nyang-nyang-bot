@@ -6,7 +6,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.subscription.SubscriptionPort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.SubscriptionDto;
 import org.springframework.stereotype.Service;
 

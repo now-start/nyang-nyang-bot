@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayTokenDto;
 
 @ExtendWith(MockitoExtension.class)

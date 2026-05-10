@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.external.chzzk;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.ApiResponseDto;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationDto;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationRequestDto;

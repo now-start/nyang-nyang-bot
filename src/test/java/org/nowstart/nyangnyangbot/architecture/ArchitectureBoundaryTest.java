@@ -61,6 +61,29 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void applicationModelPackage_ShouldNotContainJavaSources() throws IOException {
+        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/model")).toList();
+
+        assertThat(javaSources).isEmpty();
+    }
+
+    @Test
+    void applicationPortPackage_ShouldNotContainJavaSources() throws IOException {
+        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/port")).toList();
+
+        assertThat(javaSources).isEmpty();
+    }
+
+    @Test
+    void domainLayer_ShouldNotContainDtoClasses() throws IOException {
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
+                .filter(path -> path.getFileName().toString().endsWith("Dto.java"))
+                .toList();
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
     void inboundWebAdapters_ShouldNotDependOnPersistence() throws IOException {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
                 .filter(path -> containsAny(path,

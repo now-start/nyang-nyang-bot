@@ -10,7 +10,7 @@
 
 - 테스트는 클린 아키텍처 경계에 맞춰 작성한다.
 - Domain 테스트는 빠르고 프레임워크 의존성이 없어야 한다.
-- Application 테스트는 port를 fake/mock으로 대체해 유스케이스 규칙을 검증한다.
+- Application 테스트는 gateway를 fake/mock으로 대체해 유스케이스 규칙을 검증한다.
 - Adapter 테스트는 Spring MVC, JPA, Feign DTO 매핑 같은 기술 경계를 검증한다.
 - Integration 테스트는 wiring, 트랜잭션, 보안 설정을 검증한다.
 - 아키텍처 테스트로 역방향 의존성을 막는다.
@@ -20,7 +20,7 @@
 | 계층 | 대상 | 도구 | 검증 예시 |
 | --- | --- | --- | --- |
 | Domain unit | Domain model, domain service | JUnit | 잔액 계산, 업보 상태 전이, 룰렛 확률 검증 |
-| Application use case | Use case service + fake port | JUnit, Mockito 또는 hand-written fake | 원장 기록, 중복 방지, 정정 거래, 권한 의도 |
+| Application use case | Use case service + fake gateway | JUnit, Mockito 또는 hand-written fake | 원장 기록, 중복 방지, 정정 거래, 권한 의도 |
 | Adapter slice | Controller, persistence adapter | Spring MVC Test, DataJpaTest | 요청/응답 매핑, 권한, JPA query |
 | Integration | Spring context + DB | SpringBootTest | 트랜잭션, Security, 전체 wiring |
 | Architecture | 패키지 의존성 | ArchUnit 도입 권장 | Domain/Application 의존성 규칙 |
@@ -65,7 +65,7 @@
 
 ## 5. Application 테스트 기준
 
-Application 테스트는 DB와 외부 API 없이 fake port로 작성한다.
+Application 테스트는 DB와 외부 API 없이 fake gateway로 작성한다.
 
 검증:
 
@@ -74,7 +74,7 @@ Application 테스트는 DB와 외부 API 없이 fake port로 작성한다.
 - `ApplyUpboUseCase`가 `AUTO` 항목에 대해 Favorite use case를 호출한다.
 - `RunRouletteFromDonationUseCase`가 후원 시점 스냅샷으로 결과를 확정한다.
 - 회차별 반영 실패 시 실패 회차만 재처리 대상으로 남긴다.
-- `ReplayOverlayEventUseCase`가 원장 port를 호출하지 않는다.
+- `ReplayOverlayEventUseCase`가 원장 gateway를 호출하지 않는다.
 
 ## 6. Adapter 테스트 기준
 
@@ -111,7 +111,10 @@ External adapter:
 도입 권장 규칙:
 
 - `..domain..`은 `org.springframework..`, `jakarta.persistence..`, `jakarta.servlet..`, `feign..`에 의존하지 않는다.
+- `..domain..`에는 `*Dto` 클래스를 두지 않는다.
 - `..application..`은 `..adapter..`에 의존하지 않는다.
+- `..application.model..` 패키지는 사용하지 않고 내부 모델은 `..domain.model..` 또는 기능별 domain 패키지에 둔다.
+- `..application.port..` 패키지는 사용하지 않고 외부 호출 계약은 `..application.gateway.out..`에 둔다.
 - `..adapter..`만 web/persistence/external framework에 의존한다.
 - `..config..`는 조립만 담당하고 domain 규칙을 포함하지 않는다.
 - JPA entity는 `..adapter.out.persistence.entity..`에만 위치한다.

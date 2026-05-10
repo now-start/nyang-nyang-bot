@@ -3,23 +3,23 @@ package org.nowstart.nyangnyangbot.application.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
-import org.nowstart.nyangnyangbot.application.model.RouletteItem;
-import org.nowstart.nyangnyangbot.application.model.RouletteRound;
-import org.nowstart.nyangnyangbot.application.model.RouletteTable;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteEventCommand;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteRoundCommand;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.DonationDto;
 import org.nowstart.nyangnyangbot.application.dto.roulette.RouletteRunDto;
 import org.nowstart.nyangnyangbot.application.dto.roulette.RouletteTableDto;
+import org.nowstart.nyangnyangbot.application.gateway.out.roulette.CreateRouletteEventCommand;
+import org.nowstart.nyangnyangbot.application.gateway.out.roulette.CreateRouletteRoundCommand;
+import org.nowstart.nyangnyangbot.application.gateway.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.domain.model.RouletteEvent;
+import org.nowstart.nyangnyangbot.domain.model.RouletteItem;
+import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
+import org.nowstart.nyangnyangbot.domain.model.RouletteTable;
+import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
+import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -31,9 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RouletteService {
 
-    private static final int TOTAL_PROBABILITY = 10_000;
-    private static final int DEFAULT_HIGH_ROUND_THRESHOLD = 100;
-
+    private final RoulettePolicy roulettePolicy = new RoulettePolicy();
     private final ObjectMapper objectMapper;
     private final RoulettePort roulettePort;
     private final RouletteRoundApplyService rouletteRoundApplyService;
@@ -46,7 +44,9 @@ public class RouletteService {
                 request.title().trim(),
                 request.command().trim(),
                 request.pricePerRound(),
-                request.highRoundThreshold() == null ? DEFAULT_HIGH_ROUND_THRESHOLD : request.highRoundThreshold()
+                request.highRoundThreshold() == null
+                        ? RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD
+                        : request.highRoundThreshold()
         );
         return tableResponse(saved);
     }
@@ -117,7 +117,7 @@ public class RouletteService {
         if (table == null) {
             return RouletteRunDto.Response.ignored("active roulette table not found");
         }
-        if (!containsCommand(donationDto.donationText(), table.command())) {
+        if (!roulettePolicy.containsCommand(donationDto.donationText(), table.command())) {
             return RouletteRunDto.Response.ignored("roulette command not found");
         }
         if (roulettePort.existsEventByDonationEventId(donationDto.donationEventId())) {
@@ -125,11 +125,11 @@ public class RouletteService {
         }
 
         long amount = parseAmount(donationDto.payAmount());
-        int roundCount = calculateRoundCount(amount, table.pricePerRound());
+        int roundCount = roulettePolicy.calculateRoundCount(amount, table.pricePerRound());
         if (roundCount < 1) {
             return RouletteRunDto.Response.ignored("donation amount is less than roulette price");
         }
-        if (roundCount > highRoundThreshold(table)) {
+        if (roundCount > roulettePolicy.highRoundThreshold(table)) {
             log.info("action=roulette.high_round donationEventId={} roundCount={}",
                     donationDto.donationEventId(), roundCount);
         }
@@ -195,7 +195,7 @@ public class RouletteService {
         Map<String, Integer> counts = new LinkedHashMap<>();
         items.forEach(item -> counts.put(item.label(), 0));
         for (int i = 0; i < safeIterations; i++) {
-            RouletteItem selected = selectItem(items);
+            RouletteItem selected = roulettePolicy.selectItem(items);
             counts.put(selected.label(), counts.get(selected.label()) + 1);
         }
         return new RouletteTableDto.SimulationResponse(
@@ -238,8 +238,8 @@ public class RouletteService {
     private List<CreateRouletteRoundCommand> confirmRounds(RouletteEvent event, List<RouletteItem> items) {
         List<CreateRouletteRoundCommand> rounds = new ArrayList<>();
         for (int roundNo = 1; roundNo <= event.roundCount(); roundNo++) {
-            int ticket = nextTicket(TOTAL_PROBABILITY);
-            RouletteItem selected = selectItem(items, ticket);
+            int ticket = roulettePolicy.nextTicket(RoulettePolicy.TOTAL_PROBABILITY);
+            RouletteItem selected = roulettePolicy.selectItem(items, ticket);
             rounds.add(new CreateRouletteRoundCommand(
                     roundNo,
                     selected.label(),
@@ -255,57 +255,16 @@ public class RouletteService {
         return rounds;
     }
 
-    private RouletteItem selectItem(List<RouletteItem> items) {
-        return selectItem(items, nextTicket(TOTAL_PROBABILITY));
-    }
-
-    private RouletteItem selectItem(List<RouletteItem> items, int ticket) {
-        int cumulative = 0;
-        for (RouletteItem item : items) {
-            cumulative += item.probabilityBasisPoints();
-            if (ticket <= cumulative) {
-                return item;
-            }
-        }
-        return items.get(items.size() - 1);
-    }
-
-    int nextTicket(int totalProbability) {
-        return ThreadLocalRandom.current().nextInt(1, totalProbability + 1);
-    }
-
     private RouletteTableDto.ValidationResponse activationValidation(
             RouletteTable table,
             List<RouletteItem> items
     ) {
-        List<String> reasons = new ArrayList<>();
-        if (isBlank(table.command())) {
-            reasons.add("command is required");
-        }
-        if (table.pricePerRound() == null || table.pricePerRound() <= 0) {
-            reasons.add("pricePerRound is required");
-        }
-        int probabilityTotal = items.stream()
-                .map(RouletteItem::probabilityBasisPoints)
-                .filter(value -> value != null)
-                .mapToInt(Integer::intValue)
-                .sum();
-        if (probabilityTotal != TOTAL_PROBABILITY) {
-            reasons.add("probability total must be 10000");
-        }
-        boolean hasLosingItem = items.stream().anyMatch(item ->
-                item.losingItem()
-                        && item.probabilityBasisPoints() != null
-                        && item.probabilityBasisPoints() > 0
-        );
-        if (!hasLosingItem) {
-            reasons.add("losing item is required");
-        }
+        RouletteActivationValidation validation = roulettePolicy.validateActivation(table, items);
         return new RouletteTableDto.ValidationResponse(
-                reasons.isEmpty(),
-                reasons,
-                probabilityTotal,
-                hasLosingItem
+                validation.activatable(),
+                validation.reasons(),
+                validation.probabilityTotal(),
+                validation.hasLosingItem()
         );
     }
 
@@ -354,29 +313,6 @@ public class RouletteService {
                 && (request.exchangeFavoriteValue() == null || request.exchangeFavoriteValue() == 0)) {
             throw new IllegalArgumentException("exchangeFavoriteValue is required for AUTO conversion");
         }
-    }
-
-    private boolean containsCommand(String donationText, String command) {
-        if (isBlank(donationText) || isBlank(command)) {
-            return false;
-        }
-        return Arrays.stream(donationText.trim().split("\\s+"))
-                .anyMatch(command::equals);
-    }
-
-    private int calculateRoundCount(long amount, Long pricePerRound) {
-        if (pricePerRound == null || pricePerRound <= 0) {
-            return 0;
-        }
-        long roundCount = amount / pricePerRound;
-        if (roundCount > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("roundCount is too large");
-        }
-        return (int) roundCount;
-    }
-
-    private int highRoundThreshold(RouletteTable table) {
-        return table.highRoundThreshold() == null ? DEFAULT_HIGH_ROUND_THRESHOLD : table.highRoundThreshold();
     }
 
     private long parseAmount(String amount) {

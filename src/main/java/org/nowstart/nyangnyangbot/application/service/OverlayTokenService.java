@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayTokenDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.auth.OAuthStateService;
-import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.application.service.AuthorizationService;
 import org.springframework.http.HttpStatus;
