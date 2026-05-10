@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayDisplayDto;
+import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayDisplayDto;
 import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

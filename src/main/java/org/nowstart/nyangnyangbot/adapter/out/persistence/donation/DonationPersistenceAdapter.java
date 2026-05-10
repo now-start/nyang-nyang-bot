@@ -2,7 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.gateway.out.donation.DonationPort;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.DonationDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.DonationDto;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.DonationEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.DonationRepository;
 import org.springframework.stereotype.Component;

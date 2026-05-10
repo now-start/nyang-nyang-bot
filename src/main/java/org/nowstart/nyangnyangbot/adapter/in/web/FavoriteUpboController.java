@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.dto.upbo.UserUpboDto;
+import org.nowstart.nyangnyangbot.application.upbo.dto.UserUpboDto;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.nowstart.nyangnyangbot.application.service.UpboService;
 import org.springframework.http.ResponseEntity;

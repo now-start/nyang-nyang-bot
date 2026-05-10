@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.application.command.Command;
 import org.springframework.stereotype.Service;

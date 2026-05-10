@@ -10,8 +10,8 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
 import org.nowstart.nyangnyangbot.application.gateway.out.weekly.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.application.dto.WeeklyChatRankDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
+import org.nowstart.nyangnyangbot.application.weeklychat.dto.WeeklyChatRankDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
 import org.springframework.stereotype.Service;
 
 @Service

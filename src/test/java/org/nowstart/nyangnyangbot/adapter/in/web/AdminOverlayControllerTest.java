@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayTokenDto;
+import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayTokenDto;
 import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
 import org.nowstart.nyangnyangbot.application.service.OverlayTokenService;
 import org.springframework.http.ResponseEntity;

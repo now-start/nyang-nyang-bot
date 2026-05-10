@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
 import org.nowstart.nyangnyangbot.application.gateway.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.gateway.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.MessageRequestDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.MessageRequestDto;
 import org.springframework.stereotype.Service;
 
 @Service("roulette_result")
