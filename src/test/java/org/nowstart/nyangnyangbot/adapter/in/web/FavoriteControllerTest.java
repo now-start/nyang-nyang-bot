@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.controller;
+package org.nowstart.nyangnyangbot.adapter.in.web;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;

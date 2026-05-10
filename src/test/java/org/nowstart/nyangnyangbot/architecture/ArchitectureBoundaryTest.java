@@ -17,7 +17,7 @@ class ArchitectureBoundaryTest {
     void domainLayer_ShouldNotDependOnAdaptersOrPersistence() throws IOException {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
                 .filter(path -> containsAny(path,
-                        "org.nowstart.nyangnyangbot.controller",
+                        "org.nowstart.nyangnyangbot.adapter.",
                         "org.nowstart.nyangnyangbot.repository",
                         "org.nowstart.nyangnyangbot.data.entity",
                         "org.springframework.web"
@@ -28,10 +28,10 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void applicationLayer_ShouldNotDependOnWebControllers() throws IOException {
+    void applicationLayer_ShouldNotDependOnAdapters() throws IOException {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
-                        "org.nowstart.nyangnyangbot.controller",
+                        "org.nowstart.nyangnyangbot.adapter.",
                         "org.nowstart.nyangnyangbot.repository",
                         "org.nowstart.nyangnyangbot.data.entity",
                         "org.springframework.web.bind.annotation"
@@ -54,8 +54,8 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void inboundControllers_ShouldNotDependOnPersistence() throws IOException {
-        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("controller"))
+    void inboundWebAdapters_ShouldNotDependOnPersistence() throws IOException {
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.repository",
                         "org.nowstart.nyangnyangbot.data.entity"
@@ -63,6 +63,13 @@ class ArchitectureBoundaryTest {
                 .toList();
 
         assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void legacyControllerPackage_ShouldNotContainJavaSources() throws IOException {
+        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("controller")).toList();
+
+        assertThat(javaSources).isEmpty();
     }
 
     private Stream<Path> javaFiles(Path root) throws IOException {
