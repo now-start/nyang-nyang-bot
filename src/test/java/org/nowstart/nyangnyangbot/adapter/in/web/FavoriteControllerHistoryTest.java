@@ -14,10 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.model.FavoriteHistoryView;
-import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
+import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteMeDto;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.service.FavoriteService;
-import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
+import org.nowstart.nyangnyangbot.application.service.FavoriteService;
+import org.nowstart.nyangnyangbot.application.service.WeeklyChatRankService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 

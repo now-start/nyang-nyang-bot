@@ -100,7 +100,7 @@ External adapter:
 
 ## 7. Integration 테스트 기준
 
-- Spring Security 설정과 controller 권한이 실제로 연결되어야 한다.
+- Spring Security 설정과 web adapter 권한이 실제로 연결되어야 한다.
 - `@Transactional` 경계에서 원장 저장과 잔액 변경이 함께 rollback되어야 한다.
 - H2 또는 test container DB에서 JPA mapping이 검증되어야 한다.
 - OpenAPI/Actuator 공개 범위가 의도와 맞는지 검증한다.
@@ -114,12 +114,8 @@ External adapter:
 - `..application..`은 `..adapter..`에 의존하지 않는다.
 - `..adapter..`만 web/persistence/external framework에 의존한다.
 - `..config..`는 조립만 담당하고 domain 규칙을 포함하지 않는다.
-- JPA entity는 `..adapter.out.persistence..` 또는 전환기 예외 패키지에만 위치한다.
-
-전환기 예외:
-
-- 기존 `data.entity` 패키지는 migration 대상이므로 일시 예외로 둘 수 있다.
-- 예외는 테스트 주석이나 문서에 남기고, 신규 domain model은 예외에 포함하지 않는다.
+- JPA entity는 `..adapter.out.persistence.entity..`에만 위치한다.
+- 루트 패키지는 `adapter`, `application`, `domain`, `config` 네 개만 허용한다.
 
 ## 9. 릴리즈 체크리스트
 

@@ -1,11 +1,11 @@
 package org.nowstart.nyangnyangbot.application.port.out.chzzk;
 
-import org.nowstart.nyangnyangbot.data.dto.chzzk.ApiResponseDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.MessageRequestDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.SessionDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.ApiResponseDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationRequestDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.MessageRequestDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.SessionDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.UserDto;
 
 public interface ChzzkClientPort {
 

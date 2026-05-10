@@ -11,12 +11,12 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPor
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteHistoryEntity;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteHistoryRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;

@@ -9,7 +9,7 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.service.GoogleSheetService;
+import org.nowstart.nyangnyangbot.application.service.GoogleSheetService;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)

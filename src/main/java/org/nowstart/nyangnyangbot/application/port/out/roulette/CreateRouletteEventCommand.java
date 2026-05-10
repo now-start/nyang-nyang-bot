@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.out.roulette;
 
-import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 
 public record CreateRouletteEventCommand(
         String donationEventId,

@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.model.UpboTemplate;
 import org.nowstart.nyangnyangbot.application.model.UserUpbo;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.UpboStatus;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 
 public interface UpboPort {
 

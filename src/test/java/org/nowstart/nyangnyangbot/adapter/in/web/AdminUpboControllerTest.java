@@ -8,11 +8,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.data.dto.upbo.UpboApplyDto;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.UpboStatus;
-import org.nowstart.nyangnyangbot.service.UpboService;
+import org.nowstart.nyangnyangbot.application.dto.upbo.UpboApplyDto;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.nowstart.nyangnyangbot.application.service.UpboService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 

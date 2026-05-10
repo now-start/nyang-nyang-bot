@@ -13,7 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.adapter.in.web.GoogleController;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
-import org.nowstart.nyangnyangbot.service.GoogleSheetService;
+import org.nowstart.nyangnyangbot.application.service.GoogleSheetService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;

@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.model.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
+import org.nowstart.nyangnyangbot.application.dto.WeeklyChatRankDto;
 
 public interface WeeklyChatRankPort {
 

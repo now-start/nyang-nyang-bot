@@ -9,10 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.data.dto.roulette.RouletteTableDto;
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.service.RouletteService;
+import org.nowstart.nyangnyangbot.application.dto.roulette.RouletteTableDto;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.application.service.RouletteService;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)

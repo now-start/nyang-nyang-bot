@@ -2,9 +2,9 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.subscription;
 
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.SubscriptionDto;
-import org.nowstart.nyangnyangbot.data.entity.SubscriptionEntity;
-import org.nowstart.nyangnyangbot.repository.SubscriptionRepository;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.SubscriptionDto;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.SubscriptionEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.SubscriptionRepository;
 import org.springframework.stereotype.Component;
 
 @Component

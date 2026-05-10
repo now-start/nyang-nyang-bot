@@ -3,8 +3,8 @@ package org.nowstart.nyangnyangbot.application.port.out.authorization;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
-import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationDto;
+import org.nowstart.nyangnyangbot.application.dto.chzzk.UserDto;
 
 public interface AuthorizationPort {
 

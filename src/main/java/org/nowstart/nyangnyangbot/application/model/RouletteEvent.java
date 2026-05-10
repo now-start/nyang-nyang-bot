@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.model;
 
 import java.time.LocalDateTime;
-import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 
 public record RouletteEvent(
         Long id,

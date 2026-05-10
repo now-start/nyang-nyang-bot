@@ -15,11 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.data.type.EventType;
-import org.nowstart.nyangnyangbot.service.ChatService;
-import org.nowstart.nyangnyangbot.service.DonationService;
-import org.nowstart.nyangnyangbot.service.SubscriptionService;
-import org.nowstart.nyangnyangbot.service.SystemService;
+import org.nowstart.nyangnyangbot.domain.type.EventType;
+import org.nowstart.nyangnyangbot.application.service.ChatService;
+import org.nowstart.nyangnyangbot.application.service.DonationService;
+import org.nowstart.nyangnyangbot.application.service.SubscriptionService;
+import org.nowstart.nyangnyangbot.application.service.SystemService;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)

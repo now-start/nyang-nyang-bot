@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.application.port.out.roulette;
 
-import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.data.type.RouletteRoundStatus;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 public record CreateRouletteRoundCommand(
         Integer roundNo,
