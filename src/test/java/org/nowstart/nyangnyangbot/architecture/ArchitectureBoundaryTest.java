@@ -32,7 +32,33 @@ class ArchitectureBoundaryTest {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.controller",
+                        "org.nowstart.nyangnyangbot.repository",
+                        "org.nowstart.nyangnyangbot.data.entity",
                         "org.springframework.web.bind.annotation"
+                ))
+                .toList();
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void serviceLayer_ShouldDependOnPortsInsteadOfPersistence() throws IOException {
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("service"))
+                .filter(path -> containsAny(path,
+                        "org.nowstart.nyangnyangbot.repository",
+                        "org.nowstart.nyangnyangbot.data.entity"
+                ))
+                .toList();
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void inboundControllers_ShouldNotDependOnPersistence() throws IOException {
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("controller"))
+                .filter(path -> containsAny(path,
+                        "org.nowstart.nyangnyangbot.repository",
+                        "org.nowstart.nyangnyangbot.data.entity"
                 ))
                 .toList();
 

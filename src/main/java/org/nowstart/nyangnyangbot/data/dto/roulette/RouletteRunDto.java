@@ -2,8 +2,8 @@ package org.nowstart.nyangnyangbot.data.dto.roulette;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
+import org.nowstart.nyangnyangbot.application.model.RouletteRound;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
@@ -27,12 +27,12 @@ public class RouletteRunDto {
             return new Response("DUPLICATE", null, "duplicate donation event", 0, List.of());
         }
 
-        public static Response confirmed(RouletteEventEntity event, List<RouletteRoundResultEntity> rounds) {
+        public static Response confirmed(RouletteEvent event, List<RouletteRound> rounds) {
             return new Response(
                     "CONFIRMED",
-                    event.getId(),
+                    event.id(),
                     null,
-                    event.getRoundCount(),
+                    event.roundCount(),
                     rounds.stream().map(RoundResponse::from).toList()
             );
         }
@@ -52,16 +52,16 @@ public class RouletteRunDto {
 
         private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-        public static EventResponse from(RouletteEventEntity event, List<RouletteRoundResultEntity> rounds) {
-            String createdAt = event.getCreateDate() == null ? null : event.getCreateDate().format(DATE_FORMATTER);
+        public static EventResponse from(RouletteEvent event, List<RouletteRound> rounds) {
+            String createdAt = event.createdAt() == null ? null : event.createdAt().format(DATE_FORMATTER);
             return new EventResponse(
-                    event.getId(),
-                    event.getDonationEventId(),
-                    event.getUserId(),
-                    event.getNickNameSnapshot(),
-                    event.getDonationAmount(),
-                    event.getRoundCount(),
-                    event.getStatus(),
+                    event.id(),
+                    event.donationEventId(),
+                    event.userId(),
+                    event.nickNameSnapshot(),
+                    event.donationAmount(),
+                    event.roundCount(),
+                    event.status(),
                     createdAt,
                     rounds.stream().map(RoundResponse::from).toList()
             );
@@ -82,19 +82,19 @@ public class RouletteRunDto {
             String failureReason
     ) {
 
-        public static RoundResponse from(RouletteRoundResultEntity round) {
+        public static RoundResponse from(RouletteRound round) {
             return new RoundResponse(
-                    round.getId(),
-                    round.getRoundNo(),
-                    round.getItemLabel(),
-                    round.isLosingItem(),
-                    round.getRewardType(),
-                    round.getConversionMode(),
-                    round.getExchangeFavoriteValue(),
-                    round.getStatus(),
-                    round.getLedgerId(),
-                    round.getUserUpboId(),
-                    round.getFailureReason()
+                    round.id(),
+                    round.roundNo(),
+                    round.itemLabel(),
+                    round.losingItem(),
+                    round.rewardType(),
+                    round.conversionMode(),
+                    round.exchangeFavoriteValue(),
+                    round.status(),
+                    round.ledgerId(),
+                    round.userUpboId(),
+                    round.failureReason()
             );
         }
     }

@@ -7,10 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteHistoryDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.service.FavoriteService;
 import org.nowstart.nyangnyangbot.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
@@ -40,7 +39,6 @@ public class FavoriteController {
     private static final int WEEKLY_CHAT_RANK_LIMIT = 5;
 
     private final FavoriteService favoriteService;
-    private final AuthorizationRepository authorizationRepository;
     private final WeeklyChatRankService weeklyChatRankService;
 
     @Operation(
@@ -56,7 +54,7 @@ public class FavoriteController {
         log.info("[GET][/favorite/list]");
         String safeNickName = Optional.ofNullable(nickName).map(HtmlUtils::htmlEscape).orElse("");
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
-        Page<FavoriteEntity> favoriteList =
+        Page<FavoriteSummary> favoriteList =
                 StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
@@ -68,9 +66,7 @@ public class FavoriteController {
             currentUserId = authentication.getName();
             isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-            authorizationRepository.findById(authentication.getName())
-                    .map(authorization -> authorization.getChannelName())
-                    .filter(name -> !name.isBlank())
+            favoriteService.getCurrentNickName(authentication.getName())
                     .ifPresent(name -> modelAndView.addObject("currentNickName", name));
         }
         modelAndView.addObject("currentUserId", currentUserId);

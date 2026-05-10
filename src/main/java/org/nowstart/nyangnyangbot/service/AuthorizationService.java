@@ -4,14 +4,14 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.data.type.GrantType;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -21,11 +21,11 @@ import org.springframework.stereotype.Service;
 public class AuthorizationService {
 
     private final ChzzkProperty chzzkProperty;
-    private final ChzzkOpenApi chzzkOpenApi;
-    private final AuthorizationRepository authorizationRepository;
+    private final ChzzkClientPort chzzkClientPort;
+    private final AuthorizationPort authorizationPort;
 
-    public AuthorizationEntity getAccessToken(String code, String state) {
-        AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
+    public AuthorizationAccount getAccessToken(String code, String state) {
+        AuthorizationDto authorizationDto = chzzkClientPort.getAccessToken(new AuthorizationRequestDto(
                 GrantType.AUTHORIZATION_CODE.getData(),
                 chzzkProperty.clientId(),
                 chzzkProperty.clientSecret(),
@@ -33,55 +33,31 @@ public class AuthorizationService {
                 state,
                 null
         )).content();
-        UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
+        UserDto userDto = chzzkClientPort.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-        return authorizationRepository.findById(userDto.channelId())
-                .map(existing -> {
-                    existing.setChannelName(userDto.channelName());
-                    existing.setAccessToken(authorizationDto.accessToken());
-                    existing.setRefreshToken(authorizationDto.refreshToken());
-                    existing.setTokenType(authorizationDto.tokenType());
-                    existing.setExpiresIn(authorizationDto.expiresIn());
-                    existing.setScope(authorizationDto.scope());
-                    return existing;
-                })
-                .orElseGet(() -> authorizationRepository.save(AuthorizationEntity.builder()
-                        .channelId(userDto.channelId())
-                        .channelName(userDto.channelName())
-                        .accessToken(authorizationDto.accessToken())
-                        .refreshToken(authorizationDto.refreshToken())
-                        .tokenType(authorizationDto.tokenType())
-                        .expiresIn(authorizationDto.expiresIn())
-                        .scope(authorizationDto.scope())
-                        .admin(false)
-                        .build()));
+        return authorizationPort.saveOrUpdate(userDto, authorizationDto);
     }
 
-    public AuthorizationEntity getAccessToken() {
-        AuthorizationEntity authorizationEntity = authorizationRepository.findById(chzzkProperty.channelId()).orElseThrow();
+    public AuthorizationAccount getAccessToken() {
+        AuthorizationAccount authorization = authorizationPort.findById(chzzkProperty.channelId()).orElseThrow();
 
-        Integer expiresIn = authorizationEntity.getExpiresIn();
-        if (expiresIn == null || authorizationEntity.getModifyDate().plusSeconds(expiresIn).isBefore(LocalDateTime.now())) {
-            AuthorizationDto authorizationDto = chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
+        Integer expiresIn = authorization.expiresIn();
+        LocalDateTime modifyDate = authorization.modifyDate();
+        if (expiresIn == null || modifyDate == null || modifyDate.plusSeconds(expiresIn).isBefore(LocalDateTime.now())) {
+            AuthorizationDto authorizationDto = chzzkClientPort.getAccessToken(new AuthorizationRequestDto(
                     GrantType.REFRESH_TOKEN.getData(),
                     chzzkProperty.clientId(),
                     chzzkProperty.clientSecret(),
                     null,
                     null,
-                    authorizationEntity.getRefreshToken()
+                    authorization.refreshToken()
             )).content();
             log.info("[REFRESH_TOKEN] token refreshed");
-            UserDto userDto = chzzkOpenApi.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
+            UserDto userDto = chzzkClientPort.getUser(authorizationDto.tokenType() + " " + authorizationDto.accessToken()).content();
 
-            authorizationEntity.setChannelId(userDto.channelId());
-            authorizationEntity.setChannelName(userDto.channelName());
-            authorizationEntity.setAccessToken(authorizationDto.accessToken());
-            authorizationEntity.setRefreshToken(authorizationDto.refreshToken());
-            authorizationEntity.setTokenType(authorizationDto.tokenType());
-            authorizationEntity.setExpiresIn(authorizationDto.expiresIn());
-            authorizationEntity.setScope(authorizationDto.scope());
+            authorization = authorizationPort.updateToken(chzzkProperty.channelId(), userDto, authorizationDto);
         }
 
-        return authorizationEntity;
+        return authorization;
     }
 }

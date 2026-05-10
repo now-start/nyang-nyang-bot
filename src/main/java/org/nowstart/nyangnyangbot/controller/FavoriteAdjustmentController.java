@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.model.FavoriteAdjustmentOption;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.service.FavoriteAdjustmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,13 +26,13 @@ public class FavoriteAdjustmentController {
 
     @Operation(summary = "호감도 조정 항목 조회")
     @GetMapping
-    public ResponseEntity<List<FavoriteAdjustmentEntity>> getAdjustments() {
+    public ResponseEntity<List<FavoriteAdjustmentOption>> getAdjustments() {
         return ResponseEntity.ok(favoriteAdjustmentService.getAdjustments());
     }
 
     @Operation(summary = "호감도 조정 항목 추가")
     @PostMapping
-    public ResponseEntity<FavoriteAdjustmentEntity> createAdjustment(
+    public ResponseEntity<FavoriteAdjustmentOption> createAdjustment(
             @RequestBody FavoriteAdjustmentDto.CreateRequest request
     ) {
         return ResponseEntity.ok(favoriteAdjustmentService.createAdjustment(request));

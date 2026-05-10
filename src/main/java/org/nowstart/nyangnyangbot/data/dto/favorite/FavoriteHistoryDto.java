@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.data.dto.favorite;
 
 import java.time.format.DateTimeFormatter;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.application.model.FavoriteHistoryView;
 
 public record FavoriteHistoryDto(
         Long ledgerId,
@@ -20,24 +20,21 @@ public record FavoriteHistoryDto(
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public static FavoriteHistoryDto from(FavoriteHistoryEntity entity) {
-        String formattedDate = entity.getCreateDate() == null ? null : entity.getCreateDate().format(DATE_FORMATTER);
-        String channelId = entity.getFavoriteEntity() == null ? null : entity.getFavoriteEntity().getUserId();
-        String sourceType = entity.getSourceType() == null ? null : entity.getSourceType().name();
-        Integer balanceAfter = entity.getBalanceAfter() == null ? entity.getFavorite() : entity.getBalanceAfter();
-        String publicDescription = entity.getPublicDescription() == null ? entity.getHistory() : entity.getPublicDescription();
+    public static FavoriteHistoryDto from(FavoriteHistoryView view) {
+        String formattedDate = view.createdAt() == null ? null : view.createdAt().format(DATE_FORMATTER);
+        String sourceType = view.sourceType() == null ? null : view.sourceType().name();
         return new FavoriteHistoryDto(
-                entity.getId(),
-                channelId,
-                entity.getNickNameSnapshot(),
-                entity.getDelta(),
-                balanceAfter,
+                view.ledgerId(),
+                view.channelId(),
+                view.nickNameSnapshot(),
+                view.delta(),
+                view.balanceAfter(),
                 sourceType,
-                entity.getDisplayCategory(),
-                publicDescription,
-                entity.getCorrectionOfLedgerId() != null,
-                entity.getFavorite(),
-                entity.getHistory(),
+                view.displayCategory(),
+                view.publicDescription(),
+                view.correction(),
+                view.favorite(),
+                view.history(),
                 formattedDate
         );
     }

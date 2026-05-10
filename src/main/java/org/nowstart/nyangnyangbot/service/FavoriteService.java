@@ -5,18 +5,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.application.model.FavoriteHistoryView;
+import org.nowstart.nyangnyangbot.application.model.FavoriteSummary;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteHistoryDto;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteMeDto;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteHistoryEntity;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -25,48 +22,48 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FavoriteService {
 
-    private final FavoriteRepository favoriteRepository;
-    private final FavoriteHistoryRepository favoriteHistoryRepository;
-    private final AuthorizationRepository authorizationRepository;
+    private final FavoriteQueryPort favoriteQueryPort;
+    private final AuthorizationPort authorizationPort;
 
-    public Page<FavoriteEntity> getList(Pageable pageable) {
-        return favoriteRepository.findAll(pageable);
+    public Page<FavoriteSummary> getList(Pageable pageable) {
+        return favoriteQueryPort.findAll(pageable);
     }
 
-    public Page<FavoriteEntity> getByNickName(Pageable pageable, String nickName) {
-        return favoriteRepository.findByNickNameContains(pageable, nickName);
+    public Page<FavoriteSummary> getByNickName(Pageable pageable, String nickName) {
+        return favoriteQueryPort.findByNickNameContains(pageable, nickName);
     }
 
-    public List<FavoriteHistoryEntity> getHistory(String userId, int limit) {
-        Pageable page = PageRequest.of(0, limit, Sort.by("createDate").descending());
-        return favoriteHistoryRepository.findByFavoriteEntityUserId(userId, page).getContent();
+    public List<FavoriteHistoryView> getHistory(String userId, int limit) {
+        return favoriteQueryPort.findHistory(userId, limit);
     }
 
     public FavoriteMeDto getMyFavorite(String userId) {
-        AuthorizationEntity authorizationEntity = authorizationRepository.findById(userId)
+        AuthorizationAccount authorization = authorizationPort.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Authorization user not found"));
-        FavoriteEntity favoriteEntity = favoriteRepository.findById(userId)
-                .orElse(FavoriteEntity.builder()
-                        .userId(userId)
-                        .nickName(authorizationEntity.getChannelName())
-                        .favorite(0)
-                        .build());
+        FavoriteSummary favorite = favoriteQueryPort.findById(userId)
+                .orElse(new FavoriteSummary(userId, authorization.channelName(), 0));
 
-        LocalDateTime lastSeenAt = authorizationEntity.getFavoriteHistoryLastSeenAt();
+        LocalDateTime lastSeenAt = authorization.favoriteHistoryLastSeenAt();
         long unseenCount = lastSeenAt == null
-                ? favoriteHistoryRepository.countByFavoriteEntityUserId(userId)
-                : favoriteHistoryRepository.countByFavoriteEntityUserIdAndCreateDateAfter(userId, lastSeenAt);
+                ? favoriteQueryPort.countHistory(userId)
+                : favoriteQueryPort.countHistoryAfter(userId, lastSeenAt);
         List<FavoriteHistoryDto> histories = getHistory(userId, 50).stream()
                 .map(FavoriteHistoryDto::from)
                 .toList();
 
-        authorizationEntity.setFavoriteHistoryLastSeenAt(LocalDateTime.now());
+        authorizationPort.markFavoriteHistorySeen(userId, LocalDateTime.now());
         return new FavoriteMeDto(
                 userId,
-                favoriteEntity.getNickName(),
-                favoriteEntity.getFavorite(),
+                favorite.nickName(),
+                favorite.favorite(),
                 unseenCount,
                 histories
         );
+    }
+
+    public java.util.Optional<String> getCurrentNickName(String userId) {
+        return authorizationPort.findById(userId)
+                .map(AuthorizationAccount::channelName)
+                .filter(name -> !name.isBlank());
     }
 }

@@ -15,25 +15,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.favorite.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.data.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.application.model.RouletteRound;
+import org.nowstart.nyangnyangbot.application.model.UserUpbo;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 import org.nowstart.nyangnyangbot.data.type.RouletteRoundStatus;
+import org.nowstart.nyangnyangbot.data.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.repository.UserUpboRepository;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RouletteRoundApplyServiceTest {
 
     @Mock
-    private RouletteRoundResultRepository rouletteRoundResultRepository;
+    private RoulettePort roulettePort;
 
     @Mock
-    private UserUpboRepository userUpboRepository;
+    private UpboPort upboPort;
 
     @Mock
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
@@ -41,21 +41,16 @@ class RouletteRoundApplyServiceTest {
     @Test
     void applyRound_ShouldConvertAutoFavoriteRewardThroughLedger() {
         RouletteRoundApplyService service = createService();
-        RouletteRoundResultEntity round = favoriteRound(false);
-        given(rouletteRoundResultRepository.findById(30L)).willReturn(Optional.of(round));
+        RouletteRound round = favoriteRound(false);
+        given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
                 .willReturn(new FavoriteLedgerResult("user-1", 20, 10, 30, "룰렛 결과", false, 99L));
-        given(userUpboRepository.save(any(UserUpboEntity.class))).willAnswer(invocation -> {
-            UserUpboEntity entity = invocation.getArgument(0);
-            ReflectionTestUtils.setField(entity, "id", 40L);
-            return entity;
-        });
+        given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
+                .willReturn(userUpbo(40L, 99L));
 
         service.applyRound(30L);
 
-        assertThat(round.getStatus()).isEqualTo(RouletteRoundStatus.APPLIED);
-        assertThat(round.getLedgerId()).isEqualTo(99L);
-        assertThat(round.getUserUpboId()).isEqualTo(40L);
+        then(roulettePort).should().markRoundApplied(30L, 99L, 40L);
         then(adjustFavoriteUseCase).should().adjust(argThat(command ->
                 "user-1".equals(command.userId())
                         && command.delta() == 10
@@ -67,44 +62,63 @@ class RouletteRoundApplyServiceTest {
     @Test
     void applyRound_ShouldMarkLosingRoundAppliedWithoutLedgerOrUpbo() {
         RouletteRoundApplyService service = createService();
-        RouletteRoundResultEntity round = favoriteRound(true);
-        given(rouletteRoundResultRepository.findById(30L)).willReturn(Optional.of(round));
+        RouletteRound round = favoriteRound(true);
+        given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
 
         service.applyRound(30L);
 
-        assertThat(round.getStatus()).isEqualTo(RouletteRoundStatus.APPLIED);
-        assertThat(round.getLedgerId()).isNull();
-        assertThat(round.getUserUpboId()).isNull();
+        then(roulettePort).should().markRoundApplied(30L, null, null);
         then(adjustFavoriteUseCase).should(never()).adjust(any());
-        then(userUpboRepository).should(never()).save(any());
+        then(upboPort).should(never()).createUserUpbo(any());
     }
 
     private RouletteRoundApplyService createService() {
         return new RouletteRoundApplyService(
-                rouletteRoundResultRepository,
-                userUpboRepository,
+                roulettePort,
+                upboPort,
                 adjustFavoriteUseCase
         );
     }
 
-    private RouletteRoundResultEntity favoriteRound(boolean losingItem) {
-        RouletteEventEntity event = RouletteEventEntity.builder()
-                .id(20L)
-                .donationEventId("donation-1")
-                .userId("user-1")
-                .nickNameSnapshot("치즈냥")
-                .build();
-        RouletteRoundResultEntity round = RouletteRoundResultEntity.builder()
-                .id(30L)
-                .rouletteEvent(event)
-                .roundNo(1)
-                .itemLabel(losingItem ? "꽝" : "호감도 +10")
-                .losingItem(losingItem)
-                .rewardType(losingItem ? RewardType.CUSTOM : RewardType.FAVORITE)
-                .conversionMode(losingItem ? ConversionMode.NONE : ConversionMode.AUTO)
-                .exchangeFavoriteValue(losingItem ? null : 10)
-                .status(RouletteRoundStatus.CONFIRMED)
-                .build();
-        return round;
+    private RouletteRound favoriteRound(boolean losingItem) {
+        return new RouletteRound(
+                30L,
+                20L,
+                "donation-1",
+                "user-1",
+                "치즈냥",
+                1,
+                losingItem ? "꽝" : "호감도 +10",
+                10_000,
+                losingItem,
+                losingItem ? RewardType.CUSTOM : RewardType.FAVORITE,
+                losingItem ? ConversionMode.NONE : ConversionMode.AUTO,
+                losingItem ? null : 10,
+                RouletteRoundStatus.CONFIRMED,
+                null,
+                null,
+                null,
+                1
+        );
+    }
+
+    private UserUpbo userUpbo(Long id, Long ledgerId) {
+        return new UserUpbo(
+                id,
+                "user-1",
+                null,
+                "치즈냥",
+                "호감도 +10",
+                UpboStatus.CONVERTED,
+                10,
+                RewardType.FAVORITE,
+                ConversionMode.AUTO,
+                FavoriteSourceType.UPBO_ROULETTE,
+                ledgerId,
+                "룰렛 결과: 호감도 +10",
+                "관리자 확인",
+                "SYSTEM",
+                null
+        );
     }
 }

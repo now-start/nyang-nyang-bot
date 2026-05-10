@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -16,19 +15,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
+import org.nowstart.nyangnyangbot.application.model.RouletteItem;
+import org.nowstart.nyangnyangbot.application.model.RouletteRound;
+import org.nowstart.nyangnyangbot.application.model.RouletteTable;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteEventCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteRoundCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.DonationDto;
 import org.nowstart.nyangnyangbot.data.dto.roulette.RouletteRunDto;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteTableEntity;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
-import org.nowstart.nyangnyangbot.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteTableRepository;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.data.type.RouletteRoundStatus;
 
 @ExtendWith(MockitoExtension.class)
 class RouletteServiceTest {
@@ -36,16 +35,7 @@ class RouletteServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private RouletteTableRepository rouletteTableRepository;
-
-    @Mock
-    private RouletteItemRepository rouletteItemRepository;
-
-    @Mock
-    private RouletteEventRepository rouletteEventRepository;
-
-    @Mock
-    private RouletteRoundResultRepository rouletteRoundResultRepository;
+    private RoulettePort roulettePort;
 
     @Mock
     private RouletteRoundApplyService rouletteRoundApplyService;
@@ -56,8 +46,8 @@ class RouletteServiceTest {
     @Test
     void activateTable_ShouldRejectTableWithoutLosingItem() {
         RouletteService rouletteService = createService();
-        given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(table(false)));
-        given(rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L))
+        given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(false)));
+        given(roulettePort.findActiveItemsByTableId(1L))
                 .willReturn(List.of(item("호감도 +10", 10_000, false, 10)));
 
         assertThatThrownBy(() -> rouletteService.activateTable(1L))
@@ -68,7 +58,7 @@ class RouletteServiceTest {
     @Test
     void processDonation_ShouldIgnoreDonationWithoutExactCommandToken() {
         RouletteService rouletteService = createService();
-        given(rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc()).willReturn(Optional.of(table(true)));
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
 
         RouletteRunDto.Response result = rouletteService.processDonation(new DonationDto(
                 "donation-1",
@@ -83,14 +73,14 @@ class RouletteServiceTest {
 
         assertThat(result.status()).isEqualTo("IGNORED");
         assertThat(result.reason()).isEqualTo("roulette command not found");
-        then(rouletteEventRepository).should(never()).save(any());
+        then(roulettePort).should(never()).createEvent(any());
     }
 
     @Test
     void processDonation_ShouldSkipDuplicateDonationEventId() {
         RouletteService rouletteService = createService();
-        given(rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc()).willReturn(Optional.of(table(true)));
-        given(rouletteEventRepository.existsByDonationEventId("donation-1")).willReturn(true);
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(true);
 
         RouletteRunDto.Response result = rouletteService.processDonation(new DonationDto(
                 "donation-1",
@@ -110,35 +100,20 @@ class RouletteServiceTest {
     @Test
     void processDonation_ShouldConfirmRoundsAndApplyEachRound() {
         RouletteService rouletteService = createService();
-        RouletteTableEntity table = table(true);
-        given(rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc()).willReturn(Optional.of(table));
-        given(rouletteEventRepository.existsByDonationEventId("donation-1")).willReturn(false);
-        given(rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L))
+        RouletteTable table = table(true);
+        RouletteEvent event = event(20L, 2);
+        List<RouletteRound> savedRounds = List.of(round(30L, 1), round(31L, 2));
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
+        given(roulettePort.findActiveItemsByTableId(1L))
                 .willReturn(List.of(
                         item("호감도 +10", 9_999, false, 10),
                         item("꽝", 1, true, null)
                 ));
-        RouletteEventEntity[] savedEvent = new RouletteEventEntity[1];
-        @SuppressWarnings("unchecked")
-        List<RouletteRoundResultEntity>[] savedRounds = new List[1];
-        given(rouletteEventRepository.save(any(RouletteEventEntity.class))).willAnswer(invocation -> {
-            RouletteEventEntity event = invocation.getArgument(0);
-            ReflectionTestUtils.setField(event, "id", 20L);
-            savedEvent[0] = event;
-            return event;
-        });
-        given(rouletteRoundResultRepository.saveAll(any())).willAnswer(invocation -> {
-            @SuppressWarnings("unchecked")
-            List<RouletteRoundResultEntity> rounds = invocation.getArgument(0);
-            for (int index = 0; index < rounds.size(); index++) {
-                ReflectionTestUtils.setField(rounds.get(index), "id", 30L + index);
-            }
-            savedRounds[0] = rounds;
-            return rounds;
-        });
-        given(rouletteEventRepository.findById(20L)).willAnswer(invocation -> Optional.of(savedEvent[0]));
-        given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(20L))
-                .willAnswer(invocation -> savedRounds[0]);
+        given(roulettePort.createEvent(any(CreateRouletteEventCommand.class))).willReturn(event);
+        given(roulettePort.saveRounds(any(), any())).willReturn(savedRounds);
+        given(roulettePort.findEventById(20L)).willReturn(Optional.of(event));
+        given(roulettePort.findRoundsByEventId(20L)).willReturn(savedRounds);
 
         RouletteRunDto.Response result = rouletteService.processDonation(new DonationDto(
                 "donation-1",
@@ -156,46 +131,80 @@ class RouletteServiceTest {
         then(rouletteRoundApplyService).should().applyRound(30L);
         then(rouletteRoundApplyService).should().applyRound(31L);
         then(overlayDisplayService).should().enqueue(20L);
-        ArgumentCaptor<RouletteEventEntity> eventCaptor = ArgumentCaptor.forClass(RouletteEventEntity.class);
-        then(rouletteEventRepository).should(times(2)).save(eventCaptor.capture());
-        assertThat(eventCaptor.getAllValues().getFirst().getItemsSnapshotJson()).contains("호감도 +10", "꽝");
+        ArgumentCaptor<CreateRouletteEventCommand> eventCaptor = ArgumentCaptor.forClass(CreateRouletteEventCommand.class);
+        then(roulettePort).should().createEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().itemsSnapshotJson()).contains("호감도 +10", "꽝");
+        ArgumentCaptor<List<CreateRouletteRoundCommand>> roundsCaptor = ArgumentCaptor.forClass(List.class);
+        then(roulettePort).should().saveRounds(any(), roundsCaptor.capture());
+        assertThat(roundsCaptor.getValue()).hasSize(2);
     }
 
     private RouletteService createService() {
         return new RouletteService(
                 objectMapper,
-                rouletteTableRepository,
-                rouletteItemRepository,
-                rouletteEventRepository,
-                rouletteRoundResultRepository,
+                roulettePort,
                 rouletteRoundApplyService,
                 overlayDisplayService
         );
     }
 
-    private RouletteTableEntity table(boolean active) {
-        return RouletteTableEntity.builder()
-                .id(1L)
-                .title("기본 룰렛")
-                .command("!룰렛")
-                .pricePerRound(1_000L)
-                .active(active)
-                .version(1)
-                .highRoundThreshold(100)
-                .build();
+    private RouletteTable table(boolean active) {
+        return new RouletteTable(1L, "기본 룰렛", "!룰렛", 1_000L, active, 1, 100);
     }
 
-    private RouletteItemEntity item(String label, int probability, boolean losingItem, Integer favoriteValue) {
-        return RouletteItemEntity.builder()
-                .id((long) probability)
-                .label(label)
-                .probabilityBasisPoints(probability)
-                .losingItem(losingItem)
-                .rewardType(favoriteValue == null ? RewardType.CUSTOM : RewardType.FAVORITE)
-                .conversionMode(favoriteValue == null ? ConversionMode.NONE : ConversionMode.AUTO)
-                .exchangeFavoriteValue(favoriteValue)
-                .active(true)
-                .displayOrder(probability)
-                .build();
+    private RouletteItem item(String label, int probability, boolean losingItem, Integer favoriteValue) {
+        return new RouletteItem(
+                (long) probability,
+                1L,
+                label,
+                probability,
+                losingItem,
+                favoriteValue == null ? RewardType.CUSTOM : RewardType.FAVORITE,
+                favoriteValue == null ? ConversionMode.NONE : ConversionMode.AUTO,
+                favoriteValue,
+                true,
+                probability
+        );
+    }
+
+    private RouletteEvent event(Long id, int roundCount) {
+        return new RouletteEvent(
+                id,
+                "donation-1",
+                "user-1",
+                "치즈냥",
+                2_500L,
+                "안녕 !룰렛",
+                1L,
+                1,
+                "!룰렛",
+                1_000L,
+                roundCount,
+                "[]",
+                RouletteEventStatus.CONFIRMED,
+                null
+        );
+    }
+
+    private RouletteRound round(Long id, int roundNo) {
+        return new RouletteRound(
+                id,
+                20L,
+                "donation-1",
+                "user-1",
+                "치즈냥",
+                roundNo,
+                "호감도 +10",
+                10_000,
+                false,
+                RewardType.FAVORITE,
+                ConversionMode.AUTO,
+                10,
+                RouletteRoundStatus.CONFIRMED,
+                null,
+                null,
+                null,
+                roundNo
+        );
     }
 }

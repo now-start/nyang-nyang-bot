@@ -5,15 +5,13 @@ import jakarta.transaction.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.model.WeeklyChatRankRecord;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
-import org.nowstart.nyangnyangbot.data.entity.WeeklyChatRankEntity;
-import org.nowstart.nyangnyangbot.repository.WeeklyChatRankRepository;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WeeklyChatRankService {
 
-    private final WeeklyChatRankRepository weeklyChatRankRepository;
+    private final WeeklyChatRankPort weeklyChatRankPort;
 
     public synchronized void recordChat(ChatDto chatDto) {
         if (chatDto == null || StringUtils.isBlank(chatDto.senderChannelId())) {
@@ -30,30 +28,19 @@ public class WeeklyChatRankService {
 
         String nickName = resolveNickname(chatDto);
         LocalDate weekStartDate = currentWeekStartDate();
-        WeeklyChatRankEntity entity = weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, chatDto.senderChannelId())
-                .orElseGet(() -> WeeklyChatRankEntity.builder()
-                        .weekStartDate(weekStartDate)
-                        .userId(chatDto.senderChannelId())
-                        .nickName(nickName)
-                        .chatCount(0L)
-                        .build());
-
-        entity.setNickName(nickName);
-        entity.setChatCount(Objects.requireNonNullElse(entity.getChatCount(), 0L) + 1L);
-        weeklyChatRankRepository.save(entity);
+        WeeklyChatRankRecord existing = weeklyChatRankPort.findByWeekStartDateAndUserId(weekStartDate, chatDto.senderChannelId())
+                .orElse(new WeeklyChatRankRecord(null, weekStartDate, chatDto.senderChannelId(), nickName, 0L));
+        weeklyChatRankPort.save(new WeeklyChatRankRecord(
+                existing.id(),
+                weekStartDate,
+                chatDto.senderChannelId(),
+                nickName,
+                Objects.requireNonNullElse(existing.chatCount(), 0L) + 1L
+        ));
     }
 
     public List<WeeklyChatRankDto> getWeeklyRanks(int limit) {
-        List<WeeklyChatRankRepository.WeeklyChatRankProjection> results =
-                weeklyChatRankRepository.findWeeklyRanks(currentWeekStartDate(), PageRequest.of(0, limit));
-
-        List<WeeklyChatRankDto> ranks = new ArrayList<>(results.size());
-        int rank = 1;
-        for (WeeklyChatRankRepository.WeeklyChatRankProjection result : results) {
-            long chatCount = result.getChatCount() == null ? 0L : result.getChatCount();
-            ranks.add(new WeeklyChatRankDto(rank++, result.getNickname(), chatCount));
-        }
-        return ranks;
+        return weeklyChatRankPort.findWeeklyRanks(currentWeekStartDate(), limit);
     }
 
     LocalDate currentDate() {

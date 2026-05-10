@@ -10,21 +10,19 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
+import org.nowstart.nyangnyangbot.application.model.RouletteItem;
+import org.nowstart.nyangnyangbot.application.model.RouletteRound;
+import org.nowstart.nyangnyangbot.application.model.RouletteTable;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteEventCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.CreateRouletteRoundCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.DonationDto;
 import org.nowstart.nyangnyangbot.data.dto.roulette.RouletteRunDto;
 import org.nowstart.nyangnyangbot.data.dto.roulette.RouletteTableDto;
-import org.nowstart.nyangnyangbot.data.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.data.entity.RouletteTableEntity;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
-import org.nowstart.nyangnyangbot.data.type.RewardType;
 import org.nowstart.nyangnyangbot.data.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.data.type.RouletteRoundStatus;
-import org.nowstart.nyangnyangbot.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.repository.RouletteTableRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,87 +35,73 @@ public class RouletteService {
     private static final int DEFAULT_HIGH_ROUND_THRESHOLD = 100;
 
     private final ObjectMapper objectMapper;
-    private final RouletteTableRepository rouletteTableRepository;
-    private final RouletteItemRepository rouletteItemRepository;
-    private final RouletteEventRepository rouletteEventRepository;
-    private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final RoulettePort roulettePort;
     private final RouletteRoundApplyService rouletteRoundApplyService;
     private final OverlayDisplayService overlayDisplayService;
 
     @Transactional
     public RouletteTableDto.Response createTable(RouletteTableDto.CreateRequest request) {
         validateTableRequest(request);
-        RouletteTableEntity saved = rouletteTableRepository.save(RouletteTableEntity.builder()
-                .title(request.title().trim())
-                .command(request.command().trim())
-                .pricePerRound(request.pricePerRound())
-                .active(false)
-                .version(0)
-                .highRoundThreshold(request.highRoundThreshold() == null
-                        ? DEFAULT_HIGH_ROUND_THRESHOLD
-                        : request.highRoundThreshold())
-                .build());
+        RouletteTable saved = roulettePort.createTable(
+                request.title().trim(),
+                request.command().trim(),
+                request.pricePerRound(),
+                request.highRoundThreshold() == null ? DEFAULT_HIGH_ROUND_THRESHOLD : request.highRoundThreshold()
+        );
         return tableResponse(saved);
     }
 
     @Transactional
     public RouletteTableDto.ItemResponse addItem(Long tableId, RouletteTableDto.ItemRequest request) {
-        RouletteTableEntity table = rouletteTableRepository.findById(tableId)
+        roulettePort.findTableById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         validateItemRequest(request);
-        RouletteItemEntity saved = rouletteItemRepository.save(RouletteItemEntity.builder()
-                .rouletteTable(table)
-                .label(request.label().trim())
-                .probabilityBasisPoints(request.probabilityBasisPoints())
-                .losingItem(Boolean.TRUE.equals(request.losingItem()))
-                .rewardType(request.rewardType())
-                .conversionMode(request.conversionMode())
-                .exchangeFavoriteValue(request.exchangeFavoriteValue())
-                .active(true)
-                .displayOrder(request.displayOrder() == null ? 0 : request.displayOrder())
-                .build());
+        RouletteItem saved = roulettePort.addItem(
+                tableId,
+                request.label().trim(),
+                request.probabilityBasisPoints(),
+                Boolean.TRUE.equals(request.losingItem()),
+                request.rewardType(),
+                request.conversionMode(),
+                request.exchangeFavoriteValue(),
+                request.displayOrder() == null ? 0 : request.displayOrder()
+        );
         return RouletteTableDto.ItemResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
     public List<RouletteTableDto.Response> getTables() {
-        return rouletteTableRepository.findAllByOrderByIdDesc().stream()
+        return roulettePort.findTablesOrderByIdDesc().stream()
                 .map(this::tableResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public RouletteTableDto.ValidationResponse validateTable(Long tableId) {
-        RouletteTableEntity table = rouletteTableRepository.findById(tableId)
+        RouletteTable table = roulettePort.findTableById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        List<RouletteItemEntity> items = activeItems(tableId);
+        List<RouletteItem> items = activeItems(tableId);
         return activationValidation(table, items);
     }
 
     @Transactional
     public RouletteTableDto.Response activateTable(Long tableId) {
-        RouletteTableEntity table = rouletteTableRepository.findById(tableId)
+        RouletteTable table = roulettePort.findTableById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        List<RouletteItemEntity> items = activeItems(tableId);
+        List<RouletteItem> items = activeItems(tableId);
         RouletteTableDto.ValidationResponse validation = activationValidation(table, items);
         if (!validation.activatable()) {
             throw new IllegalStateException(String.join(", ", validation.reasons()));
         }
-        rouletteTableRepository.findByActiveTrue().stream()
-                .filter(activeTable -> !activeTable.getId().equals(table.getId()))
-                .forEach(RouletteTableEntity::deactivate);
-        table.activate();
-        RouletteTableEntity saved = rouletteTableRepository.save(table);
-        log.info("level=AUDIT action=roulette_table.activate result=success tableId={}", saved.getId());
+        RouletteTable saved = roulettePort.activateTable(tableId);
+        log.info("level=AUDIT action=roulette_table.activate result=success tableId={}", saved.id());
         return RouletteTableDto.Response.from(saved, validation, items);
     }
 
     @Transactional
     public RouletteTableDto.Response deactivateTable(Long tableId) {
-        RouletteTableEntity table = rouletteTableRepository.findById(tableId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        table.deactivate();
-        log.info("level=AUDIT action=roulette_table.deactivate result=success tableId={}", table.getId());
+        RouletteTable table = roulettePort.deactivateTable(tableId);
+        log.info("level=AUDIT action=roulette_table.deactivate result=success tableId={}", table.id());
         return tableResponse(table);
     }
 
@@ -128,20 +112,20 @@ public class RouletteService {
         if (isBlank(donationDto.donationEventId())) {
             return RouletteRunDto.Response.ignored("donation event id is required");
         }
-        RouletteTableEntity table = rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc()
+        RouletteTable table = roulettePort.findLatestActiveTable()
                 .orElse(null);
         if (table == null) {
             return RouletteRunDto.Response.ignored("active roulette table not found");
         }
-        if (!containsCommand(donationDto.donationText(), table.getCommand())) {
+        if (!containsCommand(donationDto.donationText(), table.command())) {
             return RouletteRunDto.Response.ignored("roulette command not found");
         }
-        if (rouletteEventRepository.existsByDonationEventId(donationDto.donationEventId())) {
+        if (roulettePort.existsEventByDonationEventId(donationDto.donationEventId())) {
             return RouletteRunDto.Response.duplicate();
         }
 
         long amount = parseAmount(donationDto.payAmount());
-        int roundCount = calculateRoundCount(amount, table.getPricePerRound());
+        int roundCount = calculateRoundCount(amount, table.pricePerRound());
         if (roundCount < 1) {
             return RouletteRunDto.Response.ignored("donation amount is less than roulette price");
         }
@@ -150,33 +134,33 @@ public class RouletteService {
                     donationDto.donationEventId(), roundCount);
         }
 
-        List<RouletteItemEntity> items = activeItems(table.getId());
+        List<RouletteItem> items = activeItems(table.id());
         RouletteTableDto.ValidationResponse validation = activationValidation(table, items);
         if (!validation.activatable()) {
             return RouletteRunDto.Response.ignored("active roulette table is invalid");
         }
 
-        RouletteEventEntity event = rouletteEventRepository.save(RouletteEventEntity.builder()
-                .donationEventId(donationDto.donationEventId())
-                .idempotencyKey(donationDto.donationEventId())
-                .userId(donationDto.donatorChannelId())
-                .nickNameSnapshot(trimToEmpty(donationDto.donatorNickname()))
-                .donationAmount(amount)
-                .donationText(donationDto.donationText())
-                .rouletteTableId(table.getId())
-                .rouletteTableVersion(table.getVersion())
-                .command(table.getCommand())
-                .pricePerRound(table.getPricePerRound())
-                .roundCount(roundCount)
-                .itemsSnapshotJson(toJson(items.stream().map(RouletteTableDto.ItemResponse::from).toList()))
-                .status(RouletteEventStatus.CONFIRMED)
-                .build());
-        List<RouletteRoundResultEntity> rounds = rouletteRoundResultRepository.saveAll(confirmRounds(event, items));
-        rounds.forEach(round -> rouletteRoundApplyService.applyRound(round.getId()));
-        refreshEventStatus(event.getId());
-        overlayDisplayService.enqueue(event.getId());
+        RouletteEvent event = roulettePort.createEvent(new CreateRouletteEventCommand(
+                donationDto.donationEventId(),
+                donationDto.donationEventId(),
+                donationDto.donatorChannelId(),
+                trimToEmpty(donationDto.donatorNickname()),
+                amount,
+                donationDto.donationText(),
+                table.id(),
+                table.version(),
+                table.command(),
+                table.pricePerRound(),
+                roundCount,
+                toJson(items.stream().map(RouletteTableDto.ItemResponse::from).toList()),
+                RouletteEventStatus.CONFIRMED
+        ));
+        List<RouletteRound> rounds = roulettePort.saveRounds(event.id(), confirmRounds(event, items));
+        rounds.forEach(round -> rouletteRoundApplyService.applyRound(round.id()));
+        refreshEventStatus(event.id());
+        overlayDisplayService.enqueue(event.id());
         log.info("action=roulette.run result=confirmed donationEventId={} rouletteEventId={} roundCount={}",
-                donationDto.donationEventId(), event.getId(), roundCount);
+                donationDto.donationEventId(), event.id(), roundCount);
         return RouletteRunDto.Response.confirmed(event, rounds);
     }
 
@@ -185,10 +169,10 @@ public class RouletteService {
         if (isBlank(userId)) {
             throw new IllegalArgumentException("userId is required");
         }
-        return rouletteEventRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
+        return roulettePort.findEventsByUserId(userId).stream()
                 .map(event -> RouletteRunDto.EventResponse.from(
                         event,
-                        rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
+                        roulettePort.findRoundsByEventId(event.id())
                 ))
                 .toList();
     }
@@ -198,7 +182,7 @@ public class RouletteService {
         if (isBlank(userId)) {
             throw new IllegalArgumentException("userId is required");
         }
-        return rouletteRoundResultRepository.findByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
+        return roulettePort.findRoundsByUserId(userId).stream()
                 .limit(Math.max(1, Math.min(limit, 50)))
                 .map(RouletteRunDto.RoundResponse::from)
                 .toList();
@@ -206,13 +190,13 @@ public class RouletteService {
 
     @Transactional(readOnly = true)
     public RouletteTableDto.SimulationResponse simulate(Long tableId, int iterations) {
-        List<RouletteItemEntity> items = activeItems(tableId);
+        List<RouletteItem> items = activeItems(tableId);
         int safeIterations = Math.max(1, Math.min(iterations, 10_000));
         Map<String, Integer> counts = new LinkedHashMap<>();
-        items.forEach(item -> counts.put(item.getLabel(), 0));
+        items.forEach(item -> counts.put(item.label(), 0));
         for (int i = 0; i < safeIterations; i++) {
-            RouletteItemEntity selected = selectItem(items);
-            counts.put(selected.getLabel(), counts.get(selected.getLabel()) + 1);
+            RouletteItem selected = selectItem(items);
+            counts.put(selected.label(), counts.get(selected.label()) + 1);
         }
         return new RouletteTableDto.SimulationResponse(
                 safeIterations,
@@ -228,57 +212,57 @@ public class RouletteService {
 
     @Transactional
     public void refreshEventStatus(Long eventId) {
-        RouletteEventEntity event = rouletteEventRepository.findById(eventId)
+        roulettePort.findEventById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        List<RouletteRoundResultEntity> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(eventId);
-        long applied = rounds.stream().filter(round -> round.getStatus() == RouletteRoundStatus.APPLIED).count();
-        long failed = rounds.stream().filter(round -> round.getStatus() == RouletteRoundStatus.FAILED).count();
+        List<RouletteRound> rounds = roulettePort.findRoundsByEventId(eventId);
+        long applied = rounds.stream().filter(round -> round.status() == RouletteRoundStatus.APPLIED).count();
+        long failed = rounds.stream().filter(round -> round.status() == RouletteRoundStatus.FAILED).count();
+        RouletteEventStatus status;
         if (applied == rounds.size()) {
-            event.updateStatus(RouletteEventStatus.APPLIED);
+            status = RouletteEventStatus.APPLIED;
         } else if (failed == rounds.size()) {
-            event.updateStatus(RouletteEventStatus.FAILED);
+            status = RouletteEventStatus.FAILED;
         } else if (applied > 0 || failed > 0) {
-            event.updateStatus(RouletteEventStatus.PARTIALLY_APPLIED);
+            status = RouletteEventStatus.PARTIALLY_APPLIED;
         } else {
-            event.updateStatus(RouletteEventStatus.CONFIRMED);
+            status = RouletteEventStatus.CONFIRMED;
         }
-        rouletteEventRepository.save(event);
+        roulettePort.updateEventStatus(eventId, status);
     }
 
-    private RouletteTableDto.Response tableResponse(RouletteTableEntity table) {
-        List<RouletteItemEntity> items = rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(table.getId());
+    private RouletteTableDto.Response tableResponse(RouletteTable table) {
+        List<RouletteItem> items = roulettePort.findItemsByTableId(table.id());
         return RouletteTableDto.Response.from(table, activationValidation(table, activeOnly(items)), items);
     }
 
-    private List<RouletteRoundResultEntity> confirmRounds(RouletteEventEntity event, List<RouletteItemEntity> items) {
-        List<RouletteRoundResultEntity> rounds = new ArrayList<>();
-        for (int roundNo = 1; roundNo <= event.getRoundCount(); roundNo++) {
+    private List<CreateRouletteRoundCommand> confirmRounds(RouletteEvent event, List<RouletteItem> items) {
+        List<CreateRouletteRoundCommand> rounds = new ArrayList<>();
+        for (int roundNo = 1; roundNo <= event.roundCount(); roundNo++) {
             int ticket = nextTicket(TOTAL_PROBABILITY);
-            RouletteItemEntity selected = selectItem(items, ticket);
-            rounds.add(RouletteRoundResultEntity.builder()
-                    .rouletteEvent(event)
-                    .roundNo(roundNo)
-                    .itemLabel(selected.getLabel())
-                    .probabilityBasisPoints(selected.getProbabilityBasisPoints())
-                    .losingItem(selected.isLosingItem())
-                    .rewardType(selected.getRewardType())
-                    .conversionMode(selected.getConversionMode())
-                    .exchangeFavoriteValue(selected.getExchangeFavoriteValue())
-                    .status(RouletteRoundStatus.CONFIRMED)
-                    .ticket(ticket)
-                    .build());
+            RouletteItem selected = selectItem(items, ticket);
+            rounds.add(new CreateRouletteRoundCommand(
+                    roundNo,
+                    selected.label(),
+                    selected.probabilityBasisPoints(),
+                    selected.losingItem(),
+                    selected.rewardType(),
+                    selected.conversionMode(),
+                    selected.exchangeFavoriteValue(),
+                    RouletteRoundStatus.CONFIRMED,
+                    ticket
+            ));
         }
         return rounds;
     }
 
-    private RouletteItemEntity selectItem(List<RouletteItemEntity> items) {
+    private RouletteItem selectItem(List<RouletteItem> items) {
         return selectItem(items, nextTicket(TOTAL_PROBABILITY));
     }
 
-    private RouletteItemEntity selectItem(List<RouletteItemEntity> items, int ticket) {
+    private RouletteItem selectItem(List<RouletteItem> items, int ticket) {
         int cumulative = 0;
-        for (RouletteItemEntity item : items) {
-            cumulative += item.getProbabilityBasisPoints();
+        for (RouletteItem item : items) {
+            cumulative += item.probabilityBasisPoints();
             if (ticket <= cumulative) {
                 return item;
             }
@@ -291,18 +275,18 @@ public class RouletteService {
     }
 
     private RouletteTableDto.ValidationResponse activationValidation(
-            RouletteTableEntity table,
-            List<RouletteItemEntity> items
+            RouletteTable table,
+            List<RouletteItem> items
     ) {
         List<String> reasons = new ArrayList<>();
-        if (isBlank(table.getCommand())) {
+        if (isBlank(table.command())) {
             reasons.add("command is required");
         }
-        if (table.getPricePerRound() == null || table.getPricePerRound() <= 0) {
+        if (table.pricePerRound() == null || table.pricePerRound() <= 0) {
             reasons.add("pricePerRound is required");
         }
         int probabilityTotal = items.stream()
-                .map(RouletteItemEntity::getProbabilityBasisPoints)
+                .map(RouletteItem::probabilityBasisPoints)
                 .filter(value -> value != null)
                 .mapToInt(Integer::intValue)
                 .sum();
@@ -310,9 +294,9 @@ public class RouletteService {
             reasons.add("probability total must be 10000");
         }
         boolean hasLosingItem = items.stream().anyMatch(item ->
-                item.isLosingItem()
-                        && item.getProbabilityBasisPoints() != null
-                        && item.getProbabilityBasisPoints() > 0
+                item.losingItem()
+                        && item.probabilityBasisPoints() != null
+                        && item.probabilityBasisPoints() > 0
         );
         if (!hasLosingItem) {
             reasons.add("losing item is required");
@@ -325,13 +309,13 @@ public class RouletteService {
         );
     }
 
-    private List<RouletteItemEntity> activeItems(Long tableId) {
-        return rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(tableId);
+    private List<RouletteItem> activeItems(Long tableId) {
+        return roulettePort.findActiveItemsByTableId(tableId);
     }
 
-    private List<RouletteItemEntity> activeOnly(List<RouletteItemEntity> items) {
+    private List<RouletteItem> activeOnly(List<RouletteItem> items) {
         return items.stream()
-                .filter(RouletteItemEntity::isActive)
+                .filter(RouletteItem::active)
                 .toList();
     }
 
@@ -391,8 +375,8 @@ public class RouletteService {
         return (int) roundCount;
     }
 
-    private int highRoundThreshold(RouletteTableEntity table) {
-        return table.getHighRoundThreshold() == null ? DEFAULT_HIGH_ROUND_THRESHOLD : table.getHighRoundThreshold();
+    private int highRoundThreshold(RouletteTable table) {
+        return table.highRoundThreshold() == null ? DEFAULT_HIGH_ROUND_THRESHOLD : table.highRoundThreshold();
     }
 
     private long parseAmount(String amount) {

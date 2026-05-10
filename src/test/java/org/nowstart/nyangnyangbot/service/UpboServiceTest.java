@@ -17,25 +17,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.favorite.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.model.UpboTemplate;
+import org.nowstart.nyangnyangbot.application.model.UserUpbo;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.data.dto.upbo.UpboApplyDto;
 import org.nowstart.nyangnyangbot.data.dto.upbo.UpboTemplateDto;
-import org.nowstart.nyangnyangbot.data.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.data.entity.UserUpboEntity;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 import org.nowstart.nyangnyangbot.data.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.repository.UpboTemplateRepository;
-import org.nowstart.nyangnyangbot.repository.UserUpboRepository;
 
 @ExtendWith(MockitoExtension.class)
 class UpboServiceTest {
 
     @Mock
-    private UpboTemplateRepository upboTemplateRepository;
-
-    @Mock
-    private UserUpboRepository userUpboRepository;
+    private UpboPort upboPort;
 
     @Mock
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
@@ -45,17 +42,19 @@ class UpboServiceTest {
 
     @Test
     void createTemplate_ShouldPersistValidatedTemplate() {
-        UpboTemplateEntity saved = UpboTemplateEntity.builder()
-                .id(1L)
-                .label("호감도 +10")
-                .description("자동 전환")
-                .active(true)
-                .displayOrder(3)
-                .exchangeFavoriteValue(10)
-                .rewardType(RewardType.FAVORITE)
-                .conversionMode(ConversionMode.AUTO)
-                .build();
-        given(upboTemplateRepository.save(any(UpboTemplateEntity.class))).willReturn(saved);
+        UpboTemplate saved = new UpboTemplate(
+                1L,
+                "호감도 +10",
+                "자동 전환",
+                true,
+                3,
+                10,
+                RewardType.FAVORITE,
+                ConversionMode.AUTO
+        );
+        given(upboPort.createTemplate(
+                "호감도 +10", "자동 전환", 3, 10, RewardType.FAVORITE, ConversionMode.AUTO
+        )).willReturn(saved);
 
         UpboTemplateDto.Response result = upboService.createTemplate(new UpboTemplateDto.CreateRequest(
                 "호감도 +10",
@@ -68,27 +67,21 @@ class UpboServiceTest {
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.label()).isEqualTo("호감도 +10");
-        then(upboTemplateRepository).should().save(argThat(entity ->
-                entity.isActive()
-                        && entity.getExchangeFavoriteValue().equals(10)
-                        && entity.getConversionMode() == ConversionMode.AUTO
-        ));
+        then(upboPort).should().createTemplate(
+                "호감도 +10", "자동 전환", 3, 10, RewardType.FAVORITE, ConversionMode.AUTO
+        );
     }
 
     @Test
     void applyUpbo_ShouldConvertAutoTemplateThroughFavoriteLedger() {
-        UpboTemplateEntity template = UpboTemplateEntity.builder()
-                .id(1L)
-                .label("호감도 +10")
-                .active(true)
-                .exchangeFavoriteValue(10)
-                .rewardType(RewardType.FAVORITE)
-                .conversionMode(ConversionMode.AUTO)
-                .build();
-        given(upboTemplateRepository.findById(1L)).willReturn(Optional.of(template));
+        UpboTemplate template = new UpboTemplate(
+                1L, "호감도 +10", "", true, 0, 10, RewardType.FAVORITE, ConversionMode.AUTO
+        );
+        given(upboPort.findTemplateById(1L)).willReturn(Optional.of(template));
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
                 .willReturn(new FavoriteLedgerResult("user-1", 20, 10, 30, "룰렛 수동 반영", false, 99L));
-        given(userUpboRepository.save(any(UserUpboEntity.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
+                .willReturn(userUpbo(1L, UpboStatus.CONVERTED, 99L));
 
         UpboApplyDto.Response result = upboService.applyUpbo(new UpboApplyDto.Request(
                 "user-1",
@@ -112,16 +105,17 @@ class UpboServiceTest {
                         && "관리자 확인".equals(command.privateMemo())
                         && "admin-1".equals(command.actorId())
         ));
-        then(userUpboRepository).should().save(argThat(entity ->
-                entity.getStatus() == UpboStatus.CONVERTED
-                        && Long.valueOf(99L).equals(entity.getLedgerId())
-                        && "관리자 확인".equals(entity.getPrivateMemo())
+        then(upboPort).should().createUserUpbo(argThat(command ->
+                command.status() == UpboStatus.CONVERTED
+                        && Long.valueOf(99L).equals(command.ledgerId())
+                        && "관리자 확인".equals(command.privateMemo())
         ));
     }
 
     @Test
     void applyUpbo_ShouldKeepNoneConversionAsOwnedWithoutFavoriteLedger() {
-        given(userUpboRepository.save(any(UserUpboEntity.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
+                .willReturn(userUpbo(1L, UpboStatus.OWNED, null));
 
         UpboApplyDto.Response result = upboService.applyUpbo(new UpboApplyDto.Request(
                 "user-1",
@@ -155,5 +149,25 @@ class UpboServiceTest {
         ), "admin-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("privateMemo is required");
+    }
+
+    private UserUpbo userUpbo(Long id, UpboStatus status, Long ledgerId) {
+        return new UserUpbo(
+                id,
+                "user-1",
+                1L,
+                "치즈냥",
+                "호감도 +10",
+                status,
+                10,
+                RewardType.FAVORITE,
+                ConversionMode.AUTO,
+                FavoriteSourceType.UPBO_MANUAL,
+                ledgerId,
+                "룰렛 수동 반영",
+                "관리자 확인",
+                "admin-1",
+                null
+        );
     }
 }

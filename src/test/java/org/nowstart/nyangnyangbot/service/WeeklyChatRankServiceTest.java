@@ -15,17 +15,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.model.WeeklyChatRankRecord;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.data.dto.WeeklyChatRankDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ChatDto;
-import org.nowstart.nyangnyangbot.data.entity.WeeklyChatRankEntity;
-import org.nowstart.nyangnyangbot.repository.WeeklyChatRankRepository;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyChatRankServiceTest {
 
     @Mock
-    private WeeklyChatRankRepository weeklyChatRankRepository;
+    private WeeklyChatRankPort weeklyChatRankPort;
 
     @Spy
     @InjectMocks
@@ -43,16 +42,16 @@ class WeeklyChatRankServiceTest {
                 0L
         );
         given(weeklyChatRankService.currentDate()).willReturn(now);
-        given(weeklyChatRankRepository.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
+        given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
                 .willReturn(Optional.empty());
 
         weeklyChatRankService.recordChat(chatDto);
 
-        BDDMockito.then(weeklyChatRankRepository).should().save(argThat(entity ->
-                LocalDate.of(2026, 3, 23).equals(entity.getWeekStartDate())
-                        && "user-1".equals(entity.getUserId())
-                        && "치즈냥".equals(entity.getNickName())
-                        && Long.valueOf(1L).equals(entity.getChatCount())
+        BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
+                LocalDate.of(2026, 3, 23).equals(entity.weekStartDate())
+                        && "user-1".equals(entity.userId())
+                        && "치즈냥".equals(entity.nickName())
+                        && Long.valueOf(1L).equals(entity.chatCount())
         ));
     }
 
@@ -67,22 +66,23 @@ class WeeklyChatRankServiceTest {
                 null,
                 0L
         );
-        WeeklyChatRankEntity existing = WeeklyChatRankEntity.builder()
-                .weekStartDate(LocalDate.of(2026, 3, 23))
-                .userId("user-1")
-                .nickName("이전닉네임")
-                .chatCount(4L)
-                .build();
+        WeeklyChatRankRecord existing = new WeeklyChatRankRecord(
+                1L,
+                LocalDate.of(2026, 3, 23),
+                "user-1",
+                "이전닉네임",
+                4L
+        );
         given(weeklyChatRankService.currentDate()).willReturn(now);
-        given(weeklyChatRankRepository.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
+        given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
                 .willReturn(Optional.of(existing));
 
         weeklyChatRankService.recordChat(chatDto);
 
-        BDDMockito.then(weeklyChatRankRepository).should().save(argThat(entity ->
-                entity == existing
-                        && "새닉네임".equals(entity.getNickName())
-                        && Long.valueOf(5L).equals(entity.getChatCount())
+        BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
+                Long.valueOf(1L).equals(entity.id())
+                        && "새닉네임".equals(entity.nickName())
+                        && Long.valueOf(5L).equals(entity.chatCount())
         ));
     }
 
@@ -98,26 +98,26 @@ class WeeklyChatRankServiceTest {
                 0L
         );
         given(weeklyChatRankService.currentDate()).willReturn(now);
-        given(weeklyChatRankRepository.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-42"))
+        given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-42"))
                 .willReturn(Optional.empty());
 
         weeklyChatRankService.recordChat(chatDto);
 
-        BDDMockito.then(weeklyChatRankRepository).should().save(argThat(entity ->
-                "user-42".equals(entity.getNickName())
-                        && Long.valueOf(1L).equals(entity.getChatCount())
+        BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
+                "user-42".equals(entity.nickName())
+                        && Long.valueOf(1L).equals(entity.chatCount())
         ));
     }
 
     @Test
     void getWeeklyRanks_ShouldMapRepositoryResultsToRankedDtos() {
         LocalDate now = LocalDate.of(2026, 3, 26);
-        WeeklyChatRankRepository.WeeklyChatRankProjection first = new Projection("치즈냥", 22L);
-        WeeklyChatRankRepository.WeeklyChatRankProjection second = new Projection("고양이", 18L);
         given(weeklyChatRankService.currentDate()).willReturn(now);
-        given(weeklyChatRankRepository.findWeeklyRanks(eq(LocalDate.of(2026, 3, 23)), argThat((Pageable pageable) ->
-                pageable.getPageNumber() == 0 && pageable.getPageSize() == 2
-        ))).willReturn(List.of(first, second));
+        given(weeklyChatRankPort.findWeeklyRanks(eq(LocalDate.of(2026, 3, 23)), eq(2)))
+                .willReturn(List.of(
+                        new WeeklyChatRankDto(1, "치즈냥", 22L),
+                        new WeeklyChatRankDto(2, "고양이", 18L)
+                ));
 
         List<WeeklyChatRankDto> result = weeklyChatRankService.getWeeklyRanks(2);
 
@@ -127,15 +127,4 @@ class WeeklyChatRankServiceTest {
         );
     }
 
-    private record Projection(String nickname, Long chatCount) implements WeeklyChatRankRepository.WeeklyChatRankProjection {
-        @Override
-        public String getNickname() {
-            return nickname;
-        }
-
-        @Override
-        public Long getChatCount() {
-            return chatCount;
-        }
-    }
 }

@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.data.dto.upbo;
 
-import org.nowstart.nyangnyangbot.data.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.application.model.UserUpbo;
 import org.nowstart.nyangnyangbot.data.type.ConversionMode;
 import org.nowstart.nyangnyangbot.data.type.RewardType;
 import org.nowstart.nyangnyangbot.data.type.UpboStatus;
@@ -31,16 +31,16 @@ public class UpboApplyDto {
             String publicDescription
     ) {
 
-        public static Response from(UserUpboEntity entity) {
+        public static Response from(UserUpbo entity) {
             return new Response(
-                    entity.getId(),
-                    entity.getUserId(),
-                    entity.getLabel(),
-                    entity.getStatus(),
-                    entity.getExchangeFavoriteValue(),
-                    entity.getConversionMode(),
-                    entity.getLedgerId(),
-                    entity.getPublicDescription()
+                    entity.id(),
+                    entity.userId(),
+                    entity.label(),
+                    entity.status(),
+                    entity.exchangeFavoriteValue(),
+                    entity.conversionMode(),
+                    entity.ledgerId(),
+                    entity.publicDescription()
             );
         }
     }

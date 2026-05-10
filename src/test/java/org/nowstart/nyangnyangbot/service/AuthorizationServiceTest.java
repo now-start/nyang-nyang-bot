@@ -10,14 +10,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.ApiResponseDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.AuthorizationRequestDto;
 import org.nowstart.nyangnyangbot.data.dto.chzzk.UserDto;
-import org.nowstart.nyangnyangbot.data.entity.AuthorizationEntity;
 import org.nowstart.nyangnyangbot.data.property.ChzzkProperty;
-import org.nowstart.nyangnyangbot.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.repository.ChzzkOpenApi;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationServiceTest {
@@ -26,10 +26,10 @@ class AuthorizationServiceTest {
     private ChzzkProperty chzzkProperty;
 
     @Mock
-    private ChzzkOpenApi chzzkOpenApi;
+    private ChzzkClientPort chzzkClientPort;
 
     @Mock
-    private AuthorizationRepository authorizationRepository;
+    private AuthorizationPort authorizationPort;
 
     @Spy
     @InjectMocks
@@ -37,24 +37,20 @@ class AuthorizationServiceTest {
 
     @Test
     void getAccessToken_ShouldRefreshWhenExpiresInIsNull() {
-        AuthorizationEntity entity = AuthorizationEntity.builder()
-                .channelId("channel-1")
-                .channelName("tester")
-                .accessToken("access")
-                .refreshToken("refresh")
-                .tokenType("Bearer")
-                .expiresIn(null)
-                .scope("chat")
-                .admin(false)
-                .build();
+        AuthorizationAccount account = new AuthorizationAccount(
+                "channel-1", "tester", "access", "refresh", "Bearer", null, "chat", false, null, null
+        );
         AuthorizationDto refreshedAuthorization = new AuthorizationDto("new-access", "new-refresh", "Bearer", 3600, "chat");
         UserDto refreshedUser = new UserDto("channel-1", "updated-user", "ACTIVE");
+        AuthorizationAccount refreshed = new AuthorizationAccount(
+                "channel-1", "updated-user", "new-access", "new-refresh", "Bearer", 3600, "chat", false, null, null
+        );
 
         given(chzzkProperty.channelId()).willReturn("channel-1");
         given(chzzkProperty.clientId()).willReturn("client-id");
         given(chzzkProperty.clientSecret()).willReturn("client-secret");
-        given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(entity));
-        given(chzzkOpenApi.getAccessToken(new AuthorizationRequestDto(
+        given(authorizationPort.findById("channel-1")).willReturn(Optional.of(account));
+        given(chzzkClientPort.getAccessToken(new AuthorizationRequestDto(
                 "refresh_token",
                 "client-id",
                 "client-secret",
@@ -62,14 +58,14 @@ class AuthorizationServiceTest {
                 null,
                 "refresh"
         ))).willReturn(new ApiResponseDto<>(200, "OK", refreshedAuthorization));
-        given(chzzkOpenApi.getUser("Bearer new-access")).willReturn(new ApiResponseDto<>(200, "OK", refreshedUser));
+        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResponseDto<>(200, "OK", refreshedUser));
+        given(authorizationPort.updateToken("channel-1", refreshedUser, refreshedAuthorization)).willReturn(refreshed);
 
-        AuthorizationEntity result = authorizationService.getAccessToken();
+        AuthorizationAccount result = authorizationService.getAccessToken();
 
-        assertThat(result).isSameAs(entity);
-        assertThat(result.getAccessToken()).isEqualTo("new-access");
-        assertThat(result.getRefreshToken()).isEqualTo("new-refresh");
-        assertThat(result.getExpiresIn()).isEqualTo(3600);
-        assertThat(result.getChannelName()).isEqualTo("updated-user");
+        assertThat(result.accessToken()).isEqualTo("new-access");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh");
+        assertThat(result.expiresIn()).isEqualTo(3600);
+        assertThat(result.channelName()).isEqualTo("updated-user");
     }
 }

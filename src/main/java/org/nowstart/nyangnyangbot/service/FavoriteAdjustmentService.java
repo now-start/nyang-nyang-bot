@@ -8,13 +8,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.model.FavoriteAdjustmentOption;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.favorite.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.data.dto.favorite.FavoriteAdjustmentDto;
-import org.nowstart.nyangnyangbot.data.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.repository.FavoriteAdjustmentRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,22 +22,19 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FavoriteAdjustmentService {
 
-    private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
+    private final FavoriteAdjustmentPort favoriteAdjustmentPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
 
-    public List<FavoriteAdjustmentEntity> getAdjustments() {
-        return favoriteAdjustmentRepository.findAll()
+    public List<FavoriteAdjustmentOption> getAdjustments() {
+        return favoriteAdjustmentPort.findAll()
                 .stream()
-                .sorted((left, right) -> Integer.compare(left.getAmount(), right.getAmount()))
+                .sorted((left, right) -> Integer.compare(left.amount(), right.amount()))
                 .toList();
     }
 
-    public FavoriteAdjustmentEntity createAdjustment(FavoriteAdjustmentDto.CreateRequest request) {
+    public FavoriteAdjustmentOption createAdjustment(FavoriteAdjustmentDto.CreateRequest request) {
         validateCreateRequest(request);
-        return favoriteAdjustmentRepository.save(FavoriteAdjustmentEntity.builder()
-                .amount(request.amount())
-                .label(request.label().trim())
-                .build());
+        return favoriteAdjustmentPort.save(request.amount(), request.label().trim());
     }
 
     public FavoriteAdjustmentDto.ApplyResponse applyAdjustments(
@@ -54,12 +51,12 @@ public class FavoriteAdjustmentService {
             throw new IllegalArgumentException("adjustmentIds or manualAmount is required");
         }
 
-        List<FavoriteAdjustmentEntity> adjustments = List.of();
+        List<FavoriteAdjustmentOption> adjustments = List.of();
         if (adjustmentIds != null && !adjustmentIds.isEmpty()) {
-            adjustments = favoriteAdjustmentRepository.findAllById(adjustmentIds);
+            adjustments = favoriteAdjustmentPort.findAllById(adjustmentIds);
             if (adjustments.size() != adjustmentIds.size()) {
-                Map<Long, FavoriteAdjustmentEntity> foundMap = adjustments.stream()
-                        .collect(Collectors.toMap(FavoriteAdjustmentEntity::getId, entity -> entity));
+                Map<Long, FavoriteAdjustmentOption> foundMap = adjustments.stream()
+                        .collect(Collectors.toMap(FavoriteAdjustmentOption::id, entity -> entity));
                 List<Long> missing = new ArrayList<>();
                 for (Long id : adjustmentIds) {
                     if (!foundMap.containsKey(id)) {
@@ -71,7 +68,7 @@ public class FavoriteAdjustmentService {
         }
 
         int delta = adjustments.stream()
-                .mapToInt(FavoriteAdjustmentEntity::getAmount)
+                .mapToInt(FavoriteAdjustmentOption::amount)
                 .sum();
         if (hasManualAmount) {
             delta += manualAmount;
@@ -110,13 +107,13 @@ public class FavoriteAdjustmentService {
     }
 
     private String buildHistory(
-            List<FavoriteAdjustmentEntity> adjustments,
+            List<FavoriteAdjustmentOption> adjustments,
             Integer manualAmount,
             String manualHistory
     ) {
         List<String> parts = new ArrayList<>();
-        for (FavoriteAdjustmentEntity entity : adjustments) {
-            parts.add(String.format(Locale.ROOT, "%s(%+d)", entity.getLabel(), entity.getAmount()));
+        for (FavoriteAdjustmentOption entity : adjustments) {
+            parts.add(String.format(Locale.ROOT, "%s(%+d)", entity.label(), entity.amount()));
         }
         if (manualAmount != null && manualAmount != 0) {
             String label = StringUtils.isBlank(manualHistory) ? "수동 입력" : manualHistory.trim();
