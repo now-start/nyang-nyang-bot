@@ -67,7 +67,7 @@
         <section class="ticker-shell">
             <div class="ticker-header">
                 <span class="ticker-title">주간 채팅 순위</span>
-                <span class="ticker-subtitle">Top Chatters</span>
+                <span class="ticker-subtitle">이번 주 채팅왕</span>
             </div>
             <div class="ticker-viewport">
                 <div class="ticker-track" th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
@@ -103,10 +103,10 @@
         <form class="search-form" method="get" th:action="@{/favorite/list}">
             <div class="search-field">
                 <span>닉네임</span>
-                <input id="nickName" name="nickName" placeholder="Enter nickName" th:value="${nickName}" type="text">
+                <input id="nickName" name="nickName" placeholder="닉네임 입력" th:value="${nickName}" type="text">
             </div>
             <div class="d-flex flex-column flex-sm-row gap-2 search-actions">
-                <button class="btn-strong" type="submit">Search</button>
+                <button class="btn-strong" type="submit">검색</button>
                 <button class="btn-ghost btn-auth" id="sync-button" type="button">데이터 동기화</button>
             </div>
         </form>
@@ -150,7 +150,7 @@
                   end=${T(java.lang.Math).min(favoriteList.totalPages - 1, start + blockSize - 1)}">
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${favoriteList.number == 0} ? 'disabled'">
-                    <a aria-label="Previous" class="page-link"
+                    <a aria-label="이전 페이지" class="page-link"
                        th:href="@{/favorite/list(page=${favoriteList.number - 1})}">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
@@ -179,7 +179,7 @@
 
                 <li class="page-item"
                     th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
-                    <a aria-label="Next" class="page-link" th:href="@{/favorite/list(page=${favoriteList.number + 1})}">
+                    <a aria-label="다음 페이지" class="page-link" th:href="@{/favorite/list(page=${favoriteList.number + 1})}">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
