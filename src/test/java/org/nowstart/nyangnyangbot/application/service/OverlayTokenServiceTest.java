@@ -12,7 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayTokenPort;
-import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayTokenDto;
+import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayTokenDto;
 
 @ExtendWith(MockitoExtension.class)
 class OverlayTokenServiceTest {

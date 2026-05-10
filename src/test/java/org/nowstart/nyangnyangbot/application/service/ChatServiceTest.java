@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
 import org.nowstart.nyangnyangbot.application.command.Command;
 
 @ExtendWith(MockitoExtension.class)

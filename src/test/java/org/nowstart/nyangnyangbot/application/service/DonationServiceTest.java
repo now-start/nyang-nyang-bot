@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.gateway.out.donation.DonationPort;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.DonationDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.DonationDto;
 
 @ExtendWith(MockitoExtension.class)
 class DonationServiceTest {

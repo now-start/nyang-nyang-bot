@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
-import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteMeDto;
+import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteMeDto;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.service.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.WeeklyChatRankService;

@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.application.gateway.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.gateway.out.favorite.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.MessageRequestDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.MessageRequestDto;
 import org.springframework.stereotype.Service;
 
 @Slf4j

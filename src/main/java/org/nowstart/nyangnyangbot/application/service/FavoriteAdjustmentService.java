@@ -13,7 +13,7 @@ import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.favorite.FavoriteLedgerResult;
 import org.nowstart.nyangnyangbot.application.gateway.out.favorite.FavoriteAdjustmentPort;
-import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteAdjustmentDto;
+import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteAdjustmentDto;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 

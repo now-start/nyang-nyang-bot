@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.dto.roulette.RouletteRunDto;
+import org.nowstart.nyangnyangbot.application.roulette.dto.RouletteRunDto;
 import org.nowstart.nyangnyangbot.application.service.RouletteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

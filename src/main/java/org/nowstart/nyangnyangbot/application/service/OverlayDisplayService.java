@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayDisplayDto;
+import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayDisplayDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.gateway.out.donation;
 
-import org.nowstart.nyangnyangbot.application.dto.chzzk.DonationDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.DonationDto;
 
 public interface DonationPort {
 

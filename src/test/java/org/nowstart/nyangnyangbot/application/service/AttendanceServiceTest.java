@@ -11,7 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.dto.attendance.AttendanceDto;
+import org.nowstart.nyangnyangbot.application.attendance.dto.AttendanceDto;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {

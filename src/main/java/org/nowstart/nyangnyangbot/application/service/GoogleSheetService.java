@@ -19,7 +19,7 @@ import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.gateway.out.favorite.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.dto.sheet.GoogleSheetDto;
+import org.nowstart.nyangnyangbot.application.google.dto.GoogleSheetDto;
 import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;

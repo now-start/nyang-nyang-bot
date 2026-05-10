@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.dto.attendance.AttendanceDto;
+import org.nowstart.nyangnyangbot.application.attendance.dto.AttendanceDto;
 import org.nowstart.nyangnyangbot.application.service.AttendanceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

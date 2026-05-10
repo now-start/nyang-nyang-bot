@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
 import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.application.dto.overlay.OverlayDisplayDto;
+import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayDisplayDto;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;

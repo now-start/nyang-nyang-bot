@@ -18,7 +18,7 @@ import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
 import org.nowstart.nyangnyangbot.application.gateway.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.gateway.out.favorite.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.dto.favorite.FavoriteMeDto;
+import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteMeDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;

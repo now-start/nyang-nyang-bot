@@ -2,12 +2,12 @@ package org.nowstart.nyangnyangbot.adapter.out.external.chzzk;
 
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.gateway.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ApiResponseDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.AuthorizationRequestDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.MessageRequestDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.SessionDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.UserDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ApiResponseDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.AuthorizationDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.AuthorizationRequestDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.MessageRequestDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.SessionDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.UserDto;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.ChzzkOpenApi;
 import org.springframework.stereotype.Component;
 

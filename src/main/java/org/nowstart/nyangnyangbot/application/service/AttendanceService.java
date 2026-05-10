@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.favorite.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.favorite.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.dto.attendance.AttendanceDto;
-import org.nowstart.nyangnyangbot.application.dto.attendance.AttendanceUserDto;
-import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
+import org.nowstart.nyangnyangbot.application.attendance.dto.AttendanceDto;
+import org.nowstart.nyangnyangbot.application.attendance.dto.AttendanceUserDto;
+import org.nowstart.nyangnyangbot.application.chzzk.dto.ChatDto;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 
