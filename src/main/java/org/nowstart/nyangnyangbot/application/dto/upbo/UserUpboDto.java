@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.dto.upbo;
 
 import java.time.format.DateTimeFormatter;
-import org.nowstart.nyangnyangbot.application.model.UserUpbo;
+import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;

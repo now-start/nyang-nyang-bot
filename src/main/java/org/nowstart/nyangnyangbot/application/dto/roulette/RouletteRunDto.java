@@ -2,8 +2,8 @@ package org.nowstart.nyangnyangbot.application.dto.roulette;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.model.RouletteEvent;
-import org.nowstart.nyangnyangbot.application.model.RouletteRound;
+import org.nowstart.nyangnyangbot.domain.model.RouletteEvent;
+import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;

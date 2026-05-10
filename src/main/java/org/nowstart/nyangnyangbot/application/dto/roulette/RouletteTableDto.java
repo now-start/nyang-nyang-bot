@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.application.dto.roulette;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.model.RouletteItem;
-import org.nowstart.nyangnyangbot.application.model.RouletteTable;
+import org.nowstart.nyangnyangbot.domain.model.RouletteItem;
+import org.nowstart.nyangnyangbot.domain.model.RouletteTable;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 

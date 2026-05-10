@@ -2,10 +2,10 @@ package org.nowstart.nyangnyangbot.application.favorite;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.favorite.CheckIdempotencyPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.favorite.LoadFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.favorite.SaveFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.favorite.SaveFavoriteLedgerPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteBalanceChange;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;

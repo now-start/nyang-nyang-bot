@@ -16,7 +16,7 @@
 
 ## 1. 범위
 
-Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문서는 PRD의 기능 요구사항을 구현할 때 따라야 하는 레이어, 의존성 방향, 패키지 구조, 포트/어댑터 경계, 테스트 기준을 정의한다.
+Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문서는 PRD의 기능 요구사항을 구현할 때 따라야 하는 레이어, 의존성 방향, 패키지 구조, gateway/adapter 경계, 테스트 기준을 정의한다.
 
 현재 코드베이스의 루트 패키지는 `adapter`, `application`, `domain`, `config` 네 개로 제한한다. 기존 `controller`, `service`, `repository`, `data` 루트 패키지는 각각 inbound adapter, application service, outbound adapter, application/domain/persistence/config 세부 모델로 이동했다.
 
@@ -33,8 +33,8 @@ Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문
 | 레이어 | 책임 | 포함 예시 |
 | --- | --- | --- |
 | Domain | 핵심 비즈니스 규칙, 상태 전이, 정책 검증 | 호감도 잔액, 원장 거래, 업보 상태, 룰렛 확률표 |
-| Application | 유스케이스 orchestration, 트랜잭션 경계, 권한 의도, 포트 호출 | 호감도 조정, 업보 적용, 출석 보상 적용, 룰렛 실행 |
-| Ports | Application이 외부에 요구하는 입출력 계약 | 저장소 포트, CHZZK 포트, 오버레이 이벤트 포트 |
+| Application | 유스케이스 orchestration, 트랜잭션 경계, 권한 의도, gateway 호출 | 호감도 조정, 업보 적용, 출석 보상 적용, 룰렛 실행 |
+| Gateways | Application이 외부에 요구하는 입출력 계약 | 저장소 gateway, CHZZK gateway, 오버레이 이벤트 gateway |
 | Adapters | 웹, DB, 외부 API, 채팅, 오버레이 등 입출력 구현 | Controller, JPA Repository, Feign Client, WebSocket Client |
 | Configuration | DI, 보안, 트랜잭션, OpenAPI, 운영 설정 | Spring Security, Feign 설정, Swagger 설정 |
 
@@ -43,7 +43,7 @@ Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문
 - 의존성 방향은 `Adapters -> Application -> Domain`으로만 흐른다.
 - Domain은 Spring, JPA, Jackson, Servlet, Feign, WebSocket API에 의존하지 않는다.
 - Domain 객체는 DB 테이블 구조나 API 응답 형식을 알지 않는다.
-- Application은 JPA repository 구현체가 아니라 outbound port 인터페이스를 호출한다.
+- Application은 JPA repository 구현체가 아니라 outbound gateway 인터페이스를 호출한다.
 - Web adapter는 request/response DTO와 application command/result 간 변환만 담당한다.
 - Persistence adapter는 JPA entity와 domain model 간 변환을 담당한다.
 - External adapter는 CHZZK, Google Sheets 같은 외부 API DTO를 내부 command/result로 변환한다.
@@ -64,6 +64,8 @@ org.nowstart.nyangnyangbot
   domain
     auth
     favorite
+    model
+    type
     upbo
     attendance
     chat
@@ -74,15 +76,13 @@ org.nowstart.nyangnyangbot
     favorite
     command
     dto
-    model
     service
     upbo
     attendance
     chat
     roulette
     overlay
-    port
-      in
+    gateway
       out
   adapter
     in
@@ -106,12 +106,15 @@ org.nowstart.nyangnyangbot
 
 - 신규 기능은 위 구조에 맞춰 작성한다.
 - 기존 기능은 수정 범위에 닿을 때 application/use case와 adapter를 분리한다.
+- 내부 비즈니스 상태 모델은 `domain/model` 또는 기능별 domain 패키지에 둔다.
+- 순수 계산/검증/선택 정책은 Spring 의존 없는 domain service로 둔다.
 - use case 구현은 `application/service`에 둔다.
+- 외부 저장소/시스템 호출 계약은 `application/gateway/out`에 둔다. domain으로 옮기려면 먼저 DTO와 Spring 타입 의존을 제거한다.
 - Spring Data repository는 `adapter/out/persistence/repository`에 둔다.
 - Feign client와 외부 API 어댑터는 `adapter/out/external` 하위에 둔다.
 - JPA entity는 `adapter/out/persistence/entity`에 둔다.
 - 공통 비즈니스 enum과 정책 타입은 `domain/type` 또는 기능별 domain 패키지에 둔다.
-- 요청/응답 호환 DTO는 전환기에는 `application/dto`에 두되, 신규 web 전용 DTO는 `adapter/in/web` 하위에서 application command/result와 분리한다.
+- DTO는 domain에 두지 않는다. 요청/응답 호환 DTO는 전환기에는 `application/dto`에 두되, 신규 web 전용 DTO는 `adapter/in/web` 하위에서 application command/result와 분리한다.
 
 ## 6. 네이밍 규칙
 
@@ -120,8 +123,8 @@ org.nowstart.nyangnyangbot
 | Domain model | 비즈니스 이름 사용, `Entity` 접미사 지양 | `FavoriteAccount`, `FavoriteLedgerEntry`, `RouletteTable` |
 | Use case | 사용자/시스템 행위 + `UseCase` | `AdjustFavoriteUseCase`, `ApplyUpboUseCase` |
 | Application service | Use case 구현체 + `Service` | `FavoriteLedgerService`, `RouletteExecutionService` |
-| Inbound port | 외부에서 호출 가능한 use case 계약 | `AdjustFavoriteUseCase` |
-| Outbound port | 외부 저장소/시스템 호출 계약 | `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort` |
+| Inbound use case | 외부에서 호출 가능한 application 계약 | `AdjustFavoriteUseCase` |
+| Outbound gateway | 외부 저장소/시스템 호출 계약 | `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort` |
 | JPA model | JPA 전용 모델임을 명시 | `FavoriteJpaEntity`, `FavoriteLedgerJpaEntity` |
 | Adapter | 구현 기술 또는 방향 명시 | `FavoritePersistenceAdapter`, `ChzzkDonationAdapter` |
 | Web DTO | 요청/응답 목적 명시 | `FavoriteHistoryResponse`, `ApplyUpboRequest` |
@@ -233,9 +236,9 @@ org.nowstart.nyangnyangbot
 - 이벤트 조회와 표시 완료 API는 `Authorization: Bearer` 헤더로 보호한다.
 - 재송출은 원장과 보유 목록을 다시 반영하지 않는다.
 
-## 8. 주요 포트
+## 8. 주요 Gateway
 
-### 8.1 Inbound Port
+### 8.1 Inbound Use Case
 
 | Port | 호출 주체 | 설명 |
 | --- | --- | --- |
@@ -250,7 +253,7 @@ org.nowstart.nyangnyangbot
 | `PollOverlayEventUseCase` | Overlay web adapter | OBS 오버레이 표시 이벤트 조회 |
 | `MarkOverlayEventDisplayedUseCase` | Overlay web adapter | 표시 완료 보고 |
 
-### 8.2 Outbound Port
+### 8.2 Outbound Gateway
 
 | Port | 구현 adapter | 설명 |
 | --- | --- | --- |
@@ -315,7 +318,7 @@ Monitoring:
 | 테스트 종류 | 대상 | 목적 |
 | --- | --- | --- |
 | Domain unit test | Domain model, domain service | 포인트 계산, 상태 전이, 룰렛 확률 검증 |
-| Application use case test | Use case service, mock port | 트랜잭션 흐름, 권한 의도, 중복 방지, 정정 정책 |
+| Application use case test | Use case service, mock gateway | 트랜잭션 흐름, 권한 의도, 중복 방지, 정정 정책 |
 | Adapter test | Controller, persistence adapter, external adapter | DTO 변환, 권한, JPA query, 외부 API 매핑 |
 | Integration test | Spring context + DB | 실제 wiring, 트랜잭션, 보안 설정 |
 | Architecture test | 패키지 의존성 | Domain/Application이 adapter/framework에 의존하지 않는지 검증 |
@@ -330,7 +333,7 @@ Monitoring:
 ## 14. 점진적 전환 계획
 
 1. 신규 패키지 골격을 추가한다.
-2. 호감도 원장부터 domain/application/port/adapter 구조로 분리한다.
+2. 호감도 원장부터 domain/application/gateway/adapter 구조로 분리한다.
 3. 기존 `FavoriteService`의 잔액 변경 로직을 application use case로 이동한다.
 4. 출석, 업보, 룰렛은 Favorite use case를 호출해 잔액을 변경한다.
 5. 채팅/후원/오버레이 입출력은 adapter로 격리한다.
@@ -342,4 +345,4 @@ Monitoring:
 - 기준 구조는 클린 아키텍처이다.
 - 신규 P0/P1 기능은 이 문서의 레이어와 의존성 규칙을 따른다.
 - 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환하되, 루트 패키지는 `adapter`, `application`, `domain`, `config`로 유지한다.
-- 도메인 규칙은 프레임워크와 분리하고, 외부 시스템은 포트/어댑터로 격리한다.
+- 도메인 규칙은 프레임워크와 분리하고, 외부 시스템은 gateway/adapter로 격리한다.

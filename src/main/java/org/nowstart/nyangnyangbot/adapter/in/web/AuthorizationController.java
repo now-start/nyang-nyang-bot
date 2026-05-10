@@ -10,7 +10,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.auth.OAuthStateService;
-import org.nowstart.nyangnyangbot.application.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.application.service.AuthorizationService;
 import org.springframework.http.HttpStatus;

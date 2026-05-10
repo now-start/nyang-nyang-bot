@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.dto.favorite;
 
 import java.time.format.DateTimeFormatter;
-import org.nowstart.nyangnyangbot.application.model.FavoriteHistoryView;
+import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
 
 public record FavoriteHistoryDto(
         Long ledgerId,

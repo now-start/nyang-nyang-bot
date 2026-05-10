@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.subscription;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.subscription.SubscriptionPort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.SubscriptionDto;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.SubscriptionEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.SubscriptionRepository;

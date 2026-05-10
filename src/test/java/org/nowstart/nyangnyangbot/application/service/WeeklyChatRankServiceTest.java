@@ -15,8 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.model.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
+import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
+import org.nowstart.nyangnyangbot.application.gateway.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.application.dto.WeeklyChatRankDto;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.ChatDto;
 

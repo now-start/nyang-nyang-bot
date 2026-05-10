@@ -6,7 +6,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.gateway.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.dto.chzzk.SystemDto;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 import org.springframework.stereotype.Service;
