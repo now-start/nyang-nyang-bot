@@ -47,7 +47,7 @@
 
 ### 2.3 권장 패키지 구조
 
-현재 코드의 `controller`, `service`, `repository`, `data/entity` 구조는 한 번에 모두 옮기지 않는다. 신규 P0/P1 기능부터 아래 구조로 작성하고, 기존 기능은 작업 범위에 닿는 부분부터 점진적으로 이동한다.
+현재 코드의 web controller는 `adapter/in/web`으로 이동했다. 남아 있는 `service`, `repository`, `data/entity` 구조는 신규 P0/P1 기능부터 아래 구조로 작성하고, 기존 기능은 작업 범위에 닿는 부분부터 점진적으로 이동한다.
 
 ```text
 org.nowstart.nyangnyangbot
@@ -107,7 +107,7 @@ org.nowstart.nyangnyangbot
 
 - PRD 요구사항과 현재 구현 기능을 기능 ID 기준으로 매핑한다.
 - 현재 패키지를 클린 아키텍처 레이어 기준으로 분류한다.
-  - `controller`: inbound web adapter 후보
+  - `adapter/in/web`: inbound web adapter
   - `service`: application use case 후보
   - `repository`: outbound persistence/external adapter 후보
   - `data/entity`: persistence model 또는 domain model 분리 대상

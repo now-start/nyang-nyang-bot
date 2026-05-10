@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.controller;
+package org.nowstart.nyangnyangbot.adapter.in.web;
 
 import io.micrometer.common.util.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;

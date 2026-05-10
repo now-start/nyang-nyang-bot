@@ -12,7 +12,7 @@
 - 호감도 원장을 먼저 안정화한 뒤 출석, 업보, 룰렛, 오버레이를 같은 거래 모델 위에 올린다.
 - 기준 구조는 [클린 아키텍처](spec/architecture.md)이다.
 - 신규 기능은 `domain`, `application`, `port`, `adapter` 경계를 지킨다.
-- 기존 `controller/service/repository/data` 구조는 전면 재작성하지 않고 수정 범위에 닿는 부분부터 점진 전환한다.
+- web controller는 `adapter/in/web` inbound adapter로 유지하고, 기존 `service/repository/data` 구조는 수정 범위에 닿는 부분부터 점진 전환한다.
 - 잘못된 거래는 삭제하지 않고 보정 거래로 정정한다.
 - 모든 Phase는 테스트와 문서 갱신을 완료 기준에 포함한다.
 

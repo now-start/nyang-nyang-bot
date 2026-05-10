@@ -18,7 +18,7 @@
 
 Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문서는 PRD의 기능 요구사항을 구현할 때 따라야 하는 레이어, 의존성 방향, 패키지 구조, 포트/어댑터 경계, 테스트 기준을 정의한다.
 
-현재 코드베이스에는 `controller`, `service`, `repository`, `data/entity`, `data/dto` 중심의 Spring MVC 구조가 존재한다. 기존 코드를 한 번에 전면 이동하지 않고, 신규 P0/P1 기능과 수정 범위에 닿는 기존 기능부터 점진적으로 클린 아키텍처로 이동한다.
+현재 코드베이스의 web controller는 `adapter/in/web` inbound adapter로 이동했다. 남아 있는 `service`, `repository`, `data/entity`, `data/dto` 중심의 Spring MVC 구조는 신규 P0/P1 기능과 수정 범위에 닿는 기존 기능부터 점진적으로 클린 아키텍처로 이동한다.
 
 ## 2. 목표
 
@@ -315,7 +315,7 @@ Monitoring:
 - `domain..` 패키지는 `org.springframework..`, `jakarta.persistence..`, `javax.persistence..`, `feign..`, `jakarta.servlet..`에 의존하지 않는다.
 - `application..` 패키지는 `adapter..` 패키지에 의존하지 않는다.
 - `adapter..` 패키지만 Spring MVC, JPA, Feign, WebSocket 구현체에 의존한다.
-- controller 테스트는 비즈니스 계산보다 요청 검증, 권한, response mapping에 집중한다.
+- web adapter 테스트는 비즈니스 계산보다 요청 검증, 권한, response mapping에 집중한다.
 
 ## 14. 점진적 전환 계획
 
@@ -324,12 +324,12 @@ Monitoring:
 3. 기존 `FavoriteService`의 잔액 변경 로직을 application use case로 이동한다.
 4. 출석, 업보, 룰렛은 Favorite use case를 호출해 잔액을 변경한다.
 5. 채팅/후원/오버레이 입출력은 adapter로 격리한다.
-6. 기존 `controller`, `repository`, `data/dto`는 수정 범위에 닿는 시점마다 새 구조로 이동한다.
+6. 기존 `repository`, `data/dto`는 수정 범위에 닿는 시점마다 새 구조로 이동한다.
 7. 아키텍처 경계 테스트를 추가해 역방향 의존성 회귀를 막는다.
 
 ## 15. 결정 상태
 
 - 기준 구조는 클린 아키텍처이다.
 - 신규 P0/P1 기능은 이 문서의 레이어와 의존성 규칙을 따른다.
-- 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환한다.
+- 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환하되, web controller는 `adapter/in/web` inbound adapter로 유지한다.
 - 도메인 규칙은 프레임워크와 분리하고, 외부 시스템은 포트/어댑터로 격리한다.

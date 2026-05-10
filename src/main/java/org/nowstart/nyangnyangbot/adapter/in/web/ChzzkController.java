@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.controller;
+package org.nowstart.nyangnyangbot.adapter.in.web;
 
 import static io.socket.client.IO.Options;
 import static io.socket.client.IO.socket;
