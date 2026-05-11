@@ -11,9 +11,10 @@ import jakarta.servlet.Filter;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.adapter.in.web.GoogleController;
+import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
 import org.nowstart.nyangnyangbot.application.service.google.GoogleSheetService;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -71,9 +72,28 @@ class SecurityConfigTest {
         }
     }
 
-    private AnnotationConfigWebApplicationContext createWebContext() {
+    @Test
+    void localAuthAllowsAdminEndpointWithoutSessionWhenEnabled() throws Exception {
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "nyang.local-auth.enabled=true",
+                "nyang.local-auth.user-id=local-channel",
+                "nyang.local-auth.admin=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+            GoogleSheetService googleSheetService = context.getBean(GoogleSheetService.class);
+
+            mockMvc.perform(get("/google/sync"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("SUCCESS"));
+
+            then(googleSheetService).should().updateFavorite();
+        }
+    }
+
+    private AnnotationConfigWebApplicationContext createWebContext(String... properties) {
         AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
+        TestPropertyValues.of(properties).applyTo(context);
         context.register(TestSecurityConfiguration.class);
         context.refresh();
         return context;

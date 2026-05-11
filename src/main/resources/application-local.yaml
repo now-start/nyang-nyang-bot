@@ -1,0 +1,69 @@
+spring:
+  cloud:
+    bus:
+      enabled: false
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:nyangnyangbot;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    driver-class-name: org.h2.Driver
+    username: ${DB_USER:sa}
+    password: ${DB_PASS:}
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  health:
+    rabbit:
+      enabled: false
+    redis:
+      enabled: false
+
+chzzk:
+  oauth:
+    login-enabled: ${CHZZK_OAUTH_LOGIN_ENABLED:false}
+  chat:
+    auto-connect-enabled: ${CHZZK_CHAT_AUTO_CONNECT_ENABLED:false}
+  id: ${CHZZK_ID:local}
+  password: ${CHZZK_PASSWORD:local}
+  channel-id: ${CHZZK_CHANNEL_ID:local-channel}
+  client-id: ${CHZZK_CLIENT_ID:local-client-id}
+  client-secret: ${CHZZK_CLIENT_SECRET:local-client-secret}
+  redirect-uri: ${CHZZK_REDIRECT_URI:http://localhost:8080/token}
+
+google:
+  spreadsheet:
+    id: ${GOOGLE_SPREADSHEET_ID:local-spreadsheet-id}
+    key: ${GOOGLE_SPREADSHEET_KEY:}
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+nyang:
+  local-auth:
+    enabled: ${LOCAL_AUTH_ENABLED:true}
+    user-id: ${LOCAL_AUTH_USER_ID:local-channel}
+    admin: ${LOCAL_AUTH_ADMIN:true}
+  local-dummy-data:
+    enabled: ${LOCAL_DUMMY_DATA_ENABLED:true}
+
+otel:
+  sdk:
+    disabled: true

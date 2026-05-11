@@ -96,6 +96,18 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void inboundWebControllers_ShouldLiveInFeaturePackages() throws IOException {
+        List<Path> violations;
+        try (Stream<Path> paths = Files.list(SOURCE_ROOT.resolve("adapter/in/web"))) {
+            violations = paths
+                    .filter(path -> path.getFileName().toString().endsWith("Controller.java"))
+                    .toList();
+        }
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
     void legacyTopLevelPackages_ShouldNotContainJavaSources() throws IOException {
         List<Path> javaSources = Stream.of("controller", "data", "repository", "service")
                 .map(SOURCE_ROOT::resolve)
