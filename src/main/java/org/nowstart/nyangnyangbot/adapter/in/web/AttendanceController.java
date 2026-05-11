@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.attendance.dto.AttendanceDto;
-import org.nowstart.nyangnyangbot.application.service.AttendanceService;
+import org.nowstart.nyangnyangbot.adapter.in.web.attendance.request.AttendanceApplyRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.attendance.response.AttendanceApplyResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.attendance.response.AttendanceUserResponse;
+import org.nowstart.nyangnyangbot.application.service.attendance.AttendanceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,8 +27,10 @@ public class AttendanceController {
 
     @Operation(summary = "현재 채팅 사용자 목록 조회")
     @GetMapping("/users")
-    public ResponseEntity<List<AttendanceDto.User>> getUsers() {
-        return ResponseEntity.ok(attendanceService.getActiveUsers());
+    public ResponseEntity<List<AttendanceUserResponse>> getUsers() {
+        return ResponseEntity.ok(attendanceService.getActiveUsers().stream()
+                .map(AttendanceUserResponse::from)
+                .toList());
     }
 
     @Operation(summary = "출석체크 수집 시작")
@@ -45,9 +49,11 @@ public class AttendanceController {
 
     @Operation(summary = "출석체크 적용")
     @PostMapping("/apply")
-    public ResponseEntity<AttendanceDto.ApplyResponse> applyAttendance(
-            @RequestBody AttendanceDto.ApplyRequest request
+    public ResponseEntity<AttendanceApplyResponse> applyAttendance(
+            @RequestBody AttendanceApplyRequest request
     ) {
-        return ResponseEntity.ok(attendanceService.applyAttendance(request));
+        return ResponseEntity.ok(AttendanceApplyResponse.from(
+                attendanceService.applyAttendance(request.toCommand())
+        ));
     }
 }

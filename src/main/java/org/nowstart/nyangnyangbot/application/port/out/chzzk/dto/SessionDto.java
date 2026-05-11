@@ -1,0 +1,21 @@
+package org.nowstart.nyangnyangbot.application.port.out.chzzk.dto;
+
+import java.util.List;
+
+public record SessionDto(
+        String url,
+        Integer page,
+        Integer totalCount,
+        Integer totalPages,
+        List<SessionData> data
+) {
+    public record SessionData(
+            String sessionKey,
+            String connectedDate,
+            String disconnectedDate,
+            List<SubscribedEvents> subscribedEvents
+    ) {
+        public record SubscribedEvents(String eventType, String channelId) {
+        }
+    }
+}

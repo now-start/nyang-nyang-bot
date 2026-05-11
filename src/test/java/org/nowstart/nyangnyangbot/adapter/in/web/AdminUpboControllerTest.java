@@ -8,11 +8,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.upbo.dto.UpboApplyDto;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboApplyRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.response.UpboApplyResponse;
+import org.nowstart.nyangnyangbot.application.service.upbo.UpboService;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
+import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
-import org.nowstart.nyangnyangbot.application.service.UpboService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -25,7 +28,7 @@ class AdminUpboControllerTest {
     @Test
     void applyUpbo_ShouldPassAuthenticatedAdminAsActor() {
         AdminUpboController controller = new AdminUpboController(upboService);
-        UpboApplyDto.Request request = new UpboApplyDto.Request(
+        UpboApplyRequest request = new UpboApplyRequest(
                 "user-1",
                 "치즈냥",
                 null,
@@ -36,24 +39,31 @@ class AdminUpboControllerTest {
                 "칭찬 쿠폰 지급",
                 "관리자 확인"
         );
-        UpboApplyDto.Response response = new UpboApplyDto.Response(
+        UserUpbo saved = new UserUpbo(
                 1L,
                 "user-1",
+                null,
+                "치즈냥",
                 "칭찬 쿠폰",
                 UpboStatus.OWNED,
                 null,
+                RewardType.COUPON,
                 ConversionMode.NONE,
+                FavoriteSourceType.UPBO_MANUAL,
                 null,
-                "칭찬 쿠폰 지급"
+                "칭찬 쿠폰 지급",
+                "관리자 확인",
+                "admin-1",
+                null
         );
-        given(upboService.applyUpbo(request, "admin-1")).willReturn(response);
+        given(upboService.applyUpbo(request.toCommand(), "admin-1")).willReturn(saved);
 
-        ResponseEntity<UpboApplyDto.Response> result = controller.applyUpbo(
+        ResponseEntity<UpboApplyResponse> result = controller.applyUpbo(
                 request,
                 new UsernamePasswordAuthenticationToken("admin-1", "N/A")
         );
 
-        then(result.getBody()).isEqualTo(response);
-        BDDMockito.then(upboService).should().applyUpbo(request, "admin-1");
+        then(result.getBody()).isEqualTo(UpboApplyResponse.from(saved));
+        BDDMockito.then(upboService).should().applyUpbo(request.toCommand(), "admin-1");
     }
 }

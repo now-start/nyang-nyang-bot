@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -10,8 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayDisplayDto;
-import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
+import org.nowstart.nyangnyangbot.adapter.in.web.overlay.response.OverlayEventResponse;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayDisplayDetail;
+import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
+import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +28,7 @@ class OverlayRouletteApiControllerTest {
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
         given(overlayDisplayService.claimNextEvent("Bearer token")).willReturn(Optional.empty());
 
-        ResponseEntity<OverlayDisplayDto.EventResponse> result = controller.getNextEvent("Bearer token");
+        ResponseEntity<OverlayEventResponse> result = controller.getNextEvent("Bearer token");
 
         then(result.getStatusCode().value()).isEqualTo(204);
     }
@@ -33,20 +36,20 @@ class OverlayRouletteApiControllerTest {
     @Test
     void getNextEvent_ShouldReturnDisplayEvent() {
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
-        OverlayDisplayDto.EventResponse response = new OverlayDisplayDto.EventResponse(
+        OverlayDisplayEvent event = new OverlayDisplayEvent(
                 1L,
                 20L,
                 "치즈냥",
                 1,
-                5,
-                "2026-05-09T12:02:00",
+                LocalDateTime.of(2026, 5, 9, 12, 2),
                 List.of()
         );
-        given(overlayDisplayService.claimNextEvent("Bearer token")).willReturn(Optional.of(response));
+        OverlayDisplayDetail detail = new OverlayDisplayDetail(event, List.of(), 5);
+        given(overlayDisplayService.claimNextEvent("Bearer token")).willReturn(Optional.of(detail));
 
-        ResponseEntity<OverlayDisplayDto.EventResponse> result = controller.getNextEvent("Bearer token");
+        ResponseEntity<OverlayEventResponse> result = controller.getNextEvent("Bearer token");
 
-        then(result.getBody()).isEqualTo(response);
+        then(result.getBody()).isEqualTo(OverlayEventResponse.from(detail));
     }
 
     @Test
@@ -64,7 +67,7 @@ class OverlayRouletteApiControllerTest {
         given(overlayDisplayService.claimNextEvent("Bearer bad"))
                 .willThrow(new IllegalArgumentException("invalid overlay token"));
 
-        ResponseEntity<OverlayDisplayDto.EventResponse> result = controller.getNextEvent("Bearer bad");
+        ResponseEntity<OverlayEventResponse> result = controller.getNextEvent("Bearer bad");
 
         then(result.getStatusCode().value()).isEqualTo(401);
     }

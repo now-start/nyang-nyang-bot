@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.application.gateway.out.weekly.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.application.weeklychat.dto.WeeklyChatRankDto;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.repository.WeeklyChatRankPort;
+import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.WeeklyChatRankRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -38,14 +38,14 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
     }
 
     @Override
-    public List<WeeklyChatRankDto> findWeeklyRanks(LocalDate weekStartDate, int limit) {
+    public List<WeeklyChatRankView> findWeeklyRanks(LocalDate weekStartDate, int limit) {
         List<WeeklyChatRankRepository.WeeklyChatRankProjection> results =
                 weeklyChatRankRepository.findWeeklyRanks(weekStartDate, PageRequest.of(0, limit));
-        List<WeeklyChatRankDto> ranks = new ArrayList<>(results.size());
+        List<WeeklyChatRankView> ranks = new ArrayList<>(results.size());
         int rank = 1;
         for (WeeklyChatRankRepository.WeeklyChatRankProjection result : results) {
             long chatCount = result.getChatCount() == null ? 0L : result.getChatCount();
-            ranks.add(new WeeklyChatRankDto(rank++, result.getNickname(), chatCount));
+            ranks.add(new WeeklyChatRankView(rank++, result.getNickname(), chatCount));
         }
         return ranks;
     }

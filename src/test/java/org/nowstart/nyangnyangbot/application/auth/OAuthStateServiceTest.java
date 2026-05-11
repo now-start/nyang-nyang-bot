@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.application.auth;
 
+import org.nowstart.nyangnyangbot.application.service.authorization.OAuthStateService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;

@@ -68,8 +68,8 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void applicationPortPackage_ShouldNotContainJavaSources() throws IOException {
-        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/port")).toList();
+    void applicationGatewayPackage_ShouldNotContainJavaSources() throws IOException {
+        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/gateway")).toList();
 
         assertThat(javaSources).isEmpty();
     }

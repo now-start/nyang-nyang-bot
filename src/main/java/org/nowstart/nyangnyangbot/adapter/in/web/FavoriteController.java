@@ -7,11 +7,12 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteHistoryResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response.WeeklyChatRankResponse;
+import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
+import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteMeDto;
-import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteHistoryDto;
-import org.nowstart.nyangnyangbot.application.service.FavoriteService;
-import org.nowstart.nyangnyangbot.application.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -59,7 +60,9 @@ public class FavoriteController {
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
         modelAndView.addObject("landingMode", false);
-        modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT));
+        modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
+                .map(WeeklyChatRankResponse::from)
+                .toList());
         boolean isAdmin = false;
         String currentUserId = null;
         if (authentication != null && authentication.isAuthenticated()) {
@@ -77,20 +80,20 @@ public class FavoriteController {
     @Operation(summary = "호감도 히스토리 조회", description = "ADMIN은 전체 조회, 그 외는 본인 계정만 조회 가능합니다.")
     @GetMapping("/history")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.name")
-    public ResponseEntity<List<FavoriteHistoryDto>> favoriteHistory(
+    public ResponseEntity<List<FavoriteHistoryResponse>> favoriteHistory(
             @RequestParam String userId,
             @RequestParam(defaultValue = "10") int limit
     ) {
         int safeLimit = Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
-        List<FavoriteHistoryDto> body = favoriteService.getHistory(userId, safeLimit).stream()
-                .map(FavoriteHistoryDto::from)
+        List<FavoriteHistoryResponse> body = favoriteService.getHistory(userId, safeLimit).stream()
+                .map(FavoriteHistoryResponse::from)
                 .toList();
         return ResponseEntity.ok(body);
     }
 
     @Operation(summary = "본인 호감도 요약 조회", description = "인증 사용자의 현재 호감도와 최근 히스토리를 조회하고 미확인 내역을 읽음 처리합니다.")
     @GetMapping("/me")
-    public ResponseEntity<FavoriteMeDto> favoriteMe(Authentication authentication) {
-        return ResponseEntity.ok(favoriteService.getMyFavorite(authentication.getName()));
+    public ResponseEntity<FavoriteMeResponse> favoriteMe(Authentication authentication) {
+        return ResponseEntity.ok(FavoriteMeResponse.from(favoriteService.getMyFavorite(authentication.getName())));
     }
 }

@@ -8,9 +8,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayTokenDto;
-import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
-import org.nowstart.nyangnyangbot.application.service.OverlayTokenService;
+import org.nowstart.nyangnyangbot.adapter.in.web.overlay.response.OverlayTokenIssueResponse;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayTokenIssueResult;
+import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
+import org.nowstart.nyangnyangbot.application.service.overlay.OverlayTokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -26,14 +27,14 @@ class AdminOverlayControllerTest {
     @Test
     void issueToken_ShouldUseAuthenticatedAdminAsActor() {
         AdminOverlayController controller = new AdminOverlayController(overlayTokenService, overlayDisplayService);
-        OverlayTokenDto.IssueResponse response = new OverlayTokenDto.IssueResponse(1L, "raw-token");
-        given(overlayTokenService.issueToken("admin-1")).willReturn(response);
+        OverlayTokenIssueResult result = new OverlayTokenIssueResult(1L, "raw-token");
+        given(overlayTokenService.issueToken("admin-1")).willReturn(result);
 
-        ResponseEntity<OverlayTokenDto.IssueResponse> result = controller.issueToken(
+        ResponseEntity<OverlayTokenIssueResponse> response = controller.issueToken(
                 new UsernamePasswordAuthenticationToken("admin-1", "N/A")
         );
 
-        then(result.getBody()).isEqualTo(response);
+        then(response.getBody()).isEqualTo(OverlayTokenIssueResponse.from(result));
         BDDMockito.then(overlayTokenService).should().issueToken("admin-1");
     }
 }
