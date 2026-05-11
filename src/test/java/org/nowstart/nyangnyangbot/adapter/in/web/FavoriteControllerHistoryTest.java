@@ -14,10 +14,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
-import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteMeDto;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteMeResult;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.application.service.FavoriteService;
-import org.nowstart.nyangnyangbot.application.service.WeeklyChatRankService;
+import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
+import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -111,15 +112,15 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteMe_ShouldUseAuthenticatedUserId() {
-        FavoriteMeDto dto = new FavoriteMeDto("user1", "치즈냥", 12, 2L, List.of());
-        given(favoriteService.getMyFavorite("user1")).willReturn(dto);
+        FavoriteMeResult resultDto = new FavoriteMeResult("user1", "치즈냥", 12, 2L, List.of());
+        given(favoriteService.getMyFavorite("user1")).willReturn(resultDto);
 
-        ResponseEntity<FavoriteMeDto> result = favoriteController.favoriteMe(
+        ResponseEntity<FavoriteMeResponse> result = favoriteController.favoriteMe(
                 new UsernamePasswordAuthenticationToken("user1", "N/A")
         );
 
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
-        then(result.getBody()).isEqualTo(dto);
+        then(result.getBody()).isEqualTo(FavoriteMeResponse.from(resultDto));
         org.mockito.BDDMockito.then(favoriteService).should().getMyFavorite("user1");
     }
 }

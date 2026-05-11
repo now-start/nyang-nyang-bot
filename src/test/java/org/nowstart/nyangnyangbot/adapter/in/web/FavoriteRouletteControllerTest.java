@@ -9,11 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.roulette.dto.RouletteRunDto;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteRoundResponse;
+import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
+import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
-import org.nowstart.nyangnyangbot.application.service.RouletteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -26,10 +27,15 @@ class FavoriteRouletteControllerTest {
     @Test
     void getMyResults_ShouldUseAuthenticatedUserId() {
         FavoriteRouletteController controller = new FavoriteRouletteController(rouletteService);
-        List<RouletteRunDto.RoundResponse> response = List.of(new RouletteRunDto.RoundResponse(
+        RouletteRound round = new RouletteRound(
                 1L,
+                1L,
+                "donation-1",
+                "user-1",
+                "닉네임",
                 1,
                 "호감도 +10",
+                1_000,
                 false,
                 RewardType.FAVORITE,
                 ConversionMode.AUTO,
@@ -37,16 +43,17 @@ class FavoriteRouletteControllerTest {
                 RouletteRoundStatus.APPLIED,
                 99L,
                 100L,
-                null
-        ));
-        given(rouletteService.getRecentRounds("user-1", 5)).willReturn(response);
+                null,
+                0
+        );
+        given(rouletteService.getRecentRounds("user-1", 5)).willReturn(List.of(round));
 
-        ResponseEntity<List<RouletteRunDto.RoundResponse>> result = controller.getMyResults(
+        ResponseEntity<List<RouletteRoundResponse>> result = controller.getMyResults(
                 new UsernamePasswordAuthenticationToken("user-1", "N/A"),
                 5
         );
 
-        then(result.getBody()).isEqualTo(response);
+        then(result.getBody()).isEqualTo(List.of(RouletteRoundResponse.from(round)));
         BDDMockito.then(rouletteService).should().getRecentRounds("user-1", 5);
     }
 }

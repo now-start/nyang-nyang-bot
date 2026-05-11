@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteAdjustmentOption;
-import org.nowstart.nyangnyangbot.application.gateway.out.favorite.FavoriteAdjustmentPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteAdjustmentEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteAdjustmentRepository;
 import org.springframework.stereotype.Component;

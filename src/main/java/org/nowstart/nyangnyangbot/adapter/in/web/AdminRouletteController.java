@@ -4,8 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.roulette.dto.RouletteTableDto;
-import org.nowstart.nyangnyangbot.application.service.RouletteService;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteTableCreateRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteSimulationResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteValidationResponse;
+import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,51 +32,71 @@ public class AdminRouletteController {
 
     @Operation(summary = "룰렛 테이블 조회")
     @GetMapping("/tables")
-    public ResponseEntity<List<RouletteTableDto.Response>> getTables() {
-        return ResponseEntity.ok(rouletteService.getTables());
+    public ResponseEntity<List<RouletteTableResponse>> getTables() {
+        return ResponseEntity.ok(rouletteService.getTables().stream()
+                .map(RouletteTableResponse::from)
+                .toList());
     }
 
     @Operation(summary = "룰렛 테이블 생성")
     @PostMapping("/tables")
-    public ResponseEntity<RouletteTableDto.Response> createTable(
-            @RequestBody RouletteTableDto.CreateRequest request
+    public ResponseEntity<RouletteTableResponse> createTable(
+            @RequestBody RouletteTableCreateRequest request
     ) {
-        return ResponseEntity.ok(rouletteService.createTable(request));
+        return ResponseEntity.ok(RouletteTableResponse.from(
+                rouletteService.createTable(
+                        request.title(),
+                        request.command(),
+                        request.pricePerRound(),
+                        request.highRoundThreshold()
+                )
+        ));
     }
 
     @Operation(summary = "룰렛 항목 추가")
     @PostMapping("/tables/{tableId}/items")
-    public ResponseEntity<RouletteTableDto.ItemResponse> addItem(
+    public ResponseEntity<RouletteItemResponse> addItem(
             @PathVariable Long tableId,
-            @RequestBody RouletteTableDto.ItemRequest request
+            @RequestBody RouletteItemRequest request
     ) {
-        return ResponseEntity.ok(rouletteService.addItem(tableId, request));
+        return ResponseEntity.ok(RouletteItemResponse.from(
+                rouletteService.addItem(
+                        tableId,
+                        request.label(),
+                        request.probabilityBasisPoints(),
+                        request.losingItem(),
+                        request.rewardType(),
+                        request.conversionMode(),
+                        request.exchangeFavoriteValue(),
+                        request.displayOrder()
+                )
+        ));
     }
 
     @Operation(summary = "룰렛 활성화 검증")
     @GetMapping("/tables/{tableId}/validation")
-    public ResponseEntity<RouletteTableDto.ValidationResponse> validateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(rouletteService.validateTable(tableId));
+    public ResponseEntity<RouletteValidationResponse> validateTable(@PathVariable Long tableId) {
+        return ResponseEntity.ok(RouletteValidationResponse.from(rouletteService.validateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 테이블 활성화")
     @PostMapping("/tables/{tableId}/activate")
-    public ResponseEntity<RouletteTableDto.Response> activateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(rouletteService.activateTable(tableId));
+    public ResponseEntity<RouletteTableResponse> activateTable(@PathVariable Long tableId) {
+        return ResponseEntity.ok(RouletteTableResponse.from(rouletteService.activateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 테이블 비활성화")
     @PostMapping("/tables/{tableId}/deactivate")
-    public ResponseEntity<RouletteTableDto.Response> deactivateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(rouletteService.deactivateTable(tableId));
+    public ResponseEntity<RouletteTableResponse> deactivateTable(@PathVariable Long tableId) {
+        return ResponseEntity.ok(RouletteTableResponse.from(rouletteService.deactivateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 확률 시뮬레이션")
     @GetMapping("/tables/{tableId}/simulation")
-    public ResponseEntity<RouletteTableDto.SimulationResponse> simulate(
+    public ResponseEntity<RouletteSimulationResponse> simulate(
             @PathVariable Long tableId,
             @RequestParam(defaultValue = "10000") int iterations
     ) {
-        return ResponseEntity.ok(rouletteService.simulate(tableId, iterations));
+        return ResponseEntity.ok(RouletteSimulationResponse.from(rouletteService.simulate(tableId, iterations)));
     }
 }

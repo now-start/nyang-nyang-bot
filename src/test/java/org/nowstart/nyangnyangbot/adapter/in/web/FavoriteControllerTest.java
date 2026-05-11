@@ -17,10 +17,11 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response.WeeklyChatRankResponse;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
+import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.nowstart.nyangnyangbot.application.weeklychat.dto.WeeklyChatRankDto;
-import org.nowstart.nyangnyangbot.application.service.FavoriteService;
-import org.nowstart.nyangnyangbot.application.service.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +42,8 @@ class FavoriteControllerTest {
     private FavoriteController favoriteController;
 
     private List<FavoriteSummary> favoriteEntities;
-    private List<WeeklyChatRankDto> weeklyChatRanks;
+    private List<WeeklyChatRankView> weeklyChatRanks;
+    private List<WeeklyChatRankResponse> weeklyChatRankResponses;
     private Pageable pageable;
 
     @BeforeEach
@@ -53,9 +55,12 @@ class FavoriteControllerTest {
                 new FavoriteSummary("user2", "유저2", 50)
         );
         weeklyChatRanks = List.of(
-                new WeeklyChatRankDto(1, "채터1", 11L),
-                new WeeklyChatRankDto(2, "채터2", 7L)
+                new WeeklyChatRankView(1, "채터1", 11L),
+                new WeeklyChatRankView(2, "채터2", 7L)
         );
+        weeklyChatRankResponses = weeklyChatRanks.stream()
+                .map(WeeklyChatRankResponse::from)
+                .toList();
         given(weeklyChatRankService.getWeeklyRanks(5)).willReturn(weeklyChatRanks);
     }
 
@@ -72,7 +77,7 @@ class FavoriteControllerTest {
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
-        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRanks);
+        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRankResponses);
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());

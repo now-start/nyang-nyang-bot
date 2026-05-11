@@ -16,10 +16,10 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.domain.type.EventType;
-import org.nowstart.nyangnyangbot.application.service.ChatService;
-import org.nowstart.nyangnyangbot.application.service.DonationService;
-import org.nowstart.nyangnyangbot.application.service.SubscriptionService;
-import org.nowstart.nyangnyangbot.application.service.SystemService;
+import org.nowstart.nyangnyangbot.application.service.chat.ChatService;
+import org.nowstart.nyangnyangbot.application.service.donation.DonationService;
+import org.nowstart.nyangnyangbot.application.service.subscription.SubscriptionService;
+import org.nowstart.nyangnyangbot.application.service.chzzk.SystemService;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)

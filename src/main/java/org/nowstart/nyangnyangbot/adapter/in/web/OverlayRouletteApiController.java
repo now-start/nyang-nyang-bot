@@ -3,8 +3,8 @@ package org.nowstart.nyangnyangbot.adapter.in.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.overlay.dto.OverlayDisplayDto;
-import org.nowstart.nyangnyangbot.application.service.OverlayDisplayService;
+import org.nowstart.nyangnyangbot.adapter.in.web.overlay.response.OverlayEventResponse;
+import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,12 +24,12 @@ public class OverlayRouletteApiController {
 
     @Operation(summary = "다음 오버레이 표시 이벤트 조회")
     @GetMapping("/events/next")
-    public ResponseEntity<OverlayDisplayDto.EventResponse> getNextEvent(
+    public ResponseEntity<OverlayEventResponse> getNextEvent(
             @RequestHeader(name = "Authorization", required = false) String authorization
     ) {
         try {
             return overlayDisplayService.claimNextEvent(authorization)
-                    .map(ResponseEntity::ok)
+                    .map(detail -> ResponseEntity.ok(OverlayEventResponse.from(detail)))
                     .orElseGet(() -> ResponseEntity.noContent().build());
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

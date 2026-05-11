@@ -6,7 +6,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.application.gateway.out.overlay.OverlayDisplayPort;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.repository.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.OverlayDisplayEventEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteEventEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteRoundResultEntity;

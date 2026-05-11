@@ -4,9 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.upbo.dto.UpboApplyDto;
-import org.nowstart.nyangnyangbot.application.upbo.dto.UpboTemplateDto;
-import org.nowstart.nyangnyangbot.application.service.UpboService;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboApplyRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboTemplateCreateRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.response.UpboApplyResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.upbo.response.UpboTemplateResponse;
+import org.nowstart.nyangnyangbot.application.service.upbo.UpboService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,24 +29,28 @@ public class AdminUpboController {
 
     @Operation(summary = "활성 업보 템플릿 조회")
     @GetMapping("/templates")
-    public ResponseEntity<List<UpboTemplateDto.Response>> getTemplates() {
-        return ResponseEntity.ok(upboService.getActiveTemplates());
+    public ResponseEntity<List<UpboTemplateResponse>> getTemplates() {
+        return ResponseEntity.ok(upboService.getActiveTemplates().stream()
+                .map(UpboTemplateResponse::from)
+                .toList());
     }
 
     @Operation(summary = "업보 템플릿 생성")
     @PostMapping("/templates")
-    public ResponseEntity<UpboTemplateDto.Response> createTemplate(
-            @RequestBody UpboTemplateDto.CreateRequest request
+    public ResponseEntity<UpboTemplateResponse> createTemplate(
+            @RequestBody UpboTemplateCreateRequest request
     ) {
-        return ResponseEntity.ok(upboService.createTemplate(request));
+        return ResponseEntity.ok(UpboTemplateResponse.from(upboService.createTemplate(request.toCommand())));
     }
 
     @Operation(summary = "업보 수동 적용")
     @PostMapping("/apply")
-    public ResponseEntity<UpboApplyDto.Response> applyUpbo(
-            @RequestBody UpboApplyDto.Request request,
+    public ResponseEntity<UpboApplyResponse> applyUpbo(
+            @RequestBody UpboApplyRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.ok(upboService.applyUpbo(request, authentication.getName()));
+        return ResponseEntity.ok(UpboApplyResponse.from(
+                upboService.applyUpbo(request.toCommand(), authentication.getName())
+        ));
     }
 }

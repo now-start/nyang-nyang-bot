@@ -4,9 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.request.FavoriteAdjustmentApplyRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.request.FavoriteAdjustmentCreateRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteAdjustmentApplyResponse;
+import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteAdjustmentService;
 import org.nowstart.nyangnyangbot.domain.model.FavoriteAdjustmentOption;
-import org.nowstart.nyangnyangbot.application.favorite.dto.FavoriteAdjustmentDto;
-import org.nowstart.nyangnyangbot.application.service.FavoriteAdjustmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,23 +35,18 @@ public class FavoriteAdjustmentController {
     @Operation(summary = "호감도 조정 항목 추가")
     @PostMapping
     public ResponseEntity<FavoriteAdjustmentOption> createAdjustment(
-            @RequestBody FavoriteAdjustmentDto.CreateRequest request
+            @RequestBody FavoriteAdjustmentCreateRequest request
     ) {
-        return ResponseEntity.ok(favoriteAdjustmentService.createAdjustment(request));
+        return ResponseEntity.ok(favoriteAdjustmentService.createAdjustment(request.toCommand()));
     }
 
     @Operation(summary = "호감도 조정 적용")
     @PostMapping("/apply")
-    public ResponseEntity<FavoriteAdjustmentDto.ApplyResponse> applyAdjustments(
-            @RequestBody FavoriteAdjustmentDto.ApplyRequest request
+    public ResponseEntity<FavoriteAdjustmentApplyResponse> applyAdjustments(
+            @RequestBody FavoriteAdjustmentApplyRequest request
     ) {
-        return ResponseEntity.ok(
-                favoriteAdjustmentService.applyAdjustments(
-                        request.userId(),
-                        request.adjustmentIds(),
-                        request.manualAmount(),
-                        request.manualHistory()
-                )
-        );
+        return ResponseEntity.ok(FavoriteAdjustmentApplyResponse.from(
+                favoriteAdjustmentService.applyAdjustments(request.toCommand())
+        ));
     }
 }
