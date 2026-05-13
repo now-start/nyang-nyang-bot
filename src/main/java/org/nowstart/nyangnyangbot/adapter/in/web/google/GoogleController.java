@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.service.google.GoogleSheetService;
+import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Google Sheet", description = "구글 시트 연동 및 데이터베이스 동기화 API")
 public class GoogleController {
 
-    private final GoogleSheetService googleSheetService;
+    private final SyncGoogleSheetUseCase syncGoogleSheetUseCase;
 
     @Operation(
             summary = "데이터베이스 동기화",
@@ -30,7 +30,7 @@ public class GoogleController {
     @Scheduled(cron = "0 0 4 * * ?")
     public ResponseEntity<String> syncDatabase() {
         log.info("[DBSync][START]");
-        googleSheetService.updateFavorite();
+        syncGoogleSheetUseCase.updateFavorite();
         log.info("[DBSync][END]");
         return ResponseEntity.ok("SUCCESS");
     }

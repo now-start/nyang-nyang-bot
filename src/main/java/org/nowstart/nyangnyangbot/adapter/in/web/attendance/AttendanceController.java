@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.attendance.request.AttendanceApplyRequest;
 import org.nowstart.nyangnyangbot.adapter.in.web.attendance.response.AttendanceApplyResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.attendance.response.AttendanceUserResponse;
-import org.nowstart.nyangnyangbot.application.service.attendance.AttendanceService;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,12 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasRole('ADMIN')")
 public class AttendanceController {
 
-    private final AttendanceService attendanceService;
+    private final ManageAttendanceUseCase manageAttendanceUseCase;
 
     @Operation(summary = "현재 채팅 사용자 목록 조회")
     @GetMapping("/users")
     public ResponseEntity<List<AttendanceUserResponse>> getUsers() {
-        return ResponseEntity.ok(attendanceService.getActiveUsers().stream()
+        return ResponseEntity.ok(manageAttendanceUseCase.getActiveUsers().stream()
                 .map(AttendanceUserResponse::from)
                 .toList());
     }
@@ -36,14 +36,14 @@ public class AttendanceController {
     @Operation(summary = "출석체크 수집 시작")
     @PostMapping("/start")
     public ResponseEntity<Void> startCapture() {
-        attendanceService.startCapture();
+        manageAttendanceUseCase.startCapture();
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "출석체크 수집 종료")
     @PostMapping("/stop")
     public ResponseEntity<Void> stopCapture() {
-        attendanceService.stopCapture();
+        manageAttendanceUseCase.stopCapture();
         return ResponseEntity.ok().build();
     }
 
@@ -53,7 +53,7 @@ public class AttendanceController {
             @RequestBody AttendanceApplyRequest request
     ) {
         return ResponseEntity.ok(AttendanceApplyResponse.from(
-                attendanceService.applyAttendance(request.toCommand())
+                manageAttendanceUseCase.applyAttendance(request.toApplyAttendanceCommand())
         ));
     }
 }

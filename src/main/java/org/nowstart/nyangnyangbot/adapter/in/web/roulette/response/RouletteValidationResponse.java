@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette.response;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.dto.RouletteValidationResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
 
 public record RouletteValidationResponse(
         Boolean activatable,

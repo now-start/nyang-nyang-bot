@@ -9,10 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceUserSnapshot;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.GrantFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {

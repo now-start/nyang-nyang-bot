@@ -8,50 +8,56 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceApplyResult;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceUserSnapshot;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.ChatDto;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceApplyResult;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.domain.attendance.AttendanceUserState;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class AttendanceService {
+public class AttendanceService implements ManageAttendanceUseCase, RecordAttendanceChatUseCase {
 
     private final GrantFavoriteUseCase grantFavoriteUseCase;
-    private final Map<String, AttendanceUserDto> presence = new ConcurrentHashMap<>();
+    private final Map<String, AttendanceUserState> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
+    @Override
     public void startCapture() {
         collecting = true;
         presence.clear();
     }
 
+    @Override
     public void stopCapture() {
         collecting = false;
         presence.clear();
     }
 
-    public void recordChatUser(ChatDto chatDto) {
-        if (chatDto == null) {
+    @Override
+    public void recordChatUser(ChatEventPayload chat) {
+        if (chat == null) {
             return;
         }
         if (!collecting) {
             return;
         }
-        String userId = chatDto.senderChannelId();
+        String userId = chat.senderChannelId();
         if (StringUtils.isBlank(userId)) {
             return;
         }
-        String nickName = chatDto.profile().nickname();
+        String nickName = chat.profile().nickname();
         long now = System.currentTimeMillis();
         presence.compute(userId, (key, existing) -> {
             if (existing == null) {
-                return AttendanceUserDto.builder()
+                return AttendanceUserState.builder()
                         .userId(userId)
                         .nickName(nickName)
                         .lastMessageTime(now)
@@ -65,13 +71,15 @@ public class AttendanceService {
         });
     }
 
+    @Override
     public List<AttendanceUserSnapshot> getActiveUsers() {
         return presence.values().stream()
-                .sorted(Comparator.comparingLong(AttendanceUserDto::getLastMessageTime).reversed())
+                .sorted(Comparator.comparingLong(AttendanceUserState::getLastMessageTime).reversed())
                 .map(user -> new AttendanceUserSnapshot(user.getUserId(), user.getNickName(), user.getLastMessageTime()))
                 .toList();
     }
 
+    @Override
     public AttendanceApplyResult applyAttendance(AttendanceApplyCommand command) {
         if (!collecting) {
             throw new IllegalStateException("attendance cycle is not active");

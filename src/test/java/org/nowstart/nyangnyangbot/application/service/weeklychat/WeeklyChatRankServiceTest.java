@@ -15,10 +15,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.repository.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.ChatDto;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyChatRankServiceTest {
@@ -33,10 +33,10 @@ class WeeklyChatRankServiceTest {
     @Test
     void recordChat_ShouldCreateNewWeeklyRank_WhenFirstMessageOfWeek() {
         LocalDate now = LocalDate.of(2026, 3, 25);
-        ChatDto chatDto = new ChatDto(
+        ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
                 "user-1",
-                new ChatDto.Profile("치즈냥", List.of(), true),
+                new ChatEventPayload.Profile("치즈냥", List.of(), true),
                 "안녕",
                 null,
                 0L
@@ -58,15 +58,15 @@ class WeeklyChatRankServiceTest {
     @Test
     void recordChat_ShouldIncrementExistingWeeklyRank_AndRefreshNickname() {
         LocalDate now = LocalDate.of(2026, 3, 26);
-        ChatDto chatDto = new ChatDto(
+        ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
                 "user-1",
-                new ChatDto.Profile("새닉네임", List.of(), true),
+                new ChatEventPayload.Profile("새닉네임", List.of(), true),
                 "두번째",
                 null,
                 0L
         );
-        WeeklyChatRankRecord existing = new WeeklyChatRankRecord(
+        WeeklyChatRankRecordResult existing = new WeeklyChatRankRecordResult(
                 1L,
                 LocalDate.of(2026, 3, 23),
                 "user-1",
@@ -89,10 +89,10 @@ class WeeklyChatRankServiceTest {
     @Test
     void recordChat_ShouldUseUserId_WhenNicknameMissing() {
         LocalDate now = LocalDate.of(2026, 3, 26);
-        ChatDto chatDto = new ChatDto(
+        ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
                 "user-42",
-                new ChatDto.Profile("", List.of(), false),
+                new ChatEventPayload.Profile("", List.of(), false),
                 "세번째",
                 null,
                 0L

@@ -4,16 +4,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.repository.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.OverlayDisplayEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResultEntity;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,7 +36,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
     }
 
     @Override
-    public OverlayDisplayEvent replayRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
+    public DisplayEventResult replayRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
         RouletteEventEntity rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
         Long replayOf = overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(rouletteEventId)
@@ -60,7 +60,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
     }
 
     @Override
-    public Optional<OverlayDisplayEvent> claimNextPending(LocalDateTime current) {
+    public Optional<DisplayEventResult> claimNextPending(LocalDateTime current) {
         return overlayDisplayEventRepository.findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
                         OverlayDisplayStatus.PENDING,
                         current
@@ -78,13 +78,13 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
         displayEvent.markDisplayed(displayedAt);
     }
 
-    private OverlayDisplayEvent toModel(OverlayDisplayEventEntity displayEvent) {
+    private DisplayEventResult toModel(OverlayDisplayEventEntity displayEvent) {
         RouletteEventEntity event = displayEvent.getRouletteEvent();
-        List<RouletteRound> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
+        List<RoundResult> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
                 .stream()
                 .map(this::toRound)
                 .toList();
-        return new OverlayDisplayEvent(
+        return new DisplayEventResult(
                 displayEvent.getId(),
                 event.getId(),
                 event.getNickNameSnapshot(),
@@ -94,9 +94,9 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
         );
     }
 
-    private RouletteRound toRound(RouletteRoundResultEntity entity) {
+    private RoundResult toRound(RouletteRoundResultEntity entity) {
         RouletteEventEntity event = entity.getRouletteEvent();
-        return new RouletteRound(
+        return new RoundResult(
                 entity.getId(),
                 event == null ? null : event.getId(),
                 event == null ? null : event.getDonationEventId(),

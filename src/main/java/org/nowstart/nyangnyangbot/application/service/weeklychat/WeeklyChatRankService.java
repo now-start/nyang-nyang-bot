@@ -8,37 +8,41 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.ChatDto;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.repository.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class WeeklyChatRankService {
+public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, RecordWeeklyChatUseCase {
 
     private final WeeklyChatRankPort weeklyChatRankPort;
 
-    public synchronized void recordChat(ChatDto chatDto) {
-        if (chatDto == null || StringUtils.isBlank(chatDto.senderChannelId())) {
+    @Override
+    public synchronized void recordChat(ChatEventPayload chat) {
+        if (chat == null || StringUtils.isBlank(chat.senderChannelId())) {
             return;
         }
 
-        String nickName = resolveNickname(chatDto);
+        String nickName = resolveNickname(chat);
         LocalDate weekStartDate = currentWeekStartDate();
-        WeeklyChatRankRecord existing = weeklyChatRankPort.findByWeekStartDateAndUserId(weekStartDate, chatDto.senderChannelId())
-                .orElse(new WeeklyChatRankRecord(null, weekStartDate, chatDto.senderChannelId(), nickName, 0L));
-        weeklyChatRankPort.save(new WeeklyChatRankRecord(
+        WeeklyChatRankRecordResult existing = weeklyChatRankPort.findByWeekStartDateAndUserId(weekStartDate, chat.senderChannelId())
+                .orElse(new WeeklyChatRankRecordResult(null, weekStartDate, chat.senderChannelId(), nickName, 0L));
+        weeklyChatRankPort.save(new WeeklyChatRankRecordResult(
                 existing.id(),
                 weekStartDate,
-                chatDto.senderChannelId(),
+                chat.senderChannelId(),
                 nickName,
                 Objects.requireNonNullElse(existing.chatCount(), 0L) + 1L
         ));
     }
 
+    @Override
     public List<WeeklyChatRankView> getWeeklyRanks(int limit) {
         return weeklyChatRankPort.findWeeklyRanks(currentWeekStartDate(), limit);
     }
@@ -51,10 +55,10 @@ public class WeeklyChatRankService {
         return currentDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
-    private String resolveNickname(ChatDto chatDto) {
-        if (chatDto.profile() != null && !StringUtils.isBlank(chatDto.profile().nickname())) {
-            return chatDto.profile().nickname();
+    private String resolveNickname(ChatEventPayload chat) {
+        if (chat.profile() != null && !StringUtils.isBlank(chat.profile().nickname())) {
+            return chat.profile().nickname();
         }
-        return chatDto.senderChannelId();
+        return chat.senderChannelId();
     }
 }

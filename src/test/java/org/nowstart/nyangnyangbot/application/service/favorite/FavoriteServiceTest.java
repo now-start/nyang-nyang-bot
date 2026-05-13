@@ -13,12 +13,13 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.repository.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteMeResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.HistoryResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -36,7 +37,7 @@ class FavoriteServiceTest {
     @InjectMocks
     private FavoriteService favoriteService;
 
-    private List<FavoriteSummary> favoriteEntities;
+    private List<SummaryResult> favoriteEntities;
     private Pageable pageable;
 
     @BeforeEach
@@ -44,20 +45,20 @@ class FavoriteServiceTest {
         pageable = PageRequest.of(0, 10);
 
         favoriteEntities = List.of(
-                new FavoriteSummary("user1", "테스트유저1", 100),
-                new FavoriteSummary("user2", "테스트유저2", 50),
-                new FavoriteSummary("user3", "유저3", 30)
+                new SummaryResult("user1", "테스트유저1", 100),
+                new SummaryResult("user2", "테스트유저2", 50),
+                new SummaryResult("user3", "유저3", 30)
         );
     }
 
     @Test
     void getList_ShouldReturnAllFavorites() {
         // given
-        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        Page<SummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteQueryPort.findAll(pageable)).willReturn(expectedPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getList(pageable);
+        Page<FavoriteSummaryResult> result = favoriteService.getList(pageable);
 
         // then
         then(result).isNotNull();
@@ -69,11 +70,11 @@ class FavoriteServiceTest {
     @Test
     void getList_ShouldReturnEmptyPage_WhenNoFavorites() {
         // given
-        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findAll(pageable)).willReturn(emptyPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getList(pageable);
+        Page<FavoriteSummaryResult> result = favoriteService.getList(pageable);
 
         // then
         then(result).isNotNull();
@@ -86,15 +87,15 @@ class FavoriteServiceTest {
     void getByNickName_ShouldReturnFilteredFavorites() {
         // given
         String nickName = "테스트";
-        List<FavoriteSummary> filteredList = List.of(
+        List<SummaryResult> filteredList = List.of(
                 favoriteEntities.get(0),
                 favoriteEntities.get(1)
         );
-        Page<FavoriteSummary> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
+        Page<SummaryResult> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(expectedPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getByNickName(pageable, nickName);
+        Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
         // then
         then(result).isNotNull();
@@ -107,11 +108,11 @@ class FavoriteServiceTest {
     void getByNickName_ShouldReturnEmptyPage_WhenNoMatch() {
         // given
         String nickName = "존재하지않는유저";
-        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getByNickName(pageable, nickName);
+        Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
         // then
         then(result).isNotNull();
@@ -123,11 +124,11 @@ class FavoriteServiceTest {
     void getByNickName_ShouldHandleSpecialCharacters() {
         // given
         String nickName = "유저@#$";
-        Page<FavoriteSummary> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getByNickName(pageable, nickName);
+        Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
         // then
         then(result).isNotNull();
@@ -138,11 +139,11 @@ class FavoriteServiceTest {
     void getList_ShouldHandleDifferentPageSizes() {
         // given
         Pageable largePageable = PageRequest.of(0, 100);
-        Page<FavoriteSummary> expectedPage = new PageImpl<>(favoriteEntities, largePageable, favoriteEntities.size());
+        Page<SummaryResult> expectedPage = new PageImpl<>(favoriteEntities, largePageable, favoriteEntities.size());
         given(favoriteQueryPort.findAll(largePageable)).willReturn(expectedPage);
 
         // when
-        Page<FavoriteSummary> result = favoriteService.getList(largePageable);
+        Page<FavoriteSummaryResult> result = favoriteService.getList(largePageable);
 
         // then
         then(result).isNotNull();
@@ -152,11 +153,11 @@ class FavoriteServiceTest {
 
     @Test
     void getMyFavorite_ShouldReturnSummaryAndMarkSeen() {
-        AuthorizationAccount authorization = new AuthorizationAccount(
+        AuthorizationAccountResult authorization = new AuthorizationAccountResult(
                 "user1", "치즈냥", null, null, null, null, null, false, null, null
         );
-        FavoriteSummary favorite = new FavoriteSummary("user1", "치즈냥", 42);
-        FavoriteHistoryView history = new FavoriteHistoryView(
+        SummaryResult favorite = new SummaryResult("user1", "치즈냥", 42);
+        HistoryResult history = new HistoryResult(
                 1L, "user1", "치즈냥", 1, 42, null, null,
                 "출석체크(+1)", false, 42, "출석체크(+1)", LocalDateTime.now()
         );

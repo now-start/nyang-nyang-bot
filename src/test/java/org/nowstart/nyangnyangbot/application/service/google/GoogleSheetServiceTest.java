@@ -17,19 +17,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.port.out.google.dto.GoogleSheetDto;
-import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
+import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
+import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort.GoogleSheetRow;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 @ExtendWith(MockitoExtension.class)
 class GoogleSheetServiceTest {
-
-    @Mock
-    private GoogleProperty googleProperty;
 
     @Mock
     private FavoriteQueryPort favoriteQueryPort;
@@ -37,22 +34,25 @@ class GoogleSheetServiceTest {
     @Mock
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
 
+    @Mock
+    private GoogleSheetPort googleSheetPort;
+
     @Spy
     @InjectMocks
     private GoogleSheetService googleSheetService;
 
-    private FavoriteSummary existingFavorite;
+    private SummaryResult existingFavorite;
 
     @BeforeEach
     void setUp() {
-        existingFavorite = new FavoriteSummary("user123", "기존닉네임", 50);
+        existingFavorite = new SummaryResult("user123", "기존닉네임", 50);
     }
 
     @Test
     void updateFavorite_ShouldCreateNewEntity_WhenUserNotExists() {
-        doReturn(List.of(new GoogleSheetDto("새유저", "newUser", 10))).when(googleSheetService).getSheetValues();
+        doReturn(List.of(new GoogleSheetRow("새유저", "newUser", 10))).when(googleSheetService).getSheetValues();
         given(favoriteQueryPort.getOrCreate("newUser", "새유저"))
-                .willReturn(new FavoriteSummary("newUser", "새유저", 0));
+                .willReturn(new SummaryResult("newUser", "새유저", 0));
 
         googleSheetService.updateFavorite();
 
@@ -69,7 +69,7 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldUpdateExistingEntity_WhenFavoriteChanged() {
-        doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 70))).when(googleSheetService).getSheetValues();
+        doReturn(List.of(new GoogleSheetRow("기존닉네임", "user123", 70))).when(googleSheetService).getSheetValues();
         given(favoriteQueryPort.getOrCreate("user123", "기존닉네임")).willReturn(existingFavorite);
 
         googleSheetService.updateFavorite();
@@ -83,8 +83,8 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldNotUpdate_WhenFavoriteUnchanged() {
-        FavoriteSummary unchangedEntity = new FavoriteSummary("user123", "기존닉네임", 50);
-        doReturn(List.of(new GoogleSheetDto("기존닉네임", "user123", 50))).when(googleSheetService).getSheetValues();
+        SummaryResult unchangedEntity = new SummaryResult("user123", "기존닉네임", 50);
+        doReturn(List.of(new GoogleSheetRow("기존닉네임", "user123", 50))).when(googleSheetService).getSheetValues();
         given(favoriteQueryPort.getOrCreate("user123", "기존닉네임")).willReturn(unchangedEntity);
 
         googleSheetService.updateFavorite();
@@ -95,8 +95,8 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldAddHistory_WhenFavoriteChanges() {
-        FavoriteSummary entityWithHistory = new FavoriteSummary("user123", "유저", 100);
-        doReturn(List.of(new GoogleSheetDto("유저", "user123", 120))).when(googleSheetService).getSheetValues();
+        SummaryResult entityWithHistory = new SummaryResult("user123", "유저", 100);
+        doReturn(List.of(new GoogleSheetRow("유저", "user123", 120))).when(googleSheetService).getSheetValues();
         given(favoriteQueryPort.getOrCreate("user123", "유저")).willReturn(entityWithHistory);
 
         googleSheetService.updateFavorite();
@@ -111,29 +111,29 @@ class GoogleSheetServiceTest {
 
     @Test
     void updateFavorite_ShouldHandleDuplicateUsers_KeepingLatest() {
-        List<GoogleSheetDto> rows = googleSheetService.normalizeRows(List.of(
-                new GoogleSheetDto("예전닉네임", "user123", 30),
-                new GoogleSheetDto("최신닉네임", "user123", 80)
+        List<GoogleSheetRow> rows = googleSheetService.normalizeRows(List.of(
+                new GoogleSheetRow("예전닉네임", "user123", 30),
+                new GoogleSheetRow("최신닉네임", "user123", 80)
         ));
 
-        assertThat(rows).containsExactly(new GoogleSheetDto("최신닉네임", "user123", 80));
+        assertThat(rows).containsExactly(new GoogleSheetRow("최신닉네임", "user123", 80));
     }
 
     @Test
     void updateFavorite_ShouldSkipEmptyUserIds() {
-        List<GoogleSheetDto> rows = googleSheetService.normalizeRows(java.util.Arrays.asList(
-                new GoogleSheetDto("빈값", "", 10),
-                new GoogleSheetDto("정상", "user123", 20),
+        List<GoogleSheetRow> rows = googleSheetService.normalizeRows(java.util.Arrays.asList(
+                new GoogleSheetRow("빈값", "", 10),
+                new GoogleSheetRow("정상", "user123", 20),
                 null
         ));
 
-        assertThat(rows).containsExactly(new GoogleSheetDto("정상", "user123", 20));
+        assertThat(rows).containsExactly(new GoogleSheetRow("정상", "user123", 20));
     }
 
     @Test
     void updateFavorite_ShouldUpdateNickname_WhenChanged() {
-        FavoriteSummary entity = new FavoriteSummary("user123", "이전닉네임", 100);
-        doReturn(List.of(new GoogleSheetDto("새닉네임", "user123", 100))).when(googleSheetService).getSheetValues();
+        SummaryResult entity = new SummaryResult("user123", "이전닉네임", 100);
+        doReturn(List.of(new GoogleSheetRow("새닉네임", "user123", 100))).when(googleSheetService).getSheetValues();
         given(favoriteQueryPort.getOrCreate("user123", "새닉네임")).willReturn(entity);
 
         googleSheetService.updateFavorite();

@@ -1,30 +1,28 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.upbo.response;
 
-import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
-import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
-import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
 
 public record UpboApplyResponse(
         Long id,
         String userId,
         String label,
-        UpboStatus status,
+        String status,
         Integer exchangeFavoriteValue,
-        ConversionMode conversionMode,
+        String conversionMode,
         Long ledgerId,
         String publicDescription
 ) {
 
-    public static UpboApplyResponse from(UserUpbo entity) {
+    public static UpboApplyResponse from(UserUpboResult result) {
         return new UpboApplyResponse(
-                entity.id(),
-                entity.userId(),
-                entity.label(),
-                entity.status(),
-                entity.exchangeFavoriteValue(),
-                entity.conversionMode(),
-                entity.ledgerId(),
-                entity.publicDescription()
+                result.id(),
+                result.userId(),
+                result.label(),
+                result.status(),
+                result.exchangeFavoriteValue(),
+                result.conversionMode(),
+                result.ledgerId(),
+                result.publicDescription()
         );
     }
 }

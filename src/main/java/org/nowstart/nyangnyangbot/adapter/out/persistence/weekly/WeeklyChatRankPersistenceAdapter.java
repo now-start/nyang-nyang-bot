@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.WeeklyChatRankEntity;
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.repository.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.domain.model.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.WeeklyChatRankRepository;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
@@ -20,13 +20,13 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
     private final WeeklyChatRankRepository weeklyChatRankRepository;
 
     @Override
-    public Optional<WeeklyChatRankRecord> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId) {
+    public Optional<WeeklyChatRankRecordResult> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId) {
         return weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, userId)
                 .map(this::toModel);
     }
 
     @Override
-    public WeeklyChatRankRecord save(WeeklyChatRankRecord record) {
+    public WeeklyChatRankRecordResult save(WeeklyChatRankRecordResult record) {
         WeeklyChatRankEntity entity = record.id() == null
                 ? WeeklyChatRankEntity.builder().build()
                 : weeklyChatRankRepository.findById(record.id()).orElseGet(WeeklyChatRankEntity.builder()::build);
@@ -50,8 +50,8 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
         return ranks;
     }
 
-    private WeeklyChatRankRecord toModel(WeeklyChatRankEntity entity) {
-        return new WeeklyChatRankRecord(
+    private WeeklyChatRankRecordResult toModel(WeeklyChatRankEntity entity) {
+        return new WeeklyChatRankRecordResult(
                 entity.getId(),
                 entity.getWeekStartDate(),
                 entity.getUserId(),

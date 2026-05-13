@@ -14,10 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayDisplayDetail;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.repository.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -36,7 +36,7 @@ class OverlayDisplayServiceTest {
         OverlayDisplayService service = createService();
         doReturn(LocalDateTime.of(2026, 5, 9, 12, 0)).when(service).now();
 
-        service.enqueue(20L);
+        service.enqueueRouletteEvent(20L);
 
         then(overlayDisplayPort).should().enqueueRouletteEvent(20L, LocalDateTime.of(2026, 5, 9, 12, 2));
     }
@@ -45,15 +45,15 @@ class OverlayDisplayServiceTest {
     void claimNextEvent_ShouldMarkExpiredAsMissedAndReturnPendingEvent() {
         OverlayDisplayService service = createService();
         LocalDateTime now = LocalDateTime.of(2026, 5, 9, 12, 0);
-        OverlayDisplayEvent pending = displayEvent(2L, now.plusSeconds(60));
+        DisplayEventResult pending = displayEvent(2L, now.plusSeconds(60));
         given(overlayTokenService.validateToken("token")).willReturn(true);
         given(overlayDisplayPort.claimNextPending(now)).willReturn(Optional.of(pending));
         doReturn(now).when(service).now();
 
-        Optional<OverlayDisplayDetail> result = service.claimNextEvent("Bearer token");
+        Optional<OverlayDisplayResult> result = service.claimNextEvent("Bearer token");
 
         assertThat(result).isPresent();
-        assertThat(result.get().displayEvent().id()).isEqualTo(2L);
+        assertThat(result.get().displayEventId()).isEqualTo(2L);
         then(overlayDisplayPort).should().markPendingExpiredBefore(now);
         then(overlayDisplayPort).should().claimNextPending(now);
     }
@@ -75,12 +75,12 @@ class OverlayDisplayServiceTest {
         ));
     }
 
-    private OverlayDisplayEvent displayEvent(Long id, LocalDateTime expiresAt) {
-        return new OverlayDisplayEvent(id, 20L, "치즈냥", 1, expiresAt, List.of(round()));
+    private DisplayEventResult displayEvent(Long id, LocalDateTime expiresAt) {
+        return new DisplayEventResult(id, 20L, "치즈냥", 1, expiresAt, List.of(round()));
     }
 
-    private RouletteRound round() {
-        return new RouletteRound(
+    private RoundResult round() {
+        return new RoundResult(
                 30L,
                 20L,
                 "donation-1",

@@ -3,12 +3,12 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.authorization;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.repository.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.AuthorizationDto;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.UserDto;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.AuthorizationEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.AuthorizationRepository;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,12 +18,12 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
     private final AuthorizationRepository authorizationRepository;
 
     @Override
-    public Optional<AuthorizationAccount> findById(String channelId) {
+    public Optional<AuthorizationAccountResult> findById(String channelId) {
         return authorizationRepository.findById(channelId).map(this::toModel);
     }
 
     @Override
-    public AuthorizationAccount saveOrUpdate(UserDto user, AuthorizationDto authorization) {
+    public AuthorizationAccountResult saveOrUpdate(UserResult user, AuthorizationToken authorization) {
         AuthorizationEntity saved = authorizationRepository.findById(user.channelId())
                 .map(existing -> update(existing, user, authorization))
                 .orElseGet(() -> authorizationRepository.save(AuthorizationEntity.builder()
@@ -40,7 +40,7 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
     }
 
     @Override
-    public AuthorizationAccount updateToken(String channelId, UserDto user, AuthorizationDto authorization) {
+    public AuthorizationAccountResult updateToken(String channelId, UserResult user, AuthorizationToken authorization) {
         AuthorizationEntity entity = authorizationRepository.findById(channelId).orElseThrow();
         update(entity, user, authorization);
         return toModel(entity);
@@ -52,7 +52,7 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                 .ifPresent(entity -> entity.setFavoriteHistoryLastSeenAt(seenAt));
     }
 
-    private AuthorizationEntity update(AuthorizationEntity entity, UserDto user, AuthorizationDto authorization) {
+    private AuthorizationEntity update(AuthorizationEntity entity, UserResult user, AuthorizationToken authorization) {
         entity.setChannelName(user.channelName());
         entity.setAccessToken(authorization.accessToken());
         entity.setRefreshToken(authorization.refreshToken());
@@ -62,8 +62,8 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
         return entity;
     }
 
-    private AuthorizationAccount toModel(AuthorizationEntity entity) {
-        return new AuthorizationAccount(
+    private AuthorizationAccountResult toModel(AuthorizationEntity entity) {
+        return new AuthorizationAccountResult(
                 entity.getChannelId(),
                 entity.getChannelName(),
                 entity.getAccessToken(),

@@ -8,37 +8,43 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteAdjustmentApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteAdjustmentApplyResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteAdjustmentCreateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.FavoriteAdjustmentPort;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentApplyResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentCreateCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentOptionResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteAdjustmentOption;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class FavoriteAdjustmentService {
+public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCase {
 
     private final FavoriteAdjustmentPort favoriteAdjustmentPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
 
-    public List<FavoriteAdjustmentOption> getAdjustments() {
+    @Override
+    public List<FavoriteAdjustmentOptionResult> getAdjustments() {
         return favoriteAdjustmentPort.findAll()
                 .stream()
                 .sorted((left, right) -> Integer.compare(left.amount(), right.amount()))
+                .map(this::favoriteAdjustmentOptionResult)
                 .toList();
     }
 
-    public FavoriteAdjustmentOption createAdjustment(FavoriteAdjustmentCreateCommand command) {
+    @Override
+    public FavoriteAdjustmentOptionResult createAdjustment(FavoriteAdjustmentCreateCommand command) {
         validateCreateCommand(command);
-        return favoriteAdjustmentPort.save(command.amount(), command.label().trim());
+        return favoriteAdjustmentOptionResult(favoriteAdjustmentPort.save(command.amount(), command.label().trim()));
     }
 
+    @Override
     public FavoriteAdjustmentApplyResult applyAdjustments(FavoriteAdjustmentApplyCommand command) {
         String userId = command.userId();
         if (StringUtils.isBlank(userId)) {
@@ -52,12 +58,12 @@ public class FavoriteAdjustmentService {
             throw new IllegalArgumentException("adjustmentIds or manualAmount is required");
         }
 
-        List<FavoriteAdjustmentOption> adjustments = List.of();
+        List<OptionResult> adjustments = List.of();
         if (adjustmentIds != null && !adjustmentIds.isEmpty()) {
             adjustments = favoriteAdjustmentPort.findAllById(adjustmentIds);
             if (adjustments.size() != adjustmentIds.size()) {
-                Map<Long, FavoriteAdjustmentOption> foundMap = adjustments.stream()
-                        .collect(Collectors.toMap(FavoriteAdjustmentOption::id, entity -> entity));
+                Map<Long, OptionResult> foundMap = adjustments.stream()
+                        .collect(Collectors.toMap(OptionResult::id, entity -> entity));
                 List<Long> missing = new ArrayList<>();
                 for (Long id : adjustmentIds) {
                     if (!foundMap.containsKey(id)) {
@@ -69,7 +75,7 @@ public class FavoriteAdjustmentService {
         }
 
         int delta = adjustments.stream()
-                .mapToInt(FavoriteAdjustmentOption::amount)
+                .mapToInt(OptionResult::amount)
                 .sum();
         if (hasManualAmount) {
             delta += manualAmount;
@@ -108,12 +114,12 @@ public class FavoriteAdjustmentService {
     }
 
     private String buildHistory(
-            List<FavoriteAdjustmentOption> adjustments,
+            List<OptionResult> adjustments,
             Integer manualAmount,
             String manualHistory
     ) {
         List<String> parts = new ArrayList<>();
-        for (FavoriteAdjustmentOption entity : adjustments) {
+        for (OptionResult entity : adjustments) {
             parts.add(String.format(Locale.ROOT, "%s(%+d)", entity.label(), entity.amount()));
         }
         if (manualAmount != null && manualAmount != 0) {
@@ -124,5 +130,13 @@ public class FavoriteAdjustmentService {
             return "업보 적용";
         }
         return "업보 적용: " + String.join(", ", parts);
+    }
+
+    private FavoriteAdjustmentOptionResult favoriteAdjustmentOptionResult(OptionResult option) {
+        return new FavoriteAdjustmentOptionResult(
+                option.id(),
+                option.amount(),
+                option.label()
+        );
     }
 }

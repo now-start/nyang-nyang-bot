@@ -3,17 +3,17 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.UpboTemplate;
-import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.dto.CreateUserUpboCommand;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.repository.UpboPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplateEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.UpboTemplateRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.UserUpboRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,14 +24,14 @@ public class UpboPersistenceAdapter implements UpboPort {
     private final UserUpboRepository userUpboRepository;
 
     @Override
-    public List<UpboTemplate> findActiveTemplates() {
+    public List<TemplateResult> findActiveTemplates() {
         return upboTemplateRepository.findByActiveTrueOrderByDisplayOrderAscIdAsc().stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public UpboTemplate createTemplate(
+    public TemplateResult createTemplate(
             String label,
             String description,
             Integer displayOrder,
@@ -52,12 +52,12 @@ public class UpboPersistenceAdapter implements UpboPort {
     }
 
     @Override
-    public Optional<UpboTemplate> findTemplateById(Long templateId) {
+    public Optional<TemplateResult> findTemplateById(Long templateId) {
         return upboTemplateRepository.findById(templateId).map(this::toModel);
     }
 
     @Override
-    public UserUpbo createUserUpbo(CreateUserUpboCommand command) {
+    public UserResult createUserUpbo(CreateUserUpboCommand command) {
         UpboTemplateEntity template = command.upboTemplateId() == null
                 ? null
                 : upboTemplateRepository.getReferenceById(command.upboTemplateId());
@@ -80,21 +80,21 @@ public class UpboPersistenceAdapter implements UpboPort {
     }
 
     @Override
-    public List<UserUpbo> findUserUpbos(String userId) {
+    public List<UserResult> findUserUpbos(String userId) {
         return userUpboRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public List<UserUpbo> findUserUpbosByStatus(String userId, UpboStatus status) {
+    public List<UserResult> findUserUpbosByStatus(String userId, UpboStatus status) {
         return userUpboRepository.findByUserIdAndStatusOrderByCreateDateDesc(userId, status).stream()
                 .map(this::toModel)
                 .toList();
     }
 
-    private UpboTemplate toModel(UpboTemplateEntity entity) {
-        return new UpboTemplate(
+    private TemplateResult toModel(UpboTemplateEntity entity) {
+        return new TemplateResult(
                 entity.getId(),
                 entity.getLabel(),
                 entity.getDescription(),
@@ -106,9 +106,9 @@ public class UpboPersistenceAdapter implements UpboPort {
         );
     }
 
-    private UserUpbo toModel(UserUpboEntity entity) {
+    private UserResult toModel(UserUpboEntity entity) {
         Long templateId = entity.getUpboTemplate() == null ? null : entity.getUpboTemplate().getId();
-        return new UserUpbo(
+        return new UserResult(
                 entity.getId(),
                 entity.getUserId(),
                 templateId,

@@ -8,7 +8,7 @@ import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboApplyRequest;
 import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboTemplateCreateRequest;
 import org.nowstart.nyangnyangbot.adapter.in.web.upbo.response.UpboApplyResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.upbo.response.UpboTemplateResponse;
-import org.nowstart.nyangnyangbot.application.service.upbo.UpboService;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,12 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Admin Upbo API", description = "관리자 업보/쿠폰/리워드 처리 API")
 public class AdminUpboController {
 
-    private final UpboService upboService;
+    private final ManageUpboUseCase manageUpboUseCase;
 
     @Operation(summary = "활성 업보 템플릿 조회")
     @GetMapping("/templates")
     public ResponseEntity<List<UpboTemplateResponse>> getTemplates() {
-        return ResponseEntity.ok(upboService.getActiveTemplates().stream()
+        return ResponseEntity.ok(manageUpboUseCase.getActiveTemplates().stream()
                 .map(UpboTemplateResponse::from)
                 .toList());
     }
@@ -40,7 +40,7 @@ public class AdminUpboController {
     public ResponseEntity<UpboTemplateResponse> createTemplate(
             @RequestBody UpboTemplateCreateRequest request
     ) {
-        return ResponseEntity.ok(UpboTemplateResponse.from(upboService.createTemplate(request.toCommand())));
+        return ResponseEntity.ok(UpboTemplateResponse.from(manageUpboUseCase.createTemplate(request.toCreateTemplateCommand())));
     }
 
     @Operation(summary = "업보 수동 적용")
@@ -50,7 +50,7 @@ public class AdminUpboController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(UpboApplyResponse.from(
-                upboService.applyUpbo(request.toCommand(), authentication.getName())
+                manageUpboUseCase.applyUpbo(request.toApplyUpboCommand(), authentication.getName())
         ));
     }
 }

@@ -12,9 +12,8 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.overlay.response.OverlayEventResponse;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayDisplayDetail;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
-import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,15 +35,15 @@ class OverlayRouletteApiControllerTest {
     @Test
     void getNextEvent_ShouldReturnDisplayEvent() {
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
-        OverlayDisplayEvent event = new OverlayDisplayEvent(
+        OverlayDisplayResult detail = new OverlayDisplayResult(
                 1L,
                 20L,
                 "치즈냥",
                 1,
+                5,
                 LocalDateTime.of(2026, 5, 9, 12, 2),
                 List.of()
         );
-        OverlayDisplayDetail detail = new OverlayDisplayDetail(event, List.of(), 5);
         given(overlayDisplayService.claimNextEvent("Bearer token")).willReturn(Optional.of(detail));
 
         ResponseEntity<OverlayEventResponse> result = controller.getNextEvent("Bearer token");

@@ -14,22 +14,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.dto.UpboApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.dto.UpboTemplateCreateCommand;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.dto.CreateUserUpboCommand;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.repository.UpboPort;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateCreateCommand;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateResult;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.nowstart.nyangnyangbot.domain.model.UpboTemplate;
-import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 
 @ExtendWith(MockitoExtension.class)
-class UpboServiceTest {
+class ManageUpboServiceTest {
 
     @Mock
     private UpboPort upboPort;
@@ -38,11 +40,11 @@ class UpboServiceTest {
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
 
     @InjectMocks
-    private UpboService upboService;
+    private ManageUpboService upboService;
 
     @Test
     void createTemplate_ShouldPersistValidatedTemplate() {
-        UpboTemplate saved = new UpboTemplate(
+        TemplateResult saved = new TemplateResult(
                 1L,
                 "호감도 +10",
                 "자동 전환",
@@ -56,13 +58,13 @@ class UpboServiceTest {
                 "호감도 +10", "자동 전환", 3, 10, RewardType.FAVORITE, ConversionMode.AUTO
         )).willReturn(saved);
 
-        UpboTemplate result = upboService.createTemplate(new UpboTemplateCreateCommand(
+        UpboTemplateResult result = upboService.createTemplate(new UpboTemplateCreateCommand(
                 "호감도 +10",
                 "자동 전환",
                 3,
                 10,
-                RewardType.FAVORITE,
-                ConversionMode.AUTO
+                RewardType.FAVORITE.name(),
+                ConversionMode.AUTO.name()
         ));
 
         assertThat(result.id()).isEqualTo(1L);
@@ -74,7 +76,7 @@ class UpboServiceTest {
 
     @Test
     void applyUpbo_ShouldConvertAutoTemplateThroughFavoriteLedger() {
-        UpboTemplate template = new UpboTemplate(
+        TemplateResult template = new TemplateResult(
                 1L, "호감도 +10", "", true, 0, 10, RewardType.FAVORITE, ConversionMode.AUTO
         );
         given(upboPort.findTemplateById(1L)).willReturn(Optional.of(template));
@@ -83,7 +85,7 @@ class UpboServiceTest {
         given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
                 .willReturn(userUpbo(1L, UpboStatus.CONVERTED, 99L));
 
-        UserUpbo result = upboService.applyUpbo(new UpboApplyCommand(
+        UserUpboResult result = upboService.applyUpbo(new UpboApplyCommand(
                 "user-1",
                 "치즈냥",
                 1L,
@@ -95,7 +97,7 @@ class UpboServiceTest {
                 "관리자 확인"
         ), "admin-1");
 
-        assertThat(result.status()).isEqualTo(UpboStatus.CONVERTED);
+        assertThat(result.status()).isEqualTo(UpboStatus.CONVERTED.name());
         assertThat(result.ledgerId()).isEqualTo(99L);
         then(adjustFavoriteUseCase).should().adjust(argThat(command ->
                 "user-1".equals(command.userId())
@@ -117,19 +119,19 @@ class UpboServiceTest {
         given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
                 .willReturn(userUpbo(1L, UpboStatus.OWNED, null));
 
-        UserUpbo result = upboService.applyUpbo(new UpboApplyCommand(
+        UserUpboResult result = upboService.applyUpbo(new UpboApplyCommand(
                 "user-1",
                 "치즈냥",
                 null,
                 "칭찬 쿠폰",
-                RewardType.COUPON,
-                ConversionMode.NONE,
+                RewardType.COUPON.name(),
+                ConversionMode.NONE.name(),
                 null,
                 "칭찬 쿠폰 지급",
                 "관리자 확인"
         ), "admin-1");
 
-        assertThat(result.status()).isEqualTo(UpboStatus.OWNED);
+        assertThat(result.status()).isEqualTo(UpboStatus.OWNED.name());
         assertThat(result.ledgerId()).isNull();
         then(adjustFavoriteUseCase).should(never()).adjust(any());
     }
@@ -141,8 +143,8 @@ class UpboServiceTest {
                 "치즈냥",
                 null,
                 "자유 입력",
-                RewardType.CUSTOM,
-                ConversionMode.NONE,
+                RewardType.CUSTOM.name(),
+                ConversionMode.NONE.name(),
                 null,
                 "공개 설명",
                 ""
@@ -151,8 +153,8 @@ class UpboServiceTest {
                 .hasMessage("privateMemo is required");
     }
 
-    private UserUpbo userUpbo(Long id, UpboStatus status, Long ledgerId) {
-        return new UserUpbo(
+    private UserResult userUpbo(Long id, UpboStatus status, Long ledgerId) {
+        return new UserResult(
                 id,
                 "user-1",
                 1L,

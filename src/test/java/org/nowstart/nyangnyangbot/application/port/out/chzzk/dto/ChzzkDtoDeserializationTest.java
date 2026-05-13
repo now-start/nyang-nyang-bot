@@ -1,9 +1,15 @@
-package org.nowstart.nyangnyangbot.application.port.out.chzzk.dto;
+package org.nowstart.nyangnyangbot.application.port.out.chzzk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ApiResult;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionResult;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SubscriptionEventPayload;
 import org.junit.jupiter.api.Test;
 
 class ChzzkDtoDeserializationTest {
@@ -26,9 +32,9 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
-        ApiResponseDto<SessionDto> response = objectMapper.readValue(
+        ApiResult<SessionResult> response = objectMapper.readValue(
                 json,
-                new TypeReference<ApiResponseDto<SessionDto>>() {
+                new TypeReference<ApiResult<SessionResult>>() {
                 }
         );
 
@@ -50,14 +56,14 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
-        AuthorizationDto response = objectMapper.readValue(json, AuthorizationDto.class);
+        AuthorizationToken response = objectMapper.readValue(json, AuthorizationToken.class);
 
         assertThat(response.expiresIn()).isNull();
     }
 
     @Test
     void authorizationDto_ToStringShouldMaskSensitiveTokens() {
-        AuthorizationDto dto = new AuthorizationDto("access-secret", "refresh-secret", "Bearer", 3600, "chat");
+        AuthorizationToken dto = new AuthorizationToken("access-secret", "refresh-secret", "Bearer", 3600, "chat");
 
         String result = dto.toString();
 
@@ -67,7 +73,7 @@ class ChzzkDtoDeserializationTest {
 
     @Test
     void authorizationRequestDto_ToStringShouldMaskSensitiveValues() {
-        AuthorizationRequestDto dto = new AuthorizationRequestDto(
+        AuthorizationTokenCommand dto = new AuthorizationTokenCommand(
                 "authorization_code",
                 "client-id",
                 "client-secret",
@@ -102,7 +108,7 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
-        SubscriptionDto response = objectMapper.readValue(json, SubscriptionDto.class);
+        SubscriptionEventPayload response = objectMapper.readValue(json, SubscriptionEventPayload.class);
 
         assertThat(response.tierNo()).isNull();
         assertThat(response.month()).isNull();
@@ -125,7 +131,7 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
-        ChatDto response = objectMapper.readValue(json, ChatDto.class);
+        ChatEventPayload response = objectMapper.readValue(json, ChatEventPayload.class);
 
         assertThat(response.messageTime()).isNull();
     }

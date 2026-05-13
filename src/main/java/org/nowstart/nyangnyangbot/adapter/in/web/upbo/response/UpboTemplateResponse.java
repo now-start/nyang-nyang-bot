@@ -1,8 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.upbo.response;
 
-import org.nowstart.nyangnyangbot.domain.model.UpboTemplate;
-import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
-import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateResult;
 
 public record UpboTemplateResponse(
         Long id,
@@ -11,20 +9,20 @@ public record UpboTemplateResponse(
         Boolean active,
         Integer displayOrder,
         Integer exchangeFavoriteValue,
-        RewardType rewardType,
-        ConversionMode conversionMode
+        String rewardType,
+        String conversionMode
 ) {
 
-    public static UpboTemplateResponse from(UpboTemplate entity) {
+    public static UpboTemplateResponse from(UpboTemplateResult result) {
         return new UpboTemplateResponse(
-                entity.id(),
-                entity.label(),
-                entity.description(),
-                entity.active(),
-                entity.displayOrder(),
-                entity.exchangeFavoriteValue(),
-                entity.rewardType(),
-                entity.conversionMode()
+                result.id(),
+                result.label(),
+                result.description(),
+                result.active(),
+                result.displayOrder(),
+                result.exchangeFavoriteValue(),
+                result.rewardType(),
+                result.conversionMode()
         );
     }
 }

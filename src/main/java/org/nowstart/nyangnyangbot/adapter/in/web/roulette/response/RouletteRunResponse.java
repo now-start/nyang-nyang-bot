@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette.response;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.dto.RouletteRunResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
 
 public record RouletteRunResponse(
         String status,
@@ -14,7 +14,7 @@ public record RouletteRunResponse(
     public static RouletteRunResponse from(RouletteRunResult result) {
         return new RouletteRunResponse(
                 result.status().name(),
-                result.event() == null ? null : result.event().id(),
+                result.eventId(),
                 result.reason(),
                 result.roundCount(),
                 result.rounds().stream().map(RouletteRoundResponse::from).toList()

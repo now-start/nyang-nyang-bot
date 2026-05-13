@@ -1,10 +1,10 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.subscription;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.subscription.repository.SubscriptionPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.SubscriptionDto;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.SubscriptionEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.SubscriptionRepository;
+import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SubscriptionEventPayload;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.subscription.entity.SubscriptionEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.subscription.repository.SubscriptionRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +14,7 @@ public class SubscriptionPersistenceAdapter implements SubscriptionPort {
     private final SubscriptionRepository subscriptionRepository;
 
     @Override
-    public void save(SubscriptionDto subscription) {
+    public void save(SubscriptionEventPayload subscription) {
         subscriptionRepository.save(SubscriptionEntity.builder()
                 .channelId(subscription.channelId())
                 .subscriberChannelId(subscription.subscriberChannelId())

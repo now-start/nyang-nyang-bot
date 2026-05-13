@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteMeResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
@@ -44,7 +44,7 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() throws Exception {
-        FavoriteHistoryView history = new FavoriteHistoryView(
+        FavoriteHistoryResult history = new FavoriteHistoryResult(
                 null,
                 null,
                 null,
@@ -72,13 +72,13 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeLedgerFields() throws Exception {
-        FavoriteHistoryView history = new FavoriteHistoryView(
+        FavoriteHistoryResult history = new FavoriteHistoryResult(
                 7L,
                 null,
                 "치즈냥",
                 5,
                 20,
-                FavoriteSourceType.ATTENDANCE,
+                FavoriteSourceType.ATTENDANCE.name(),
                 "ATTENDANCE",
                 "출석체크(+5)",
                 false,

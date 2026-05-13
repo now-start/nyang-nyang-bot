@@ -10,8 +10,8 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteRoundResponse;
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -22,29 +22,23 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 class FavoriteRouletteControllerTest {
 
     @Mock
-    private RouletteService rouletteService;
+    private QueryRouletteResultUseCase rouletteService;
 
     @Test
     void getMyResults_ShouldUseAuthenticatedUserId() {
         FavoriteRouletteController controller = new FavoriteRouletteController(rouletteService);
-        RouletteRound round = new RouletteRound(
+        RouletteRoundResult round = new RouletteRoundResult(
                 1L,
-                1L,
-                "donation-1",
-                "user-1",
-                "닉네임",
                 1,
                 "호감도 +10",
-                1_000,
                 false,
-                RewardType.FAVORITE,
-                ConversionMode.AUTO,
+                RewardType.FAVORITE.name(),
+                ConversionMode.AUTO.name(),
                 10,
-                RouletteRoundStatus.APPLIED,
+                RouletteRoundStatus.APPLIED.name(),
                 99L,
                 100L,
-                null,
-                0
+                null
         );
         given(rouletteService.getRecentRounds("user-1", 5)).willReturn(List.of(round));
 

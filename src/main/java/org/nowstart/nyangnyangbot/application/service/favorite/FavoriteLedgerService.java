@@ -1,16 +1,16 @@
 package org.nowstart.nyangnyangbot.application.service.favorite;
 
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.CorrectFavoriteLedgerUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.CorrectFavoriteLedgerUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.CheckIdempotencyPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.LoadFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteLedgerPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteBalanceChange;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;

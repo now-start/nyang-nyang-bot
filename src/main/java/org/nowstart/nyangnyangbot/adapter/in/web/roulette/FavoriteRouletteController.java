@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteRoundResponse;
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Favorite Roulette API", description = "사용자 룰렛 결과 조회 API")
 public class FavoriteRouletteController {
 
-    private final RouletteService rouletteService;
+    private final QueryRouletteResultUseCase queryRouletteResultUseCase;
 
     @Operation(summary = "본인 룰렛 회차 결과 조회")
     @GetMapping("/results")
@@ -27,7 +27,7 @@ public class FavoriteRouletteController {
             Authentication authentication,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(rouletteService.getRecentRounds(authentication.getName(), limit).stream()
+        return ResponseEntity.ok(queryRouletteResultUseCase.getRecentRounds(authentication.getName(), limit).stream()
                 .map(RouletteRoundResponse::from)
                 .toList());
     }
