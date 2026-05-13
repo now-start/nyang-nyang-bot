@@ -6,8 +6,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.subscription.repository.SubscriptionPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.SubscriptionDto;
+import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SubscriptionEventPayload;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -22,8 +22,8 @@ public class SubscriptionService implements Emitter.Listener {
     @Override
     @SneakyThrows
     public void call(Object... objects) {
-        SubscriptionDto subscriptionDto = objectMapper.readValue((String) objects[0], SubscriptionDto.class);
-        log.info("[ChzzkSubscription] socket received: {}", subscriptionDto);
-        subscriptionPort.save(subscriptionDto);
+        SubscriptionEventPayload subscription = objectMapper.readValue((String) objects[0], SubscriptionEventPayload.class);
+        log.info("[ChzzkSubscription] socket received: {}", subscription);
+        subscriptionPort.save(subscription);
     }
 }

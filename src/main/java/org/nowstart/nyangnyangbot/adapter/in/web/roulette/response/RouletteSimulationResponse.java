@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette.response;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.dto.RouletteSimulationResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteSimulationResult;
 
 public record RouletteSimulationResponse(
         Integer iterations,

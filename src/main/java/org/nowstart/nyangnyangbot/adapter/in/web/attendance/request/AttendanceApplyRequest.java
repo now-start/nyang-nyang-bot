@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.attendance.request;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceUserSnapshot;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
 
 public record AttendanceApplyRequest(
         List<AttendanceUser> users,
@@ -16,7 +16,7 @@ public record AttendanceApplyRequest(
         }
     }
 
-    public AttendanceApplyCommand toCommand() {
+    public AttendanceApplyCommand toApplyAttendanceCommand() {
         List<AttendanceUserSnapshot> snapshots = users == null
                 ? null
                 : users.stream().map(AttendanceUser::toSnapshot).toList();

@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.favorite;
 
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.CheckIdempotencyPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.LoadFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteLedgerPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;

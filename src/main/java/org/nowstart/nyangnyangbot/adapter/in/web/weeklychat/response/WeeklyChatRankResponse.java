@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response;
 
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.dto.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 
 public record WeeklyChatRankResponse(
         Integer rank,

@@ -1,14 +1,14 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.repository.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.dto.CreateUserUpboCommand;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.repository.UpboPort;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
@@ -27,7 +27,7 @@ public class RouletteRoundApplyService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void applyRound(Long roundId) {
-        RouletteRound round = roulettePort.findRoundById(roundId)
+        RoundResult round = roulettePort.findRoundById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette round not found"));
         if (round.status() != RouletteRoundStatus.CONFIRMED) {
             return;
@@ -39,7 +39,7 @@ public class RouletteRoundApplyService {
         }
     }
 
-    private void applyConfirmedRound(RouletteRound round) {
+    private void applyConfirmedRound(RoundResult round) {
         if (round.losingItem()) {
             roulettePort.markRoundApplied(round.id(), null, null);
             return;
@@ -66,7 +66,7 @@ public class RouletteRoundApplyService {
             ledgerId = result.ledgerId();
         }
 
-        UserUpbo savedUpbo = upboPort.createUserUpbo(new CreateUserUpboCommand(
+        UserResult savedUpbo = upboPort.createUserUpbo(new CreateUserUpboCommand(
                 round.rouletteEventUserId(),
                 null,
                 round.rouletteEventNickNameSnapshot(),
@@ -84,7 +84,7 @@ public class RouletteRoundApplyService {
         roulettePort.markRoundApplied(round.id(), ledgerId, savedUpbo.id());
     }
 
-    private String privateMemo(RouletteRound round) {
+    private String privateMemo(RoundResult round) {
         return "donationEventId=" + round.rouletteEventDonationEventId() + " roundNo=" + round.roundNo();
     }
 }

@@ -9,10 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.service.authorization.OAuthStateService;
-import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.application.port.in.authorization.LoginWithChzzkUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.authorization.OAuthStateUseCase;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
-import org.nowstart.nyangnyangbot.application.service.authorization.AuthorizationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,8 +33,8 @@ public class AuthorizationController {
     public static final String OAUTH_STATE_SESSION_ATTRIBUTE = "CHZZK_OAUTH_STATE";
 
     private final ChzzkProperty chzzkProperty;
-    private final AuthorizationService authorizationService;
-    private final OAuthStateService oAuthStateService;
+    private final LoginWithChzzkUseCase loginWithChzzkUseCase;
+    private final OAuthStateUseCase oAuthStateUseCase;
 
     @Value("${chzzk.oauth.login-enabled:true}")
     private boolean oauthLoginEnabled = true;
@@ -50,7 +49,7 @@ public class AuthorizationController {
         if (!oauthLoginEnabled) {
             return "redirect:/favorite/list";
         }
-        String state = oAuthStateService.generateState();
+        String state = oAuthStateUseCase.generateState();
         session.setAttribute(OAUTH_STATE_SESSION_ATTRIBUTE, state);
         return "redirect:https://chzzk.naver.com/account-interlock?"
                 + "clientId=" + chzzkProperty.clientId()
@@ -67,10 +66,10 @@ public class AuthorizationController {
         log.info("[GET][/token]");
         String expectedState = (String) session.getAttribute(OAUTH_STATE_SESSION_ATTRIBUTE);
         session.removeAttribute(OAUTH_STATE_SESSION_ATTRIBUTE);
-        if (!oAuthStateService.matches(expectedState, state)) {
+        if (!oAuthStateUseCase.matches(expectedState, state)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OAuth state");
         }
-        AuthorizationAccount authorization = authorizationService.getAccessToken(code, state);
+        LoginWithChzzkUseCase.Result authorization = loginWithChzzkUseCase.login(code, state);
         List<GrantedAuthority> authorities = authorization.admin()
                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                 : Collections.emptyList();

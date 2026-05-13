@@ -4,19 +4,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.CheckIdempotencyPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.LoadFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteAccountPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.repository.SaveFavoriteLedgerPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.HistoryResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.FavoriteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,7 +32,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public Optional<FavoriteAccount> loadForUpdate(String userId) {
-        return favoriteRepository.findByIdForUpdate(userId).map(this::toDomain);
+        return favoriteRepository.findByIdForUpdate(userId).map(this::favoriteAccount);
     }
 
     @Override
@@ -92,22 +92,22 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
     }
 
     @Override
-    public Page<FavoriteSummary> findAll(org.springframework.data.domain.Pageable pageable) {
+    public Page<SummaryResult> findAll(org.springframework.data.domain.Pageable pageable) {
         return favoriteRepository.findAll(pageable).map(this::toSummary);
     }
 
     @Override
-    public Page<FavoriteSummary> findByNickNameContains(org.springframework.data.domain.Pageable pageable, String nickName) {
+    public Page<SummaryResult> findByNickNameContains(org.springframework.data.domain.Pageable pageable, String nickName) {
         return favoriteRepository.findByNickNameContains(pageable, nickName).map(this::toSummary);
     }
 
     @Override
-    public Optional<FavoriteSummary> findById(String userId) {
+    public Optional<SummaryResult> findById(String userId) {
         return favoriteRepository.findById(userId).map(this::toSummary);
     }
 
     @Override
-    public FavoriteSummary getOrCreate(String userId, String nickName) {
+    public SummaryResult getOrCreate(String userId, String nickName) {
         FavoriteEntity entity = favoriteRepository.findById(userId)
                 .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
                         .userId(userId)
@@ -124,7 +124,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
     }
 
     @Override
-    public List<FavoriteHistoryView> findHistory(String userId, int limit) {
+    public List<HistoryResult> findHistory(String userId, int limit) {
         return favoriteHistoryRepository.findByFavoriteEntityUserId(
                         userId,
                         PageRequest.of(0, limit, Sort.by("createDate").descending())
@@ -145,19 +145,19 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
         return favoriteHistoryRepository.countByFavoriteEntityUserIdAndCreateDateAfter(userId, createDate);
     }
 
-    private FavoriteAccount toDomain(FavoriteEntity entity) {
+    private FavoriteAccount favoriteAccount(FavoriteEntity entity) {
         return FavoriteAccount.of(entity.getUserId(), entity.getNickName(), entity.getFavorite());
     }
 
-    private FavoriteSummary toSummary(FavoriteEntity entity) {
-        return new FavoriteSummary(entity.getUserId(), entity.getNickName(), entity.getFavorite());
+    private SummaryResult toSummary(FavoriteEntity entity) {
+        return new SummaryResult(entity.getUserId(), entity.getNickName(), entity.getFavorite());
     }
 
-    private FavoriteHistoryView toHistoryView(FavoriteHistoryEntity entity) {
+    private HistoryResult toHistoryView(FavoriteHistoryEntity entity) {
         Integer balanceAfter = entity.getBalanceAfter() == null ? entity.getFavorite() : entity.getBalanceAfter();
         String publicDescription = entity.getPublicDescription() == null ? entity.getHistory() : entity.getPublicDescription();
         String channelId = entity.getFavoriteEntity() == null ? null : entity.getFavoriteEntity().getUserId();
-        return new FavoriteHistoryView(
+        return new HistoryResult(
                 entity.getId(),
                 channelId,
                 entity.getNickNameSnapshot(),

@@ -6,8 +6,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.repository.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.SystemDto;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SystemEventPayload;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 import org.springframework.stereotype.Service;
 
@@ -25,11 +25,11 @@ public class SystemService implements Emitter.Listener {
     @Override
     @SneakyThrows
     public void call(Object... objects) {
-        SystemDto systemDto = objectMapper.readValue((String) objects[0], SystemDto.class);
-        log.info("[SYSTEM] : {}", systemDto);
+        SystemEventPayload system = objectMapper.readValue((String) objects[0], SystemEventPayload.class);
+        log.info("[SYSTEM] : {}", system);
 
-        if ("connected".equalsIgnoreCase(systemDto.type())) {
-            sessionKey = systemDto.data().sessionKey();
+        if ("connected".equalsIgnoreCase(system.type())) {
+            sessionKey = system.data().sessionKey();
             chzzkClientPort.subscribeChatEvent(sessionKey);
             // TODO: enable donation event subscription when handling is ready.
             // chzzkOpenApi.subscribeDonationEvent(sessionKey);

@@ -3,8 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay.response;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteRoundResponse;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayDisplayDetail;
-import org.nowstart.nyangnyangbot.domain.model.OverlayDisplayEvent;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 
 public record OverlayEventResponse(
         Long displayEventId,
@@ -18,16 +17,15 @@ public record OverlayEventResponse(
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-    public static OverlayEventResponse from(OverlayDisplayDetail detail) {
-        OverlayDisplayEvent displayEvent = detail.displayEvent();
+    public static OverlayEventResponse from(OverlayDisplayResult result) {
         return new OverlayEventResponse(
-                displayEvent.id(),
-                displayEvent.rouletteEventId(),
-                displayEvent.nickName(),
-                displayEvent.roundCount(),
-                detail.maxAnimatedRounds(),
-                displayEvent.expiresAt() == null ? null : displayEvent.expiresAt().format(DATE_FORMATTER),
-                detail.rounds().stream().map(RouletteRoundResponse::from).toList()
+                result.displayEventId(),
+                result.rouletteEventId(),
+                result.nickName(),
+                result.roundCount(),
+                result.maxAnimatedRounds(),
+                result.expiresAt() == null ? null : result.expiresAt().format(DATE_FORMATTER),
+                result.rounds().stream().map(RouletteRoundResponse::from).toList()
         );
     }
 }

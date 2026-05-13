@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.AdjustFavoriteCommand;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.usecase.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.domain.model.UserUpbo;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.repository.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.dto.CreateUserUpboCommand;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.repository.UpboPort;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -41,7 +41,7 @@ class RouletteRoundApplyServiceTest {
     @Test
     void applyRound_ShouldConvertAutoFavoriteRewardThroughLedger() {
         RouletteRoundApplyService service = createService();
-        RouletteRound round = favoriteRound(false);
+        RoundResult round = favoriteRound(false);
         given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
                 .willReturn(new FavoriteLedgerResult("user-1", 20, 10, 30, "룰렛 결과", false, 99L));
@@ -62,7 +62,7 @@ class RouletteRoundApplyServiceTest {
     @Test
     void applyRound_ShouldMarkLosingRoundAppliedWithoutLedgerOrUpbo() {
         RouletteRoundApplyService service = createService();
-        RouletteRound round = favoriteRound(true);
+        RoundResult round = favoriteRound(true);
         given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
 
         service.applyRound(30L);
@@ -80,8 +80,8 @@ class RouletteRoundApplyServiceTest {
         );
     }
 
-    private RouletteRound favoriteRound(boolean losingItem) {
-        return new RouletteRound(
+    private RoundResult favoriteRound(boolean losingItem) {
+        return new RoundResult(
                 30L,
                 20L,
                 "donation-1",
@@ -102,8 +102,8 @@ class RouletteRoundApplyServiceTest {
         );
     }
 
-    private UserUpbo userUpbo(Long id, Long ledgerId) {
-        return new UserUpbo(
+    private UserResult userUpbo(Long id, Long ledgerId) {
+        return new UserResult(
                 id,
                 "user-1",
                 null,

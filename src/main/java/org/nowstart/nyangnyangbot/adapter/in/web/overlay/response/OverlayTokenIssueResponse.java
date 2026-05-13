@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.overlay.response;
 
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayTokenIssueResult;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase.OverlayTokenIssueResult;
 
 public record OverlayTokenIssueResponse(
         Long tokenId,

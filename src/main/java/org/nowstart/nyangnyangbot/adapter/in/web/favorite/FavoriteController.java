@@ -10,10 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteHistoryResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response.WeeklyChatRankResponse;
-import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
-import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteSummary;
-import org.springframework.data.domain.Page;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,8 +37,8 @@ public class FavoriteController {
     private static final int MAX_HISTORY_LIMIT = 50;
     private static final int WEEKLY_CHAT_RANK_LIMIT = 5;
 
-    private final FavoriteService favoriteService;
-    private final WeeklyChatRankService weeklyChatRankService;
+    private final QueryFavoriteUseCase queryFavoriteUseCase;
+    private final QueryWeeklyChatRankUseCase queryWeeklyChatRankUseCase;
 
     @Operation(
             summary = "즐겨찾기 리스트 조회",
@@ -55,12 +53,12 @@ public class FavoriteController {
         log.info("[GET][/favorite/list]");
         String safeNickName = Optional.ofNullable(nickName).map(HtmlUtils::htmlEscape).orElse("");
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
-        Page<FavoriteSummary> favoriteList =
-                StringUtils.isBlank(safeNickName) ? favoriteService.getList(page) : favoriteService.getByNickName(page, safeNickName);
+        var favoriteList =
+                StringUtils.isBlank(safeNickName) ? queryFavoriteUseCase.getList(page) : queryFavoriteUseCase.getByNickName(page, safeNickName);
 
         ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
         modelAndView.addObject("landingMode", false);
-        modelAndView.addObject("weeklyChatRanks", weeklyChatRankService.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
+        modelAndView.addObject("weeklyChatRanks", queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
                 .map(WeeklyChatRankResponse::from)
                 .toList());
         boolean isAdmin = false;
@@ -69,7 +67,7 @@ public class FavoriteController {
             currentUserId = authentication.getName();
             isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-            favoriteService.getCurrentNickName(authentication.getName())
+            queryFavoriteUseCase.getCurrentNickName(authentication.getName())
                     .ifPresent(name -> modelAndView.addObject("currentNickName", name));
         }
         modelAndView.addObject("currentUserId", currentUserId);
@@ -85,7 +83,7 @@ public class FavoriteController {
             @RequestParam(defaultValue = "10") int limit
     ) {
         int safeLimit = Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
-        List<FavoriteHistoryResponse> body = favoriteService.getHistory(userId, safeLimit).stream()
+        List<FavoriteHistoryResponse> body = queryFavoriteUseCase.getHistory(userId, safeLimit).stream()
                 .map(FavoriteHistoryResponse::from)
                 .toList();
         return ResponseEntity.ok(body);
@@ -94,6 +92,6 @@ public class FavoriteController {
     @Operation(summary = "본인 호감도 요약 조회", description = "인증 사용자의 현재 호감도와 최근 히스토리를 조회하고 미확인 내역을 읽음 처리합니다.")
     @GetMapping("/me")
     public ResponseEntity<FavoriteMeResponse> favoriteMe(Authentication authentication) {
-        return ResponseEntity.ok(FavoriteMeResponse.from(favoriteService.getMyFavorite(authentication.getName())));
+        return ResponseEntity.ok(FavoriteMeResponse.from(queryFavoriteUseCase.getMyFavorite(authentication.getName())));
     }
 }

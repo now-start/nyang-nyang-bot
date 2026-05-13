@@ -1,31 +1,21 @@
 package org.nowstart.nyangnyangbot.application.service.authorization;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.util.Base64;
+import org.nowstart.nyangnyangbot.application.port.in.authorization.OAuthStateUseCase;
+import org.nowstart.nyangnyangbot.domain.authorization.OAuthStatePolicy;
 import org.springframework.stereotype.Service;
 
 @Service
-public class OAuthStateService {
+public class OAuthStateService implements OAuthStateUseCase {
 
-    private static final int STATE_BYTES = 32;
+    private final OAuthStatePolicy oAuthStatePolicy = new OAuthStatePolicy();
 
-    private final SecureRandom secureRandom = new SecureRandom();
-
+    @Override
     public String generateState() {
-        byte[] bytes = new byte[STATE_BYTES];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return oAuthStatePolicy.generateState();
     }
 
+    @Override
     public boolean matches(String expected, String actual) {
-        if (expected == null || actual == null) {
-            return false;
-        }
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                actual.getBytes(StandardCharsets.UTF_8)
-        );
+        return oAuthStatePolicy.matches(expected, actual);
     }
 }

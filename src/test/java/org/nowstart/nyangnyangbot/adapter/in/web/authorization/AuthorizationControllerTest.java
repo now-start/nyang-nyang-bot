@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.port.in.authorization.LoginWithChzzkUseCase;
 import org.nowstart.nyangnyangbot.application.service.authorization.OAuthStateService;
-import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 import org.nowstart.nyangnyangbot.application.service.authorization.AuthorizationService;
 import org.springframework.http.HttpStatus;
@@ -88,7 +88,7 @@ class AuthorizationControllerTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
         assertThat(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
-        then(authorizationService).should(never()).getAccessToken(anyString(), anyString());
+        then(authorizationService).should(never()).login(anyString(), anyString());
     }
 
     @Test
@@ -96,21 +96,13 @@ class AuthorizationControllerTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE, "expected-state");
         AuthorizationController controller = newController();
-        AuthorizationAccount authorization = new AuthorizationAccount(
+        LoginWithChzzkUseCase.Result authorization = new LoginWithChzzkUseCase.Result(
                 "channel-1",
-                "tester",
-                null,
-                null,
-                null,
-                null,
-                null,
-                true,
-                null,
-                null
+                true
         );
 
         given(oAuthStateService.matches("expected-state", "expected-state")).willReturn(true);
-        given(authorizationService.getAccessToken("code", "expected-state")).willReturn(authorization);
+        given(authorizationService.login("code", "expected-state")).willReturn(authorization);
 
         String result = controller.token("code", "expected-state", session);
 

@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.attendance.response;
 
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceUserSnapshot;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
 
 public record AttendanceUserResponse(
         String userId,

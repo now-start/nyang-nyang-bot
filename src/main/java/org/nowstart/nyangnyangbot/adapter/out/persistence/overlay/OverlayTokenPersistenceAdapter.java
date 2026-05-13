@@ -2,9 +2,9 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay;
 
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.repository.OverlayTokenPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.OverlayTokenEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.OverlayTokenRepository;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayTokenEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayTokenRepository;
 import org.springframework.stereotype.Component;
 
 @Component

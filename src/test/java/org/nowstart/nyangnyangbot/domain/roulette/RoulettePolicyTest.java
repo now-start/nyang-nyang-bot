@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.domain.model.RouletteItem;
-import org.nowstart.nyangnyangbot.domain.model.RouletteTable;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
@@ -48,7 +48,7 @@ class RoulettePolicyTest {
 
     @Test
     void selectItem_ShouldUseTicketAgainstCumulativeProbability() {
-        List<RouletteItem> items = List.of(
+        List<ItemResult> items = List.of(
                 item("A", 3_000, false),
                 item("B", 7_000, true)
         );
@@ -73,12 +73,12 @@ class RoulettePolicyTest {
         assertThat(roulettePolicy.containsCommand("후원 !룰렛갑니다", "!룰렛")).isFalse();
     }
 
-    private RouletteTable table(String command, Long pricePerRound) {
-        return new RouletteTable(1L, "기본", command, pricePerRound, true, 1, 100);
+    private TableResult table(String command, Long pricePerRound) {
+        return new TableResult(1L, "기본", command, pricePerRound, true, 1, 100);
     }
 
-    private RouletteItem item(String label, Integer probabilityBasisPoints, boolean losingItem) {
-        return new RouletteItem(
+    private ItemResult item(String label, Integer probabilityBasisPoints, boolean losingItem) {
+        return new ItemResult(
                 1L,
                 1L,
                 label,

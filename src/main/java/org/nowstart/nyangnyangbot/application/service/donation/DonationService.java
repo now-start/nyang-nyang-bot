@@ -1,13 +1,13 @@
 package org.nowstart.nyangnyangbot.application.service.donation;
 
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.emitter.Emitter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.donation.repository.DonationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.DonationDto;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -17,18 +17,18 @@ public class DonationService implements Emitter.Listener {
 
     private final ObjectMapper objectMapper;
     private final DonationPort donationPort;
-    private final RouletteService rouletteService;
+    private final ProcessRouletteDonationUseCase processRouletteDonationUseCase;
 
     @Override
     @SneakyThrows
     public void call(Object... objects) {
-        DonationDto donationDto = objectMapper.readValue((String) objects[0], DonationDto.class);
-        log.info("[ChzzkDonation] socket received: {}", donationDto);
-        if (isBlank(donationDto.donationEventId())
-                || !donationPort.existsByDonationEventId(donationDto.donationEventId())) {
-            donationPort.save(donationDto, parseAmount(donationDto.payAmount()), toJson(donationDto.emojis()));
+        DonationEventPayload donation = objectMapper.readValue((String) objects[0], DonationEventPayload.class);
+        log.info("[ChzzkDonation] socket received: {}", donation);
+        if (isBlank(donation.donationEventId())
+                || !donationPort.existsByDonationEventId(donation.donationEventId())) {
+            donationPort.save(donation, parseAmount(donation.payAmount()), toJson(donation.emojis()));
         }
-        rouletteService.processDonation(donationDto);
+        processRouletteDonationUseCase.processDonation(donation);
     }
 
     @SneakyThrows

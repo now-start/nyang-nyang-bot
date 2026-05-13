@@ -13,11 +13,10 @@ import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRe
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteTableCreateRequest;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.dto.RouletteTableSnapshot;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.dto.RouletteValidationResult;
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
-import org.nowstart.nyangnyangbot.domain.model.RouletteItem;
-import org.nowstart.nyangnyangbot.domain.model.RouletteTable;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteItemResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +25,10 @@ import org.springframework.http.ResponseEntity;
 class AdminRouletteControllerTest {
 
     @Mock
-    private RouletteService rouletteService;
+    private ManageRouletteUseCase rouletteService;
 
     @Test
-    void createTable_ShouldDelegateToRouletteService() {
+    void createTable_ShouldDelegateToManageUseCase() {
         AdminRouletteController controller = new AdminRouletteController(rouletteService);
         RouletteTableCreateRequest request = new RouletteTableCreateRequest(
                 "기본 룰렛",
@@ -37,48 +36,48 @@ class AdminRouletteControllerTest {
                 1_000L,
                 100
         );
-        RouletteTable table = new RouletteTable(1L, "기본 룰렛", "!룰렛", 1_000L, false, 0, 100);
         RouletteValidationResult validation =
                 new RouletteValidationResult(false, List.of("losing item is required"), 0, false);
-        RouletteTableSnapshot snapshot = new RouletteTableSnapshot(table, List.of(), validation);
-        given(rouletteService.createTable("기본 룰렛", "!룰렛", 1_000L, 100)).willReturn(snapshot);
+        RouletteTableResult table = new RouletteTableResult(
+                1L, "기본 룰렛", "!룰렛", 1_000L, false, 0, 100, validation, List.of()
+        );
+        given(rouletteService.createTable("기본 룰렛", "!룰렛", 1_000L, 100)).willReturn(table);
 
         ResponseEntity<RouletteTableResponse> result = controller.createTable(request);
 
-        then(result.getBody()).isEqualTo(RouletteTableResponse.from(snapshot));
+        then(result.getBody()).isEqualTo(RouletteTableResponse.from(table));
         BDDMockito.then(rouletteService).should().createTable("기본 룰렛", "!룰렛", 1_000L, 100);
     }
 
     @Test
-    void addItem_ShouldDelegateToRouletteService() {
+    void addItem_ShouldDelegateToManageUseCase() {
         AdminRouletteController controller = new AdminRouletteController(rouletteService);
         RouletteItemRequest request = new RouletteItemRequest(
                 "꽝",
                 1_000,
                 true,
-                RewardType.CUSTOM,
-                ConversionMode.NONE,
+                RewardType.CUSTOM.name(),
+                ConversionMode.NONE.name(),
                 null,
                 1
         );
-        RouletteItem item = new RouletteItem(
+        RouletteItemResult item = new RouletteItemResult(
                 10L,
-                1L,
                 "꽝",
                 1_000,
                 true,
-                RewardType.CUSTOM,
-                ConversionMode.NONE,
+                RewardType.CUSTOM.name(),
+                ConversionMode.NONE.name(),
                 null,
                 true,
                 1
         );
-        given(rouletteService.addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, 1))
+        given(rouletteService.addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1))
                 .willReturn(item);
 
         ResponseEntity<RouletteItemResponse> result = controller.addItem(1L, request);
 
         then(result.getBody()).isEqualTo(RouletteItemResponse.from(item));
-        BDDMockito.then(rouletteService).should().addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, 1);
+        BDDMockito.then(rouletteService).should().addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1);
     }
 }

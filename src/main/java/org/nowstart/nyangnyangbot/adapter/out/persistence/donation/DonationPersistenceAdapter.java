@@ -1,10 +1,10 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.donation.repository.DonationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.DonationDto;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.DonationEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.DonationRepository;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.DonationEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,7 +19,7 @@ public class DonationPersistenceAdapter implements DonationPort {
     }
 
     @Override
-    public void save(DonationDto donation, Long payAmount, String emojisJson) {
+    public void save(DonationEventPayload donation, Long payAmount, String emojisJson) {
         donationRepository.save(DonationEntity.builder()
                 .donationEventId(donation.donationEventId())
                 .donationType(donation.donationType())

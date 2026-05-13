@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.favorite.response;
 
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteAdjustmentApplyResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentApplyResult;
 
 public record FavoriteAdjustmentApplyResponse(
         String userId,

@@ -1,19 +1,17 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.upbo.request;
 
-import org.nowstart.nyangnyangbot.application.port.in.upbo.dto.UpboTemplateCreateCommand;
-import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
-import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateCreateCommand;
 
 public record UpboTemplateCreateRequest(
         String label,
         String description,
         Integer displayOrder,
         Integer exchangeFavoriteValue,
-        RewardType rewardType,
-        ConversionMode conversionMode
+        String rewardType,
+        String conversionMode
 ) {
 
-    public UpboTemplateCreateCommand toCommand() {
+    public UpboTemplateCreateCommand toCreateTemplateCommand() {
         return new UpboTemplateCreateCommand(
                 label, description, displayOrder, exchangeFavoriteValue, rewardType, conversionMode
         );

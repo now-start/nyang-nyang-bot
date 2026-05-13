@@ -8,6 +8,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.doReturn;
 
+import io.socket.emitter.Emitter;
 import io.socket.client.Socket;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.Test;
@@ -15,27 +16,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.domain.type.EventType;
-import org.nowstart.nyangnyangbot.application.service.chat.ChatService;
-import org.nowstart.nyangnyangbot.application.service.donation.DonationService;
-import org.nowstart.nyangnyangbot.application.service.subscription.SubscriptionService;
-import org.nowstart.nyangnyangbot.application.service.chzzk.SystemService;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
 import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
 class ChzzkControllerTest {
 
     @Mock
-    private SystemService systemService;
+    private ConnectChzzkChatUseCase connectChzzkChatUseCase;
 
     @Mock
-    private ChatService chatService;
+    private Emitter.Listener systemListener;
 
     @Mock
-    private DonationService donationService;
+    private Emitter.Listener chatListener;
 
     @Mock
-    private SubscriptionService subscriptionService;
+    private Emitter.Listener donationListener;
 
     @Mock
     private Socket socket;
@@ -44,22 +41,25 @@ class ChzzkControllerTest {
 
     private ChzzkController createController() throws URISyntaxException {
         ChzzkController controller = BDDMockito.spy(
-                new ChzzkController(systemService, chatService, donationService, subscriptionService)
+                new ChzzkController(connectChzzkChatUseCase)
         );
         doReturn(socket).when(controller).createSocket(anyString(), any());
         return controller;
     }
 
     private ChzzkController createControllerWithoutSocketStub() {
-        return new ChzzkController(systemService, chatService, donationService, subscriptionService);
+        return new ChzzkController(connectChzzkChatUseCase);
     }
 
     @Test
     void connect_ShouldReturnSuccess_WhenNotConnected() throws URISyntaxException {
         // given
         chzzkController = createController();
-        given(systemService.isConnected()).willReturn(false);
-        given(systemService.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
+        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
+        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // when
         ResponseEntity<String> result = chzzkController.connect();
@@ -67,15 +67,15 @@ class ChzzkControllerTest {
         // then
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo("SUCCESS");
-        BDDMockito.then(systemService).should().isConnected();
-        BDDMockito.then(systemService).should().getSession();
+        BDDMockito.then(connectChzzkChatUseCase).should().isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).should().getSession();
     }
 
     @Test
     void connect_ShouldReturnSuccess_WhenAlreadyConnected() throws URISyntaxException {
         // given
         chzzkController = createControllerWithoutSocketStub();
-        given(systemService.isConnected()).willReturn(true);
+        given(connectChzzkChatUseCase.isConnected()).willReturn(true);
 
         // when
         ResponseEntity<String> result = chzzkController.connect();
@@ -83,30 +83,33 @@ class ChzzkControllerTest {
         // then
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo("SUCCESS");
-        BDDMockito.then(systemService).should().isConnected();
-        BDDMockito.then(systemService).should(never()).getSession();
+        BDDMockito.then(connectChzzkChatUseCase).should().isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).should(never()).getSession();
     }
 
     @Test
     void connect_ShouldCallSystemService_WhenNotConnected() throws URISyntaxException {
         // given
         chzzkController = createController();
-        given(systemService.isConnected()).willReturn(false);
-        given(systemService.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
+        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
+        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // when
         chzzkController.connect();
 
         // then
-        BDDMockito.then(systemService).should().isConnected();
-        BDDMockito.then(systemService).should().getSession();
+        BDDMockito.then(connectChzzkChatUseCase).should().isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).should().getSession();
     }
 
     @Test
     void connect_ShouldNotReconnect_WhenAlreadyConnected() throws URISyntaxException {
         // given
         chzzkController = createControllerWithoutSocketStub();
-        given(systemService.isConnected()).willReturn(true);
+        given(connectChzzkChatUseCase.isConnected()).willReturn(true);
 
         // when
         ResponseEntity<String> result = chzzkController.connect();
@@ -114,18 +117,21 @@ class ChzzkControllerTest {
         // then
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo("SUCCESS");
-        BDDMockito.then(systemService).should(times(1)).isConnected();
-        BDDMockito.then(systemService).shouldHaveNoMoreInteractions();
+        BDDMockito.then(connectChzzkChatUseCase).should(times(1)).isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).shouldHaveNoMoreInteractions();
     }
 
     @Test
     void connect_ShouldHandleMultipleCalls() throws URISyntaxException {
         // given
         chzzkController = createController();
-        given(systemService.isConnected())
+        given(connectChzzkChatUseCase.isConnected())
                 .willReturn(false)
                 .willReturn(true);
-        given(systemService.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
+        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
+        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // when
         ResponseEntity<String> result1 = chzzkController.connect();
@@ -136,37 +142,43 @@ class ChzzkControllerTest {
         then(result1.getBody()).isEqualTo("SUCCESS");
         then(result2.getStatusCode().is2xxSuccessful()).isTrue();
         then(result2.getBody()).isEqualTo("SUCCESS");
-        BDDMockito.then(systemService).should(times(2)).isConnected();
-        BDDMockito.then(systemService).should(times(1)).getSession();
+        BDDMockito.then(connectChzzkChatUseCase).should(times(2)).isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).should(times(1)).getSession();
     }
 
     @Test
     void connect_ShouldGetNewSession_EachTimeWhenDisconnected() throws URISyntaxException {
         // given
         chzzkController = createController();
-        given(systemService.isConnected()).willReturn(false);
-        given(systemService.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
+        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
+        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // when
         chzzkController.connect();
         chzzkController.connect();
 
         // then
-        BDDMockito.then(systemService).should(times(2)).isConnected();
-        BDDMockito.then(systemService).should(times(2)).getSession();
+        BDDMockito.then(connectChzzkChatUseCase).should(times(2)).isConnected();
+        BDDMockito.then(connectChzzkChatUseCase).should(times(2)).getSession();
     }
 
     @Test
     void connect_ShouldSubscribeDonationEvent_WhenSocketConnects() throws URISyntaxException {
         // given
         chzzkController = createController();
-        given(systemService.isConnected()).willReturn(false);
-        given(systemService.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
+        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
+        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // when
         chzzkController.connect();
 
         // then
-        BDDMockito.then(socket).should().on(EventType.DONATION.name(), donationService);
+        BDDMockito.then(socket).should().on(ConnectChzzkChatUseCase.DONATION_EVENT_NAME, donationListener);
     }
 }

@@ -3,24 +3,24 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.RouletteEvent;
-import org.nowstart.nyangnyangbot.domain.model.RouletteItem;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.domain.model.RouletteTable;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.dto.CreateRouletteEventCommand;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.dto.CreateRouletteRoundCommand;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.repository.RoulettePort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.EventResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteEventCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteRoundCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItemEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.repository.RouletteTableRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,7 +33,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
 
     @Override
-    public RouletteTable createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
+    public TableResult createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
         RouletteTableEntity saved = rouletteTableRepository.save(RouletteTableEntity.builder()
                 .title(title)
                 .command(command)
@@ -46,7 +46,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public RouletteItem addItem(
+    public ItemResult addItem(
             Long tableId,
             String label,
             Integer probabilityBasisPoints,
@@ -73,33 +73,33 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public List<RouletteTable> findTablesOrderByIdDesc() {
+    public List<TableResult> findTablesOrderByIdDesc() {
         return rouletteTableRepository.findAllByOrderByIdDesc().stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public Optional<RouletteTable> findTableById(Long tableId) {
+    public Optional<TableResult> findTableById(Long tableId) {
         return rouletteTableRepository.findById(tableId).map(this::toModel);
     }
 
     @Override
-    public List<RouletteItem> findItemsByTableId(Long tableId) {
+    public List<ItemResult> findItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(tableId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public List<RouletteItem> findActiveItemsByTableId(Long tableId) {
+    public List<ItemResult> findActiveItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(tableId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public RouletteTable activateTable(Long tableId) {
+    public TableResult activateTable(Long tableId) {
         RouletteTableEntity table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         rouletteTableRepository.findByActiveTrue().stream()
@@ -110,7 +110,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public RouletteTable deactivateTable(Long tableId) {
+    public TableResult deactivateTable(Long tableId) {
         RouletteTableEntity table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         table.deactivate();
@@ -118,7 +118,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public Optional<RouletteTable> findLatestActiveTable() {
+    public Optional<TableResult> findLatestActiveTable() {
         return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(this::toModel);
     }
 
@@ -128,7 +128,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public RouletteEvent createEvent(CreateRouletteEventCommand command) {
+    public EventResult createEvent(CreateRouletteEventCommand command) {
         RouletteEventEntity saved = rouletteEventRepository.save(RouletteEventEntity.builder()
                 .donationEventId(command.donationEventId())
                 .idempotencyKey(command.idempotencyKey())
@@ -148,7 +148,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public List<RouletteRound> saveRounds(Long rouletteEventId, List<CreateRouletteRoundCommand> commands) {
+    public List<RoundResult> saveRounds(Long rouletteEventId, List<CreateRouletteRoundCommand> commands) {
         RouletteEventEntity event = rouletteEventRepository.getReferenceById(rouletteEventId);
         List<RouletteRoundResultEntity> rounds = commands.stream()
                 .map(command -> RouletteRoundResultEntity.builder()
@@ -170,28 +170,28 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public List<RouletteEvent> findEventsByUserId(String userId) {
+    public List<EventResult> findEventsByUserId(String userId) {
         return rouletteEventRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public List<RouletteRound> findRoundsByEventId(Long rouletteEventId) {
+    public List<RoundResult> findRoundsByEventId(Long rouletteEventId) {
         return rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(rouletteEventId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public List<RouletteRound> findRoundsByUserId(String userId) {
+    public List<RoundResult> findRoundsByUserId(String userId) {
         return rouletteRoundResultRepository.findByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
                 .map(this::toModel)
                 .toList();
     }
 
     @Override
-    public List<RouletteRound> findTopRoundsByUserId(String userId, int limit) {
+    public List<RoundResult> findTopRoundsByUserId(String userId, int limit) {
         return rouletteRoundResultRepository.findTop5ByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
                 .limit(limit)
                 .map(this::toModel)
@@ -199,7 +199,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public Optional<RouletteEvent> findEventById(Long eventId) {
+    public Optional<EventResult> findEventById(Long eventId) {
         return rouletteEventRepository.findById(eventId).map(this::toModel);
     }
 
@@ -212,7 +212,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public Optional<RouletteRound> findRoundById(Long roundId) {
+    public Optional<RoundResult> findRoundById(Long roundId) {
         return rouletteRoundResultRepository.findById(roundId).map(this::toModel);
     }
 
@@ -230,8 +230,8 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         round.markFailed(failureReason);
     }
 
-    private RouletteTable toModel(RouletteTableEntity entity) {
-        return new RouletteTable(
+    private TableResult toModel(RouletteTableEntity entity) {
+        return new TableResult(
                 entity.getId(),
                 entity.getTitle(),
                 entity.getCommand(),
@@ -242,9 +242,9 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         );
     }
 
-    private RouletteItem toModel(RouletteItemEntity entity) {
+    private ItemResult toModel(RouletteItemEntity entity) {
         Long tableId = entity.getRouletteTable() == null ? null : entity.getRouletteTable().getId();
-        return new RouletteItem(
+        return new ItemResult(
                 entity.getId(),
                 tableId,
                 entity.getLabel(),
@@ -258,8 +258,8 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         );
     }
 
-    private RouletteEvent toModel(RouletteEventEntity entity) {
-        return new RouletteEvent(
+    private EventResult toModel(RouletteEventEntity entity) {
+        return new EventResult(
                 entity.getId(),
                 entity.getDonationEventId(),
                 entity.getUserId(),
@@ -277,9 +277,9 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         );
     }
 
-    private RouletteRound toModel(RouletteRoundResultEntity entity) {
+    private RoundResult toModel(RouletteRoundResultEntity entity) {
         RouletteEventEntity event = entity.getRouletteEvent();
-        return new RouletteRound(
+        return new RoundResult(
                 entity.getId(),
                 event == null ? null : event.getId(),
                 event == null ? null : event.getDonationEventId(),

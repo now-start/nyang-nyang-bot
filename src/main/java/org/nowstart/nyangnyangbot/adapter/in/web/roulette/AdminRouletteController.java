@@ -10,7 +10,7 @@ import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemR
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteSimulationResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteValidationResponse;
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,12 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Admin Roulette API", description = "관리자 후원 룰렛 API")
 public class AdminRouletteController {
 
-    private final RouletteService rouletteService;
+    private final ManageRouletteUseCase manageRouletteUseCase;
 
     @Operation(summary = "룰렛 테이블 조회")
     @GetMapping("/tables")
     public ResponseEntity<List<RouletteTableResponse>> getTables() {
-        return ResponseEntity.ok(rouletteService.getTables().stream()
+        return ResponseEntity.ok(manageRouletteUseCase.getTables().stream()
                 .map(RouletteTableResponse::from)
                 .toList());
     }
@@ -44,7 +44,7 @@ public class AdminRouletteController {
             @RequestBody RouletteTableCreateRequest request
     ) {
         return ResponseEntity.ok(RouletteTableResponse.from(
-                rouletteService.createTable(
+                manageRouletteUseCase.createTable(
                         request.title(),
                         request.command(),
                         request.pricePerRound(),
@@ -60,7 +60,7 @@ public class AdminRouletteController {
             @RequestBody RouletteItemRequest request
     ) {
         return ResponseEntity.ok(RouletteItemResponse.from(
-                rouletteService.addItem(
+                manageRouletteUseCase.addItem(
                         tableId,
                         request.label(),
                         request.probabilityBasisPoints(),
@@ -76,19 +76,19 @@ public class AdminRouletteController {
     @Operation(summary = "룰렛 활성화 검증")
     @GetMapping("/tables/{tableId}/validation")
     public ResponseEntity<RouletteValidationResponse> validateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteValidationResponse.from(rouletteService.validateTable(tableId)));
+        return ResponseEntity.ok(RouletteValidationResponse.from(manageRouletteUseCase.validateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 테이블 활성화")
     @PostMapping("/tables/{tableId}/activate")
     public ResponseEntity<RouletteTableResponse> activateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteTableResponse.from(rouletteService.activateTable(tableId)));
+        return ResponseEntity.ok(RouletteTableResponse.from(manageRouletteUseCase.activateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 테이블 비활성화")
     @PostMapping("/tables/{tableId}/deactivate")
     public ResponseEntity<RouletteTableResponse> deactivateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteTableResponse.from(rouletteService.deactivateTable(tableId)));
+        return ResponseEntity.ok(RouletteTableResponse.from(manageRouletteUseCase.deactivateTable(tableId)));
     }
 
     @Operation(summary = "룰렛 확률 시뮬레이션")
@@ -97,6 +97,6 @@ public class AdminRouletteController {
             @PathVariable Long tableId,
             @RequestParam(defaultValue = "10000") int iterations
     ) {
-        return ResponseEntity.ok(RouletteSimulationResponse.from(rouletteService.simulate(tableId, iterations)));
+        return ResponseEntity.ok(RouletteSimulationResponse.from(manageRouletteUseCase.simulate(tableId, iterations)));
     }
 }

@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.application.service.donation;
 
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -12,8 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.out.donation.repository.DonationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.DonationDto;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 
 @ExtendWith(MockitoExtension.class)
 class DonationServiceTest {
@@ -24,7 +24,7 @@ class DonationServiceTest {
     private DonationPort donationPort;
 
     @Mock
-    private RouletteService rouletteService;
+    private ProcessRouletteDonationUseCase rouletteService;
 
     @Test
     void call_ShouldPersistDonationAndRunRouletteFlow() {
@@ -44,7 +44,7 @@ class DonationServiceTest {
                 }
                 """);
 
-        then(donationPort).should().save(any(DonationDto.class), eq(1_000L), any());
+        then(donationPort).should().save(any(DonationEventPayload.class), eq(1_000L), any());
         then(rouletteService).should().processDonation(any());
     }
 

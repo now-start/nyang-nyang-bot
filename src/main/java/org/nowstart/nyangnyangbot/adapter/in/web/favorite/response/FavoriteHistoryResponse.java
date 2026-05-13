@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.favorite.response;
 
 import java.time.format.DateTimeFormatter;
-import org.nowstart.nyangnyangbot.domain.model.FavoriteHistoryView;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 
 public record FavoriteHistoryResponse(
         Long ledgerId,
@@ -20,21 +20,20 @@ public record FavoriteHistoryResponse(
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public static FavoriteHistoryResponse from(FavoriteHistoryView view) {
-        String formattedDate = view.createdAt() == null ? null : view.createdAt().format(DATE_FORMATTER);
-        String sourceType = view.sourceType() == null ? null : view.sourceType().name();
+    public static FavoriteHistoryResponse from(FavoriteHistoryResult result) {
+        String formattedDate = result.createdAt() == null ? null : result.createdAt().format(DATE_FORMATTER);
         return new FavoriteHistoryResponse(
-                view.ledgerId(),
-                view.channelId(),
-                view.nickNameSnapshot(),
-                view.delta(),
-                view.balanceAfter(),
-                sourceType,
-                view.displayCategory(),
-                view.publicDescription(),
-                view.correction(),
-                view.favorite(),
-                view.history(),
+                result.ledgerId(),
+                result.channelId(),
+                result.nickNameSnapshot(),
+                result.delta(),
+                result.balanceAfter(),
+                result.sourceType(),
+                result.displayCategory(),
+                result.publicDescription(),
+                result.correction(),
+                result.favorite(),
+                result.history(),
                 formattedDate
         );
     }

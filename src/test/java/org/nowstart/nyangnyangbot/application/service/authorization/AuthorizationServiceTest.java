@@ -10,13 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.domain.model.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.repository.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.repository.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.ApiResponseDto;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.AuthorizationDto;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.AuthorizationRequestDto;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.UserDto;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ApiResult;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,12 +37,12 @@ class AuthorizationServiceTest {
 
     @Test
     void getAccessToken_ShouldRefreshWhenExpiresInIsNull() {
-        AuthorizationAccount account = new AuthorizationAccount(
+        AuthorizationAccountResult account = new AuthorizationAccountResult(
                 "channel-1", "tester", "access", "refresh", "Bearer", null, "chat", false, null, null
         );
-        AuthorizationDto refreshedAuthorization = new AuthorizationDto("new-access", "new-refresh", "Bearer", 3600, "chat");
-        UserDto refreshedUser = new UserDto("channel-1", "updated-user", "ACTIVE");
-        AuthorizationAccount refreshed = new AuthorizationAccount(
+        AuthorizationToken refreshedAuthorization = new AuthorizationToken("new-access", "new-refresh", "Bearer", 3600, "chat");
+        UserResult refreshedUser = new UserResult("channel-1", "updated-user", "ACTIVE");
+        AuthorizationAccountResult refreshed = new AuthorizationAccountResult(
                 "channel-1", "updated-user", "new-access", "new-refresh", "Bearer", 3600, "chat", false, null, null
         );
 
@@ -50,18 +50,18 @@ class AuthorizationServiceTest {
         given(chzzkProperty.clientId()).willReturn("client-id");
         given(chzzkProperty.clientSecret()).willReturn("client-secret");
         given(authorizationPort.findById("channel-1")).willReturn(Optional.of(account));
-        given(chzzkClientPort.getAccessToken(new AuthorizationRequestDto(
+        given(chzzkClientPort.getAccessToken(new AuthorizationTokenCommand(
                 "refresh_token",
                 "client-id",
                 "client-secret",
                 null,
                 null,
                 "refresh"
-        ))).willReturn(new ApiResponseDto<>(200, "OK", refreshedAuthorization));
-        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResponseDto<>(200, "OK", refreshedUser));
+        ))).willReturn(new ApiResult<>(200, "OK", refreshedAuthorization));
+        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResult<>(200, "OK", refreshedUser));
         given(authorizationPort.updateToken("channel-1", refreshedUser, refreshedAuthorization)).willReturn(refreshed);
 
-        AuthorizationAccount result = authorizationService.getAccessToken();
+        AuthorizationAccountResult result = authorizationService.getAccessToken();
 
         assertThat(result.accessToken()).isEqualTo("new-access");
         assertThat(result.refreshToken()).isEqualTo("new-refresh");

@@ -11,8 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayTokenIssueResult;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.repository.OverlayTokenPort;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase.OverlayTokenIssueResult;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 
 @ExtendWith(MockitoExtension.class)
 class OverlayTokenServiceTest {

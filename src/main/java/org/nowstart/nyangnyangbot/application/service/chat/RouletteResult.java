@@ -4,11 +4,11 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.domain.model.RouletteRound;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.repository.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.repository.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.ChatDto;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.dto.MessageRequestDto;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.springframework.stereotype.Service;
 
 @Service("roulette_result")
@@ -20,19 +20,19 @@ public class RouletteResult implements Command {
     private final RoulettePort roulettePort;
 
     @Override
-    public void run(ChatDto chatDto) {
-        List<RouletteRound> rounds = roulettePort.findTopRoundsByUserId(chatDto.senderChannelId(), 5);
+    public void run(ChatEventPayload chat) {
+        List<RoundResult> rounds = roulettePort.findTopRoundsByUserId(chat.senderChannelId(), 5);
         if (rounds.isEmpty()) {
-            chzzkClientPort.sendMessage(new MessageRequestDto(
-                    chatDto.profile().nickname() + "님의 최근 룰렛 결과가 없습니다."
+            chzzkClientPort.sendMessage(new MessageCommand(
+                    chat.profile().nickname() + "님의 최근 룰렛 결과가 없습니다."
             ));
             return;
         }
         String result = rounds.stream()
                 .map(round -> round.roundNo() + "회차 " + round.itemLabel())
                 .collect(Collectors.joining(", "));
-        chzzkClientPort.sendMessage(new MessageRequestDto(
-                chatDto.profile().nickname() + "님의 최근 룰렛 결과: " + result
+        chzzkClientPort.sendMessage(new MessageCommand(
+                chat.profile().nickname() + "님의 최근 룰렛 결과: " + result
         ));
     }
 }

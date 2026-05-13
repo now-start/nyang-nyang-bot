@@ -9,11 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URISyntaxException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.domain.type.EventType;
-import org.nowstart.nyangnyangbot.application.service.chat.ChatService;
-import org.nowstart.nyangnyangbot.application.service.donation.DonationService;
-import org.nowstart.nyangnyangbot.application.service.subscription.SubscriptionService;
-import org.nowstart.nyangnyangbot.application.service.chzzk.SystemService;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,10 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Chzzk Chat", description = "치지직 채팅 소켓 연결 관리 API")
 public class ChzzkController {
 
-    private final SystemService systemService;
-    private final ChatService chatService;
-    private final DonationService donationService;
-    private final SubscriptionService subscriptionService;
+    private final ConnectChzzkChatUseCase connectChzzkChatUseCase;
     private Socket socket;
 
     @Value("${chzzk.chat.auto-connect-enabled:true}")
@@ -59,7 +52,7 @@ public class ChzzkController {
     }
 
     private void connectInternal() throws URISyntaxException {
-        if (systemService.isConnected()) {
+        if (connectChzzkChatUseCase.isConnected()) {
             return;
         }
 
@@ -72,13 +65,13 @@ public class ChzzkController {
         Options option = new Options();
         option.reconnection = false;
 
-        socket = createSocket(systemService.getSession(), option);
+        socket = createSocket(connectChzzkChatUseCase.getSession(), option);
 
-        socket.on(EventType.SYSTEM.name(), systemService);
-        socket.on(EventType.CHAT.name(), chatService);
-        socket.on(EventType.DONATION.name(), donationService);
+        socket.on(ConnectChzzkChatUseCase.SYSTEM_EVENT_NAME, connectChzzkChatUseCase.systemListener());
+        socket.on(ConnectChzzkChatUseCase.CHAT_EVENT_NAME, connectChzzkChatUseCase.chatListener());
+        socket.on(ConnectChzzkChatUseCase.DONATION_EVENT_NAME, connectChzzkChatUseCase.donationListener());
         // TODO: connect subscription event when ready.
-        // socket.on(EventType.SUBSCRIPTION.name(), subscriptionService);
+        // socket.on(ConnectChzzkChatUseCase.SUBSCRIPTION_EVENT_NAME, connectChzzkChatUseCase.subscriptionListener());
         socket.connect();
     }
 
@@ -86,4 +79,3 @@ public class ChzzkController {
         return socket(sessionUrl, options);
     }
 }
-

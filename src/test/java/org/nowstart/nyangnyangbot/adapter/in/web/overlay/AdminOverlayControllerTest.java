@@ -9,7 +9,7 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.overlay.response.OverlayTokenIssueResponse;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.dto.OverlayTokenIssueResult;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase.OverlayTokenIssueResult;
 import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
 import org.nowstart.nyangnyangbot.application.service.overlay.OverlayTokenService;
 import org.springframework.http.ResponseEntity;

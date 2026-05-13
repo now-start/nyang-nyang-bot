@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.favorite.response;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.dto.FavoriteMeResult;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 
 public record FavoriteMeResponse(
         String userId,

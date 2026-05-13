@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.attendance.response;
 
-import org.nowstart.nyangnyangbot.application.port.in.attendance.dto.AttendanceApplyResult;
+import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceApplyResult;
 
 public record AttendanceApplyResponse(
         Integer amount,
