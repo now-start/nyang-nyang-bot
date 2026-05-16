@@ -22,7 +22,7 @@
 - 금전성, 환전성, 현금 등가 표현은 제품 UI와 로그에서 사용하지 않는다.
 - Google Sheets는 전환기 기능으로만 유지하고, 최종 원본 데이터는 플랫폼 DB와 원장으로 둔다.
 - 도메인과 유스케이스는 Spring MVC, JPA, Feign, WebSocket, Thymeleaf 같은 외부 기술에 의존하지 않는다.
-- 외부 연동, DB, 웹 컨트롤러, 보안 설정은 어댑터로 두고, 내부 유스케이스는 포트 인터페이스에만 의존한다.
+- 외부 연동, DB, 웹 컨트롤러, 보안 설정은 어댑터로 두고, 내부 유스케이스는 gateway 계약에만 의존한다.
 
 ## 2. 클린 아키텍처 기준
 
@@ -32,7 +32,7 @@
 | --- | --- | --- |
 | Domain | 비즈니스 규칙, 상태 전이, 정책 검증 | 호감도 잔액, 원장 거래, 업보 상태, 룰렛 확률표 |
 | Application | 유스케이스 orchestration, 트랜잭션 경계, 권한 의도 표현 | 호감도 조정, 업보 적용, 출석 보상 적용, 룰렛 실행 |
-| Ports | Application이 필요로 하는 저장소/외부 시스템 계약 | `FavoriteLedgerPort`, `ChzzkDonationPort`, `OverlayEventPort` |
+| Gateways | Application이 필요로 하는 저장소/외부 시스템 계약 | `FavoriteLedgerPort`, `ChzzkDonationPort`, `OverlayEventPort` |
 | Adapters | Web, Persistence, External API, Overlay 같은 입출력 구현 | Spring MVC Controller, JPA Repository, Feign Client, OBS 페이지 |
 | Configuration | DI, Security, Transaction, OpenAPI, 운영 설정 | Spring Security, Feign 설정, Swagger 설정 |
 
@@ -40,14 +40,14 @@
 
 - 의존성 방향은 `Adapters -> Application -> Domain`으로만 흐른다.
 - Domain은 프레임워크 annotation과 DB schema 세부사항을 모른다.
-- Application은 JPA repository가 아니라 port 인터페이스를 호출한다.
+- Application은 JPA repository가 아니라 gateway 인터페이스를 호출한다.
 - Persistence adapter는 JPA entity와 domain model 간 변환을 담당한다.
 - Web adapter는 request/response DTO와 application command/result 간 변환만 담당한다.
 - CHZZK, Google Sheets, Grafana/Loki, OBS 오버레이는 모두 외부 adapter로 취급한다.
 
 ### 2.3 권장 패키지 구조
 
-현재 코드의 `controller`, `service`, `repository`, `data/entity` 구조는 한 번에 모두 옮기지 않는다. 신규 P0/P1 기능부터 아래 구조로 작성하고, 기존 기능은 작업 범위에 닿는 부분부터 점진적으로 이동한다.
+현재 코드의 루트 패키지는 `adapter`, `application`, `domain`, `config` 네 개로 제한한다. 기존 `controller`, `service`, `repository`, `data` 루트 패키지는 세부 책임에 맞춰 아래 구조로 이동했다.
 
 ```text
 org.nowstart.nyangnyangbot
@@ -57,14 +57,18 @@ org.nowstart.nyangnyangbot
     roulette
     attendance
     auth
+    model
+    type
   application
     favorite
     upbo
     roulette
     attendance
     auth
-    port
-      in
+    command
+    dto
+    service
+    gateway
       out
   adapter
     in
@@ -73,16 +77,20 @@ org.nowstart.nyangnyangbot
       chat
     out
       persistence
-      chzzk
-      google
+        entity
+        repository
+      external
+        chzzk
+        google
       monitoring
   config
+    property
 ```
 
 ### 2.4 네이밍 규칙
 
-- 사용자 액션은 inbound port/use case로 표현한다. 예: `AdjustFavoriteUseCase`, `ApplyUpboUseCase`.
-- 저장소와 외부 시스템은 outbound port로 표현한다. 예: `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort`.
+- 사용자 액션은 use case로 표현한다. 예: `AdjustFavoriteUseCase`, `ApplyUpboUseCase`.
+- 저장소와 외부 시스템은 outbound gateway로 표현한다. 예: `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort`.
 - JPA 구현은 adapter 하위에 둔다. 예: `FavoriteJpaEntity`, `FavoritePersistenceAdapter`.
 - Web DTO와 Application command/result는 분리한다.
 - Domain 객체는 `Entity` 접미사를 피하고, JPA 객체에만 `JpaEntity` 또는 현재 호환용 `Entity` 접미사를 사용한다.
@@ -107,11 +115,15 @@ org.nowstart.nyangnyangbot
 
 - PRD 요구사항과 현재 구현 기능을 기능 ID 기준으로 매핑한다.
 - 현재 패키지를 클린 아키텍처 레이어 기준으로 분류한다.
-  - `controller`: inbound web adapter 후보
-  - `service`: application use case 후보
-  - `repository`: outbound persistence/external adapter 후보
-  - `data/entity`: persistence model 또는 domain model 분리 대상
-  - `data/dto`: web/external/application DTO 분리 대상
+  - `adapter/in/web`: inbound web adapter
+  - `application/service`: application use case 구현
+  - `adapter/out/persistence/repository`: Spring Data repository
+  - `adapter/out/persistence/entity`: JPA persistence model
+  - `adapter/out/external`: Feign client와 외부 API adapter
+  - `application/gateway/out`: 외부 저장소/시스템 호출 계약
+  - `application/dto`: 전환기 request/response/result DTO
+  - `domain/model`: 내부 비즈니스 상태 모델
+  - `domain/type`: 공통 비즈니스 enum과 정책 타입
 - 신규 기능의 기준 패키지와 기존 기능의 점진적 이동 원칙을 확정한다.
 - 문서 내 이상 항목을 정리한다.
   - `docs/spec/index.md`의 Skilljar URL은 의도된 참고 링크인지 확인 후 제거 또는 별도 참고 링크로 이동한다.
@@ -122,7 +134,7 @@ org.nowstart.nyangnyangbot
 ### 완료 기준
 
 - P0/P1 요구사항별 구현 상태가 `구현됨`, `부분 구현`, `미구현`, `보류`로 분류되어 있다.
-- 현재 코드가 Domain/Application/Ports/Adapters 중 어디에 속하는지 표로 정리되어 있다.
+- 현재 코드가 Domain/Application/Gateways/Adapters 중 어디에 속하는지 표로 정리되어 있다.
 - 문서상 의도 불명 링크와 정책 충돌이 별도 이슈로 추적된다.
 - 기준 테스트 명령과 현재 결과가 기록되어 있다.
 
@@ -136,7 +148,7 @@ org.nowstart.nyangnyangbot
 - 세션 쿠키 기반 상태 변경 요청의 CSRF 정책을 점검한다.
 - `/actuator/**`, `/v3/api-docs` 공개 범위를 운영 요구에 맞게 재확인한다.
 - 인증/인가 판단을 web adapter에 흩뿌리지 않고 application use case 입력 단계에서 필요한 권한 의도를 명확히 한다.
-- CHZZK OAuth 연동은 outbound adapter로 격리하고, application은 토큰 발급/갱신 port만 호출한다.
+- CHZZK OAuth 연동은 outbound adapter로 격리하고, application은 토큰 발급/갱신 gateway만 호출한다.
 
 ### 완료 기준
 
@@ -159,7 +171,7 @@ org.nowstart.nyangnyangbot
   - `AdjustFavoriteUseCase`
   - `CorrectFavoriteLedgerUseCase`
   - `GrantFavoriteUseCase`
-- Outbound port를 정의한다.
+- Outbound gateway를 정의한다.
   - 호감도 계정 조회/저장
   - 원장 거래 저장
   - idempotency key 중복 확인
@@ -201,7 +213,7 @@ org.nowstart.nyangnyangbot
 - 본인 업보 내역, 누적 업보 반영 합계, 반영 전/후 호감도 표시 구조를 만든다.
 - 음수 잔액은 랭킹과 본인 화면에서 그대로 표시하고 시각적 신호를 제공한다.
 - 조회 use case와 web response DTO를 분리한다.
-- 관리자 검색은 application inbound port로 제공하고, persistence adapter가 검색 구현을 담당한다.
+- 관리자 검색은 application use case로 제공하고, persistence adapter가 검색 구현을 담당한다.
 
 ### 완료 기준
 
@@ -289,7 +301,7 @@ org.nowstart.nyangnyangbot
   - `ConfirmRouletteResultsUseCase`
   - `ApplyRouletteRoundResultUseCase`
   - `ReplayRouletteOverlayEventUseCase`
-- Outbound port를 정의한다.
+- Outbound gateway를 정의한다.
   - 룰렛 테이블 조회/저장
   - 룰렛 이벤트/회차 결과 저장
   - CHZZK 후원 이벤트 수신
@@ -366,7 +378,7 @@ org.nowstart.nyangnyangbot
 - 아키텍처 경계 테스트를 추가한다.
   - Domain은 Spring/JPA/Web 의존성이 없어야 한다.
   - Application은 adapter 구현체에 의존하지 않아야 한다.
-  - Adapter는 port 구현체로만 application과 연결되어야 한다.
+  - Adapter는 gateway 구현체로만 application과 연결되어야 한다.
 
 ### 완료 기준
 
@@ -397,7 +409,7 @@ org.nowstart.nyangnyangbot
 | 1 | 신규 패키지 골격 추가 | 이후 기능을 클린 아키텍처 기준으로 배치하기 위한 기준점 |
 | 2 | OAuth `state` 난수화 | 보안 리스크가 명확하고 변경 범위가 작음 |
 | 3 | 토큰 DTO 로그 제거 | 민감 정보 노출 위험을 즉시 낮춤 |
-| 4 | 호감도 domain model과 use case port 정의 | 이후 업보/룰렛/출석 공통 기반 |
+| 4 | 호감도 domain model과 use case/gateway 정의 | 이후 업보/룰렛/출석 공통 기반 |
 | 5 | 호감도 persistence adapter와 원장 필드 확장 | 기존 DB 기능과 신규 use case 연결 |
 | 6 | 관리자 정정 거래 use case | 삭제 없는 보정 원칙을 구현 흐름에 고정 |
 

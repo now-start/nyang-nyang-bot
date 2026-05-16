@@ -38,6 +38,41 @@ Fork → feature/* 개발 → PR → main merge
 
 ## Environment (DEV)
 
+## Local Run
+
+로컬 단독 실행은 기본적으로 `local` profile을 사용합니다.
+
+```bash
+./gradlew bootRun
+```
+
+- 기본 DB는 메모리 H2입니다.
+- 기본 화면: http://localhost:8080/
+- H2 콘솔: http://localhost:8080/h2-console
+- JDBC URL: `jdbc:h2:mem:nyangnyangbot`
+- 로컬에서는 기본적으로 OAuth 로그인 대신 `local-channel` 관리자 계정으로 동작합니다.
+- 로컬 더미데이터는 기본으로 생성됩니다. 끄려면 `LOCAL_DUMMY_DATA_ENABLED=false`를 설정하세요.
+- CHZZK 채팅 자동 연결은 기본 비활성화입니다.
+
+실제 CHZZK 연동까지 로컬에서 테스트하려면 아래 값을 직접 설정해야 합니다.
+
+```bash
+export CHZZK_CHANNEL_ID=
+export CHZZK_CLIENT_ID=
+export CHZZK_CLIENT_SECRET=
+export CHZZK_REDIRECT_URI=http://localhost:8080/token
+export CHZZK_OAUTH_LOGIN_ENABLED=true
+export LOCAL_AUTH_ENABLED=false
+export CHZZK_CHAT_AUTO_CONNECT_ENABLED=true
+```
+
+Google Sheets 마이그레이션 API를 직접 호출하려면 아래 값도 필요합니다.
+
+```bash
+export GOOGLE_SPREADSHEET_ID=
+export GOOGLE_SPREADSHEET_KEY='서비스 계정 JSON'
+```
+
 ### Database
 
 | Key     | Value       |

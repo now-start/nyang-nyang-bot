@@ -1,335 +1,938 @@
-# 클린 아키텍처
+# 아키텍처와 패키지 구조
 
-- 문서 상태: MVP PRD v1
-- 작성일: 2026-05-08
+- 문서 상태: 기준
+- 작성일: 2026-05-13
 - 상위 문서: [Nyang-Nyang Bot Spec](index.md)
 - 관련 문서:
-  - [호감도 포인트 제도](point-system.md)
-  - [호감도/업보/쿠폰 카탈로그](reward-catalog.md)
-  - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md)
-  - [기술/운영 부록](technical-appendix.md)
-  - [요구사항 추적표](requirements-traceability.md)
+  - [클린 아키텍처 채택 결정](decision-clean-architecture.md)
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
   - [API 명세](api.md)
   - [이벤트 명세](events.md)
   - [테스트 전략](test-strategy.md)
 
-## 1. 범위
+## 1. 기준
 
-Nyang-Nyang Bot은 클린 아키텍처를 기준 구조로 사용한다. 이 문서는 PRD의 기능 요구사항을 구현할 때 따라야 하는 레이어, 의존성 방향, 패키지 구조, 포트/어댑터 경계, 테스트 기준을 정의한다.
+Nyang-Nyang Bot은 포트/어댑터 기반 클린 아키텍처를 따른다.
 
-현재 코드베이스에는 `controller`, `service`, `repository`, `data/entity`, `data/dto` 중심의 Spring MVC 구조가 존재한다. 기존 코드를 한 번에 전면 이동하지 않고, 신규 P0/P1 기능과 수정 범위에 닿는 기존 기능부터 점진적으로 클린 아키텍처로 이동한다.
+루트 패키지는 네 개만 허용한다.
 
-## 2. 목표
+```text
+org.nowstart.nyangnyangbot
+  adapter
+  application
+  config
+  domain
+```
 
-- 호감도 원장, 업보, 출석, 룰렛, 오버레이 정책을 프레임워크와 분리된 도메인 규칙으로 유지한다.
-- Spring MVC, JPA, Feign, WebSocket, Thymeleaf, CHZZK API, Google Sheets API 변경이 도메인 규칙에 전파되지 않게 한다.
-- 유스케이스 단위로 트랜잭션, 권한, 중복 방지, 정정 정책을 명확히 한다.
-- 테스트가 어려운 컨트롤러/DB 중심 구조를 피하고, 도메인과 유스케이스를 빠르게 단위 테스트할 수 있게 한다.
-- OBS 오버레이, 채팅 소켓, 후원 이벤트처럼 입출력 방식이 다른 기능을 같은 애플리케이션 규칙 위에 올린다.
+의존성 방향은 아래 방향만 허용한다.
 
-## 3. 레이어
+```text
+adapter -> application -> domain
+config  -> adapter/application/domain
+```
 
-| 레이어 | 책임 | 포함 예시 |
+역방향 의존은 금지한다.
+
+```text
+domain      -X-> application
+domain      -X-> adapter
+application -X-> adapter
+adapter/in  -X-> adapter/out
+```
+
+## 2. 레이어 책임
+
+| 레이어 | 책임 | 포함 대상 |
 | --- | --- | --- |
-| Domain | 핵심 비즈니스 규칙, 상태 전이, 정책 검증 | 호감도 잔액, 원장 거래, 업보 상태, 룰렛 확률표 |
-| Application | 유스케이스 orchestration, 트랜잭션 경계, 권한 의도, 포트 호출 | 호감도 조정, 업보 적용, 출석 보상 적용, 룰렛 실행 |
-| Ports | Application이 외부에 요구하는 입출력 계약 | 저장소 포트, CHZZK 포트, 오버레이 이벤트 포트 |
-| Adapters | 웹, DB, 외부 API, 채팅, 오버레이 등 입출력 구현 | Controller, JPA Repository, Feign Client, WebSocket Client |
-| Configuration | DI, 보안, 트랜잭션, OpenAPI, 운영 설정 | Spring Security, Feign 설정, Swagger 설정 |
+| `domain` | 비즈니스 개념, 상태, 정책, 순수 규칙 | `FavoriteAccount`, `RoulettePolicy`, `RouletteTable` |
+| `application` | 유스케이스, 트랜잭션, 포트 호출, 흐름 조합 | `ManageRouletteService`, `FavoriteLedgerService`, `*UseCase`, `*Port` |
+| `adapter/in` | 외부 입력을 application use case로 변환 | Web controller, socket listener entrypoint |
+| `adapter/out` | application outbound port 구현 | JPA persistence adapter, Feign/external adapter |
+| `config` | Spring 설정, 보안, DI, 운영 설정 | `SecurityConfig`, `FeignConfig`, property |
 
-## 4. 의존성 규칙
+## 3. 패키지 구조
 
-- 의존성 방향은 `Adapters -> Application -> Domain`으로만 흐른다.
-- Domain은 Spring, JPA, Jackson, Servlet, Feign, WebSocket API에 의존하지 않는다.
-- Domain 객체는 DB 테이블 구조나 API 응답 형식을 알지 않는다.
-- Application은 JPA repository 구현체가 아니라 outbound port 인터페이스를 호출한다.
-- Web adapter는 request/response DTO와 application command/result 간 변환만 담당한다.
-- Persistence adapter는 JPA entity와 domain model 간 변환을 담당한다.
-- External adapter는 CHZZK, Google Sheets 같은 외부 API DTO를 내부 command/result로 변환한다.
-- Configuration은 구현체를 조립하지만 비즈니스 규칙을 포함하지 않는다.
-
-금지 규칙:
-
-- Controller에서 잔액을 직접 계산하거나 JPA entity를 직접 수정하지 않는다.
-- Domain에서 `@Entity`, `@Service`, `@Transactional`, `@Controller` 같은 Spring/JPA annotation을 사용하지 않는다.
-- Application service에서 Feign client나 Spring Data repository를 직접 주입하지 않는다.
-- JPA entity를 web response로 직접 반환하지 않는다.
-- 외부 API DTO를 domain 객체로 직접 사용하지 않는다.
-
-## 5. 권장 패키지 구조
+기준 구조는 다음과 같다.
 
 ```text
 org.nowstart.nyangnyangbot
   domain
-    auth
+    authorization
+    exception
     favorite
-    upbo
-    attendance
-    chat
-    roulette
     overlay
+    roulette
+    type
+    upbo
+    weeklychat
+
   application
-    auth
-    favorite
-    upbo
-    attendance
-    chat
-    roulette
-    overlay
     port
       in
+        {feature}
       out
+        {feature}
+    service
+      {feature}
+
   adapter
     in
       web
-      chat
-      overlay
-      scheduler
+        {feature}
+          request
+          response
     out
+      external
+        chzzk
+        google
       persistence
-      chzzk
-      google
-      monitoring
+        common
+        {persistence-subject}
+
   config
+    property
+    web
 ```
 
-패키지 전환 원칙:
+금지 패키지는 다음과 같다.
 
-- 신규 기능은 위 구조에 맞춰 작성한다.
-- 기존 기능은 수정 범위에 닿을 때 application/use case와 adapter를 분리한다.
-- 현행 `service`는 application service 후보로 본다.
-- 현행 `repository`는 persistence adapter 또는 external adapter 후보로 본다.
-- 현행 `data/entity`는 JPA persistence model로 분리하고, domain model과 직접 공유하지 않는 방향으로 전환한다.
-- 현행 `data/dto`는 web DTO, external DTO, application result로 분리한다.
+```text
+domain/model
+application/exception
+application/model
+application/gateway
+application/port/in/{feature}/usecase
+application/port/out/{feature}/repository
+adapter/in/web/common
+adapter/out/persistence/entity
+adapter/out/persistence/repository
+common/exception
+global/exception
+controller
+service
+repository
+data
+```
 
-## 6. 네이밍 규칙
+## 4. Domain 패키지 규칙
 
-| 종류 | 규칙 | 예시 |
+`domain`은 기능 이름으로 나눈다. `model` 같은 범용 패키지는 만들지 않는다. 저장/조회 row 형태의 데이터 record는 domain에 두지 않고 해당 `application/port/out/{feature}`의 `*Port` 내부 `*Result`로 둔다.
+
+```text
+domain
+  attendance
+    AttendanceUserState
+  authorization
+    OAuthStatePolicy
+  chat
+    ChatCommandCooldown
+  favorite
+    FavoriteAccount
+    FavoriteLedgerEntry
+    FavoriteSourceType
+  roulette
+    RoulettePolicy
+    RouletteActivationValidation
+    RouletteItemSnapshot
+  upbo
+    UpboPolicy
+  overlay
+    OverlayTokenPolicy
+  exception
+    NyangNyangException
+    ErrorCode
+  type
+    RewardType
+    ConversionMode
+    RouletteEventStatus
+```
+
+규칙:
+
+- domain은 Spring, JPA, Servlet, Feign, Jackson에 의존하지 않는다.
+- domain에는 `@Entity`, `@Service`, `@Transactional`, `@Controller`를 두지 않는다.
+- domain 클래스 이름에는 DB 관점의 `Entity` 접미사를 쓰지 않는다.
+- 공통 enum이 여러 기능에서 쓰이면 `domain/type`에 둔다.
+- 특정 기능 안에서만 쓰는 enum이나 값 객체는 해당 기능 패키지에 둔다.
+- 프로젝트 공통 예외와 에러 코드는 `domain/exception`에 둔다.
+- `domain/exception`은 HTTP status, JPA, Feign, Servlet, Spring Security 같은 기술 정보를 알지 않는다.
+
+## 5. Application 패키지 규칙
+
+Application은 inbound port, outbound port, service 구현으로 나눈다.
+
+```text
+application
+  port
+    in
+      roulette
+        ManageRouletteUseCase
+        QueryRouletteResultUseCase
+        ProcessRouletteDonationUseCase
+    out
+      roulette
+        RoulettePort
+  service
+    roulette
+      ManageRouletteService
+      QueryRouletteResultService
+      ProcessRouletteDonationService
+      RouletteEventStatusService
+      RouletteRoundApplyService
+    upbo
+      ManageUpboService
+      QueryUpboService
+```
+
+규칙:
+
+- `application/service/{feature}`는 inbound use case 구현체를 둔다.
+- 한 application service가 여러 inbound use case를 동시에 구현하지 않는다. `ManageRouletteUseCase`, `QueryRouletteResultUseCase`, `ProcessRouletteDonationUseCase`처럼 유스케이스가 나뉘면 구현체도 `ManageRouletteService`, `QueryRouletteResultService`, `ProcessRouletteDonationService`로 나눈다.
+- DB, 외부 API, 트랜잭션이 필요 없는 검증/계산/상태 판정은 service에 두지 않고 `domain/{feature}`의 policy나 값 객체로 올린다.
+- inbound port는 `application/port/in/{feature}`에 `*UseCase` 파일을 직접 둔다.
+- outbound port는 `application/port/out/{feature}`에 `*Port` 파일을 직접 둔다.
+- outbound port는 책임 단위로 나눈다. 하나의 `*Port`에 저장, 조회, 외부 호출 책임을 모두 몰아넣지 않는다.
+- `application/port/in/{feature}/usecase`, `application/port/out/{feature}/repository` 같은 2차 분류 패키지는 만들지 않는다.
+- 외부에서 application을 호출할 때는 `application.port.in.{feature}.*UseCase`를 본다.
+- adapter는 `application.service.*Service` 구현체를 직접 주입하지 않는다.
+- application service가 DB나 외부 API가 필요하면 `application.port.out.{feature}.*Port` 인터페이스를 주입한다.
+- application service가 다른 기능 유스케이스를 호출해야 하면 구현체가 아니라 inbound use case 인터페이스를 주입한다.
+- 같은 기능 내부의 세부 application service 조합은 허용하되, 순환 의존은 만들지 않는다.
+- 트랜잭션 경계는 application service에 둔다.
+
+Application 경계 객체 이름은 HTTP 용어를 쓰지 않는다.
+
+- `request`, `response`는 web adapter 전용 이름이다.
+- application 경계 객체에는 `Request`, `Response`, `Dto` 접미사를 쓰지 않는다.
+- 별도 `command`, `query`, `criteria`, `result` 패키지는 기본으로 만들지 않는다.
+- 특정 use case에서만 쓰는 입력/결과 값은 해당 `UseCase` 인터페이스 내부 record로 둔다. 예: `ManageRouletteUseCase.CreateTableCommand`, `ManageRouletteUseCase.TableResult`.
+- 특정 outbound port에서만 쓰는 저장 입력/조회 조건/결과 값은 해당 `Port` 인터페이스 내부 record로 둔다. 예: `RoulettePort.CreateEventCommand`, `RoulettePort.EventResult`.
+- 메서드가 하나뿐인 `UseCase`나 `Port`는 내부 record 이름을 `Command`, `Result`로 단순화할 수 있다.
+- 메서드가 여러 개면 `CreateCommand`, `UpdateCommand`, `TableResult`처럼 행위나 결과 대상을 이름에 포함한다.
+- 단순 조회 조건은 record를 만들지 않고 메서드 파라미터로 표현한다. 예: `findRecentRounds(userId, limit)`.
+- 성공 여부만 감싸는 `Result(boolean success)`는 만들지 않는다. 성공은 정상 반환으로 표현하고, 실패는 예외나 명확한 실패 모델로 표현한다.
+- 여러 use case나 port에서 공유되는 값이 순수 비즈니스 개념이면 `domain/{feature}`로 올린다.
+- 여러 adapter/application 경계에서 공유되지만 domain 개념은 아니면, 그때만 가장 가까운 feature 패키지에 구체 이름으로 둔다.
+
+UseCase 내부 record 예:
+
+```java
+public interface ApplyFavoriteUseCase {
+
+    Result apply(Command command);
+
+    record Command(
+            Long userId,
+            int amount
+    ) {
+    }
+
+    record Result(
+            Long userId,
+            int currentAmount
+    ) {
+    }
+}
+```
+
+Port 내부 record 예:
+
+```java
+public interface FavoritePort {
+
+    Result apply(Command command);
+
+    record Command(
+            Long userId,
+            int amount,
+            String reason
+    ) {
+    }
+
+    record Result(
+            Long userId,
+            int currentAmount
+    ) {
+    }
+}
+```
+
+좋은 예:
+
+```java
+private final ManageRouletteUseCase manageRouletteUseCase;
+private final RoulettePort roulettePort;
+```
+
+나쁜 예:
+
+```java
+private final ManageRouletteService rouletteService; // adapter/in 에서 금지
+private final RouletteRepository rouletteRepository; // application 에서 금지
+```
+
+## 6. Inbound Adapter 패키지 규칙
+
+Web adapter는 기능별 패키지로 나눈다.
+
+```text
+adapter/in/web
+  roulette
+    AdminRouletteController
+    FavoriteRouletteController
+    request
+      RouletteItemRequest
+      RouletteTableCreateRequest
+    response
+      RouletteTableResponse
+      RouletteRoundResponse
+  favorite
+    FavoriteController
+    FavoriteAdjustmentController
+    request
+    response
+```
+
+규칙:
+
+- Controller는 HTTP, 인증 주체, request/response 변환만 담당한다.
+- Controller는 application inbound use case 인터페이스만 주입한다.
+- Controller는 `application.service.*` 구현체를 직접 주입하지 않는다.
+- Controller는 persistence entity나 repository를 알면 안 된다.
+- Controller는 비즈니스 계산을 하지 않는다.
+- 전역 ControllerAdvice는 web feature 패키지에 두지 않고 `config/web`에 둔다.
+- request DTO는 `adapter/in/web/{feature}/request`에 둔다.
+- response DTO는 `adapter/in/web/{feature}/response`에 둔다.
+- response DTO는 application result 값을 web 응답 형태로 변환한다.
+
+예:
+
+```java
+@RestController
+class AdminRouletteController {
+
+    private final ManageRouletteUseCase manageRouletteUseCase;
+
+    @PostMapping("/tables")
+    ResponseEntity<RouletteTableResponse> createTable(@RequestBody RouletteTableCreateRequest request) {
+        return ResponseEntity.ok(RouletteTableResponse.from(
+                manageRouletteUseCase.createTable(request.toCreateTableCommand())
+        ));
+    }
+}
+```
+
+## 7. Outbound Persistence 패키지 규칙
+
+Persistence는 전역 `entity`, `repository` 공용 패키지로 나누지 않는다.
+
+1차 패키지는 영속화 대상 또는 aggregate 이름이다.
+각 1차 패키지 루트에는 `*PersistenceAdapter`를 두고, 그 아래에 `entity`, `repository` 하위 패키지를 둔다.
+
+```text
+adapter/out/persistence
+  common
+    BaseEntity
+
+  subscription
+    SubscriptionPersistenceAdapter
+    entity
+      SubscriptionEntity
+    repository
+      SubscriptionRepository
+
+  donation
+    DonationPersistenceAdapter
+    entity
+      DonationEntity
+    repository
+      DonationRepository
+
+  authorization
+    AuthorizationPersistenceAdapter
+    entity
+      AuthorizationEntity
+    repository
+      AuthorizationRepository
+
+  favorite
+    FavoritePersistenceAdapter
+    FavoriteAdjustmentPersistenceAdapter
+    entity
+      FavoriteEntity
+      FavoriteHistoryEntity
+      FavoriteAdjustmentEntity
+    repository
+      FavoriteRepository
+      FavoriteHistoryRepository
+      FavoriteAdjustmentRepository
+
+  roulette
+    RoulettePersistenceAdapter
+    entity
+      RouletteTableEntity
+      RouletteItemEntity
+      RouletteEventEntity
+      RouletteRoundResultEntity
+    repository
+      RouletteTableRepository
+      RouletteItemRepository
+      RouletteEventRepository
+      RouletteRoundResultRepository
+
+  overlay
+    OverlayTokenPersistenceAdapter
+    OverlayDisplayPersistenceAdapter
+    entity
+      OverlayTokenEntity
+      OverlayDisplayEventEntity
+    repository
+      OverlayTokenRepository
+      OverlayDisplayEventRepository
+
+  upbo
+    UpboPersistenceAdapter
+    entity
+      UpboTemplateEntity
+      UserUpboEntity
+    repository
+      UpboTemplateRepository
+      UserUpboRepository
+
+  weekly
+    WeeklyChatRankPersistenceAdapter
+    entity
+      WeeklyChatRankEntity
+    repository
+      WeeklyChatRankRepository
+```
+
+규칙:
+
+- `adapter/out/persistence/entity`는 만들지 않는다.
+- `adapter/out/persistence/repository`는 만들지 않는다.
+- `adapter/out/persistence/{subject}` 루트에는 `Entity`, `Repository`를 직접 두지 않는다.
+- `Entity`는 `adapter/out/persistence/{subject}/entity`에 둔다.
+- `Repository`는 `adapter/out/persistence/{subject}/repository`에 둔다.
+- JPA entity는 persistence 패키지 밖으로 노출하지 않는다.
+- Spring Data repository는 같은 persistence subject 안의 adapter에서만 직접 사용한다.
+- Persistence adapter는 outbound port를 구현한다.
+- Persistence adapter는 JPA entity와 domain/application result 간 변환을 담당한다.
+- `BaseEntity`처럼 여러 persistence entity가 공유하는 ORM 기반 클래스만 `persistence/common`에 둔다.
+- 여러 entity가 하나의 유스케이스 aggregate로 함께 저장/조회되면 aggregate 패키지에 같이 둔다. 예: `roulette`.
+
+## 8. Outbound External 패키지 규칙
+
+외부 API 연동은 `adapter/out/external/{provider}`에 둔다.
+provider 루트에는 outbound port 구현 adapter를 두고, 원본 API client와 원본 request/response 타입은 하위 패키지로 분리한다.
+
+```text
+adapter/out/external
+  chzzk
+    ChzzkClientAdapter
+    client
+      ChzzkOpenApiClient
+    request
+      AuthorizationRequest
+      MessageRequest
+    response
+      AuthorizationResponse
+      ChatResponse
+      DonationResponse
+      SessionResponse
+      SubscriptionResponse
+      SystemResponse
+      UserResponse
+  google
+    GoogleSheetClientAdapter
+    client
+      GoogleSheetClient
+    request
+      GoogleSheetRequest
+    response
+      GoogleSheetRowResponse
+```
+
+규칙:
+
+- `adapter/out/external/{provider}` 루트에는 `*ClientAdapter` 또는 `*ExternalAdapter`를 둔다.
+- Feign client, SDK client, HTTP client는 `adapter/out/external/{provider}/client`에 둔다.
+- 외부 API 요청 타입은 `adapter/out/external/{provider}/request`에 두고 `*Request`로 끝낸다.
+- 외부 API 응답 또는 수신 payload 타입은 `adapter/out/external/{provider}/response`에 두고 `*Response`로 끝낸다.
+- 외부 연동에서도 `dto` 패키지와 `*Dto` 접미사는 쓰지 않는다.
+- provider별 응답 매핑은 external adapter에서 application port 계약 값이나 domain 값으로 변환한다.
+- Application은 외부 API 구현체가 아니라 outbound port를 호출한다.
+- 외부 API request/response 타입을 domain 객체로 직접 쓰지 않는다.
+- 외부 API request/response 타입을 application port 계약으로 직접 쓰지 않는다. 특정 port에서만 필요한 값은 해당 port 내부 record로 둔다.
+
+## 9. 변환 규칙
+
+별도 Mapper 클래스는 만들지 않는다.
+변환 책임은 외부 경계에 위치한 adapter 타입이 가진다.
+
+기본 원칙:
+
+- adapter 타입에서 내부 계층 타입으로 나가는 변환은 `to{SpecificTarget}()` 이름을 쓴다.
+- `to()` 단독 이름은 쓰지 않는다. Java는 반환 타입만 다른 메서드 오버로딩을 허용하지 않기 때문이다.
+- `toCommand()`, `toDomain()`, `toResult()`처럼 넓은 이름도 쓰지 않는다.
+- 변환 대상의 행위나 모델 이름을 포함한다. 예: `toCreateTableCommand()`, `toRouletteTable()`, `toSessionResult()`.
+- 내부 계층 타입에서 현재 adapter 타입을 생성하는 변환은 `from(...)`을 기본으로 쓴다.
+- `from(...)`은 파라미터 타입으로 오버로딩해서 사용한다.
+- 생성 대상은 현재 adapter 타입의 클래스 이름으로 이미 드러나므로 `fromTableResult(...)` 같은 파생 이름을 만들지 않는다.
+- 변환은 단순 데이터 이동만 담당한다.
+- 변환 메서드에 비즈니스 정책, 권한 판단, 저장 로직, 외부 API 호출을 넣지 않는다.
+- `ErrorStatusResolver`는 `ErrorCode`와 HTTP status를 연결하는 `config/web` 타입이며, adapter 데이터 변환 규칙 대상이 아니다.
+
+위치별 규칙:
+
+| 위치 | 변환 방향 | 메서드 |
 | --- | --- | --- |
-| Domain model | 비즈니스 이름 사용, `Entity` 접미사 지양 | `FavoriteAccount`, `FavoriteLedgerEntry`, `RouletteTable` |
-| Use case | 사용자/시스템 행위 + `UseCase` | `AdjustFavoriteUseCase`, `ApplyUpboUseCase` |
-| Application service | Use case 구현체 + `Service` | `FavoriteLedgerService`, `RouletteExecutionService` |
-| Inbound port | 외부에서 호출 가능한 use case 계약 | `AdjustFavoriteUseCase` |
-| Outbound port | 외부 저장소/시스템 호출 계약 | `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort` |
-| JPA model | JPA 전용 모델임을 명시 | `FavoriteJpaEntity`, `FavoriteLedgerJpaEntity` |
-| Adapter | 구현 기술 또는 방향 명시 | `FavoritePersistenceAdapter`, `ChzzkDonationAdapter` |
-| Web DTO | 요청/응답 목적 명시 | `FavoriteHistoryResponse`, `ApplyUpboRequest` |
+| `adapter/in/web/{feature}/request` | Web Request -> UseCase Command | `to{Action}Command()` |
+| `adapter/in/web/{feature}/response` | UseCase Result -> Web Response | `from()` |
+| `adapter/out/persistence/{subject}/entity` | Persistence Entity -> Domain | `to{DomainName}()` |
+| `adapter/out/persistence/{subject}/entity` | Domain -> Persistence Entity | `from()` |
+| `adapter/out/external/{provider}/request` | Port Command -> Provider Request | `from()` |
+| `adapter/out/external/{provider}/response` | Provider Response -> Port Result | `to{ResultName}()` |
 
-기존 클래스와의 충돌을 줄이기 위해 전환 기간에는 기존 `FavoriteEntity`, `FavoriteHistoryEntity` 이름을 유지할 수 있다. 다만 새 domain model에는 `Entity` 접미사를 붙이지 않는다.
+금지 규칙:
 
-## 7. 도메인 경계
+- `application`에는 adapter 타입 변환용 `to{SpecificTarget}()`, `from(...)` 메서드를 두지 않는다.
+- `domain`에는 adapter 타입 변환용 `to{SpecificTarget}()`, `from(...)` 메서드를 두지 않는다.
+- `Mapper`, `Converter`, `Assembler`, `Translator` 클래스는 만들지 않는다.
+- Web request/response는 persistence entity를 알지 않는다.
+- Persistence entity는 web request/response를 알지 않는다.
+- Domain은 web request/response, persistence entity, external request/response를 알지 않는다.
+- Application은 web request/response, persistence entity, external request/response를 알지 않는다.
 
-### 7.1 Auth
+Web Request 예:
 
-책임:
+```java
+public record RouletteTableCreateRequest(
+        String title
+) {
 
-- CHZZK 사용자의 식별자와 권한을 application에 전달한다.
-- 관리자 여부는 현재 `AuthorizationEntity.admin = true` 기준을 유지한다.
-- OAuth 토큰 발급/갱신 세부사항은 CHZZK outbound adapter에 격리한다.
+    public ManageRouletteUseCase.CreateTableCommand toCreateTableCommand() {
+        return new ManageRouletteUseCase.CreateTableCommand(title);
+    }
+}
+```
 
-주요 규칙:
+Web Response 예:
 
-- OAuth `state` 검증은 web/application 경계에서 처리한다.
-- access token, refresh token, OAuth state는 로그에 남기지 않는다.
-- domain은 CHZZK OAuth 응답 DTO를 알지 않는다.
+```java
+public record RouletteTableResponse(
+        Long tableId,
+        String title
+) {
 
-### 7.2 Favorite
+    public static RouletteTableResponse from(
+            ManageRouletteUseCase.TableResult result
+    ) {
+        return new RouletteTableResponse(
+                result.tableId(),
+                result.title()
+        );
+    }
+}
+```
 
-책임:
+Persistence Entity 예:
 
-- 호감도 잔액과 원장 거래의 핵심 규칙을 담당한다.
-- 출석, 업보, 룰렛, 관리자 조정은 모두 Favorite use case를 통해 잔액을 변경한다.
+```java
+@Entity
+public class RouletteTableEntity {
 
-주요 규칙:
+    @Id
+    private Long id;
 
-- 모든 잔액 변경은 원장 거래와 같은 트랜잭션에서 처리한다.
-- 사용자별 비관적 락으로 잔액 변경을 직렬화한다.
-- 음수 잔액 생성은 관리자 또는 시스템 정책 경로에서만 허용한다.
-- 정정은 삭제가 아니라 별도 보정 거래로 기록한다.
-- `idempotencyKey`가 있는 거래는 중복 반영하지 않는다.
+    private String title;
 
-### 7.3 Upbo
+    public RouletteTable toRouletteTable() {
+        return new RouletteTable(id, title);
+    }
 
-책임:
+    public static RouletteTableEntity from(RouletteTable table) {
+        RouletteTableEntity entity = new RouletteTableEntity();
+        entity.id = table.id();
+        entity.title = table.title();
+        return entity;
+    }
+}
+```
 
-- 업보/쿠폰/리워드 템플릿과 사용자 보유 항목을 관리한다.
-- 호감도로 자동 전환되는 항목과 보유 목록에만 남는 항목을 구분한다.
+Persistence Adapter 예:
 
-주요 규칙:
+```java
+@Override
+public RouletteTable save(RouletteTable table) {
+    RouletteTableEntity saved = repository.save(
+            RouletteTableEntity.from(table)
+    );
 
-- `FAVORITE` 자동 전환 항목은 Favorite use case를 호출해 원장에 반영한다.
-- `NONE` 전환 항목은 호감도 잔액을 변경하지 않는다.
-- 상태는 `OWNED`, `USED`, `CONVERTED`, `CORRECTED`를 사용한다.
-- 사용 처리와 정정 처리는 사용자 히스토리에 공개한다.
-- 관리자 내부 메모는 일반 사용자에게 노출하지 않는다.
+    return saved.toRouletteTable();
+}
+```
 
-### 7.4 Attendance
+요약:
 
-책임:
+- adapter는 변환을 담당한다.
+- application은 유스케이스 흐름을 조합한다.
+- domain은 비즈니스 규칙을 담당한다.
+- `to{SpecificTarget}()`과 `from(...)`은 adapter 타입에만 둔다.
+- `from(...)`은 오버로딩을 사용하고, 별도 Mapper로 분리하지 않는다.
 
-- 출석체크 활성화 사이클과 대상자 수집을 관리한다.
-- 적용 시 Favorite use case로 일괄 지급을 요청한다.
+## 10. Exception 규칙
 
-주요 규칙:
+프로젝트 예외는 필요한 최소 custom exception 타입과 공통 에러 코드로 처리한다.
 
-- 한 사이클 내 동일 사용자에게 1회만 지급한다.
-- 관리자가 입력한 양수 정수 `N`만 지급 점수로 허용한다.
-- 취소된 사이클은 호감도를 지급하지 않는다.
-- 일반 채팅은 호감도 지급 없이 주간 채팅 랭킹에만 반영한다.
+패키지 구조:
 
-### 7.5 Chat
+```text
+domain
+  exception
+    NyangNyangException
+    ErrorCode
+```
 
-책임:
+Spring MVC 예외 처리 구조:
 
-- CHZZK 채팅 이벤트 수신, 명령어 파싱, 응답 전송을 담당한다.
-- 채팅 adapter는 application use case를 호출하고, 잔액이나 업보 상태를 직접 변경하지 않는다.
+```text
+config
+  web
+    ApiExceptionHandler
+    ErrorResponse
+    ErrorStatusResolver
+```
 
-주요 규칙:
+기본 원칙:
 
-- `!호감도`, `!룰렛결과` 같은 사용자 명령은 사용자별 쿨타임을 적용한다.
-- 기본 쿨타임은 30초이다.
-- 본인 한정 명령 응답에는 다른 사용자의 상세 히스토리를 포함하지 않는다.
+- 공통 예외 타입은 `domain/exception`에 둔다.
+- custom exception 클래스는 최대한 만들지 않는다.
+- 기본 실패 표현은 `NyangNyangException(ErrorCode)`와 `ErrorCode`로 처리한다.
+- `ErrorCode`로 구분 가능한 실패는 별도 exception 클래스로 만들지 않는다.
+- 추가 custom exception 클래스는 타입 분기가 반드시 필요한 경우에만 `domain/exception`에 정의한다.
+- 개별 feature exception 클래스는 만들지 않는다.
+- 실패 구분은 `ErrorCode`로 표현한다.
+- `domain`, `application`, `adapter`는 의도적으로 표현해야 하는 실패만 `NyangNyangException(ErrorCode)`로 변환해 던진다.
+- `ErrorCode`는 비즈니스 의미만 가진다.
+- `ErrorCode`는 HTTP status, JPA, Feign, Servlet, Spring Security 같은 기술 정보를 가지지 않는다.
+- 예외 메시지는 `ErrorCode` 내부에서 관리한다.
+- 전역 ControllerAdvice는 `config/web`에 둔다.
+- HTTP status 매핑은 `config/web/ErrorStatusResolver`에서 처리한다.
+- 예외 HTTP 응답 모델은 `config/web/ErrorResponse`에 둔다.
+- adapter 밖으로 JPA, Feign, Servlet 예외를 직접 노출하지 않는다.
 
-### 7.6 Roulette
+예외 클래스:
 
-책임:
+```java
+public class NyangNyangException extends RuntimeException {
 
-- 룰렛 테이블, 확률표, 후원 이벤트, 회차별 결과 확정과 반영을 담당한다.
-- 결과 선택 알고리즘은 domain service로 분리해 테스트 가능해야 한다.
+    private final ErrorCode errorCode;
 
-주요 규칙:
+    public NyangNyangException(ErrorCode errorCode) {
+        super(errorCode.message());
+        this.errorCode = errorCode;
+    }
 
-- 활성화 가능한 룰렛 확률 합계는 100%여야 한다.
-- `꽝` 항목은 필수이며 0%로 설정할 수 없다.
-- 후원 메시지 명령어는 공백/줄바꿈 토큰 단위 정확 일치로 매칭한다.
-- 회차 수는 `floor(후원 금액 / 룰렛 1회 금액)`으로 계산한다.
-- CHZZK 후원 이벤트 ID를 idempotency key로 사용한다.
-- 후원 시점의 룰렛 테이블 버전과 항목 스냅샷을 저장한다.
-- N회차 결과는 일괄 확정하고, 회차별 원장/보유 목록 반영은 별도 트랜잭션으로 처리한다.
+    public NyangNyangException(ErrorCode errorCode, Throwable cause) {
+        super(errorCode.message(), cause);
+        this.errorCode = errorCode;
+    }
 
-### 7.7 Overlay
+    public ErrorCode errorCode() {
+        return errorCode;
+    }
+}
+```
 
-책임:
+ErrorCode 예:
 
-- OBS 오버레이 토큰, 표시 이벤트, 표시 완료, missed/replay 상태를 관리한다.
-- 오버레이는 서버 확정 결과를 표시만 하고 결과를 결정하지 않는다.
+```java
+public enum ErrorCode {
 
-주요 규칙:
+    FAVORITE_ACCOUNT_NOT_FOUND(
+            "호감도 계정을 찾을 수 없습니다."
+    ),
 
-- 오버레이 토큰 원문은 발급/재발급 직후 한 번만 보여준다.
-- DB에는 토큰 해시만 저장한다.
-- OBS URL은 `/overlay/roulette#token=...` 형태를 사용한다.
-- 이벤트 조회와 표시 완료 API는 `Authorization: Bearer` 헤더로 보호한다.
-- 재송출은 원장과 보유 목록을 다시 반영하지 않는다.
+    INSUFFICIENT_FAVORITE_AMOUNT(
+            "호감도가 부족합니다."
+    ),
 
-## 8. 주요 포트
+    ROULETTE_TABLE_NOT_FOUND(
+            "룰렛 테이블을 찾을 수 없습니다."
+    ),
 
-### 8.1 Inbound Port
+    INVALID_ROULETTE_PROBABILITY(
+            "룰렛 확률이 올바르지 않습니다."
+    ),
 
-| Port | 호출 주체 | 설명 |
-| --- | --- | --- |
-| `LoginWithChzzkUseCase` | Web adapter | CHZZK OAuth 콜백 처리 |
-| `AdjustFavoriteUseCase` | Web/admin adapter | 관리자 호감도 지급/차감 |
-| `CorrectFavoriteLedgerUseCase` | Web/admin adapter | 원장 정정 거래 생성 |
-| `ViewFavoriteHistoryUseCase` | Web adapter, Chat adapter | 본인 또는 관리자 히스토리 조회 |
-| `ApplyAttendanceRewardUseCase` | Web/admin adapter | 출석 사이클 보상 적용 |
-| `ApplyUpboUseCase` | Web/admin adapter | 업보/쿠폰/리워드 수동 적용 |
-| `UseRewardUseCase` | Web/admin adapter | 보유 리워드 사용 처리 |
-| `RunRouletteFromDonationUseCase` | CHZZK adapter | 후원 이벤트 기반 룰렛 실행 |
-| `PollOverlayEventUseCase` | Overlay web adapter | OBS 오버레이 표시 이벤트 조회 |
-| `MarkOverlayEventDisplayedUseCase` | Overlay web adapter | 표시 완료 보고 |
+    DUPLICATE_DONATION_EVENT(
+            "이미 처리된 후원 이벤트입니다."
+    );
 
-### 8.2 Outbound Port
+    private final String message;
 
-| Port | 구현 adapter | 설명 |
-| --- | --- | --- |
-| `LoadFavoriteAccountPort` | Persistence | 호감도 계정 조회와 락 획득 |
-| `SaveFavoriteLedgerPort` | Persistence | 원장 거래 저장 |
-| `CheckIdempotencyPort` | Persistence | 중복 반영 방지 |
-| `LoadUpboTemplatePort` | Persistence | 업보 템플릿 조회 |
-| `SaveUserUpboPort` | Persistence | 사용자 보유 업보 저장 |
-| `LoadRouletteTablePort` | Persistence | 활성 룰렛 테이블 조회 |
-| `SaveRouletteResultPort` | Persistence | 룰렛 이벤트/회차 결과 저장 |
-| `PublishOverlayEventPort` | Persistence or Messaging | 오버레이 표시 이벤트 생성 |
-| `ChzzkSessionPort` | CHZZK external adapter | CHZZK 세션과 이벤트 구독 |
-| `SendChatMessagePort` | CHZZK external adapter | 채팅 명령 응답 전송 |
-| `GoogleSheetMigrationPort` | Google external adapter | 전환기 Google Sheets 데이터 조회 |
+    ErrorCode(String message) {
+        this.message = message;
+    }
 
-## 9. 트랜잭션과 동시성
+    public String message() {
+        return message;
+    }
+}
+```
 
-- 트랜잭션 경계는 application use case에서 선언한다.
-- Domain은 트랜잭션 기술을 알지 않는다.
-- 호감도 잔액 갱신은 사용자 단위 비관적 락으로 직렬화한다.
-- 원장 저장과 잔액 변경은 같은 트랜잭션에서 처리한다.
-- 다회차 룰렛은 결과 일괄 확정 트랜잭션과 회차별 반영 트랜잭션을 분리한다.
-- `idempotencyKey`는 DB UNIQUE 제약과 application 검증을 함께 사용한다.
-- 정정 거래는 원본 거래와 연결하되 원본 거래를 변경하거나 삭제하지 않는다.
+사용 예:
 
-## 10. Web Adapter 기준
+```java
+if (currentAmount < amount) {
+    throw new NyangNyangException(
+            ErrorCode.INSUFFICIENT_FAVORITE_AMOUNT
+    );
+}
 
-- Controller는 인증 주체, 요청 DTO, path/query/body 값을 application command로 변환한다.
-- Controller는 domain 객체를 직접 반환하지 않는다.
-- 관리자 권한이 필요한 요청은 web security와 application use case 양쪽에서 의도를 명확히 한다.
-- 일반 사용자용 조회 요청은 actor의 CHZZK `channelId`를 기준으로 본인 데이터만 조회한다.
-- 관리자 검색은 별도 use case로 분리한다.
+return rouletteRepository.findById(tableId)
+        .orElseThrow(() -> new NyangNyangException(
+                ErrorCode.ROULETTE_TABLE_NOT_FOUND
+        ));
+```
 
-## 11. Persistence Adapter 기준
+HTTP Status 매핑:
 
-- JPA entity는 DB schema와 ORM 매핑을 위한 모델이다.
-- Domain model은 JPA entity와 분리한다.
-- Persistence adapter는 JPA repository를 호출하고 domain model로 변환한다.
-- 비관적 락, UNIQUE 제약, 조회 최적화는 persistence adapter 책임이다.
-- migration 과정에서 기존 entity를 재사용할 수 있지만, 신규 domain 규칙을 JPA entity method에 넣지 않는다.
+```java
+final class ErrorStatusResolver {
 
-## 12. External Adapter 기준
+    private ErrorStatusResolver() {
+    }
 
-CHZZK:
+    static HttpStatus toStatus(ErrorCode errorCode) {
+        return switch (errorCode) {
+            case FAVORITE_ACCOUNT_NOT_FOUND,
+                 ROULETTE_TABLE_NOT_FOUND ->
+                    HttpStatus.NOT_FOUND;
 
-- OAuth, 사용자 조회, 세션 발급, 채팅/후원/구독 이벤트 구독, 채팅 전송을 담당한다.
-- CHZZK DTO는 adapter 내부에서 application command/result로 변환한다.
-- 토큰 원문은 로그에 남기지 않는다.
+            case INSUFFICIENT_FAVORITE_AMOUNT,
+                 INVALID_ROULETTE_PROBABILITY ->
+                    HttpStatus.BAD_REQUEST;
 
-Google Sheets:
+            case DUPLICATE_DONATION_EVENT ->
+                    HttpStatus.CONFLICT;
+        };
+    }
+}
+```
 
-- 전환기 마이그레이션 데이터 조회만 담당한다.
-- 플랫폼 DB가 최종 원본이 된 뒤에는 제거 대상이다.
+Exception Handler:
 
-Monitoring:
+```java
+@RestControllerAdvice
+class ApiExceptionHandler {
 
-- 운영 로그와 Grafana/Loki는 adapter/config 영역에서 다룬다.
-- logfmt 키는 application 결과와 actor 정보를 바탕으로 출력하되, 민감 값은 포함하지 않는다.
+    @ExceptionHandler(NyangNyangException.class)
+    ResponseEntity<ErrorResponse> handle(
+            NyangNyangException ex
+    ) {
+        return ResponseEntity
+                .status(
+                        ErrorStatusResolver.toStatus(
+                                ex.errorCode()
+                        )
+                )
+                .body(
+                        ErrorResponse.from(ex)
+                );
+    }
+}
+```
 
-## 13. 테스트 기준
+ErrorResponse:
 
-| 테스트 종류 | 대상 | 목적 |
-| --- | --- | --- |
-| Domain unit test | Domain model, domain service | 포인트 계산, 상태 전이, 룰렛 확률 검증 |
-| Application use case test | Use case service, mock port | 트랜잭션 흐름, 권한 의도, 중복 방지, 정정 정책 |
-| Adapter test | Controller, persistence adapter, external adapter | DTO 변환, 권한, JPA query, 외부 API 매핑 |
-| Integration test | Spring context + DB | 실제 wiring, 트랜잭션, 보안 설정 |
-| Architecture test | 패키지 의존성 | Domain/Application이 adapter/framework에 의존하지 않는지 검증 |
+```java
+public record ErrorResponse(
+        String code,
+        String message
+) {
 
-아키텍처 테스트 규칙:
+    public static ErrorResponse from(
+            NyangNyangException exception
+    ) {
+        return new ErrorResponse(
+                exception.errorCode().name(),
+                exception.errorCode().message()
+        );
+    }
+}
+```
 
-- `domain..` 패키지는 `org.springframework..`, `jakarta.persistence..`, `javax.persistence..`, `feign..`, `jakarta.servlet..`에 의존하지 않는다.
-- `application..` 패키지는 `adapter..` 패키지에 의존하지 않는다.
-- `adapter..` 패키지만 Spring MVC, JPA, Feign, WebSocket 구현체에 의존한다.
-- controller 테스트는 비즈니스 계산보다 요청 검증, 권한, response mapping에 집중한다.
+금지 규칙:
 
-## 14. 점진적 전환 계획
+- domain에 HTTP status를 넣지 않는다.
+- domain에 Spring, JPA, Feign 예외 타입을 넣지 않는다.
+- adapter 밖으로 JPA, Feign, Servlet 예외를 직접 노출하지 않는다.
+- application에 별도 공용 exception 패키지를 만들지 않는다.
+- `common.exception`, `global.exception` 같은 루트 패키지는 만들지 않는다.
+- 불필요한 custom exception 클래스를 만들지 않는다.
 
-1. 신규 패키지 골격을 추가한다.
-2. 호감도 원장부터 domain/application/port/adapter 구조로 분리한다.
-3. 기존 `FavoriteService`의 잔액 변경 로직을 application use case로 이동한다.
-4. 출석, 업보, 룰렛은 Favorite use case를 호출해 잔액을 변경한다.
-5. 채팅/후원/오버레이 입출력은 adapter로 격리한다.
-6. 기존 `controller`, `repository`, `data/dto`는 수정 범위에 닿는 시점마다 새 구조로 이동한다.
-7. 아키텍처 경계 테스트를 추가해 역방향 의존성 회귀를 막는다.
+요약:
 
-## 15. 결정 상태
+- 비즈니스 실패는 `NyangNyangException(ErrorCode)`로 처리한다.
+- 실패 구분은 `ErrorCode`로 표현한다.
+- HTTP status는 `config/web`에서만 처리한다.
+- 기술 정보는 domain exception에 넣지 않는다.
 
-- 기준 구조는 클린 아키텍처이다.
-- 신규 P0/P1 기능은 이 문서의 레이어와 의존성 규칙을 따른다.
-- 기존 코드는 전면 재작성하지 않고 기능 변경 범위 내에서 점진적으로 전환한다.
-- 도메인 규칙은 프레임워크와 분리하고, 외부 시스템은 포트/어댑터로 격리한다.
+## 11. Config 패키지 규칙
+
+```text
+config
+  SecurityConfig
+  FeignConfig
+  SwaggerConfig
+  LocalDummyDataInitializer
+  property
+    ChzzkProperty
+    GoogleProperty
+  web
+    ApiExceptionHandler
+    ErrorResponse
+    ErrorStatusResolver
+```
+
+규칙:
+
+- config는 DI, 보안, 운영 설정만 담당한다.
+- config에 비즈니스 정책을 넣지 않는다.
+- `config/web`은 Spring MVC 전역 예외 처리와 HTTP status 매핑만 담당한다.
+- `config/web`은 예외 타입을 새로 만들지 않고 `domain/exception`의 `NyangNyangException`, `ErrorCode`만 처리한다.
+- `config/web`에는 feature controller, feature request/response, use case 호출 로직을 두지 않는다.
+- local dummy data처럼 persistence 타입을 직접 써야 하는 초기화 코드는 config 예외로 둔다.
+
+## 12. 의존성 상세 규칙
+
+허용:
+
+```text
+adapter/in/web -> application/port/in
+adapter/out/external -> application/port/out
+adapter/out/external -> domain
+adapter/out/persistence -> application/port/out
+adapter/out/persistence -> domain
+application/port -> domain
+application/service -> application/port/in
+application/service -> application/port/out
+application/service -> domain
+config -> application/service
+config -> adapter
+config -> domain
+```
+
+금지:
+
+```text
+adapter/in/web -> application/service
+adapter/in/web -> domain
+adapter/in/web -> adapter/out/persistence
+application -> adapter
+application -> Spring Data Repository
+application -> JPA Entity
+domain -> application
+domain -> adapter
+domain -> Spring/JPA
+```
+
+## 13. 네이밍 규칙
+
+패키지명과 클래스 접미사는 서로 맞춘다. 예를 들어 `request` 패키지에는 `*Request`, `entity` 패키지에는 `*Entity`, `client` 패키지에는 `*Client`만 둔다.
+
+| 패키지 | 클래스 이름 |
+| --- | --- |
+| `domain/{feature}` | 비즈니스 상태/규칙/정책/불변식 이름. `Entity`, `Dto`, `Request`, `Response`, 저장 row 모델 금지. 예: `FavoriteAccount`, `AttendanceUserState`, `RoulettePolicy` |
+| `domain/exception` | 공통 프로젝트 예외와 에러 코드만 둔다. 예: `NyangNyangException`, `ErrorCode` |
+| `application/port/in/{feature}` | 사용자/시스템 행위 + `UseCase`. 예: `ManageRouletteUseCase`, `QueryRouletteResultUseCase` |
+| `UseCase` 내부 입력 record | 상태 변경 입력은 행위 + `Command`. 조회는 가능하면 메서드 파라미터를 사용한다. 예: `ManageRouletteUseCase.CreateTableCommand` |
+| `UseCase` 내부 결과 record | 결과 이름 + `Result`. 예: `ManageRouletteUseCase.TableResult` |
+| `application/port/out/{feature}` | 책임 단위 저장소/외부 의존 계약 + `Port`. 예: `RoulettePort`, `AuthorizationPort` |
+| `Port` 내부 입력 record | 저장/변경 입력은 행위 + `Command`. 조회 조건은 가능하면 메서드 파라미터를 사용한다. 예: `RoulettePort.CreateEventCommand` |
+| `Port` 내부 결과 record | 결과 이름 + `Result`. 예: `RoulettePort.EventResult` |
+| `application/service/{feature}` | use case 구현체 또는 application 내부 조합 서비스 + `Service`. 예: `ManageRouletteService`, `ProcessRouletteDonationService`, `RouletteRoundApplyService` |
+| `adapter/in/web/{feature}/request` | HTTP 요청 DTO + `Request`. 예: `RouletteItemRequest` |
+| `adapter/in/web/{feature}/response` | HTTP 응답 DTO + `Response`. 예: `RouletteItemResponse` |
+| `adapter/out/persistence/{subject}` | outbound port 구현체 + `PersistenceAdapter`. 예: `RoulettePersistenceAdapter` |
+| `adapter/out/persistence/{subject}/entity` | JPA 모델 + `Entity`. 예: `RouletteEventEntity` |
+| `adapter/out/persistence/{subject}/repository` | Spring Data 저장소 + `Repository`. 예: `RouletteEventRepository` |
+| `adapter/out/external/{provider}` | outbound port 구현체 + `ClientAdapter` 또는 `ExternalAdapter`. 예: `ChzzkClientAdapter` |
+| `adapter/out/external/{provider}/client` | API/SDK client + `Client`. 예: `ChzzkOpenApiClient` |
+| `adapter/out/external/{provider}/request` | provider 원본 요청 타입 + `Request`. 예: `AuthorizationRequest`, `MessageRequest` |
+| `adapter/out/external/{provider}/response` | provider 원본 응답/수신 타입 + `Response`. 예: `DonationResponse`, `SessionResponse` |
+| `config/web` | Spring MVC 전역 예외 처리 타입. 예: `ApiExceptionHandler`, `ErrorResponse`, `ErrorStatusResolver` |
+
+## 14. 기능별 경계
+
+### Favorite
+
+- 호감도 잔액과 원장 규칙은 `domain/favorite`에 둔다.
+- 출석, 업보, 룰렛, 관리자 조정은 Favorite use case를 통해 잔액을 바꾼다.
+- 잔액 변경은 원장 거래와 같은 트랜잭션에서 처리한다.
+- idempotency key가 있는 거래는 중복 반영하지 않는다.
+
+### Roulette
+
+- 룰렛 확률 검증과 선택 정책은 `domain/roulette`에 둔다.
+- 룰렛 입력 검증, 후원 금액 파싱, 조회/시뮬레이션 제한값, 이벤트 상태 판정처럼 포트가 필요 없는 순수 규칙도 `domain/roulette`에 둔다.
+- 룰렛 테이블/항목/이벤트/회차 저장은 `adapter/out/persistence/roulette`가 담당하고, application에 노출되는 저장/조회 결과는 `RoulettePort` 내부 `*Result`로 표현한다.
+- 후원 이벤트로 룰렛을 실행하는 호출 계약은 inbound use case로 둔다.
+- 후원 이벤트 처리 서비스는 구현체가 아니라 `ProcessRouletteDonationUseCase`를 주입한다.
+- Web controller는 `ManageRouletteUseCase`, `QueryRouletteResultUseCase` 같은 inbound use case를 주입한다.
+
+### Overlay
+
+- OBS 표시 이벤트 모델은 `domain/overlay`에 둔다.
+- 오버레이 토큰과 표시 이벤트 저장은 `adapter/out/persistence/overlay`가 담당한다.
+- 오버레이 API controller는 overlay inbound use case만 호출한다.
+
+### Upbo
+
+- 업보 템플릿과 사용자 보유 업보는 `domain/upbo`에 둔다.
+- 업보 저장은 `adapter/out/persistence/upbo`가 담당한다.
+- 업보가 호감도로 전환되면 Favorite use case를 호출한다.
+
+### Authorization
+
+- 인증 계정 모델은 `domain/authorization`에 둔다.
+- OAuth와 CHZZK API 세부 request/response 타입은 `adapter/out/external`에 둔다.
+- Application outbound port가 외부 API 호출 값을 표현해야 하면 provider 원본 request/response 타입이 아니라 해당 port 내부 record를 둔다.
+- 인증 저장은 `adapter/out/persistence/authorization`이 담당한다.
+
+## 15. 아키텍처 테스트 기준
+
+아키텍처 테스트는 다음을 강제해야 한다.
+
+- 루트 패키지는 `adapter`, `application`, `config`, `domain`만 존재한다.
+- `domain`은 `application`, `adapter`, Spring, JPA에 의존하지 않는다.
+- `application`은 `adapter`에 의존하지 않는다.
+- `adapter/in/web`은 `adapter/out/persistence`에 의존하지 않는다.
+- `adapter/in/web`은 `application/service` 구현체에 의존하지 않는다.
+- `adapter/in/web`은 `domain`에 직접 의존하지 않는다.
+- `application/port/in/{feature}`에는 `*UseCase.java` 인터페이스만 직접 둔다.
+- `application/port/out/{feature}`에는 `*Port.java` 인터페이스만 직접 둔다.
+- `application/port/in/{feature}/usecase`에 Java 소스가 있으면 실패한다.
+- `application/port/out/{feature}/repository`에 Java 소스가 있으면 실패한다.
+- `adapter/out/persistence/entity`에 Java 소스가 있으면 실패한다.
+- `adapter/out/persistence/repository`에 Java 소스가 있으면 실패한다.
+- `adapter/in/web/common`에 Java 소스가 있으면 실패한다.
+- `domain/model`에 Java 소스가 있으면 실패한다.
+- domain에 저장/조회 row 형태의 `public record`가 있으면 실패한다. 허용 record는 정책/불변식 보조 value로 제한한다.
+- `application/model`과 `application/gateway`에 Java 소스가 있으면 실패한다.
+- `application/exception`, `common/exception`, `global/exception`에 Java 소스가 있으면 실패한다.
+- `domain/exception`이 Spring, JPA, Feign, Servlet, Spring Security 타입에 의존하면 실패한다.
+- `config/web` 밖에 `ApiExceptionHandler`, `ErrorStatusResolver`, 예외용 `ErrorResponse`가 있으면 실패한다.
+- `application` 또는 `domain`에 web, persistence, external adapter 타입을 변환하는 `to{SpecificTarget}()`, `from(...)` 메서드가 있으면 실패한다.
+- `Mapper`, `Converter`, `Assembler`, `Translator` 클래스가 있으면 실패한다.
+- `domain/exception`에 불필요한 feature custom exception 클래스가 있으면 실패한다.
+- 기존 루트 `controller`, `service`, `repository`, `data`에 Java 소스가 있으면 실패한다.
+
+## 16. 예외
+
+- `config`는 Spring 조립을 위해 구현체를 알 수 있다.
+- `LocalDummyDataInitializer`는 local profile용 초기 데이터 생성을 위해 persistence entity/repository를 직접 사용할 수 있다.
+- `persistence/common/BaseEntity`는 ORM 공통 필드 때문에 허용한다.
+- 전환 중인 기존 코드는 발견 즉시 같은 기준으로 정리한다. 신규 코드는 예외 없이 이 문서를 따른다.

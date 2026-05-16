@@ -34,16 +34,16 @@
 | FR-013 | 관리자 수동 구매/사용 처리 | P0 | 미구현 | Phase 4 | `PurchaseRewardUseCase`, `UseRewardUseCase` | 잔액 부족 시 관리자만 음수 허용 |
 | FR-014 | 호감도 원장 확장 | P0 | 미구현 | Phase 2 | `RecordFavoriteLedgerUseCase` | `delta`, `balanceAfter`, 출처, 주체 |
 | FR-015 | 호감도 정책 관리 | P0 | 미구현 | Phase 4 | `ManageFavoritePolicyUseCase` | 정책값 코드 고정 제거 |
-| FR-016 | 치지직 후원 이벤트 구독 | P1 | 부분 구현 | Phase 6 | `SubscribeDonationEventUseCase` | 후원 이벤트 저장, 재연결 |
-| FR-017 | 후원 명령어 기반 룰렛 실행 | P1 | 미구현 | Phase 6 | `RunRouletteFromDonationUseCase` | 토큰 단위 명령 매칭, 회차 계산 |
-| FR-018 | OBS 룰렛 오버레이 | P1 | 미구현 | Phase 7 | `PollOverlayEventUseCase` | 120초 유효시간, 순차/요약 표시 |
-| FR-019 | 룰렛 결과 반영/조회 | P1 | 미구현 | Phase 6, Phase 7 | `ApplyRouletteRoundResultUseCase`, `ViewRecentRouletteResultUseCase` | 원장 반영, 자동 채팅 공지 없음 |
-| FR-020 | 룰렛 확률표 관리 | P1 | 미구현 | Phase 6 | `ManageRouletteTableUseCase` | 합계 100%, 꽝 필수, 공개 여부 |
+| FR-016 | 치지직 후원 이벤트 구독 | P1 | 현행 구현 | Phase 6 | `SubscribeDonationEventUseCase` | 후원 이벤트 저장, 재연결 |
+| FR-017 | 후원 명령어 기반 룰렛 실행 | P1 | 현행 구현 | Phase 6 | `RunRouletteFromDonationUseCase` | 토큰 단위 명령 매칭, 회차 계산 |
+| FR-018 | OBS 룰렛 오버레이 | P1 | 현행 구현 | Phase 7 | `PollOverlayEventUseCase` | 120초 유효시간, 순차/요약 표시 |
+| FR-019 | 룰렛 결과 반영/조회 | P1 | 현행 구현 | Phase 6, Phase 7 | `ApplyRouletteRoundResultUseCase`, `ViewRecentRouletteResultUseCase` | 원장 반영, 자동 채팅 공지 없음 |
+| FR-020 | 룰렛 확률표 관리 | P1 | 현행 구현 | Phase 6 | `ManageRouletteTableUseCase` | 합계 100%, 꽝 필수, 공개 여부 |
 | FR-021 | 룰렛 결과 정정 | P1 | 미구현 | Phase 6 | `CorrectRouletteResultUseCase` | 삭제 없는 보정 거래 |
 | FR-022 | 명령어 템플릿 관리 | P1 | 보류 | Phase 4 이후 | `ManageCommandTemplateUseCase` | 권한, 쿨타임, 변수 |
 | FR-023 | 공개 채널 페이지 | P2 | 보류 | Phase 4 이후 | `ViewPublicChannelPageUseCase` | 공개 랭킹/명령어/이벤트 규칙 |
-| FR-024 | 오버레이 토큰 관리 | P1 | 미구현 | Phase 7 | `IssueOverlayTokenUseCase`, `RotateOverlayTokenUseCase` | 원문 1회 표시, 해시 저장 |
-| FR-025 | 룰렛 오버레이 재송출 | P1 | 미구현 | Phase 7 | `ReplayOverlayEventUseCase` | 원장 재반영 없음 |
+| FR-024 | 오버레이 토큰 관리 | P1 | 현행 구현 | Phase 7 | `IssueOverlayTokenUseCase`, `RotateOverlayTokenUseCase` | 원문 1회 표시, 해시 저장 |
+| FR-025 | 룰렛 오버레이 재송출 | P1 | 현행 구현 | Phase 7 | `ReplayOverlayEventUseCase` | 원장 재반영 없음 |
 
 ## 3. Phase별 최소 완료 묶음
 
