@@ -39,6 +39,7 @@ class ChatServiceTest {
 
     @Test
     void call_ShouldRecordAttendanceAndWeeklyChatRank() throws Exception {
+        // 준비
         ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
                 "user-1",
@@ -48,14 +49,17 @@ class ChatServiceTest {
                 1711111111L
         );
 
+        // 실행
         chatService.call(objectMapper.writeValueAsString(chatDto));
 
+        // 검증
         BDDMockito.then(attendanceService).should().recordChatUser(any(ChatEventPayload.class));
         BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatEventPayload.class));
     }
 
     @Test
     void call_ShouldSuppressSameUserCommandWithinCooldown() throws Exception {
+        // 준비
         chatService = BDDMockito.spy(new ChatService(
                 objectMapper,
                 Map.of("favorite", favoriteCommand),
@@ -72,10 +76,12 @@ class ChatServiceTest {
                 1711111111L
         );
 
+        // 실행
         chatService.call(objectMapper.writeValueAsString(chatDto));
         chatService.call(objectMapper.writeValueAsString(chatDto));
         chatService.call(objectMapper.writeValueAsString(chatDto));
 
+        // 검증
         BDDMockito.then(favoriteCommand).should(BDDMockito.times(2)).run(any(ChatEventPayload.class));
     }
 }

@@ -9,10 +9,13 @@ class OverlayControllerTest {
 
     @Test
     void rouletteOverlay_ShouldReturnOverlayTemplate() {
+        // 준비
         OverlayController controller = new OverlayController();
 
+        // 실행
         ModelAndView result = controller.rouletteOverlay();
 
+        // 검증
         then(result.getViewName()).isEqualTo("overlay-roulette");
     }
 }

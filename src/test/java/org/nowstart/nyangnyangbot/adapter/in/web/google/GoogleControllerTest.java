@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.google;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.assertj.core.api.BDDAssertions.then;
 
 import org.junit.jupiter.api.Test;
@@ -23,8 +23,10 @@ class GoogleControllerTest {
 
     @Test
     void syncDatabase_ShouldReturnSuccessResponse() {
+        // 실행
         ResponseEntity<String> result = googleController.syncDatabase();
 
+        // 검증
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo("SUCCESS");
         BDDMockito.then(googleSheetService).should().updateFavorite();
@@ -32,11 +34,13 @@ class GoogleControllerTest {
 
     @Test
     void syncDatabase_ShouldPropagateServiceException() {
+        // 준비
         BDDMockito.willThrow(new IllegalStateException("sync failed"))
                 .given(googleSheetService)
                 .updateFavorite();
 
-        assertThatThrownBy(() -> googleController.syncDatabase())
+        // 실행 및 검증
+        thenThrownBy(() -> googleController.syncDatabase())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("sync failed");
     }

@@ -26,6 +26,7 @@ class FavoriteRouletteControllerTest {
 
     @Test
     void getMyResults_ShouldUseAuthenticatedUserId() {
+        // 준비
         FavoriteRouletteController controller = new FavoriteRouletteController(rouletteService);
         RouletteRoundResult round = new RouletteRoundResult(
                 1L,
@@ -42,11 +43,13 @@ class FavoriteRouletteControllerTest {
         );
         given(rouletteService.getRecentRounds("user-1", 5)).willReturn(List.of(round));
 
+        // 실행
         ResponseEntity<List<RouletteRoundResponse>> result = controller.getMyResults(
                 new UsernamePasswordAuthenticationToken("user-1", "N/A"),
                 5
         );
 
+        // 검증
         then(result.getBody()).isEqualTo(List.of(RouletteRoundResponse.from(round)));
         BDDMockito.then(rouletteService).should().getRecentRounds("user-1", 5);
     }

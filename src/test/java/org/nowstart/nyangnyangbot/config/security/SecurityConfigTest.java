@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.config.security;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.BDDMockito.then;
+import static org.assertj.core.api.BDDAssertions.thenCode;
+import org.mockito.BDDMockito;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -36,7 +36,8 @@ class SecurityConfigTest {
 
     @Test
     void securityFilterChainContextLoads() {
-        assertThatCode(() -> {
+        // 실행 및 검증
+        thenCode(() -> {
             try (AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext()) {
                 context.setServletContext(new MockServletContext());
                 context.register(TestSecurityConfiguration.class);
@@ -47,33 +48,40 @@ class SecurityConfigTest {
 
     @Test
     void adminEndpointRejectsAuthenticatedUserWithoutAdminRole() throws Exception {
+        // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
 
+        // 실행
             mockMvc.perform(get("/google/sync").session(session("user", Collections.emptyList())))
+        // 검증
                     .andExpect(status().isForbidden());
         }
     }
 
     @Test
     void adminEndpointAllowsUserWithAdminRole() throws Exception {
+        // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
             GoogleSheetService googleSheetService = context.getBean(GoogleSheetService.class);
 
+        // 실행
             mockMvc.perform(get("/google/sync").session(session(
                             "admin",
                             List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                     )))
+        // 검증
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));
 
-            then(googleSheetService).should().updateFavorite();
+            BDDMockito.then(googleSheetService).should().updateFavorite();
         }
     }
 
     @Test
     void localAuthAllowsAdminEndpointWithoutSessionWhenEnabled() throws Exception {
+        // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext(
                 "nyang.local-auth.enabled=true",
                 "nyang.local-auth.user-id=local-channel",
@@ -82,11 +90,13 @@ class SecurityConfigTest {
             MockMvc mockMvc = createMockMvc(context);
             GoogleSheetService googleSheetService = context.getBean(GoogleSheetService.class);
 
+        // 실행
             mockMvc.perform(get("/google/sync"))
+        // 검증
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));
 
-            then(googleSheetService).should().updateFavorite();
+            BDDMockito.then(googleSheetService).should().updateFavorite();
         }
     }
 

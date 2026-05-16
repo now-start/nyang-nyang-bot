@@ -32,6 +32,7 @@ class WeeklyChatRankServiceTest {
 
     @Test
     void recordChat_ShouldCreateNewWeeklyRank_WhenFirstMessageOfWeek() {
+        // 준비
         LocalDate now = LocalDate.of(2026, 3, 25);
         ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
@@ -45,8 +46,10 @@ class WeeklyChatRankServiceTest {
         given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
                 .willReturn(Optional.empty());
 
+        // 실행
         weeklyChatRankService.recordChat(chatDto);
 
+        // 검증
         BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
                 LocalDate.of(2026, 3, 23).equals(entity.weekStartDate())
                         && "user-1".equals(entity.userId())
@@ -57,6 +60,7 @@ class WeeklyChatRankServiceTest {
 
     @Test
     void recordChat_ShouldIncrementExistingWeeklyRank_AndRefreshNickname() {
+        // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
         ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
@@ -77,8 +81,10 @@ class WeeklyChatRankServiceTest {
         given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-1"))
                 .willReturn(Optional.of(existing));
 
+        // 실행
         weeklyChatRankService.recordChat(chatDto);
 
+        // 검증
         BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
                 Long.valueOf(1L).equals(entity.id())
                         && "새닉네임".equals(entity.nickName())
@@ -88,6 +94,7 @@ class WeeklyChatRankServiceTest {
 
     @Test
     void recordChat_ShouldUseUserId_WhenNicknameMissing() {
+        // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
         ChatEventPayload chatDto = new ChatEventPayload(
                 "channel-1",
@@ -101,8 +108,10 @@ class WeeklyChatRankServiceTest {
         given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-42"))
                 .willReturn(Optional.empty());
 
+        // 실행
         weeklyChatRankService.recordChat(chatDto);
 
+        // 검증
         BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
                 "user-42".equals(entity.nickName())
                         && Long.valueOf(1L).equals(entity.chatCount())
@@ -111,6 +120,7 @@ class WeeklyChatRankServiceTest {
 
     @Test
     void getWeeklyRanks_ShouldMapRepositoryResultsToRankedDtos() {
+        // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
         given(weeklyChatRankService.currentDate()).willReturn(now);
         given(weeklyChatRankPort.findWeeklyRanks(eq(LocalDate.of(2026, 3, 23)), eq(2)))
@@ -119,8 +129,10 @@ class WeeklyChatRankServiceTest {
                         new WeeklyChatRankView(2, "고양이", 18L)
                 ));
 
+        // 실행
         List<WeeklyChatRankView> result = weeklyChatRankService.getWeeklyRanks(2);
 
+        // 검증
         then(result).containsExactly(
                 new WeeklyChatRankView(1, "치즈냥", 22L),
                 new WeeklyChatRankView(2, "고양이", 18L)

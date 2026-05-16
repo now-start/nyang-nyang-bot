@@ -1,10 +1,10 @@
 package org.nowstart.nyangnyangbot.application.service.overlay;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import org.mockito.BDDMockito;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,27 +22,32 @@ class OverlayTokenServiceTest {
 
     @Test
     void issueToken_ShouldStoreOnlyTokenHashAndRevokeActiveTokens() {
+        // 준비
         given(overlayTokenPort.saveIssuedToken(any(), any())).willReturn(2L);
         OverlayTokenService service = new OverlayTokenService(overlayTokenPort);
 
+        // 실행
         OverlayTokenIssueResult result = service.issueToken("admin-1");
 
-        assertThat(result.token()).isNotBlank();
-        assertThat(result.tokenId()).isEqualTo(2L);
-        then(overlayTokenPort).should().revokeActive(any());
+        // 검증
+        then(result.token()).isNotBlank();
+        then(result.tokenId()).isEqualTo(2L);
+        BDDMockito.then(overlayTokenPort).should().revokeActive(any());
         ArgumentCaptor<String> hashCaptor = ArgumentCaptor.forClass(String.class);
-        then(overlayTokenPort).should().saveIssuedToken(hashCaptor.capture(), argThat("admin-1"::equals));
-        assertThat(hashCaptor.getValue()).isNotEqualTo(result.token());
+        BDDMockito.then(overlayTokenPort).should().saveIssuedToken(hashCaptor.capture(), argThat("admin-1"::equals));
+        then(hashCaptor.getValue()).isNotEqualTo(result.token());
     }
 
     @Test
     void validateToken_ShouldCheckHashAgainstActiveToken() {
+        // 실행
         OverlayTokenService service = new OverlayTokenService(overlayTokenPort);
         String hash = service.hashToken("raw-token");
         given(overlayTokenPort.existsActiveTokenHash(hash)).willReturn(true);
 
-        assertThat(service.validateToken("raw-token")).isTrue();
+        // 검증
+        then(service.validateToken("raw-token")).isTrue();
 
-        then(overlayTokenPort).should().existsActiveTokenHash(argThat(hash::equals));
+        BDDMockito.then(overlayTokenPort).should().existsActiveTokenHash(argThat(hash::equals));
     }
 }

@@ -1,10 +1,10 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.authorization;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import org.mockito.BDDMockito;
 import static org.mockito.BDDMockito.never;
 
 import java.net.URLEncoder;
@@ -46,6 +46,7 @@ class AuthorizationControllerTest {
 
     @Test
     void login_ShouldStoreGeneratedStateAndRedirectWithState() {
+        // 준비
         MockHttpSession session = new MockHttpSession();
         AuthorizationController controller = newController();
 
@@ -55,44 +56,52 @@ class AuthorizationControllerTest {
 
         String result = controller.login(session);
 
+        // 실행
         String encodedRedirectUri = URLEncoder.encode("http://localhost:8080/token", StandardCharsets.UTF_8);
-        assertThat(result).isEqualTo("redirect:https://chzzk.naver.com/account-interlock?"
+        // 검증
+        then(result).isEqualTo("redirect:https://chzzk.naver.com/account-interlock?"
                 + "clientId=client-id"
                 + "&redirectUri=" + encodedRedirectUri
                 + "&state=state-value");
-        assertThat(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE))
+        then(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE))
                 .isEqualTo("state-value");
     }
 
     @Test
     void login_ShouldRedirectToFavoriteListWhenOAuthLoginIsDisabled() {
+        // 준비
         MockHttpSession session = new MockHttpSession();
         AuthorizationController controller = newController();
         ReflectionTestUtils.setField(controller, "oauthLoginEnabled", false);
 
+        // 실행
         String result = controller.login(session);
 
-        assertThat(result).isEqualTo("redirect:/favorite/list");
-        assertThat(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
+        // 검증
+        then(result).isEqualTo("redirect:/favorite/list");
+        then(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
     }
 
     @Test
     void token_ShouldRejectCallbackWhenStateDoesNotMatch() {
+        // 준비
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE, "expected-state");
         AuthorizationController controller = newController();
 
         given(oAuthStateService.matches("expected-state", "wrong-state")).willReturn(false);
 
-        assertThatThrownBy(() -> controller.token("code", "wrong-state", session))
+        // 실행 및 검증
+        thenThrownBy(() -> controller.token("code", "wrong-state", session))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception ->
-                        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
-        assertThat(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
-        then(authorizationService).should(never()).login(anyString(), anyString());
+                        then(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED));
+        then(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
+        BDDMockito.then(authorizationService).should(never()).login(anyString(), anyString());
     }
 
     @Test
     void token_ShouldAuthenticateAndRedirectWhenStateMatches() {
+        // 준비
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE, "expected-state");
         AuthorizationController controller = newController();
@@ -106,13 +115,15 @@ class AuthorizationControllerTest {
 
         String result = controller.token("code", "expected-state", session);
 
+        // 실행
         SecurityContext storedContext = (SecurityContext) session.getAttribute(
                 HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
         );
-        assertThat(result).isEqualTo("redirect:/favorite/list");
-        assertThat(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
-        assertThat(storedContext.getAuthentication().getName()).isEqualTo("channel-1");
-        assertThat(storedContext.getAuthentication().getAuthorities())
+        // 검증
+        then(result).isEqualTo("redirect:/favorite/list");
+        then(session.getAttribute(AuthorizationController.OAUTH_STATE_SESSION_ATTRIBUTE)).isNull();
+        then(storedContext.getAuthentication().getName()).isEqualTo("channel-1");
+        then(storedContext.getAuthentication().getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
                 .containsExactly("ROLE_ADMIN");
     }

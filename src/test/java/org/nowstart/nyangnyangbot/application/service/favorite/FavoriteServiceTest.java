@@ -53,14 +53,14 @@ class FavoriteServiceTest {
 
     @Test
     void getList_ShouldReturnAllFavorites() {
-        // given
+        // 준비
         Page<SummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteQueryPort.findAll(pageable)).willReturn(expectedPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getList(pageable);
 
-        // then
+        // 검증
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
         then(result.getTotalElements()).isEqualTo(3);
@@ -69,14 +69,14 @@ class FavoriteServiceTest {
 
     @Test
     void getList_ShouldReturnEmptyPage_WhenNoFavorites() {
-        // given
+        // 준비
         Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findAll(pageable)).willReturn(emptyPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getList(pageable);
 
-        // then
+        // 검증
         then(result).isNotNull();
         then(result.getContent()).isEmpty();
         then(result.getTotalElements()).isZero();
@@ -85,7 +85,7 @@ class FavoriteServiceTest {
 
     @Test
     void getByNickName_ShouldReturnFilteredFavorites() {
-        // given
+        // 준비
         String nickName = "테스트";
         List<SummaryResult> filteredList = List.of(
                 favoriteEntities.get(0),
@@ -94,10 +94,10 @@ class FavoriteServiceTest {
         Page<SummaryResult> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(expectedPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
-        // then
+        // 검증
         then(result).isNotNull();
         then(result.getContent()).hasSize(2);
         then(result.getContent()).allMatch(entity -> entity.nickName().contains(nickName));
@@ -106,15 +106,15 @@ class FavoriteServiceTest {
 
     @Test
     void getByNickName_ShouldReturnEmptyPage_WhenNoMatch() {
-        // given
+        // 준비
         String nickName = "존재하지않는유저";
         Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
-        // then
+        // 검증
         then(result).isNotNull();
         then(result.getContent()).isEmpty();
         BDDMockito.then(favoriteQueryPort).should().findByNickNameContains(pageable, nickName);
@@ -122,30 +122,30 @@ class FavoriteServiceTest {
 
     @Test
     void getByNickName_ShouldHandleSpecialCharacters() {
-        // given
+        // 준비
         String nickName = "유저@#$";
         Page<SummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteQueryPort.findByNickNameContains(pageable, nickName)).willReturn(emptyPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getByNickName(pageable, nickName);
 
-        // then
+        // 검증
         then(result).isNotNull();
         BDDMockito.then(favoriteQueryPort).should().findByNickNameContains(pageable, nickName);
     }
 
     @Test
     void getList_ShouldHandleDifferentPageSizes() {
-        // given
+        // 준비
         Pageable largePageable = PageRequest.of(0, 100);
         Page<SummaryResult> expectedPage = new PageImpl<>(favoriteEntities, largePageable, favoriteEntities.size());
         given(favoriteQueryPort.findAll(largePageable)).willReturn(expectedPage);
 
-        // when
+        // 실행
         Page<FavoriteSummaryResult> result = favoriteService.getList(largePageable);
 
-        // then
+        // 검증
         then(result).isNotNull();
         then(result.getContent()).hasSize(3);
         BDDMockito.then(favoriteQueryPort).should().findAll(largePageable);
@@ -153,6 +153,7 @@ class FavoriteServiceTest {
 
     @Test
     void getMyFavorite_ShouldReturnSummaryAndMarkSeen() {
+        // 준비
         AuthorizationAccountResult authorization = new AuthorizationAccountResult(
                 "user1", "치즈냥", null, null, null, null, null, false, null, null
         );
@@ -167,8 +168,10 @@ class FavoriteServiceTest {
         given(favoriteQueryPort.countHistory("user1")).willReturn(1L);
         given(favoriteQueryPort.findHistory("user1", 50)).willReturn(List.of(history));
 
+        // 실행
         FavoriteMeResult result = favoriteService.getMyFavorite("user1");
 
+        // 검증
         then(result.userId()).isEqualTo("user1");
         then(result.nickName()).isEqualTo("치즈냥");
         then(result.favorite()).isEqualTo(42);

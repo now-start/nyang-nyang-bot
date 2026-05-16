@@ -29,6 +29,7 @@ class AdminRouletteControllerTest {
 
     @Test
     void createTable_ShouldDelegateToManageUseCase() {
+        // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService);
         RouletteTableCreateRequest request = new RouletteTableCreateRequest(
                 "기본 룰렛",
@@ -43,14 +44,17 @@ class AdminRouletteControllerTest {
         );
         given(rouletteService.createTable("기본 룰렛", "!룰렛", 1_000L, 100)).willReturn(table);
 
+        // 실행
         ResponseEntity<RouletteTableResponse> result = controller.createTable(request);
 
+        // 검증
         then(result.getBody()).isEqualTo(RouletteTableResponse.from(table));
         BDDMockito.then(rouletteService).should().createTable("기본 룰렛", "!룰렛", 1_000L, 100);
     }
 
     @Test
     void addItem_ShouldDelegateToManageUseCase() {
+        // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService);
         RouletteItemRequest request = new RouletteItemRequest(
                 "꽝",
@@ -75,8 +79,10 @@ class AdminRouletteControllerTest {
         given(rouletteService.addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1))
                 .willReturn(item);
 
+        // 실행
         ResponseEntity<RouletteItemResponse> result = controller.addItem(1L, request);
 
+        // 검증
         then(result.getBody()).isEqualTo(RouletteItemResponse.from(item));
         BDDMockito.then(rouletteService).should().addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1);
     }

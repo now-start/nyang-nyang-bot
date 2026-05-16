@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.architecture;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.BDDAssertions.then;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +27,7 @@ class ArchitectureBoundaryTest {
 
     @Test
     void sourceRoot_ShouldOnlyContainHexagonalTopLevelPackages() throws IOException {
+        // 실행
         List<String> violations;
         try (Stream<Path> paths = Files.list(SOURCE_ROOT)) {
             violations = paths
@@ -36,11 +37,13 @@ class ArchitectureBoundaryTest {
                     .toList();
         }
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void domainLayer_ShouldNotDependOnAdaptersOrPersistence() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.application.",
@@ -51,11 +54,13 @@ class ArchitectureBoundaryTest {
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void applicationLayer_ShouldNotDependOnAdapters() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.adapter.",
@@ -63,11 +68,13 @@ class ArchitectureBoundaryTest {
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void applicationLayer_ShouldNotDependOnExternalClientLibraries() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "com.google.api.",
@@ -76,32 +83,40 @@ class ArchitectureBoundaryTest {
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void applicationModelPackage_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/model")).toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void applicationExceptionPackage_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/exception")).toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void applicationGatewayPackage_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/gateway")).toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void applicationPort_ShouldNotContainSecondLevelTypePackages() throws IOException {
+        // 실행
         List<Path> javaSources = Stream.of(
                         "application/port/in/attendance/dto",
                         "application/port/in/favorite/dto",
@@ -128,71 +143,85 @@ class ArchitectureBoundaryTest {
                 .flatMap(this::javaFilesUnchecked)
                 .toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void applicationInboundPorts_ShouldOnlyContainUseCaseInterfaces() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application/port/in"))
                 .filter(path -> !path.getFileName().toString().endsWith("UseCase.java")
                         || !declaresPublicInterfaceNamedAfterFile(path))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void applicationOutboundPorts_ShouldOnlyContainPortInterfaces() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application/port/out"))
                 .filter(path -> !path.getFileName().toString().endsWith("Port.java")
                         || !declaresPublicInterfaceNamedAfterFile(path))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void domainLayer_ShouldNotContainDtoClasses() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
                 .filter(path -> path.getFileName().toString().endsWith("Dto.java"))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void domainLayer_ShouldOnlyContainBusinessValueRecords() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
                 .filter(path -> containsAny(path, "public record "))
                 .filter(path -> !ALLOWED_DOMAIN_RECORDS.contains(path.getFileName().toString()))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void applicationLayer_ShouldNotContainDtoNamedSources() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> path.getFileName().toString().endsWith("Dto.java")
                         || path.toString().contains("/dto/"))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void inboundWebAdapters_ShouldNotDependOnPersistence() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.adapter.out.persistence."
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void inboundWebAdapters_ShouldOnlyDependOnApplicationPorts() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.application.service.",
@@ -200,38 +229,46 @@ class ArchitectureBoundaryTest {
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void inboundWebCommonPackage_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("adapter/in/web/common")).toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void persistenceLayer_ShouldNotContainSharedEntityOrRepositoryPackages() throws IOException {
+        // 실행
         List<Path> javaSources = Stream.of("adapter/out/persistence/entity", "adapter/out/persistence/repository")
                 .map(SOURCE_ROOT::resolve)
                 .flatMap(this::javaFilesUnchecked)
                 .toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void externalAdapters_ShouldNotContainDtoPackagesOrDtoClasses() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/external"))
                 .filter(path -> path.getFileName().toString().endsWith("Dto.java")
                         || path.toString().contains("/dto/"))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void externalProviderRoots_ShouldOnlyContainClientAdapters() throws IOException {
+        // 실행
         List<Path> violations;
         try (Stream<Path> providers = Files.list(SOURCE_ROOT.resolve("adapter/out/external"))) {
             violations = providers
@@ -252,11 +289,13 @@ class ArchitectureBoundaryTest {
                     .toList();
         }
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void externalRequestAndResponsePackages_ShouldUseMatchingSuffixes() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/external"))
                 .filter(path -> (path.toString().contains("/request/")
                         && !path.getFileName().toString().endsWith("Request.java"))
@@ -264,18 +303,22 @@ class ArchitectureBoundaryTest {
                         && !path.getFileName().toString().endsWith("Response.java")))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void domainModelPackage_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("domain/model")).toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     @Test
     void inboundWebControllers_ShouldLiveInFeaturePackages() throws IOException {
+        // 실행
         List<Path> violations;
         try (Stream<Path> paths = Files.list(SOURCE_ROOT.resolve("adapter/in/web"))) {
             violations = paths
@@ -283,11 +326,13 @@ class ArchitectureBoundaryTest {
                     .toList();
         }
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void mapperAndConverterClasses_ShouldNotExist() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT)
                 .filter(path -> {
                     String fileName = path.getFileName().toString();
@@ -298,11 +343,13 @@ class ArchitectureBoundaryTest {
                 })
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void legacyConversionNames_ShouldNotBeUsed() throws IOException {
+        // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT)
                 .filter(path -> containsAny(path,
                         " to()",
@@ -315,17 +362,20 @@ class ArchitectureBoundaryTest {
                 ))
                 .toList();
 
-        assertThat(violations).isEmpty();
+        // 검증
+        then(violations).isEmpty();
     }
 
     @Test
     void legacyTopLevelPackages_ShouldNotContainJavaSources() throws IOException {
+        // 실행
         List<Path> javaSources = Stream.of("controller", "data", "repository", "service")
                 .map(SOURCE_ROOT::resolve)
                 .flatMap(this::javaFilesUnchecked)
                 .toList();
 
-        assertThat(javaSources).isEmpty();
+        // 검증
+        then(javaSources).isEmpty();
     }
 
     private Stream<Path> javaFiles(Path root) throws IOException {
