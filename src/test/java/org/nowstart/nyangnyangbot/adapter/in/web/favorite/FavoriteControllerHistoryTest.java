@@ -44,6 +44,7 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() throws Exception {
+        // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
                 null,
                 null,
@@ -60,9 +61,11 @@ class FavoriteControllerHistoryTest {
         );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
 
+        // 실행
         ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);
         String json = objectMapper.writeValueAsString(result.getBody());
 
+        // 검증
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(json).contains("\"favorite\":12");
         then(json).contains("\"history\":\"출석체크(+1)\"");
@@ -72,6 +75,7 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldExposeLedgerFields() throws Exception {
+        // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
                 7L,
                 null,
@@ -88,9 +92,11 @@ class FavoriteControllerHistoryTest {
         );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
 
+        // 실행
         ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);
         String json = objectMapper.writeValueAsString(result.getBody());
 
+        // 검증
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(json).contains("\"ledgerId\":7");
         then(json).contains("\"delta\":5");
@@ -103,22 +109,28 @@ class FavoriteControllerHistoryTest {
 
     @Test
     void favoriteHistory_ShouldClampLimitTo50() {
+        // 준비
         given(favoriteService.getHistory("user1", 50)).willReturn(List.of());
 
+        // 실행
         favoriteController.favoriteHistory("user1", 500);
 
+        // 검증
         org.mockito.BDDMockito.then(favoriteService).should().getHistory("user1", 50);
     }
 
     @Test
     void favoriteMe_ShouldUseAuthenticatedUserId() {
+        // 준비
         FavoriteMeResult resultDto = new FavoriteMeResult("user1", "치즈냥", 12, 2L, List.of());
         given(favoriteService.getMyFavorite("user1")).willReturn(resultDto);
 
+        // 실행
         ResponseEntity<FavoriteMeResponse> result = favoriteController.favoriteMe(
                 new UsernamePasswordAuthenticationToken("user1", "N/A")
         );
 
+        // 검증
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo(FavoriteMeResponse.from(resultDto));
         org.mockito.BDDMockito.then(favoriteService).should().getMyFavorite("user1");

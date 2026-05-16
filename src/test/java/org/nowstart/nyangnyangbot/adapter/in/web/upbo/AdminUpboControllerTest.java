@@ -26,6 +26,7 @@ class AdminUpboControllerTest {
 
     @Test
     void applyUpbo_ShouldPassAuthenticatedAdminAsActor() {
+        // 준비
         AdminUpboController controller = new AdminUpboController(upboService);
         UpboApplyRequest request = new UpboApplyRequest(
                 "user-1",
@@ -53,11 +54,13 @@ class AdminUpboControllerTest {
         );
         given(upboService.applyUpbo(request.toApplyUpboCommand(), "admin-1")).willReturn(saved);
 
+        // 실행
         ResponseEntity<UpboApplyResponse> result = controller.applyUpbo(
                 request,
                 new UsernamePasswordAuthenticationToken("admin-1", "N/A")
         );
 
+        // 검증
         then(result.getBody()).isEqualTo(UpboApplyResponse.from(saved));
         BDDMockito.then(upboService).should().applyUpbo(request.toApplyUpboCommand(), "admin-1");
     }

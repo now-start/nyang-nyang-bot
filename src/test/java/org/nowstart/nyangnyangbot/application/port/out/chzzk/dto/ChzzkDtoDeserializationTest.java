@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.out.chzzk;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.BDDAssertions.then;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +18,7 @@ class ChzzkDtoDeserializationTest {
 
     @Test
     void sessionDto_ShouldAllowNullPaginationFields() throws Exception {
+        // 준비
         String json = """
                 {
                   "code": 200,
@@ -32,20 +33,23 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
+        // 실행
         ApiResult<SessionResult> response = objectMapper.readValue(
                 json,
                 new TypeReference<ApiResult<SessionResult>>() {
                 }
         );
 
-        assertThat(response.code()).isEqualTo(200);
-        assertThat(response.content().page()).isNull();
-        assertThat(response.content().totalCount()).isNull();
-        assertThat(response.content().totalPages()).isNull();
+        // 검증
+        then(response.code()).isEqualTo(200);
+        then(response.content().page()).isNull();
+        then(response.content().totalCount()).isNull();
+        then(response.content().totalPages()).isNull();
     }
 
     @Test
     void authorizationDto_ShouldAllowNullExpiresIn() throws Exception {
+        // 준비
         String json = """
                 {
                   "accessToken": "access",
@@ -56,23 +60,29 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
+        // 실행
         AuthorizationToken response = objectMapper.readValue(json, AuthorizationToken.class);
 
-        assertThat(response.expiresIn()).isNull();
+        // 검증
+        then(response.expiresIn()).isNull();
     }
 
     @Test
     void authorizationDto_ToStringShouldMaskSensitiveTokens() {
+        // 준비
         AuthorizationToken dto = new AuthorizationToken("access-secret", "refresh-secret", "Bearer", 3600, "chat");
 
+        // 실행
         String result = dto.toString();
 
-        assertThat(result).doesNotContain("access-secret", "refresh-secret");
-        assertThat(result).contains("accessToken=<masked>", "refreshToken=<masked>");
+        // 검증
+        then(result).doesNotContain("access-secret", "refresh-secret");
+        then(result).contains("accessToken=<masked>", "refreshToken=<masked>");
     }
 
     @Test
     void authorizationRequestDto_ToStringShouldMaskSensitiveValues() {
+        // 준비
         AuthorizationTokenCommand dto = new AuthorizationTokenCommand(
                 "authorization_code",
                 "client-id",
@@ -82,10 +92,12 @@ class ChzzkDtoDeserializationTest {
                 "refresh-secret"
         );
 
+        // 실행
         String result = dto.toString();
 
-        assertThat(result).doesNotContain("client-secret", "code-secret", "state-secret", "refresh-secret");
-        assertThat(result).contains(
+        // 검증
+        then(result).doesNotContain("client-secret", "code-secret", "state-secret", "refresh-secret");
+        then(result).contains(
                 "grantType=authorization_code",
                 "clientId=client-id",
                 "clientSecret=<masked>",
@@ -97,6 +109,7 @@ class ChzzkDtoDeserializationTest {
 
     @Test
     void subscriptionDto_ShouldAllowNullTierFields() throws Exception {
+        // 준비
         String json = """
                 {
                   "channelId": "channel-1",
@@ -108,14 +121,17 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
+        // 실행
         SubscriptionEventPayload response = objectMapper.readValue(json, SubscriptionEventPayload.class);
 
-        assertThat(response.tierNo()).isNull();
-        assertThat(response.month()).isNull();
+        // 검증
+        then(response.tierNo()).isNull();
+        then(response.month()).isNull();
     }
 
     @Test
     void chatDto_ShouldAllowNullMessageTime() throws Exception {
+        // 준비
         String json = """
                 {
                   "channelId": "channel-1",
@@ -131,8 +147,10 @@ class ChzzkDtoDeserializationTest {
                 }
                 """;
 
+        // 실행
         ChatEventPayload response = objectMapper.readValue(json, ChatEventPayload.class);
 
-        assertThat(response.messageTime()).isNull();
+        // 검증
+        then(response.messageTime()).isNull();
     }
 }

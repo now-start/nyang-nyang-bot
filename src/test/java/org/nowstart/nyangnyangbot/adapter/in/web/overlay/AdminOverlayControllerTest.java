@@ -26,14 +26,17 @@ class AdminOverlayControllerTest {
 
     @Test
     void issueToken_ShouldUseAuthenticatedAdminAsActor() {
+        // 준비
         AdminOverlayController controller = new AdminOverlayController(overlayTokenService, overlayDisplayService);
         OverlayTokenIssueResult result = new OverlayTokenIssueResult(1L, "raw-token");
         given(overlayTokenService.issueToken("admin-1")).willReturn(result);
 
+        // 실행
         ResponseEntity<OverlayTokenIssueResponse> response = controller.issueToken(
                 new UsernamePasswordAuthenticationToken("admin-1", "N/A")
         );
 
+        // 검증
         then(response.getBody()).isEqualTo(OverlayTokenIssueResponse.from(result));
         BDDMockito.then(overlayTokenService).should().issueToken("admin-1");
     }

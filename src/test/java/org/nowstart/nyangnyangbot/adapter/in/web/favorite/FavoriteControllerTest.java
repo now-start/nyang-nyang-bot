@@ -66,14 +66,14 @@ class FavoriteControllerTest {
 
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsNull() {
-        // given
+        // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
@@ -85,17 +85,17 @@ class FavoriteControllerTest {
 
     @Test
     void favoriteList_ShouldReturnFilteredFavorites_WhenNickNameProvided() {
-        // given
+        // 준비
         String nickName = "유저1";
         List<FavoriteSummaryResult> filteredList = Collections.singletonList(favoriteEntities.get(0));
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(filteredList, pageable, filteredList.size());
 
         given(favoriteService.getByNickName(any(Pageable.class), eq(nickName))).willReturn(expectedPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, nickName, null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(nickName));
@@ -104,14 +104,14 @@ class FavoriteControllerTest {
 
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsEmpty() {
-        // given
+        // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, "", null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
@@ -119,44 +119,44 @@ class FavoriteControllerTest {
 
     @Test
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsBlank() {
-        // given
+        // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, "   ", null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
     }
 
     @Test
     void favoriteList_ShouldEscapeHtml_InNickName() {
-        // given
+        // 준비
         String maliciousNickName = "<script>alert('xss')</script>";
         String escapedNickName = "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;";
 
         Page<FavoriteSummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getByNickName(any(Pageable.class), eq(escapedNickName))).willReturn(emptyPage);
 
-        // when
+        // 실행
         favoriteController.favoriteList(pageable, maliciousNickName, null);
 
-        // then
+        // 검증
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(escapedNickName));
     }
 
     @Test
     void favoriteList_ShouldApplyDescendingSort_ByFavorite() {
-        // given
+        // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         favoriteController.favoriteList(pageable, null, null);
 
-        // then
+        // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p ->
                 p.getSort().equals(Sort.by("favorite").descending())
         ));
@@ -164,57 +164,57 @@ class FavoriteControllerTest {
 
     @Test
     void favoriteList_ShouldPreservePageNumber() {
-        // given
+        // 준비
         Pageable page2 = PageRequest.of(2, 10);
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, page2, 100);
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         favoriteController.favoriteList(page2, null, null);
 
-        // then
+        // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageNumber() == 2));
     }
 
     @Test
     void favoriteList_ShouldPreservePageSize() {
-        // given
+        // 준비
         Pageable customPageable = PageRequest.of(0, 50);
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, customPageable, favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
-        // when
+        // 실행
         favoriteController.favoriteList(customPageable, null, null);
 
-        // then
+        // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageSize() == 50));
     }
 
     @Test
     void favoriteList_ShouldHandleSpecialCharactersInNickName() {
-        // given
+        // 준비
         String specialNickName = "유저@#$%^&*()";
         Page<FavoriteSummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getByNickName(any(Pageable.class), anyString())).willReturn(emptyPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), anyString());
     }
 
     @Test
     void favoriteList_ShouldReturnEmptyPage_WhenNoResults() {
-        // given
+        // 준비
         Page<FavoriteSummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         given(favoriteService.getList(any(Pageable.class))).willReturn(emptyPage);
 
-        // when
+        // 실행
         ModelAndView result = favoriteController.favoriteList(pageable, null, null);
 
-        // then
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         Page<FavoriteSummaryResult> resultPage = (Page<FavoriteSummaryResult>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();

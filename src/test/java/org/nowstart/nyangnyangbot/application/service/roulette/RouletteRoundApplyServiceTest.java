@@ -1,10 +1,11 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import org.mockito.BDDMockito;
 import static org.mockito.Mockito.never;
 
 import java.util.Optional;
@@ -40,6 +41,7 @@ class RouletteRoundApplyServiceTest {
 
     @Test
     void applyRound_ShouldConvertAutoFavoriteRewardThroughLedger() {
+        // 준비
         RouletteRoundApplyService service = createService();
         RoundResult round = favoriteRound(false);
         given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
@@ -48,10 +50,12 @@ class RouletteRoundApplyServiceTest {
         given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
                 .willReturn(userUpbo(40L, 99L));
 
+        // 실행
         service.applyRound(30L);
 
-        then(roulettePort).should().markRoundApplied(30L, 99L, 40L);
-        then(adjustFavoriteUseCase).should().adjust(argThat(command ->
+        // 검증
+        BDDMockito.then(roulettePort).should().markRoundApplied(30L, 99L, 40L);
+        BDDMockito.then(adjustFavoriteUseCase).should().adjust(argThat(command ->
                 "user-1".equals(command.userId())
                         && command.delta() == 10
                         && command.sourceType() == FavoriteSourceType.UPBO_ROULETTE
@@ -61,15 +65,84 @@ class RouletteRoundApplyServiceTest {
 
     @Test
     void applyRound_ShouldMarkLosingRoundAppliedWithoutLedgerOrUpbo() {
+        // 준비
         RouletteRoundApplyService service = createService();
         RoundResult round = favoriteRound(true);
         given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
 
+        // 실행
         service.applyRound(30L);
 
-        then(roulettePort).should().markRoundApplied(30L, null, null);
-        then(adjustFavoriteUseCase).should(never()).adjust(any());
-        then(upboPort).should(never()).createUserUpbo(any());
+        // 검증
+        BDDMockito.then(roulettePort).should().markRoundApplied(30L, null, null);
+        BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any());
+        BDDMockito.then(upboPort).should(never()).createUserUpbo(any());
+    }
+
+    @Test
+    void applyRound_ShouldIgnoreAlreadyAppliedRound() {
+        // 준비
+        RouletteRoundApplyService service = createService();
+        RoundResult round = round(false, RewardType.FAVORITE, ConversionMode.AUTO, 10, RouletteRoundStatus.APPLIED);
+        given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
+
+        // 실행
+        service.applyRound(30L);
+
+        // 검증
+        BDDMockito.then(adjustFavoriteUseCase).shouldHaveNoInteractions();
+        BDDMockito.then(upboPort).shouldHaveNoInteractions();
+        BDDMockito.then(roulettePort).should(never()).markRoundApplied(any(), any(), any());
+    }
+
+    @Test
+    void applyRound_ShouldRejectMissingRound() {
+        // 준비
+        RouletteRoundApplyService service = createService();
+        given(roulettePort.findRoundById(404L)).willReturn(Optional.empty());
+
+        // 실행 및 검증
+        thenThrownBy(() -> service.applyRound(404L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("roulette round not found");
+    }
+
+    @Test
+    void applyRound_ShouldCreateOwnedUpboWithoutLedgerForManualConversion() {
+        // 준비
+        RouletteRoundApplyService service = createService();
+        RoundResult round = round(false, RewardType.MISSION, ConversionMode.MANUAL, null, RouletteRoundStatus.CONFIRMED);
+        given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
+        given(upboPort.createUserUpbo(any(CreateUserUpboCommand.class)))
+                .willReturn(userUpbo(41L, null, UpboStatus.OWNED));
+
+        // 실행
+        service.applyRound(30L);
+
+        // 검증
+        BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any());
+        BDDMockito.then(upboPort).should().createUserUpbo(argThat(command ->
+                command.status() == UpboStatus.OWNED
+                        && command.ledgerId() == null
+                        && command.exchangeFavoriteValue() == null
+        ));
+        BDDMockito.then(roulettePort).should().markRoundApplied(30L, null, 41L);
+    }
+
+    @Test
+    void applyRound_ShouldMarkFailedWhenApplyingRewardThrows() {
+        // 준비
+        RouletteRoundApplyService service = createService();
+        RoundResult round = favoriteRound(false);
+        given(roulettePort.findRoundById(30L)).willReturn(Optional.of(round));
+        given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
+                .willThrow(new IllegalStateException("잔액 반영 실패"));
+
+        // 실행
+        service.applyRound(30L);
+
+        // 검증
+        BDDMockito.then(roulettePort).should().markRoundFailed(30L, "잔액 반영 실패");
     }
 
     private RouletteRoundApplyService createService() {
@@ -81,6 +154,22 @@ class RouletteRoundApplyServiceTest {
     }
 
     private RoundResult favoriteRound(boolean losingItem) {
+        return round(
+                losingItem,
+                losingItem ? RewardType.CUSTOM : RewardType.FAVORITE,
+                losingItem ? ConversionMode.NONE : ConversionMode.AUTO,
+                losingItem ? null : 10,
+                RouletteRoundStatus.CONFIRMED
+        );
+    }
+
+    private RoundResult round(
+            boolean losingItem,
+            RewardType rewardType,
+            ConversionMode conversionMode,
+            Integer exchangeFavoriteValue,
+            RouletteRoundStatus status
+    ) {
         return new RoundResult(
                 30L,
                 20L,
@@ -91,10 +180,10 @@ class RouletteRoundApplyServiceTest {
                 losingItem ? "꽝" : "호감도 +10",
                 10_000,
                 losingItem,
-                losingItem ? RewardType.CUSTOM : RewardType.FAVORITE,
-                losingItem ? ConversionMode.NONE : ConversionMode.AUTO,
-                losingItem ? null : 10,
-                RouletteRoundStatus.CONFIRMED,
+                rewardType,
+                conversionMode,
+                exchangeFavoriteValue,
+                status,
                 null,
                 null,
                 null,
@@ -103,13 +192,17 @@ class RouletteRoundApplyServiceTest {
     }
 
     private UserResult userUpbo(Long id, Long ledgerId) {
+        return userUpbo(id, ledgerId, UpboStatus.CONVERTED);
+    }
+
+    private UserResult userUpbo(Long id, Long ledgerId, UpboStatus status) {
         return new UserResult(
                 id,
                 "user-1",
                 null,
                 "치즈냥",
                 "호감도 +10",
-                UpboStatus.CONVERTED,
+                status,
                 10,
                 RewardType.FAVORITE,
                 ConversionMode.AUTO,

@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.domain.favorite;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -9,33 +9,41 @@ class FavoriteAccountTest {
 
     @Test
     void applyDelta_ShouldUpdateBalanceAndReturnBeforeAfter() {
+        // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 10);
 
+        // 실행
         FavoriteBalanceChange result = account.applyDelta(5, false);
 
-        assertThat(result.beforeBalance()).isEqualTo(10);
-        assertThat(result.delta()).isEqualTo(5);
-        assertThat(result.afterBalance()).isEqualTo(15);
-        assertThat(account.getBalance()).isEqualTo(15);
+        // 검증
+        then(result.beforeBalance()).isEqualTo(10);
+        then(result.delta()).isEqualTo(5);
+        then(result.afterBalance()).isEqualTo(15);
+        then(account.getBalance()).isEqualTo(15);
     }
 
     @Test
     void applyDelta_ShouldRejectNegativeBalance_WhenPolicyDisallowsIt() {
+        // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 3);
 
-        assertThatThrownBy(() -> account.applyDelta(-5, false))
+        // 실행 및 검증
+        thenThrownBy(() -> account.applyDelta(-5, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("favorite balance cannot be negative");
-        assertThat(account.getBalance()).isEqualTo(3);
+        then(account.getBalance()).isEqualTo(3);
     }
 
     @Test
     void applyDelta_ShouldAllowNegativeBalance_WhenPolicyAllowsIt() {
+        // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 3);
 
+        // 실행
         FavoriteBalanceChange result = account.applyDelta(-5, true);
 
-        assertThat(result.afterBalance()).isEqualTo(-2);
-        assertThat(account.getBalance()).isEqualTo(-2);
+        // 검증
+        then(result.afterBalance()).isEqualTo(-2);
+        then(account.getBalance()).isEqualTo(-2);
     }
 }

@@ -11,8 +11,10 @@ class LandingControllerTest {
 
     @Test
     void landing_ShouldReturnIndexViewInLandingMode() {
+        // 실행
         ModelAndView result = landingController.landing();
 
+        // 검증
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("landingMode")).isEqualTo(true);
     }

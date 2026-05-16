@@ -1,11 +1,11 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
 import org.nowstart.nyangnyangbot.application.service.overlay.OverlayDisplayService;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import org.mockito.BDDMockito;
 import static org.mockito.Mockito.never;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,21 +46,86 @@ class RouletteApplicationServiceTest {
 
     @Test
     void activateTable_ShouldRejectTableWithoutLosingItem() {
+        // 준비
         ManageRouletteService rouletteService = createManageService();
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(false)));
         given(roulettePort.findActiveItemsByTableId(1L))
                 .willReturn(List.of(item("호감도 +10", 10_000, false, 10)));
 
-        assertThatThrownBy(() -> rouletteService.activateTable(1L))
+        // 실행 및 검증
+        thenThrownBy(() -> rouletteService.activateTable(1L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("losing item is required");
     }
 
     @Test
+    void processDonation_ShouldIgnoreNullDonation() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(null);
+
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("donation is required");
+        BDDMockito.then(roulettePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void processDonation_ShouldIgnoreBlankDonationEventId() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+                " ",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "5000",
+                "!룰렛",
+                null
+        ));
+
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("donation event id is required");
+        BDDMockito.then(roulettePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void processDonation_ShouldIgnoreWhenActiveTableIsMissing() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.empty());
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+                "donation-1",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "5000",
+                "!룰렛",
+                null
+        ));
+
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("active roulette table not found");
+        BDDMockito.then(roulettePort).should(never()).existsEventByDonationEventId(any());
+    }
+
+    @Test
     void processDonation_ShouldIgnoreDonationWithoutExactCommandToken() {
+        // 준비
         ProcessRouletteDonationService rouletteService = createProcessService();
         given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
 
+        // 실행
         RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
                 "donation-1",
                 "CHAT",
@@ -72,17 +137,20 @@ class RouletteApplicationServiceTest {
                 null
         ));
 
-        assertThat(result.status().name()).isEqualTo("IGNORED");
-        assertThat(result.reason()).isEqualTo("roulette command not found");
-        then(roulettePort).should(never()).createEvent(any());
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("roulette command not found");
+        BDDMockito.then(roulettePort).should(never()).createEvent(any());
     }
 
     @Test
     void processDonation_ShouldSkipDuplicateDonationEventId() {
+        // 준비
         ProcessRouletteDonationService rouletteService = createProcessService();
         given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
         given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(true);
 
+        // 실행
         RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
                 "donation-1",
                 "CHAT",
@@ -94,12 +162,66 @@ class RouletteApplicationServiceTest {
                 null
         ));
 
-        assertThat(result.status().name()).isEqualTo("DUPLICATE");
-        then(rouletteRoundApplyService).should(never()).applyRound(any());
+        // 검증
+        then(result.status().name()).isEqualTo("DUPLICATE");
+        BDDMockito.then(rouletteRoundApplyService).should(never()).applyRound(any());
+    }
+
+    @Test
+    void processDonation_ShouldIgnoreWhenDonationAmountIsLessThanRoundPrice() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+                "donation-1",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "999",
+                "안녕 !룰렛",
+                null
+        ));
+
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("donation amount is less than roulette price");
+        BDDMockito.then(roulettePort).should(never()).findActiveItemsByTableId(any());
+    }
+
+    @Test
+    void processDonation_ShouldIgnoreWhenActiveTableValidationFails() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
+        given(roulettePort.findActiveItemsByTableId(1L))
+                .willReturn(List.of(item("호감도 +10", 1_000, false, 10)));
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+                "donation-1",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "1000",
+                "안녕 !룰렛",
+                null
+        ));
+
+        // 검증
+        then(result.status().name()).isEqualTo("IGNORED");
+        then(result.reason()).isEqualTo("active roulette table is invalid");
+        BDDMockito.then(roulettePort).should(never()).createEvent(any());
     }
 
     @Test
     void processDonation_ShouldConfirmRoundsAndApplyEachRound() {
+        // 준비
         ProcessRouletteDonationService rouletteService = createProcessService();
         TableResult table = table(true);
         EventResult event = event(20L, 2);
@@ -116,6 +238,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.findEventById(20L)).willReturn(Optional.of(event));
         given(roulettePort.findRoundsByEventId(20L)).willReturn(savedRounds);
 
+        // 실행
         RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
                 "donation-1",
                 "CHAT",
@@ -127,17 +250,55 @@ class RouletteApplicationServiceTest {
                 null
         ));
 
-        assertThat(result.status().name()).isEqualTo("CONFIRMED");
-        assertThat(result.roundCount()).isEqualTo(2);
-        then(rouletteRoundApplyService).should().applyRound(30L);
-        then(rouletteRoundApplyService).should().applyRound(31L);
-        then(overlayDisplayService).should().enqueueRouletteEvent(20L);
+        // 검증
+        then(result.status().name()).isEqualTo("CONFIRMED");
+        then(result.roundCount()).isEqualTo(2);
+        BDDMockito.then(rouletteRoundApplyService).should().applyRound(30L);
+        BDDMockito.then(rouletteRoundApplyService).should().applyRound(31L);
+        BDDMockito.then(overlayDisplayService).should().enqueueRouletteEvent(20L);
         ArgumentCaptor<CreateRouletteEventCommand> eventCaptor = ArgumentCaptor.forClass(CreateRouletteEventCommand.class);
-        then(roulettePort).should().createEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().itemsSnapshotJson()).contains("호감도 +10", "꽝");
+        BDDMockito.then(roulettePort).should().createEvent(eventCaptor.capture());
+        then(eventCaptor.getValue().itemsSnapshotJson()).contains("호감도 +10", "꽝");
         ArgumentCaptor<List<CreateRouletteRoundCommand>> roundsCaptor = ArgumentCaptor.forClass(List.class);
-        then(roulettePort).should().saveRounds(any(), roundsCaptor.capture());
-        assertThat(roundsCaptor.getValue()).hasSize(2);
+        BDDMockito.then(roulettePort).should().saveRounds(any(), roundsCaptor.capture());
+        then(roundsCaptor.getValue()).hasSize(2);
+    }
+
+    @Test
+    void processDonation_ShouldConfirmEvenWhenRoundCountExceedsHighThreshold() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+        TableResult table = table(true, 1);
+        EventResult event = event(21L, 2);
+        List<RoundResult> savedRounds = List.of(round(32L, 1), round(33L, 2));
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
+        given(roulettePort.findActiveItemsByTableId(1L))
+                .willReturn(List.of(
+                        item("호감도 +10", 9_999, false, 10),
+                        item("꽝", 1, true, null)
+                ));
+        given(roulettePort.createEvent(any(CreateRouletteEventCommand.class))).willReturn(event);
+        given(roulettePort.saveRounds(any(), any())).willReturn(savedRounds);
+        given(roulettePort.findEventById(21L)).willReturn(Optional.of(event));
+        given(roulettePort.findRoundsByEventId(21L)).willReturn(savedRounds);
+
+        // 실행
+        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+                "donation-1",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "2500",
+                "안녕 !룰렛",
+                null
+        ));
+
+        // 검증
+        then(result.status().name()).isEqualTo("CONFIRMED");
+        then(result.roundCount()).isEqualTo(2);
+        BDDMockito.then(overlayDisplayService).should().enqueueRouletteEvent(21L);
     }
 
     private ManageRouletteService createManageService() {
@@ -155,7 +316,11 @@ class RouletteApplicationServiceTest {
     }
 
     private TableResult table(boolean active) {
-        return new TableResult(1L, "기본 룰렛", "!룰렛", 1_000L, active, 1, 100);
+        return table(active, 100);
+    }
+
+    private TableResult table(boolean active, Integer highRoundThreshold) {
+        return new TableResult(1L, "기본 룰렛", "!룰렛", 1_000L, active, 1, highRoundThreshold);
     }
 
     private ItemResult item(String label, int probability, boolean losingItem, Integer favoriteValue) {
