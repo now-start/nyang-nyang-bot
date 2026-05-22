@@ -1,11 +1,5 @@
 spring:
   application:
     name: nyang-nyang-bot
-
----
-
-spring:
   config:
-    activate:
-      on-profile: "!local"
-    import: ${SPRING_CONFIG_IMPORT:configserver:http://localhost:8888}
+    import: ${SPRING_CONFIG_IMPORT:configserver:https://spring.nowstart.org/config}
