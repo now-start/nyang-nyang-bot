@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -16,9 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -43,6 +44,7 @@ class FavoriteControllerHistoryTest {
     }
 
     @Test
+    @DisplayName("즐겨찾기 히스토리 응답에 프론트엔드가 기대하는 date 필드가 포함된다")
     void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() throws Exception {
         // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
@@ -74,6 +76,7 @@ class FavoriteControllerHistoryTest {
     }
 
     @Test
+    @DisplayName("즐겨찾기 히스토리 응답에 원장 필드들이 포함된다")
     void favoriteHistory_ShouldExposeLedgerFields() throws Exception {
         // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
@@ -108,6 +111,7 @@ class FavoriteControllerHistoryTest {
     }
 
     @Test
+    @DisplayName("limit이 50을 초과하면 50으로 제한한다")
     void favoriteHistory_ShouldClampLimitTo50() {
         // 준비
         given(favoriteService.getHistory("user1", 50)).willReturn(List.of());
@@ -120,6 +124,7 @@ class FavoriteControllerHistoryTest {
     }
 
     @Test
+    @DisplayName("로그인한 사용자의 userId를 사용하여 내 즐겨찾기를 조회한다")
     void favoriteMe_ShouldUseAuthenticatedUserId() {
         // 준비
         FavoriteMeResult resultDto = new FavoriteMeResult("user1", "치즈냥", 12, 2L, List.of());

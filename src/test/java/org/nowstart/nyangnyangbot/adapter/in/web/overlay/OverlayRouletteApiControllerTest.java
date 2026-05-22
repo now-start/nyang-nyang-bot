@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -23,6 +24,7 @@ class OverlayRouletteApiControllerTest {
     private OverlayDisplayService overlayDisplayService;
 
     @Test
+    @DisplayName("대기 중인 이벤트가 없으면 204 No Content를 반환한다")
     void getNextEvent_ShouldReturnNoContentWhenQueueIsEmpty() {
         // 준비
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
@@ -36,6 +38,7 @@ class OverlayRouletteApiControllerTest {
     }
 
     @Test
+    @DisplayName("대기 중인 이벤트가 있으면 표시 이벤트를 반환한다")
     void getNextEvent_ShouldReturnDisplayEvent() {
         // 준비
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
@@ -58,6 +61,7 @@ class OverlayRouletteApiControllerTest {
     }
 
     @Test
+    @DisplayName("표시 완료 요청 시 서비스에 위임한다")
     void markDisplayed_ShouldDelegateToService() {
         // 준비
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);
@@ -70,6 +74,7 @@ class OverlayRouletteApiControllerTest {
     }
 
     @Test
+    @DisplayName("유효하지 않은 토큰으로 이벤트 요청 시 401 Unauthorized를 반환한다")
     void getNextEvent_ShouldReturnUnauthorizedForInvalidToken() {
         // 준비
         OverlayRouletteApiController controller = new OverlayRouletteApiController(overlayDisplayService);

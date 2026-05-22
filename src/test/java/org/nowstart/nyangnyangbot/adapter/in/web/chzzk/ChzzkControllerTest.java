@@ -8,9 +8,10 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.doReturn;
 
-import io.socket.emitter.Emitter;
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import java.net.URISyntaxException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -52,6 +53,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("미연결 상태에서 connect를 호출하면 SUCCESS를 반환한다")
     void connect_ShouldReturnSuccess_WhenNotConnected() throws URISyntaxException {
         // 준비
         chzzkController = createController();
@@ -72,6 +74,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("이미 연결된 상태에서 connect를 호출하면 SUCCESS를 반환한다")
     void connect_ShouldReturnSuccess_WhenAlreadyConnected() throws URISyntaxException {
         // 준비
         chzzkController = createControllerWithoutSocketStub();
@@ -88,6 +91,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("미연결 상태에서 connect 시 시스템 서비스를 호출한다")
     void connect_ShouldCallSystemService_WhenNotConnected() throws URISyntaxException {
         // 준비
         chzzkController = createController();
@@ -106,6 +110,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("이미 연결된 상태에서는 재연결하지 않는다")
     void connect_ShouldNotReconnect_WhenAlreadyConnected() throws URISyntaxException {
         // 준비
         chzzkController = createControllerWithoutSocketStub();
@@ -122,6 +127,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("connect를 여러 번 호출할 때 연결 상태에 따라 세션 획득을 조절한다")
     void connect_ShouldHandleMultipleCalls() throws URISyntaxException {
         // 준비
         chzzkController = createController();
@@ -147,6 +153,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("미연결 상태에서 connect 할 때마다 새로운 세션을 획득한다")
     void connect_ShouldGetNewSession_EachTimeWhenDisconnected() throws URISyntaxException {
         // 준비
         chzzkController = createController();
@@ -166,6 +173,7 @@ class ChzzkControllerTest {
     }
 
     @Test
+    @DisplayName("소켓 연결 시 후원 이벤트를 구독한다")
     void connect_ShouldSubscribeDonationEvent_WhenSocketConnects() throws URISyntaxException {
         // 준비
         chzzkController = createController();

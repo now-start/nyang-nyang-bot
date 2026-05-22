@@ -4,6 +4,7 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -28,6 +29,7 @@ class AdminRouletteControllerTest {
     private ManageRouletteUseCase rouletteService;
 
     @Test
+    @DisplayName("룰렛 테이블 생성 요청을 관리 유스케이스에 위임한다")
     void createTable_ShouldDelegateToManageUseCase() {
         // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService);
@@ -53,6 +55,7 @@ class AdminRouletteControllerTest {
     }
 
     @Test
+    @DisplayName("룰렛 아이템 추가 요청을 관리 유스케이스에 위임한다")
     void addItem_ShouldDelegateToManageUseCase() {
         // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService);

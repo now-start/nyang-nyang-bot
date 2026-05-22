@@ -1,8 +1,9 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.google;
 
-import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -22,6 +23,7 @@ class GoogleControllerTest {
     private GoogleController googleController;
 
     @Test
+    @DisplayName("데이터베이스 동기화 요청 시 SUCCESS 응답을 반환한다")
     void syncDatabase_ShouldReturnSuccessResponse() {
         // 실행
         ResponseEntity<String> result = googleController.syncDatabase();
@@ -33,6 +35,7 @@ class GoogleControllerTest {
     }
 
     @Test
+    @DisplayName("서비스에서 예외가 발생하면 예외를 전파한다")
     void syncDatabase_ShouldPropagateServiceException() {
         // 준비
         BDDMockito.willThrow(new IllegalStateException("sync failed"))

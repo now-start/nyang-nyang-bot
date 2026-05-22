@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.upbo;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -25,6 +26,7 @@ class AdminUpboControllerTest {
     private ManageUpboUseCase upboService;
 
     @Test
+    @DisplayName("업보 적용 시 인증된 관리자 ID를 actor로 전달한다")
     void applyUpbo_ShouldPassAuthenticatedAdminAsActor() {
         // 준비
         AdminUpboController controller = new AdminUpboController(upboService);

@@ -3,11 +3,13 @@ package org.nowstart.nyangnyangbot.domain.favorite;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class FavoriteAccountTest {
 
     @Test
+    @DisplayName("델타를 적용하면 잔액이 변경되고 변경 전후 값을 반환한다")
     void applyDelta_ShouldUpdateBalanceAndReturnBeforeAfter() {
         // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 10);
@@ -23,6 +25,7 @@ class FavoriteAccountTest {
     }
 
     @Test
+    @DisplayName("음수 잔액을 허용하지 않는 정책일 때 잔액이 마이너스가 되면 예외를 던진다")
     void applyDelta_ShouldRejectNegativeBalance_WhenPolicyDisallowsIt() {
         // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 3);
@@ -35,6 +38,7 @@ class FavoriteAccountTest {
     }
 
     @Test
+    @DisplayName("음수 잔액을 허용하는 정책일 때 잔액이 마이너스가 되어도 적용된다")
     void applyDelta_ShouldAllowNegativeBalance_WhenPolicyAllowsIt() {
         // 준비
         FavoriteAccount account = FavoriteAccount.of("user-1", "치즈냥", 3);

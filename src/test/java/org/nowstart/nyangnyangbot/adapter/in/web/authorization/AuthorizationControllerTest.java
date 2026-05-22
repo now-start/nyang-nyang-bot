@@ -4,27 +4,28 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import org.mockito.BDDMockito;
 import static org.mockito.BDDMockito.never;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.authorization.LoginWithChzzkUseCase;
+import org.nowstart.nyangnyangbot.application.service.authorization.AuthorizationService;
 import org.nowstart.nyangnyangbot.application.service.authorization.OAuthStateService;
 import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
-import org.nowstart.nyangnyangbot.application.service.authorization.AuthorizationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +46,7 @@ class AuthorizationControllerTest {
     }
 
     @Test
+    @DisplayName("로그인 시 생성된 state를 세션에 저장하고 state를 포함한 URL로 리다이렉트한다")
     void login_ShouldStoreGeneratedStateAndRedirectWithState() {
         // 준비
         MockHttpSession session = new MockHttpSession();
@@ -68,6 +70,7 @@ class AuthorizationControllerTest {
     }
 
     @Test
+    @DisplayName("OAuth 로그인이 비활성화된 경우 즐겨찾기 목록으로 리다이렉트한다")
     void login_ShouldRedirectToFavoriteListWhenOAuthLoginIsDisabled() {
         // 준비
         MockHttpSession session = new MockHttpSession();
@@ -83,6 +86,7 @@ class AuthorizationControllerTest {
     }
 
     @Test
+    @DisplayName("콜백 state가 일치하지 않으면 401 예외를 던지고 인증 서비스를 호출하지 않는다")
     void token_ShouldRejectCallbackWhenStateDoesNotMatch() {
         // 준비
         MockHttpSession session = new MockHttpSession();
@@ -100,6 +104,7 @@ class AuthorizationControllerTest {
     }
 
     @Test
+    @DisplayName("state가 일치하면 인증하고 즐겨찾기 목록으로 리다이렉트하며 세션에 보안 컨텍스트를 저장한다")
     void token_ShouldAuthenticateAndRedirectWhenStateMatches() {
         // 준비
         MockHttpSession session = new MockHttpSession();

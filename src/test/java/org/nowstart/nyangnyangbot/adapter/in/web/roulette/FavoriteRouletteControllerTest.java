@@ -4,6 +4,7 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -25,6 +26,7 @@ class FavoriteRouletteControllerTest {
     private QueryRouletteResultUseCase rouletteService;
 
     @Test
+    @DisplayName("내 결과 조회 시 인증된 사용자 ID를 사용한다")
     void getMyResults_ShouldUseAuthenticatedUserId() {
         // 준비
         FavoriteRouletteController controller = new FavoriteRouletteController(rouletteService);

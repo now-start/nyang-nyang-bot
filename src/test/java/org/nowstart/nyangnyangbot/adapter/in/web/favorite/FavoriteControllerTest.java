@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -18,10 +19,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response.WeeklyChatRankResponse;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -65,6 +66,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임이 null이면 전체 즐겨찾기 목록을 반환한다")
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsNull() {
         // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
@@ -84,6 +86,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임이 제공되면 필터링된 즐겨찾기 목록을 반환한다")
     void favoriteList_ShouldReturnFilteredFavorites_WhenNickNameProvided() {
         // 준비
         String nickName = "유저1";
@@ -103,6 +106,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임이 빈 문자열이면 전체 즐겨찾기 목록을 반환한다")
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsEmpty() {
         // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
@@ -118,6 +122,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임이 공백 문자열이면 전체 즐겨찾기 목록을 반환한다")
     void favoriteList_ShouldReturnAllFavorites_WhenNickNameIsBlank() {
         // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
@@ -132,6 +137,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임의 HTML 특수문자를 이스케이프하여 검색한다")
     void favoriteList_ShouldEscapeHtml_InNickName() {
         // 준비
         String maliciousNickName = "<script>alert('xss')</script>";
@@ -148,6 +154,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("즐겨찾기 기준 내림차순 정렬을 적용한다")
     void favoriteList_ShouldApplyDescendingSort_ByFavorite() {
         // 준비
         Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
@@ -163,6 +170,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("페이지 번호를 유지한다")
     void favoriteList_ShouldPreservePageNumber() {
         // 준비
         Pageable page2 = PageRequest.of(2, 10);
@@ -177,6 +185,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("페이지 크기를 유지한다")
     void favoriteList_ShouldPreservePageSize() {
         // 준비
         Pageable customPageable = PageRequest.of(0, 50);
@@ -191,6 +200,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("닉네임에 특수문자가 포함된 경우에도 정상 처리한다")
     void favoriteList_ShouldHandleSpecialCharactersInNickName() {
         // 준비
         String specialNickName = "유저@#$%^&*()";
@@ -206,6 +216,7 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("검색 결과가 없으면 빈 페이지를 반환한다")
     void favoriteList_ShouldReturnEmptyPage_WhenNoResults() {
         // 준비
         Page<FavoriteSummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);

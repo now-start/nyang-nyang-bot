@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -25,6 +26,7 @@ class AdminOverlayControllerTest {
     private OverlayDisplayService overlayDisplayService;
 
     @Test
+    @DisplayName("토큰 발급 시 인증된 관리자 ID를 actor로 사용한다")
     void issueToken_ShouldUseAuthenticatedAdminAsActor() {
         // 준비
         AdminOverlayController controller = new AdminOverlayController(overlayTokenService, overlayDisplayService);
