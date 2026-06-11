@@ -171,7 +171,7 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 - 호감도 원장 모델 확장
 - 호감도 정책 관리
 - 관리자 권한 관리
-- 출석체크 Redis 전환
+- 출석체크 영속화 개선
 - Google Sheets 마이그레이션 기능 제거 및 플랫폼 원장 단일화
 
 ### Phase 3. 후원 룰렛/오버레이

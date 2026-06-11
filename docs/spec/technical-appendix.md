@@ -257,7 +257,7 @@ Loki 색인 정책 (카디널리티 관리):
 - 모든 변경은 PR을 통해 `main`에 반영한다.
 - `main` 병합 후 GitHub Actions에서 Build/Test, Docker Image 생성, GHCR Push, 배포를 자동 실행한다.
 - Release를 PreRelease로 변경하면 롤백이 가능해야 한다.
-- 운영 설정에는 DB, CHZZK OAuth, Google Sheets 전환기 설정, Spring Cloud Config, Redis, AMQP, Eureka 정보가 포함된다.
+- 운영 설정에는 DB, CHZZK OAuth, Google Sheets 전환기 설정, Spring Cloud Config, Eureka 정보가 포함된다.
 
 ## 6. 리스크
 
@@ -266,7 +266,7 @@ Loki 색인 정책 (카디널리티 관리):
 | OAuth state | 고정 문자열 사용 | CSRF/로그인 위조 방어 약함 | 세션 기반 난수 state 생성 및 검증 |
 | CSRF | 전역 비활성화 | 상태 변경 API가 세션 쿠키 기반 요청에 노출 | CSRF 활성화 또는 API 토큰/동일 출처 정책 강화 |
 | 관리자 권한 관리 | DB의 `admin` 플래그 의존 | 관리 도구 부재 시 운영 변경이 수동 DB 작업에 의존 | 관리자 승격/해제 운영 절차 또는 API 정의 |
-| 출석 수집 | 인메모리 Map 사용 | 재시작/다중 인스턴스에서 데이터 유실 또는 불일치 | Redis 등 공유 저장소 검토 |
+| 출석 수집 | 인메모리 Map 사용 | 재시작/다중 인스턴스에서 데이터 유실 또는 불일치 | DB 기반 영속화 또는 다른 공유 저장소 검토 |
 | 후원 룰렛 | 미구현 | 중복 반영, OBS 연결 실패, 결과 불일치 | idempotency key, 상태 머신, 재처리 정책 정의 |
 | 토큰 로그 | refresh 시 토큰 DTO 로그 출력 | 민감정보 노출 가능성 | 토큰 값 마스킹 또는 로그 제거 |
 | Sheets 마이그레이션 | 전체 범위 읽기 후 순차 처리 | 전환 기간 중 중복 실행 또는 원본 불일치 가능 | 이관 검증 리포트와 제거 시점 정의 |
