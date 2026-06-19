@@ -2,12 +2,17 @@ chzzk:
   oauth:
     login-enabled: ${CHZZK_OAUTH_LOGIN_ENABLED:true}
   chat:
-    auto-connect-enabled: ${CHZZK_CHAT_AUTO_CONNECT_ENABLED:true}
+    auto-connect-enabled: ${CHZZK_CHAT_AUTO_CONNECT_ENABLED:false}
   client-id: ${CHZZK_CLIENT_ID}
   client-secret: ${CHZZK_CLIENT_SECRET}
   redirect-uri: ${CHZZK_REDIRECT_URI:http://localhost:8080/token}
 
 spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
   datasource:
     url: ${DB_URL:jdbc:h2:mem:nyangnyangbot;MODE=MySQL;DB_CLOSE_DELAY=-1}
     driver-class-name: org.h2.Driver
@@ -25,3 +30,16 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+eureka:
+  client:
+    enabled: false
+
+google:
+  spreadsheet:
+    sync:
+      enabled: false
+
+otel:
+  sdk:
+    disabled: true
