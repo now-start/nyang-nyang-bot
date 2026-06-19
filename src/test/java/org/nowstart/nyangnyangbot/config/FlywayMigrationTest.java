@@ -2,9 +2,13 @@ package org.nowstart.nyangnyangbot.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.persistence.Entity;
+import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
@@ -31,7 +35,7 @@ class FlywayMigrationTest {
                 Integer.class
         );
         Integer rouletteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table'",
+                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table_entity'",
                 Integer.class
         );
         Integer ledgerColumnCount = jdbcTemplate.queryForObject(
@@ -44,6 +48,29 @@ class FlywayMigrationTest {
         assertThat(migrationCount).isEqualTo(2);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Flyway SQL은 JPA 기본 물리 네이밍으로 매핑되는 모든 엔티티 테이블을 생성한다")
+    void flywayMigration_ShouldCreateTablesForImplicitJpaEntityNames() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:flyway-entity-naming-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;DB_CLOSE_DELAY=-1",
+                "sa",
+                ""
+        );
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        List<String> missingTables = entityTableNames().stream()
+                .filter(tableName -> tableExists(jdbcTemplate, tableName) == 0)
+                .toList();
+
+        assertThat(missingTables).isEmpty();
     }
 
     @Test
@@ -78,7 +105,7 @@ class FlywayMigrationTest {
                 Integer.class
         );
         Integer rouletteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table'",
+                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table_entity'",
                 Integer.class
         );
         Integer ledgerColumnCount = jdbcTemplate.queryForObject(
@@ -91,5 +118,29 @@ class FlywayMigrationTest {
         assertThat(versionTwoCount).isEqualTo(1);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
+    }
+
+    private List<String> entityTableNames() {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
+
+        return scanner.findCandidateComponents("org.nowstart.nyangnyangbot.adapter.out.persistence").stream()
+                .map(beanDefinition -> beanDefinition.getBeanClassName())
+                .map(className -> className.substring(className.lastIndexOf('.') + 1))
+                .map(this::toSnakeCase)
+                .sorted()
+                .toList();
+    }
+
+    private String toSnakeCase(String name) {
+        return name.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    private Integer tableExists(JdbcTemplate jdbcTemplate, String tableName) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where lower(table_name) = ?",
+                Integer.class,
+                tableName
+        );
     }
 }

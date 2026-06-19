@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -269,6 +270,40 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void persistenceEntities_ShouldNotDeclareDdlConstraintsOrIndexes() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
+                .filter(path -> path.toString().contains("/entity/"))
+                .filter(path -> containsPattern(path,
+                        "\\buniqueConstraints\\b",
+                        "@UniqueConstraint\\b",
+                        "@Index\\b",
+                        "\\bunique\\s*=\\s*true\\b",
+                        "\\bnullable\\s*=\\s*false\\b"
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
+    void persistenceEntities_ShouldUseImplicitJpaPhysicalNaming() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
+                .filter(path -> path.toString().contains("/entity/"))
+                .filter(path -> containsPattern(path,
+                        "@Table\\s*\\([^)]*\\bname\\s*=",
+                        "@Column\\s*\\([^)]*\\bname\\s*=",
+                        "@JoinColumn\\s*\\([^)]*\\bname\\s*="
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
     void externalAdapters_ShouldNotContainDtoPackagesOrDtoClasses() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/external"))
@@ -412,6 +447,20 @@ class ArchitectureBoundaryTest {
             String source = Files.readString(path);
             for (String needle : needles) {
                 if (source.contains(needle)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (IOException ex) {
+            throw new IllegalStateException("failed to read source file " + path, ex);
+        }
+    }
+
+    private boolean containsPattern(Path path, String... regexes) {
+        try {
+            String source = Files.readString(path);
+            for (String regex : regexes) {
+                if (Pattern.compile(regex).matcher(source).find()) {
                     return true;
                 }
             }

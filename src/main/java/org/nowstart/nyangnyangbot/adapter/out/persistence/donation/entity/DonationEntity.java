@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity;
 
 import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,7 +22,6 @@ public class DonationEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true)
     private String donationEventId;
     private String donationType;
     private String channelId;

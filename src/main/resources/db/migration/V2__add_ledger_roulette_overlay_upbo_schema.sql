@@ -1,41 +1,41 @@
 ALTER TABLE authorization_entity
-    ADD COLUMN IF NOT EXISTS favorite_history_last_seen_at DATETIME(6);
+    ADD COLUMN favorite_history_last_seen_at DATETIME(6);
 
 ALTER TABLE donation_entity
-    ADD COLUMN IF NOT EXISTS donation_event_id VARCHAR(255);
+    ADD COLUMN donation_event_id VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS delta INTEGER;
+    ADD COLUMN delta INTEGER;
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS balance_after INTEGER;
+    ADD COLUMN balance_after INTEGER;
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS source_type VARCHAR(255);
+    ADD COLUMN source_type VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS source_id VARCHAR(255);
+    ADD COLUMN source_id VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS display_category VARCHAR(255);
+    ADD COLUMN display_category VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS public_description VARCHAR(255);
+    ADD COLUMN public_description VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS private_memo VARCHAR(255);
+    ADD COLUMN private_memo VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS correction_of_ledger_id BIGINT;
+    ADD COLUMN correction_of_ledger_id BIGINT;
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS actor_id VARCHAR(255);
+    ADD COLUMN actor_id VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(255);
+    ADD COLUMN idempotency_key VARCHAR(255);
 
 ALTER TABLE favorite_history_entity
-    ADD COLUMN IF NOT EXISTS nick_name_snapshot VARCHAR(255);
+    ADD COLUMN nick_name_snapshot VARCHAR(255);
 
 UPDATE favorite_history_entity
 SET balance_after = favorite
@@ -90,13 +90,13 @@ SET nick_name_snapshot = (
 WHERE nick_name_snapshot IS NULL
   AND favorite_entity_user_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_donation_entity_donation_event_id
+CREATE UNIQUE INDEX uk_donation_entity_donation_event_id
     ON donation_entity (donation_event_id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_favorite_history_entity_idempotency_key
+CREATE UNIQUE INDEX uk_favorite_history_entity_idempotency_key
     ON favorite_history_entity (idempotency_key);
 
-CREATE TABLE IF NOT EXISTS roulette_table (
+CREATE TABLE roulette_table_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS roulette_table (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS roulette_item (
+CREATE TABLE roulette_item_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -123,11 +123,11 @@ CREATE TABLE IF NOT EXISTS roulette_item (
     active BOOLEAN NOT NULL,
     display_order INTEGER,
     PRIMARY KEY (id),
-    CONSTRAINT fk_roulette_item_table
-        FOREIGN KEY (roulette_table_id) REFERENCES roulette_table (id)
+    CONSTRAINT fk_roulette_item_entity_table
+        FOREIGN KEY (roulette_table_id) REFERENCES roulette_table_entity (id)
 );
 
-CREATE TABLE IF NOT EXISTS roulette_event (
+CREATE TABLE roulette_event_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -145,11 +145,11 @@ CREATE TABLE IF NOT EXISTS roulette_event (
     items_snapshot_json LONGTEXT,
     status VARCHAR(255),
     PRIMARY KEY (id),
-    CONSTRAINT uk_roulette_event_donation_event_id UNIQUE (donation_event_id),
-    CONSTRAINT uk_roulette_event_idempotency_key UNIQUE (idempotency_key)
+    CONSTRAINT uk_roulette_event_entity_donation_event_id UNIQUE (donation_event_id),
+    CONSTRAINT uk_roulette_event_entity_idempotency_key UNIQUE (idempotency_key)
 );
 
-CREATE TABLE IF NOT EXISTS roulette_round_result (
+CREATE TABLE roulette_round_result_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -167,12 +167,12 @@ CREATE TABLE IF NOT EXISTS roulette_round_result (
     failure_reason VARCHAR(255),
     ticket INTEGER,
     PRIMARY KEY (id),
-    CONSTRAINT uk_roulette_round_result_event_round UNIQUE (roulette_event_id, round_no),
-    CONSTRAINT fk_roulette_round_result_event
-        FOREIGN KEY (roulette_event_id) REFERENCES roulette_event (id)
+    CONSTRAINT uk_roulette_round_result_entity_event_round UNIQUE (roulette_event_id, round_no),
+    CONSTRAINT fk_roulette_round_result_entity_event
+        FOREIGN KEY (roulette_event_id) REFERENCES roulette_event_entity (id)
 );
 
-CREATE TABLE IF NOT EXISTS overlay_token (
+CREATE TABLE overlay_token_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -181,10 +181,10 @@ CREATE TABLE IF NOT EXISTS overlay_token (
     revoked_at DATETIME(6),
     issued_by VARCHAR(255),
     PRIMARY KEY (id),
-    CONSTRAINT uk_overlay_token_token_hash UNIQUE (token_hash)
+    CONSTRAINT uk_overlay_token_entity_token_hash UNIQUE (token_hash)
 );
 
-CREATE TABLE IF NOT EXISTS overlay_display_event (
+CREATE TABLE overlay_display_event_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -195,11 +195,11 @@ CREATE TABLE IF NOT EXISTS overlay_display_event (
     fetched_at DATETIME(6),
     displayed_at DATETIME(6),
     PRIMARY KEY (id),
-    CONSTRAINT fk_overlay_display_event_roulette_event
-        FOREIGN KEY (roulette_event_id) REFERENCES roulette_event (id)
+    CONSTRAINT fk_overlay_display_event_entity_roulette_event
+        FOREIGN KEY (roulette_event_id) REFERENCES roulette_event_entity (id)
 );
 
-CREATE TABLE IF NOT EXISTS upbo_template_entity (
+CREATE TABLE upbo_template_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS upbo_template_entity (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS user_upbo_entity (
+CREATE TABLE user_upbo_entity (
     id BIGINT NOT NULL AUTO_INCREMENT,
     create_date DATETIME(6),
     modify_date DATETIME(6),
@@ -235,14 +235,14 @@ CREATE TABLE IF NOT EXISTS user_upbo_entity (
         FOREIGN KEY (upbo_template_id) REFERENCES upbo_template_entity (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_roulette_item_table
-    ON roulette_item (roulette_table_id);
+CREATE INDEX idx_roulette_item_entity_table
+    ON roulette_item_entity (roulette_table_id);
 
-CREATE INDEX IF NOT EXISTS idx_roulette_round_result_event
-    ON roulette_round_result (roulette_event_id);
+CREATE INDEX idx_roulette_round_result_entity_event
+    ON roulette_round_result_entity (roulette_event_id);
 
-CREATE INDEX IF NOT EXISTS idx_overlay_display_event_roulette_event
-    ON overlay_display_event (roulette_event_id);
+CREATE INDEX idx_overlay_display_event_entity_roulette_event
+    ON overlay_display_event_entity (roulette_event_id);
 
-CREATE INDEX IF NOT EXISTS idx_user_upbo_template
+CREATE INDEX idx_user_upbo_template
     ON user_upbo_entity (upbo_template_id);

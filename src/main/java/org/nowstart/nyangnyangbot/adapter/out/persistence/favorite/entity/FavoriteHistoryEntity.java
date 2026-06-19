@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity;
 
 import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -38,7 +37,6 @@ public class FavoriteHistoryEntity extends BaseEntity {
     private String privateMemo;
     private Long correctionOfLedgerId;
     private String actorId;
-    @Column(unique = true)
     private String idempotencyKey;
     private String nickNameSnapshot;
     @ManyToOne

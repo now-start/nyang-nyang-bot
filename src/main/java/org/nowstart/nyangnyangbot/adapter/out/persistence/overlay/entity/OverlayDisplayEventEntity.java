@@ -8,9 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +18,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.Roulet
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 
 @Entity
-@Table(name = "overlay_display_event")
 @Getter
 @Builder
 @AllArgsConstructor
@@ -31,7 +28,6 @@ public class OverlayDisplayEventEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "roulette_event_id")
     private RouletteEventEntity rouletteEvent;
     private Long replayOfDisplayEventId;
     @Enumerated(EnumType.STRING)

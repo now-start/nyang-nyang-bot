@@ -35,6 +35,8 @@
 - 정정 거래는 원본 데이터를 수정하지 않고 새 레코드로 추가한다.
 - Google Sheets 마이그레이션은 전환기 기능으로만 유지하고, 최종 원본은 DB 원장이다.
 - schema migration 도구는 Flyway를 사용한다.
+- 엔티티 어노테이션은 ORM 매핑만 담당하고, UNIQUE/INDEX/FK/NOT NULL 같은 DB DDL은 Flyway SQL에서만 관리한다.
+- 테이블/컬럼/조인 컬럼명은 Spring Boot/Hibernate 기본 물리 네이밍 전략에 맡기고, Flyway SQL도 그 결과와 동일하게 작성한다.
 - 운영 설정은 config server에서 관리하므로 애플리케이션 공통 `application.yaml`에는 운영 DB migration 설정을 두지 않는다.
 
 ## 3.1 Flyway 운영 적용 기준
@@ -63,6 +65,11 @@ spring:
 5. `flyway_schema_history`에 `V2__add_ledger_roulette_overlay_upbo_schema.sql`이 성공으로 남았는지 확인한다.
 
 `baseline-on-migrate`가 없으면 기존 상용 DB에는 Flyway history가 없기 때문에 애플리케이션 시작이 실패할 수 있다.
+
+로컬의 빈 H2 DB는 Flyway 기본값만으로 `V1`부터 적용하면 되므로 `application-local.yaml`에 baseline 설정을 두지 않는다. 이미 `build/local-h2`에 Flyway 도입 전 로컬 스키마가 남아 있으면 DB 파일을 삭제하고 다시 생성한다.
+
+`V2__add_ledger_roulette_overlay_upbo_schema.sql`은 첫 Flyway 운영 적용 전 migration이다. 운영 또는 공유 DB에 `V2` 성공 이력이 생긴 뒤에는 같은 파일을 수정하지 않고, 새 `V3`에서 테이블 rename/copy, 제약, 인덱스 변경을 별도 migration으로 처리한다.
+`V2`는 운영 main 스키마와 다른 부분 수동 반영이나 드리프트를 숨기지 않도록 컬럼/테이블/인덱스 생성 DDL을 엄격하게 작성한다.
 
 ## 4. 목표 모델
 
@@ -107,7 +114,7 @@ spring:
 
 ### 4.2 Upbo
 
-`upbo_template`:
+`upbo_template_entity`:
 
 | 필드 | 설명 |
 | --- | --- |
@@ -121,7 +128,7 @@ spring:
 | `conversion_mode` | `AUTO`, `MANUAL`, `NONE` |
 | `created_at`, `updated_at` | BaseEntity 기준 |
 
-`user_upbo`:
+`user_upbo_entity`:
 
 | 필드 | 설명 |
 | --- | --- |
@@ -143,30 +150,30 @@ spring:
 
 추가 테이블:
 
-- `roulette_table`
-- `roulette_item`
-- `roulette_event`
-- `roulette_round_result`
+- `roulette_table_entity`
+- `roulette_item_entity`
+- `roulette_event_entity`
+- `roulette_round_result_entity`
 
 핵심 제약:
 
 - 활성 룰렛 테이블은 application/domain 검증으로 확률 합계 100%, 꽝 필수를 보장한다.
-- `roulette_event.idempotency_key`와 `donation_event_id`는 UNIQUE.
-- `roulette_round_result(roulette_event_id, round_no)`는 UNIQUE.
-- `roulette_event.items_snapshot_json`은 후원 시점 확률표 재현을 위해 보존한다.
+- `roulette_event_entity.idempotency_key`와 `donation_event_id`는 UNIQUE.
+- `roulette_round_result_entity(roulette_event_id, round_no)`는 UNIQUE.
+- `roulette_event_entity.items_snapshot_json`은 후원 시점 확률표 재현을 위해 보존한다.
 
 ### 4.4 Overlay
 
 추가 테이블:
 
-- `overlay_token`
-- `overlay_display_event`
+- `overlay_token_entity`
+- `overlay_display_event_entity`
 
 핵심 제약:
 
-- `overlay_token.token_hash`만 저장하고 토큰 원문은 저장하지 않는다.
+- `overlay_token_entity.token_hash`만 저장하고 토큰 원문은 저장하지 않는다.
 - 재발급 시 기존 토큰은 `active=false`, `revoked_at` 설정.
-- `overlay_display_event.replay_of_display_event_id`로 재송출 이벤트를 연결한다.
+- `overlay_display_event_entity.replay_of_display_event_id`로 재송출 이벤트를 연결한다.
 - 재송출 이벤트는 원장/보유 목록을 재반영하지 않는다.
 
 ## 5. 단계별 마이그레이션
@@ -207,9 +214,9 @@ spring:
 
 ### Step 4. 업보 모델 추가
 
-- `upbo_template`, `user_upbo`를 추가한다.
+- `upbo_template_entity`, `user_upbo_entity`를 추가한다.
 - 포인트 쿠폰 자동 전환은 Favorite use case를 호출해 원장에 반영한다.
-- 환산 불가 업보는 `user_upbo`에만 저장한다.
+- 환산 불가 업보는 `user_upbo_entity`에만 저장한다.
 
 완료 기준:
 
@@ -246,9 +253,9 @@ spring:
 
 - 사용자별 현재 잔액과 마지막 원장 `balanceAfter` 비교.
 - `idempotencyKey` 중복 레코드 존재 여부.
-- `user_upbo.status=CONVERTED`인데 `ledger_id`가 없는 레코드 존재 여부.
-- `roulette_round_result.status=APPLIED`인데 `ledger_id`와 `user_upbo_id`가 모두 없는 레코드 존재 여부.
-- `overlay_token.active=true`인데 `token_hash`가 null인 레코드 존재 여부.
+- `user_upbo_entity.status=CONVERTED`인데 `ledger_id`가 없는 레코드 존재 여부.
+- `roulette_round_result_entity.status=APPLIED`인데 `ledger_id`와 `user_upbo_id`가 모두 없는 레코드 존재 여부.
+- `overlay_token_entity.active=true`인데 `token_hash`가 null인 레코드 존재 여부.
 
 ## 8. 미결정 사항
 

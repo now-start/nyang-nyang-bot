@@ -151,7 +151,7 @@
 - 후원 이벤트 ID 저장 여부.
 - 룰렛 테이블 활성 상태와 후원 시점 스냅샷.
 - 명령어 토큰 정확 일치 여부.
-- `roulette_round_result`의 `CONFIRMED` 잔여 회차.
+- `roulette_round_result_entity`의 `CONFIRMED` 잔여 회차.
 - `idempotencyKey` UNIQUE 충돌 로그.
 
 조치:

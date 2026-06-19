@@ -2,17 +2,13 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity;
 
 import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,13 +18,6 @@ import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 @Entity
-@Table(
-        name = "roulette_round_result",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_roulette_round_result_event_round",
-                columnNames = {"roulette_event_id", "round_no"}
-        )
-)
 @Getter
 @Builder
 @AllArgsConstructor
@@ -39,9 +28,7 @@ public class RouletteRoundResultEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "roulette_event_id")
     private RouletteEventEntity rouletteEvent;
-    @Column(name = "round_no")
     private Integer roundNo;
     private String itemLabel;
     private Integer probabilityBasisPoints;
