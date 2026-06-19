@@ -21,6 +21,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -174,6 +176,12 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         return rouletteEventRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
                 .map(this::toModel)
                 .toList();
+    }
+
+    @Override
+    public Page<EventResult> findRecentEvents(Pageable pageable) {
+        return rouletteEventRepository.findAllByOrderByCreateDateDesc(pageable)
+                .map(this::toModel);
     }
 
     @Override

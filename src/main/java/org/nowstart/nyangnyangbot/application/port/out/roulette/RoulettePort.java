@@ -8,6 +8,8 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface RoulettePort {
 
@@ -45,6 +47,8 @@ public interface RoulettePort {
     List<RoundResult> saveRounds(Long rouletteEventId, List<CreateRouletteRoundCommand> commands);
 
     List<EventResult> findEventsByUserId(String userId);
+
+    Page<EventResult> findRecentEvents(Pageable pageable);
 
     List<RoundResult> findRoundsByEventId(Long rouletteEventId);
 

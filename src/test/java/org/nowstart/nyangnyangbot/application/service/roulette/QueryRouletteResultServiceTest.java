@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.application.service.roulette;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteEventResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteEventSummaryResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.EventResult;
@@ -20,6 +22,9 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 @ExtendWith(MockitoExtension.class)
 class QueryRouletteResultServiceTest {
@@ -108,6 +113,40 @@ class QueryRouletteResultServiceTest {
         thenThrownBy(() -> service.getUserEvents(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("userId is required");
+    }
+
+    @Test
+    void getRecentEvents_ShouldMapPagedEventSummariesWithoutRounds() {
+        // 준비
+        QueryRouletteResultService service = new QueryRouletteResultService(roulettePort);
+        PageRequest pageable = PageRequest.of(0, 5);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 6, 19, 15, 30);
+        EventResult event = new EventResult(
+                10L,
+                "donation-1",
+                "user-1",
+                "치즈냥",
+                5_000L,
+                "!룰렛",
+                1L,
+                3,
+                "!룰렛",
+                1_000L,
+                5,
+                "[]",
+                RouletteEventStatus.APPLIED,
+                createdAt
+        );
+        given(roulettePort.findRecentEvents(pageable)).willReturn(new PageImpl<>(List.of(event), pageable, 1));
+        // 실행
+        Page<RouletteEventSummaryResult> result = service.getRecentEvents(pageable);
+
+        // 검증
+        then(result.getContent()).hasSize(1);
+        then(result.getContent().getFirst().eventId()).isEqualTo(10L);
+        then(result.getContent().getFirst().createdAt()).isEqualTo(createdAt);
+        BDDMockito.then(roulettePort).should().findRecentEvents(pageable);
+        BDDMockito.then(roulettePort).should(never()).findRoundsByEventId(10L);
     }
 
     private RoundResult round(

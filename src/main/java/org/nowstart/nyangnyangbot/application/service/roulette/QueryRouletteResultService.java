@@ -4,11 +4,14 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteEventResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteEventSummaryResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.EventResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,13 @@ public class QueryRouletteResultService implements QueryRouletteResultUseCase {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RouletteEventSummaryResult> getRecentEvents(Pageable pageable) {
+        return roulettePort.findRecentEvents(pageable)
+                .map(this::eventSummaryResult);
+    }
+
     private RouletteEventResult eventResult(EventResult event, List<RoundResult> rounds) {
         return new RouletteEventResult(
                 event.id(),
@@ -53,6 +63,19 @@ public class QueryRouletteResultService implements QueryRouletteResultUseCase {
                 event.status() == null ? null : event.status().name(),
                 event.createdAt(),
                 rounds.stream().map(this::roundResult).toList()
+        );
+    }
+
+    private RouletteEventSummaryResult eventSummaryResult(EventResult event) {
+        return new RouletteEventSummaryResult(
+                event.id(),
+                event.donationEventId(),
+                event.userId(),
+                event.nickNameSnapshot(),
+                event.donationAmount(),
+                event.roundCount(),
+                event.status() == null ? null : event.status().name(),
+                event.createdAt()
         );
     }
 

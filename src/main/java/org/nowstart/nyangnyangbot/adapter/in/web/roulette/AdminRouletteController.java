@@ -6,11 +6,15 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRequest;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteTableCreateRequest;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteEventPageResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteSimulationResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteValidationResponse;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminRouletteController {
 
     private final ManageRouletteUseCase manageRouletteUseCase;
+    private final QueryRouletteResultUseCase queryRouletteResultUseCase;
 
     @Operation(summary = "룰렛 테이블 조회")
     @GetMapping("/tables")
@@ -36,6 +41,20 @@ public class AdminRouletteController {
         return ResponseEntity.ok(manageRouletteUseCase.getTables().stream()
                 .map(RouletteTableResponse::from)
                 .toList());
+    }
+
+    @Operation(summary = "최근 룰렛 실행 목록 조회")
+    @GetMapping("/events")
+    public ResponseEntity<RouletteEventPageResponse> getEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 20);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        return ResponseEntity.ok(RouletteEventPageResponse.from(
+                queryRouletteResultUseCase.getRecentEvents(pageable)
+        ));
     }
 
     @Operation(summary = "룰렛 테이블 생성")
