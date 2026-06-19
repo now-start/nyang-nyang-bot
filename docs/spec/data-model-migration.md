@@ -34,7 +34,35 @@
 - 잔액 변경 코드는 새 application use case를 통과하게 만든 뒤 DB 제약을 강화한다.
 - 정정 거래는 원본 데이터를 수정하지 않고 새 레코드로 추가한다.
 - Google Sheets 마이그레이션은 전환기 기능으로만 유지하고, 최종 원본은 DB 원장이다.
-- schema migration 도구가 없다면 Phase 0에서 Flyway 또는 Liquibase 도입 여부를 결정한다.
+- schema migration 도구는 Flyway를 사용한다.
+- 운영 설정은 config server에서 관리하므로 애플리케이션 공통 `application.yaml`에는 운영 DB migration 설정을 두지 않는다.
+
+## 3.1 Flyway 운영 적용 기준
+
+현재 `main` 브랜치 스키마가 상용 DB에 이미 존재하므로, 첫 Flyway 배포 전에 config server에 다음 값을 먼저 반영한다.
+
+```yaml
+spring:
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "main schema before flyway"
+    clean-disabled: true
+    locations: "classpath:db/migration"
+  jpa:
+    hibernate:
+      ddl-auto: validate
+```
+
+적용 순서:
+
+1. 상용 DB 백업을 생성한다.
+2. config server에 위 Flyway/JPA 설정을 먼저 반영한다.
+3. 애플리케이션을 배포한다.
+4. 기동 로그에서 Flyway가 기존 스키마를 `baselineVersion=1`로 기록하고 `V2`를 적용했는지 확인한다.
+5. `flyway_schema_history`에 `V2__add_ledger_roulette_overlay_upbo_schema.sql`이 성공으로 남았는지 확인한다.
+
+`baseline-on-migrate`가 없으면 기존 상용 DB에는 Flyway history가 없기 때문에 애플리케이션 시작이 실패할 수 있다.
 
 ## 4. 목표 모델
 
@@ -226,7 +254,7 @@
 
 | 항목 | 선택지 | 결정 필요 시점 |
 | --- | --- | --- |
-| schema migration 도구 | Flyway, Liquibase, 수동 SQL | Phase 0 |
+| schema migration 도구 | Flyway로 결정 | 완료 |
 | 기존 테이블명 유지 여부 | 현행 entity 확장, 신규 테이블 생성 | Phase 2 시작 전 |
 | `favorite` 컬럼명 변경 | 유지, `balance`로 변경 | Phase 2 시작 전 |
 | 원장 백필 방식 | batch, one-off SQL, application runner | Phase 2 |
