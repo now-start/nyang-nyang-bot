@@ -14,7 +14,6 @@ import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -25,18 +24,14 @@ public class RouletteRoundApplyService {
     private final UpboPort upboPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void applyRound(Long roundId) {
         RoundResult round = roulettePort.findRoundById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette round not found"));
         if (round.status() != RouletteRoundStatus.CONFIRMED) {
             return;
         }
-        try {
-            applyConfirmedRound(round);
-        } catch (RuntimeException ex) {
-            roulettePort.markRoundFailed(round.id(), ex.getMessage());
-        }
+        applyConfirmedRound(round);
     }
 
     private void applyConfirmedRound(RoundResult round) {

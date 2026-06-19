@@ -23,6 +23,8 @@ let currentUserId = null;
 let currentFavorite = 0;
 let attendanceUsers = [];
 let attendanceSelectedIds = new Set();
+let attendanceDeselectedIds = new Set();
+let attendanceSelectionInitialized = false;
 let attendancePollingId = null;
 let rouletteTables = [];
 let selectedRouletteTableId = null;
@@ -214,6 +216,8 @@ function openAttendanceModal() {
         return;
     }
     attendanceSelectedIds.clear();
+    attendanceDeselectedIds.clear();
+    attendanceSelectionInitialized = false;
     const amountInput = document.getElementById('attendance-amount');
     if (amountInput) {
         amountInput.value = '1';
@@ -232,6 +236,8 @@ function openAttendanceModal() {
 function closeAttendanceModal() {
     document.getElementById('attendance-modal').style.display = 'none';
     attendanceSelectedIds.clear();
+    attendanceDeselectedIds.clear();
+    attendanceSelectionInitialized = false;
     stopAttendancePolling();
     stopAttendanceCapture();
 }
@@ -269,18 +275,33 @@ function fetchAttendanceUsers() {
             return response.json();
         })
         .then(function (data) {
-            attendanceUsers = Array.isArray(data) ? data : [];
-            attendanceSelectedIds = new Set(attendanceUsers.map(function (user) {
+            const previousIds = new Set(attendanceUsers.map(function (user) {
                 return user.userId;
             }));
-            const availableIds = new Set(attendanceUsers.map(function (user) {
+            const nextUsers = Array.isArray(data) ? data : [];
+            const availableIds = new Set(nextUsers.map(function (user) {
                 return user.userId;
             }));
-            attendanceSelectedIds.forEach(function (userId) {
-                if (!availableIds.has(userId)) {
-                    attendanceSelectedIds.delete(userId);
-                }
-            });
+            attendanceUsers = nextUsers;
+            if (!attendanceSelectionInitialized) {
+                attendanceSelectedIds = new Set(nextUsers.map(function (user) {
+                    return user.userId;
+                }));
+                attendanceSelectionInitialized = true;
+            } else {
+                const preservedSelectedIds = new Set();
+                attendanceSelectedIds.forEach(function (userId) {
+                    if (availableIds.has(userId)) {
+                        preservedSelectedIds.add(userId);
+                    }
+                });
+                nextUsers.forEach(function (user) {
+                    if (!previousIds.has(user.userId) && !attendanceDeselectedIds.has(user.userId)) {
+                        preservedSelectedIds.add(user.userId);
+                    }
+                });
+                attendanceSelectedIds = preservedSelectedIds;
+            }
             renderAttendanceUsers();
         })
         .catch(function () {
@@ -322,9 +343,11 @@ function renderAttendanceUsers() {
 function toggleAttendanceSelection(userId, button) {
     if (attendanceSelectedIds.has(userId)) {
         attendanceSelectedIds.delete(userId);
+        attendanceDeselectedIds.add(userId);
         button.classList.remove('is-selected');
     } else {
         attendanceSelectedIds.add(userId);
+        attendanceDeselectedIds.delete(userId);
         button.classList.add('is-selected');
     }
     updateAttendanceStatus();

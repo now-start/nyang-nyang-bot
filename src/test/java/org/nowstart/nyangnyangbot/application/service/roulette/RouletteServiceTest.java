@@ -29,6 +29,8 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class RouletteApplicationServiceTest {
@@ -265,6 +267,42 @@ class RouletteApplicationServiceTest {
     }
 
     @Test
+    void processDonation_ShouldPropagateRoundApplyFailureAndSkipOverlayQueue() {
+        // 준비
+        ProcessRouletteDonationService rouletteService = createProcessService();
+        TableResult table = table(true);
+        EventResult event = event(20L, 1);
+        List<RoundResult> savedRounds = List.of(round(30L, 1));
+        given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table));
+        given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
+        given(roulettePort.findActiveItemsByTableId(1L))
+                .willReturn(List.of(
+                        item("호감도 +10", 9_999, false, 10),
+                        item("꽝", 1, true, null)
+                ));
+        given(roulettePort.createEvent(any(CreateRouletteEventCommand.class))).willReturn(event);
+        given(roulettePort.saveRounds(any(), any())).willReturn(savedRounds);
+        BDDMockito.willThrow(new IllegalStateException("룰렛 보상 반영 실패"))
+                .given(rouletteRoundApplyService)
+                .applyRound(30L);
+
+        // 실행 및 검증
+        thenThrownBy(() -> rouletteService.processDonation(new DonationEventPayload(
+                "donation-1",
+                "CHAT",
+                "channel-1",
+                "user-1",
+                "치즈냥",
+                "2500",
+                "안녕 !룰렛",
+                null
+        )))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("룰렛 보상 반영 실패");
+        BDDMockito.then(overlayDisplayService).should(never()).enqueueRouletteEvent(any());
+    }
+
+    @Test
     void processDonation_ShouldConfirmEvenWhenRoundCountExceedsHighThreshold() {
         // 준비
         ProcessRouletteDonationService rouletteService = createProcessService();
@@ -299,6 +337,29 @@ class RouletteApplicationServiceTest {
         then(result.status().name()).isEqualTo("CONFIRMED");
         then(result.roundCount()).isEqualTo(2);
         BDDMockito.then(overlayDisplayService).should().enqueueRouletteEvent(21L);
+    }
+
+    @Test
+    void processDonation_ShouldRunWithinTransaction() throws NoSuchMethodException {
+        // 실행
+        Transactional transactional = ProcessRouletteDonationService.class
+                .getMethod("processDonation", DonationEventPayload.class)
+                .getAnnotation(Transactional.class);
+
+        // 검증
+        then(transactional).isNotNull();
+    }
+
+    @Test
+    void applyRound_ShouldJoinCallerTransaction() throws NoSuchMethodException {
+        // 실행
+        Transactional transactional = RouletteRoundApplyService.class
+                .getMethod("applyRound", Long.class)
+                .getAnnotation(Transactional.class);
+
+        // 검증
+        then(transactional).isNotNull();
+        then(transactional.propagation()).isEqualTo(Propagation.REQUIRED);
     }
 
     private ManageRouletteService createManageService() {

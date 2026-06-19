@@ -130,7 +130,7 @@ class RouletteRoundApplyServiceTest {
     }
 
     @Test
-    void applyRound_ShouldMarkFailedWhenApplyingRewardThrows() {
+    void applyRound_ShouldPropagateExceptionWhenApplyingRewardThrows() {
         // 준비
         RouletteRoundApplyService service = createService();
         RoundResult round = favoriteRound(false);
@@ -138,11 +138,11 @@ class RouletteRoundApplyServiceTest {
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
                 .willThrow(new IllegalStateException("잔액 반영 실패"));
 
-        // 실행
-        service.applyRound(30L);
-
-        // 검증
-        BDDMockito.then(roulettePort).should().markRoundFailed(30L, "잔액 반영 실패");
+        // 실행 및 검증
+        thenThrownBy(() -> service.applyRound(30L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("잔액 반영 실패");
+        BDDMockito.then(roulettePort).should(never()).markRoundFailed(any(), any());
     }
 
     private RouletteRoundApplyService createService() {

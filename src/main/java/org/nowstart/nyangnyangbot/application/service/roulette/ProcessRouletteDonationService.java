@@ -24,6 +24,7 @@ import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -38,6 +39,7 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
     private final QueueOverlayDisplayUseCase queueOverlayDisplayUseCase;
 
     @Override
+    @Transactional
     public RouletteRunResult processDonation(DonationEventPayload donation) {
         if (donation == null) {
             return RouletteRunResult.ignored("donation is required");
