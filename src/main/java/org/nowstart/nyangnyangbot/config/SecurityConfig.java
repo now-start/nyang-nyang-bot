@@ -36,19 +36,29 @@ public class SecurityConfig {
     @Value("${nyang.local-auth.admin:true}")
     private boolean localAuthAdmin;
 
+    @Value("${spring.h2.console.enabled:false}")
+    private boolean h2ConsoleEnabled;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
-                        .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
-                        .requestMatchers("/", "/login", "/token").permitAll()
-                        .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll()
-                        .anyRequest().authenticated()
-                ).exceptionHandling(exception -> exception
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                            .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
+                            .requestMatchers("/", "/login", "/token").permitAll()
+                            .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll();
+                    if (h2ConsoleEnabled) {
+                        auth.requestMatchers("/h2-console/**").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                }).exceptionHandling(exception -> exception
                         .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
                 );
+
+        if (h2ConsoleEnabled) {
+            http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+        }
 
         if (localAuthEnabled) {
             http.addFilterBefore(localAuthenticationFilter(), AnonymousAuthenticationFilter.class);

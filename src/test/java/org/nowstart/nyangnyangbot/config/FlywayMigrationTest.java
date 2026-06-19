@@ -14,11 +14,14 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 class FlywayMigrationTest {
 
+    private static final String H2_MARIADB_OPTIONS =
+            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1";
+
     @Test
     @DisplayName("Flyway SQL 마이그레이션을 신규 DB에 적용할 수 있다")
     void flywayMigration_ShouldApplyToEmptyDatabase() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-migration-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-migration-test" + H2_MARIADB_OPTIONS,
                 "sa",
                 ""
         );
@@ -90,7 +93,7 @@ class FlywayMigrationTest {
     @DisplayName("Flyway SQL은 JPA 기본 물리 네이밍으로 매핑되는 모든 엔티티 테이블을 생성한다")
     void flywayMigration_ShouldCreateTablesForImplicitJpaEntityNames() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-entity-naming-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-entity-naming-test" + H2_MARIADB_OPTIONS,
                 "sa",
                 ""
         );
@@ -113,7 +116,7 @@ class FlywayMigrationTest {
     @DisplayName("이미 main 스키마가 있는 DB는 baseline 후 증분 마이그레이션만 적용할 수 있다")
     void flywayMigration_ShouldBaselineExistingMainSchemaAndApplyDeltaMigration() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-baseline-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-baseline-test" + H2_MARIADB_OPTIONS,
                 "sa",
                 ""
         );

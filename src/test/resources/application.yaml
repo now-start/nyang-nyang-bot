@@ -3,7 +3,7 @@ spring:
     config:
       enabled: false
   datasource:
-    url: jdbc:h2:mem:nyangnyangbot-test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    url: "jdbc:h2:mem:nyangnyangbot-test;MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1"
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -13,7 +13,7 @@ spring:
     locations: "classpath:db/migration"
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true

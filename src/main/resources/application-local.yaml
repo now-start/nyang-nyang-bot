@@ -1,11 +1,11 @@
 chzzk:
   oauth:
-    login-enabled: ${CHZZK_OAUTH_LOGIN_ENABLED:true}
+    login-enabled: true
   chat:
-    auto-connect-enabled: ${CHZZK_CHAT_AUTO_CONNECT_ENABLED:false}
+    auto-connect-enabled: false
   client-id: ${CHZZK_CLIENT_ID}
   client-secret: ${CHZZK_CLIENT_SECRET}
-  redirect-uri: ${CHZZK_REDIRECT_URI:http://localhost:8080/token}
+  redirect-uri: http://localhost:8080/token
 
 spring:
   cloud:
@@ -14,13 +14,18 @@ spring:
     discovery:
       enabled: false
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:nyangnyangbot;MODE=MySQL;DB_CLOSE_DELAY=-1}
+    url: "jdbc:h2:mem:nyangnyangbot;MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1"
     driver-class-name: org.h2.Driver
-    username: ${DB_USER:sa}
-    password: ${DB_PASS:}
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: false
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:

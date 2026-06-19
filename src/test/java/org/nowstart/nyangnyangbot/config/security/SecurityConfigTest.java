@@ -5,6 +5,7 @@ import org.mockito.BDDMockito;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.Filter;
@@ -97,6 +98,21 @@ class SecurityConfigTest {
                     .andExpect(content().string("SUCCESS"));
 
             BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+        }
+    }
+
+    @Test
+    void h2ConsoleAllowsSameOriginFrameWhenEnabled() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "spring.h2.console.enabled=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(get("/h2-console/login.jsp"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(header().string("X-Frame-Options", "SAMEORIGIN"));
         }
     }
 
