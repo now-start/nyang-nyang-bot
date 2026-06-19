@@ -4,7 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustmentEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
 
     @Override
     public OptionResult save(Integer amount, String label) {
-        FavoriteAdjustmentEntity saved = favoriteAdjustmentRepository.save(FavoriteAdjustmentEntity.builder()
+        FavoriteAdjustment saved = favoriteAdjustmentRepository.save(FavoriteAdjustment.builder()
                 .amount(amount)
                 .label(label)
                 .build());
@@ -37,7 +37,7 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
                 .toList();
     }
 
-    private OptionResult toModel(FavoriteAdjustmentEntity entity) {
+    private OptionResult toModel(FavoriteAdjustment entity) {
         return new OptionResult(entity.getId(), entity.getAmount(), entity.getLabel());
     }
 }

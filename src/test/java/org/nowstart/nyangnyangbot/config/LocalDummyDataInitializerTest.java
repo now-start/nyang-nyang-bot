@@ -13,10 +13,10 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
@@ -50,11 +50,11 @@ class LocalDummyDataInitializerTest {
     void run_ShouldSeedAllLocalDummyDataWhenRepositoriesAreEmpty() {
         // 준비
         LocalDummyDataInitializer initializer = initializer();
-        List<FavoriteEntity> favorites = List.of(
+        List<FavoriteAccount> favorites = List.of(
                 favorite("local-channel", "로컬 관리자", 9999),
                 favorite("user-001", "치즈냥", 8720)
         );
-        RouletteTableEntity table = RouletteTableEntity.builder()
+        RouletteTable table = RouletteTable.builder()
                 .id(1L)
                 .title("로컬 테스트 룰렛")
                 .command("!룰렛")
@@ -64,7 +64,7 @@ class LocalDummyDataInitializerTest {
                 .highRoundThreshold(50)
                 .build();
         given(favoriteRepository.findAllById(anyIterable())).willReturn(favorites);
-        given(rouletteTableRepository.save(any(RouletteTableEntity.class))).willReturn(table);
+        given(rouletteTableRepository.save(any(RouletteTable.class))).willReturn(table);
 
         // 실행
         initializer.run(null);
@@ -81,7 +81,7 @@ class LocalDummyDataInitializerTest {
     void run_ShouldSkipSeedSectionsWhenDataAlreadyExists() {
         // 준비
         LocalDummyDataInitializer initializer = initializer();
-        List<FavoriteEntity> favorites = List.of(favorite("local-channel", "로컬 관리자", 9999));
+        List<FavoriteAccount> favorites = List.of(favorite("local-channel", "로컬 관리자", 9999));
         given(favoriteRepository.existsById("local-channel")).willReturn(true);
         given(favoriteRepository.existsById("user-001")).willReturn(true);
         given(favoriteRepository.existsById("user-002")).willReturn(true);
@@ -121,8 +121,8 @@ class LocalDummyDataInitializerTest {
         );
     }
 
-    private FavoriteEntity favorite(String userId, String nickName, Integer favorite) {
-        return FavoriteEntity.builder()
+    private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {
+        return FavoriteAccount.builder()
                 .userId(userId)
                 .nickName(nickName)
                 .favorite(favorite)

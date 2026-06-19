@@ -81,7 +81,7 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 | 관리자 | 전체 히스토리 조회, 호감도/업보 수동 조정, 출석체크, Google Sheets 마이그레이션, CHZZK 소켓 연결 |
 | 시스템 | CHZZK 소켓 연결 유지, 채팅/후원 이벤트 처리, 예약 작업 실행 |
 
-관리자 권한은 현재 `AuthorizationEntity.admin = true`를 기준으로 한다.
+관리자 권한은 현재 `AuthorizationAccount.admin = true`를 기준으로 한다.
 초기 MVP에서는 `ADMIN` 단일 관리자 권한만 사용한다. 스트리머/매니저/조회 전용 관리자 같은 세부 권한 분리는 후순위로 둔다.
 사용자 고유 식별자는 CHZZK `channelId`를 사용하고, 닉네임은 표시명으로 자동 갱신한다. 히스토리에는 거래 당시 닉네임 스냅샷을 남긴다.
 

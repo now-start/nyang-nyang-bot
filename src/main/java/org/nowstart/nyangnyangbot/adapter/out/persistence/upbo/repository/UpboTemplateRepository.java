@@ -1,13 +1,13 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplateEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UpboTemplateRepository extends JpaRepository<UpboTemplateEntity, Long> {
+public interface UpboTemplateRepository extends JpaRepository<UpboTemplate, Long> {
 
-    List<UpboTemplateEntity> findByActiveTrueOrderByDisplayOrderAscIdAsc();
+    List<UpboTemplate> findByActiveTrueOrderByDisplayOrderAscIdAsc();
 }

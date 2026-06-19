@@ -304,6 +304,18 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void persistenceEntityFiles_ShouldNotUseEntitySuffix() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
+                .filter(path -> path.toString().contains("/entity/"))
+                .filter(path -> path.getFileName().toString().endsWith("Entity.java"))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
     void externalAdapters_ShouldNotContainDtoPackagesOrDtoClasses() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/external"))

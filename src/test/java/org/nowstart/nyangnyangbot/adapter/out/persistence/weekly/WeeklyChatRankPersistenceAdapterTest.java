@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
@@ -29,11 +29,11 @@ class WeeklyChatRankPersistenceAdapterTest {
         // 준비
         WeeklyChatRankPersistenceAdapter adapter = new WeeklyChatRankPersistenceAdapter(weeklyChatRankRepository);
         LocalDate weekStartDate = LocalDate.of(2026, 5, 11);
-        WeeklyChatRankEntity entity = rank(1L, weekStartDate, "user-1", "치즈냥", 3L);
+        WeeklyChatRank entity = rank(1L, weekStartDate, "user-1", "치즈냥", 3L);
         given(weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, "user-1"))
                 .willReturn(Optional.of(entity));
         given(weeklyChatRankRepository.findById(1L)).willReturn(Optional.of(entity));
-        given(weeklyChatRankRepository.save(any(WeeklyChatRankEntity.class))).willReturn(entity);
+        given(weeklyChatRankRepository.save(any(WeeklyChatRank.class))).willReturn(entity);
 
         // 실행
         WeeklyChatRankRecordResult found = adapter.findByWeekStartDateAndUserId(weekStartDate, "user-1").orElseThrow();
@@ -56,9 +56,9 @@ class WeeklyChatRankPersistenceAdapterTest {
         // 준비
         WeeklyChatRankPersistenceAdapter adapter = new WeeklyChatRankPersistenceAdapter(weeklyChatRankRepository);
         LocalDate weekStartDate = LocalDate.of(2026, 5, 11);
-        WeeklyChatRankEntity saved = rank(2L, weekStartDate, "user-2", "새냥", 7L);
+        WeeklyChatRank saved = rank(2L, weekStartDate, "user-2", "새냥", 7L);
         given(weeklyChatRankRepository.findById(404L)).willReturn(Optional.empty());
-        given(weeklyChatRankRepository.save(any(WeeklyChatRankEntity.class))).willReturn(saved);
+        given(weeklyChatRankRepository.save(any(WeeklyChatRank.class))).willReturn(saved);
 
         // 실행
         WeeklyChatRankRecordResult created = adapter.save(new WeeklyChatRankRecordResult(
@@ -103,14 +103,14 @@ class WeeklyChatRankPersistenceAdapterTest {
         then(result.get(1).chatCount()).isZero();
     }
 
-    private WeeklyChatRankEntity rank(
+    private WeeklyChatRank rank(
             Long id,
             LocalDate weekStartDate,
             String userId,
             String nickName,
             Long chatCount
     ) {
-        return WeeklyChatRankEntity.builder()
+        return WeeklyChatRank.builder()
                 .id(id)
                 .weekStartDate(weekStartDate)
                 .userId(userId)

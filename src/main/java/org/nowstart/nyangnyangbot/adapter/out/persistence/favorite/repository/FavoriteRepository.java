@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
 
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
@@ -13,11 +13,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface FavoriteRepository extends JpaRepository<FavoriteEntity, String> {
+public interface FavoriteRepository extends JpaRepository<FavoriteAccount, String> {
 
-    Page<FavoriteEntity> findByNickNameContains(Pageable pageable, String nickName);
+    Page<FavoriteAccount> findByNickNameContains(Pageable pageable, String nickName);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select favorite from FavoriteEntity favorite where favorite.userId = :userId")
-    Optional<FavoriteEntity> findByIdForUpdate(@Param("userId") String userId);
+    @Query("select favorite from FavoriteAccount favorite where favorite.userId = :userId")
+    Optional<FavoriteAccount> findByIdForUpdate(@Param("userId") String userId);
 }

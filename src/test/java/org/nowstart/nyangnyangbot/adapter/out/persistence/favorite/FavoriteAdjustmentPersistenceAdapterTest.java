@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustmentEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
 
@@ -24,10 +24,10 @@ class FavoriteAdjustmentPersistenceAdapterTest {
     void findAndSave_ShouldMapAdjustmentOptions() {
         // 준비
         FavoriteAdjustmentPersistenceAdapter adapter = new FavoriteAdjustmentPersistenceAdapter(favoriteAdjustmentRepository);
-        FavoriteAdjustmentEntity option = option(1L, 10, "보너스");
+        FavoriteAdjustment option = option(1L, 10, "보너스");
         given(favoriteAdjustmentRepository.findAll()).willReturn(List.of(option));
         given(favoriteAdjustmentRepository.findAllById(List.of(1L))).willReturn(List.of(option));
-        given(favoriteAdjustmentRepository.save(any(FavoriteAdjustmentEntity.class))).willReturn(option);
+        given(favoriteAdjustmentRepository.save(any(FavoriteAdjustment.class))).willReturn(option);
 
         // 실행
         List<OptionResult> all = adapter.findAll();
@@ -38,11 +38,11 @@ class FavoriteAdjustmentPersistenceAdapterTest {
         then(all).hasSize(1);
         then(selected.getFirst().id()).isEqualTo(1L);
         then(saved.amount()).isEqualTo(10);
-        BDDMockito.then(favoriteAdjustmentRepository).should().save(any(FavoriteAdjustmentEntity.class));
+        BDDMockito.then(favoriteAdjustmentRepository).should().save(any(FavoriteAdjustment.class));
     }
 
-    private FavoriteAdjustmentEntity option(Long id, Integer amount, String label) {
-        return FavoriteAdjustmentEntity.builder()
+    private FavoriteAdjustment option(Long id, Integer amount, String label) {
+        return FavoriteAdjustment.builder()
                 .id(id)
                 .amount(amount)
                 .label(label)

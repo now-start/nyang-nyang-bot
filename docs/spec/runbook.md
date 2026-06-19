@@ -54,7 +54,42 @@
 - 잘못 지급된 호감도나 룰렛 결과는 관리자 보정 거래로 정정한다.
 - 외부 이벤트와 연결된 데이터는 물리 삭제하지 않는다.
 
-## 5. OAuth 장애 대응
+## 5. Flyway 마이그레이션 사전 점검
+
+적용 전:
+
+- 운영 DB 백업을 생성한다.
+- config server에 `spring.flyway.baseline-on-migrate=true`, `spring.flyway.baseline-version=1`, `spring.jpa.hibernate.ddl-auto=validate`를 반영한다.
+- `flyway_schema_history`가 이미 있으면 version/status를 확인하고, 없으면 첫 배포에서 baseline이 생성되는 것을 전제로 한다.
+- 운영 DB 버전이 dump 기준과 같은 MariaDB 10.11 계열인지 확인한다.
+- 운영 DB에 물리 FK가 남아 있는지 확인한다. 현재 최종 정책은 FK 없이 UNIQUE/INDEX와 application transaction으로 관리하는 것이다.
+
+MariaDB/MySQL FK 확인 예:
+
+```sql
+SELECT
+    table_name,
+    constraint_name,
+    referenced_table_name
+FROM information_schema.referential_constraints
+WHERE constraint_schema = DATABASE();
+```
+
+FK가 남아 있으면:
+
+- `favorite_history_entity`의 FK 이름이 `FKnjkqgrcjhyhbc9544fedyj0a0`인지 확인한다.
+- 이름이 dump와 같으면 `V2`가 FK와 같은 이름의 보조 인덱스를 제거한다.
+- 이름이 다르면 배포를 중단하고 dump를 다시 받아 migration을 재검토한다.
+- 이름을 모르는 FK drop SQL을 운영에 직접 실행하지 않는다.
+
+적용 후:
+
+- `flyway_schema_history`에 baseline `1`과 `V2` 성공 이력이 있는지 확인한다.
+- 기존 테이블명(`*_entity`)이 도메인 테이블명으로 rename되었는지 확인한다.
+- `authorization_account`, `favorite_account`, `favorite_history`, `roulette_event`, `user_upbo` 등 핵심 테이블 row count를 확인한다.
+- smoke test로 OAuth 로그인, 호감도 보드, 관리자 호감도 조정을 확인한다.
+
+## 6. OAuth 장애 대응
 
 증상:
 
@@ -75,7 +110,7 @@
 - state mismatch가 반복되면 세션 저장소와 프록시 쿠키 설정을 확인한다.
 - 토큰 갱신 실패 사용자는 재로그인을 유도한다.
 
-## 6. CHZZK 소켓 장애 대응
+## 7. CHZZK 소켓 장애 대응
 
 증상:
 
@@ -97,7 +132,7 @@
 - CHZZK API 장애면 재시도 간격을 유지하고 자동 재연결 상태를 확인한다.
 - 소켓 재연결 후 `!호감도` smoke test를 수행한다.
 
-## 7. Google Sheets 마이그레이션
+## 8. Google Sheets 마이그레이션
 
 실행 전:
 
@@ -110,7 +145,7 @@
 
 - 처리 row 수 확인.
 - 실패 row 수와 실패 사유 확인.
-- 사용자별 마지막 원장 `balanceAfter`와 `FavoriteEntity.favorite` 일치 확인.
+- 사용자별 마지막 원장 `balanceAfter`와 `FavoriteAccount.favorite` 일치 확인.
 - 중복 실행 여부 확인.
 
 주의:
@@ -118,7 +153,7 @@
 - Google Sheets는 전환기 기능이다.
 - 플랫폼 DB 원장이 최종 원본이 된 뒤에는 Sheets 의존성을 제거한다.
 
-## 8. 호감도 원장 불일치 대응
+## 9. 호감도 원장 불일치 대응
 
 증상:
 
@@ -128,7 +163,7 @@
 확인:
 
 - 사용자별 마지막 원장 `balanceAfter`.
-- 현재 `FavoriteEntity.favorite`.
+- 현재 `FavoriteAccount.favorite`.
 - 최근 관리자 조정/출석/업보/룰렛 거래.
 - 중복 `idempotencyKey` 존재 여부.
 
@@ -138,7 +173,7 @@
 - 관리자 보정 거래로 차이를 정정한다.
 - 원인을 `favorite.correct` 운영 로그에 남긴다.
 
-## 9. 룰렛 장애 대응
+## 10. 룰렛 장애 대응
 
 증상:
 
@@ -151,7 +186,7 @@
 - 후원 이벤트 ID 저장 여부.
 - 룰렛 테이블 활성 상태와 후원 시점 스냅샷.
 - 명령어 토큰 정확 일치 여부.
-- `roulette_round_result_entity`의 `CONFIRMED` 잔여 회차.
+- `roulette_round_result`의 `CONFIRMED` 잔여 회차.
 - `idempotencyKey` UNIQUE 충돌 로그.
 
 조치:
@@ -160,7 +195,7 @@
 - 중복 반영이 확인되면 삭제하지 않고 보정 거래로 정정한다.
 - 잘못된 확률표는 비활성화하고 수정 후 재활성화한다.
 
-## 10. 오버레이 토큰 관리
+## 11. 오버레이 토큰 관리
 
 발급:
 
@@ -184,7 +219,7 @@
 - 토큰을 query string에 넣지 않는다.
 - 로그, 스크린샷, 이슈 본문에 토큰 원문을 남기지 않는다.
 
-## 11. 오버레이 재송출
+## 12. 오버레이 재송출
 
 대상:
 
@@ -198,7 +233,7 @@
 3. OBS 오버레이가 새 표시 이벤트를 가져가는지 확인한다.
 4. 원장/보유 목록이 재반영되지 않았는지 확인한다.
 
-## 12. Grafana/Loki 확인
+## 13. Grafana/Loki 확인
 
 기본 검색 키:
 

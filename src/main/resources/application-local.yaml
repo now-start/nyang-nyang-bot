@@ -9,13 +9,13 @@ chzzk:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:h2:file:./build/local-h2/nyangnyangbot;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;AUTO_SERVER=TRUE}
+    url: ${DB_URL:jdbc:h2:mem:nyangnyangbot;MODE=MySQL;DB_CLOSE_DELAY=-1}
     driver-class-name: org.h2.Driver
     username: ${DB_USER:sa}
     password: ${DB_PASS:}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:

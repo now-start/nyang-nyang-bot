@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,13 +12,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface WeeklyChatRankRepository extends JpaRepository<WeeklyChatRankEntity, Long> {
+public interface WeeklyChatRankRepository extends JpaRepository<WeeklyChatRank, Long> {
 
-    Optional<WeeklyChatRankEntity> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId);
+    Optional<WeeklyChatRank> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId);
 
     @Query("""
             select w.nickName as nickname, w.chatCount as chatCount
-            from WeeklyChatRankEntity w
+            from WeeklyChatRank w
             where w.weekStartDate = :weekStartDate
             order by w.chatCount desc, w.nickName asc
             """)

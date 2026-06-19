@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.HistoryResult;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.data.domain.Page;
@@ -39,13 +39,13 @@ class FavoritePersistenceAdapterTest {
     void loadAndSaveAccount_ShouldMapFavoriteAccount() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
-        FavoriteEntity entity = favorite("user-1", "치즈냥", 10);
+        FavoriteAccount entity = favorite("user-1", "치즈냥", 10);
         given(favoriteRepository.findByIdForUpdate("user-1")).willReturn(Optional.of(entity));
         given(favoriteRepository.findById("user-1")).willReturn(Optional.of(entity));
 
         // 실행
-        FavoriteAccount loaded = adapter.loadForUpdate("user-1").orElseThrow();
-        FavoriteAccount saved = adapter.save(FavoriteAccount.of("user-1", "치즈냥2", 20));
+        var loaded = adapter.loadForUpdate("user-1").orElseThrow();
+        var saved = adapter.save(org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount.of("user-1", "치즈냥2", 20));
 
         // 검증
         then(loaded.getUserId()).isEqualTo("user-1");
@@ -63,21 +63,21 @@ class FavoritePersistenceAdapterTest {
         given(favoriteRepository.findById("user-1")).willReturn(Optional.empty());
 
         // 실행
-        FavoriteAccount result = adapter.save(FavoriteAccount.of("user-1", "치즈냥", 15));
+        var result = adapter.save(org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount.of("user-1", "치즈냥", 15));
 
         // 검증
         then(result.getBalance()).isEqualTo(15);
-        BDDMockito.then(favoriteRepository).should().save(any(FavoriteEntity.class));
+        BDDMockito.then(favoriteRepository).should().save(any(FavoriteAccount.class));
     }
 
     @Test
     void saveLedger_ShouldPersistHistoryAndReturnSavedId() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
-        FavoriteEntity favorite = favorite("user-1", "치즈냥", 20);
-        FavoriteHistoryEntity savedHistory = history(99L, favorite, 5, 25, "공개 설명", "공개 설명");
+        FavoriteAccount favorite = favorite("user-1", "치즈냥", 20);
+        FavoriteHistory savedHistory = history(99L, favorite, 5, 25, "공개 설명", "공개 설명");
         given(favoriteRepository.getReferenceById("user-1")).willReturn(favorite);
-        given(favoriteHistoryRepository.save(any(FavoriteHistoryEntity.class))).willReturn(savedHistory);
+        given(favoriteHistoryRepository.save(any(FavoriteHistory.class))).willReturn(savedHistory);
 
         // 실행
         FavoriteLedgerEntry result = adapter.save(FavoriteLedgerEntry.builder()
@@ -103,11 +103,40 @@ class FavoritePersistenceAdapterTest {
     }
 
     @Test
+    void saveLedger_ShouldStoreBlankIdempotencyKeyAsNull() {
+        // 준비
+        FavoritePersistenceAdapter adapter = adapter();
+        FavoriteAccount favorite = favorite("user-1", "치즈냥", 20);
+        FavoriteHistory savedHistory = history(100L, favorite, 5, 25, "공개 설명", "공개 설명");
+        ArgumentCaptor<FavoriteHistory> captor = ArgumentCaptor.forClass(FavoriteHistory.class);
+        given(favoriteRepository.getReferenceById("user-1")).willReturn(favorite);
+        given(favoriteHistoryRepository.save(any(FavoriteHistory.class))).willReturn(savedHistory);
+
+        // 실행
+        FavoriteLedgerEntry result = adapter.save(FavoriteLedgerEntry.builder()
+                .userId("user-1")
+                .delta(5)
+                .balanceAfter(25)
+                .sourceType(FavoriteSourceType.ADMIN_ADJUSTMENT)
+                .sourceId("source-1")
+                .displayCategory("ADMIN")
+                .publicDescription("공개 설명")
+                .idempotencyKey(" ")
+                .nickNameSnapshot("치즈냥")
+                .build());
+
+        // 검증
+        BDDMockito.then(favoriteHistoryRepository).should().save(captor.capture());
+        then(captor.getValue().getIdempotencyKey()).isNull();
+        then(result.idempotencyKey()).isNull();
+    }
+
+    @Test
     void idempotencyAndSummaryQueries_ShouldDelegateToRepositories() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
         Pageable pageable = PageRequest.of(0, 10);
-        FavoriteEntity favorite = favorite("user-1", "치즈냥", 30);
+        FavoriteAccount favorite = favorite("user-1", "치즈냥", 30);
         given(favoriteHistoryRepository.existsByIdempotencyKey("key-1")).willReturn(true);
         given(favoriteRepository.findAll(pageable)).willReturn(new PageImpl<>(List.of(favorite)));
         given(favoriteRepository.findByNickNameContains(pageable, "치즈")).willReturn(new PageImpl<>(List.of(favorite)));
@@ -132,11 +161,11 @@ class FavoritePersistenceAdapterTest {
     void getOrCreateAndUpdateNickname_ShouldUseExistingOrCreateNewEntity() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
-        FavoriteEntity existing = favorite("user-1", "치즈냥", 30);
-        FavoriteEntity created = favorite("user-2", "새냥", 0);
+        FavoriteAccount existing = favorite("user-1", "치즈냥", 30);
+        FavoriteAccount created = favorite("user-2", "새냥", 0);
         given(favoriteRepository.findById("user-1")).willReturn(Optional.of(existing));
         given(favoriteRepository.findById("user-2")).willReturn(Optional.empty());
-        given(favoriteRepository.save(any(FavoriteEntity.class))).willReturn(created);
+        given(favoriteRepository.save(any(FavoriteAccount.class))).willReturn(created);
         given(favoriteRepository.findById("user-3")).willReturn(Optional.of(favorite("user-3", "이전", 5)));
 
         // 실행
@@ -147,21 +176,21 @@ class FavoritePersistenceAdapterTest {
         // 검증
         then(found.userId()).isEqualTo("user-1");
         then(newOne.userId()).isEqualTo("user-2");
-        BDDMockito.then(favoriteRepository).should().save(any(FavoriteEntity.class));
+        BDDMockito.then(favoriteRepository).should().save(any(FavoriteAccount.class));
     }
 
     @Test
     void historyQueries_ShouldMapFallbackFieldsAndCounts() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
-        FavoriteEntity favorite = favorite("user-1", "치즈냥", 30);
+        FavoriteAccount favorite = favorite("user-1", "치즈냥", 30);
         LocalDateTime now = LocalDateTime.of(2026, 5, 16, 22, 30);
-        FavoriteHistoryEntity modern = history(1L, favorite, 5, 35, "공개 설명", "이전 설명");
-        FavoriteHistoryEntity legacy = history(2L, null, -3, null, null, "레거시 설명");
-        given(favoriteHistoryRepository.findByFavoriteEntityUserId(any(), any()))
+        FavoriteHistory modern = history(1L, favorite, 5, 35, "공개 설명", "이전 설명");
+        FavoriteHistory legacy = history(2L, null, -3, null, null, "레거시 설명");
+        given(favoriteHistoryRepository.findByFavoriteAccountUserId(any(), any()))
                 .willReturn(new PageImpl<>(List.of(modern, legacy)));
-        given(favoriteHistoryRepository.countByFavoriteEntityUserId("user-1")).willReturn(2L);
-        given(favoriteHistoryRepository.countByFavoriteEntityUserIdAndCreateDateAfter("user-1", now)).willReturn(1L);
+        given(favoriteHistoryRepository.countByFavoriteAccountUserId("user-1")).willReturn(2L);
+        given(favoriteHistoryRepository.countByFavoriteAccountUserIdAndCreateDateAfter("user-1", now)).willReturn(1L);
 
         // 실행
         List<HistoryResult> histories = adapter.findHistory("user-1", 10);
@@ -183,25 +212,25 @@ class FavoritePersistenceAdapterTest {
         return new FavoritePersistenceAdapter(favoriteRepository, favoriteHistoryRepository);
     }
 
-    private FavoriteEntity favorite(String userId, String nickName, Integer favorite) {
-        return FavoriteEntity.builder()
+    private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {
+        return FavoriteAccount.builder()
                 .userId(userId)
                 .nickName(nickName)
                 .favorite(favorite)
                 .build();
     }
 
-    private FavoriteHistoryEntity history(
+    private FavoriteHistory history(
             Long id,
-            FavoriteEntity favorite,
+            FavoriteAccount favorite,
             Integer delta,
             Integer balanceAfter,
             String publicDescription,
             String history
     ) {
-        return FavoriteHistoryEntity.builder()
+        return FavoriteHistory.builder()
                 .id(id)
-                .favoriteEntity(favorite)
+                .favoriteAccount(favorite)
                 .history(history)
                 .favorite(balanceAfter == null ? 10 : balanceAfter)
                 .delta(delta)

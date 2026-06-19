@@ -11,8 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
@@ -36,10 +36,10 @@ class UpboPersistenceAdapterTest {
     void templateQueries_ShouldMapTemplateEntities() {
         // 준비
         UpboPersistenceAdapter adapter = adapter();
-        UpboTemplateEntity template = template(1L);
+        UpboTemplate template = template(1L);
         given(upboTemplateRepository.findByActiveTrueOrderByDisplayOrderAscIdAsc()).willReturn(List.of(template));
         given(upboTemplateRepository.findById(1L)).willReturn(Optional.of(template));
-        given(upboTemplateRepository.save(any(UpboTemplateEntity.class))).willReturn(template);
+        given(upboTemplateRepository.save(any(UpboTemplate.class))).willReturn(template);
 
         // 실행
         List<TemplateResult> activeTemplates = adapter.findActiveTemplates();
@@ -64,10 +64,10 @@ class UpboPersistenceAdapterTest {
     void createUserUpbo_ShouldUseTemplateReferenceWhenTemplateIdExists() {
         // 준비
         UpboPersistenceAdapter adapter = adapter();
-        UpboTemplateEntity template = template(1L);
-        UserUpboEntity userUpbo = userUpbo(2L, template);
+        UpboTemplate template = template(1L);
+        UserUpbo userUpbo = userUpbo(2L, template);
         given(upboTemplateRepository.getReferenceById(1L)).willReturn(template);
-        given(userUpboRepository.save(any(UserUpboEntity.class))).willReturn(userUpbo);
+        given(userUpboRepository.save(any(UserUpbo.class))).willReturn(userUpbo);
 
         // 실행
         UserResult result = adapter.createUserUpbo(new CreateUserUpboCommand(
@@ -97,8 +97,8 @@ class UpboPersistenceAdapterTest {
     void userQueries_ShouldMapUserUpbosWithoutTemplate() {
         // 준비
         UpboPersistenceAdapter adapter = adapter();
-        UserUpboEntity userUpbo = userUpbo(2L, null);
-        given(userUpboRepository.save(any(UserUpboEntity.class))).willReturn(userUpbo);
+        UserUpbo userUpbo = userUpbo(2L, null);
+        given(userUpboRepository.save(any(UserUpbo.class))).willReturn(userUpbo);
         given(userUpboRepository.findByUserIdOrderByCreateDateDesc("user-1")).willReturn(List.of(userUpbo));
         given(userUpboRepository.findByUserIdAndStatusOrderByCreateDateDesc("user-1", UpboStatus.OWNED))
                 .willReturn(List.of(userUpbo));
@@ -133,8 +133,8 @@ class UpboPersistenceAdapterTest {
         return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository);
     }
 
-    private UpboTemplateEntity template(Long id) {
-        return UpboTemplateEntity.builder()
+    private UpboTemplate template(Long id) {
+        return UpboTemplate.builder()
                 .id(id)
                 .label("호감도 +100")
                 .description("설명")
@@ -146,8 +146,8 @@ class UpboPersistenceAdapterTest {
                 .build();
     }
 
-    private UserUpboEntity userUpbo(Long id, UpboTemplateEntity template) {
-        return UserUpboEntity.builder()
+    private UserUpbo userUpbo(Long id, UpboTemplate template) {
+        return UserUpbo.builder()
                 .id(id)
                 .userId("user-1")
                 .upboTemplate(template)

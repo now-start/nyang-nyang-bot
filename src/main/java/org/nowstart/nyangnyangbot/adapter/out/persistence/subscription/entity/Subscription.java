@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SubscriptionEntity extends BaseEntity {
+public class Subscription extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,5 +26,5 @@ public class SubscriptionEntity extends BaseEntity {
     private String subscriberNickname;
     private Integer tierNo;
     private String tierName;
-    private Integer month;
+    private Integer subscriptionMonth;
 }

@@ -7,8 +7,8 @@ import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateRes
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
@@ -39,7 +39,7 @@ public class UpboPersistenceAdapter implements UpboPort {
             RewardType rewardType,
             ConversionMode conversionMode
     ) {
-        UpboTemplateEntity saved = upboTemplateRepository.save(UpboTemplateEntity.builder()
+        UpboTemplate saved = upboTemplateRepository.save(UpboTemplate.builder()
                 .label(label)
                 .description(description)
                 .active(true)
@@ -58,10 +58,10 @@ public class UpboPersistenceAdapter implements UpboPort {
 
     @Override
     public UserResult createUserUpbo(CreateUserUpboCommand command) {
-        UpboTemplateEntity template = command.upboTemplateId() == null
+        UpboTemplate template = command.upboTemplateId() == null
                 ? null
                 : upboTemplateRepository.getReferenceById(command.upboTemplateId());
-        UserUpboEntity saved = userUpboRepository.save(UserUpboEntity.builder()
+        UserUpbo saved = userUpboRepository.save(UserUpbo.builder()
                 .userId(command.userId())
                 .upboTemplate(template)
                 .nickNameSnapshot(command.nickNameSnapshot())
@@ -93,7 +93,7 @@ public class UpboPersistenceAdapter implements UpboPort {
                 .toList();
     }
 
-    private TemplateResult toModel(UpboTemplateEntity entity) {
+    private TemplateResult toModel(UpboTemplate entity) {
         return new TemplateResult(
                 entity.getId(),
                 entity.getLabel(),
@@ -106,7 +106,7 @@ public class UpboPersistenceAdapter implements UpboPort {
         );
     }
 
-    private UserResult toModel(UserUpboEntity entity) {
+    private UserResult toModel(UserUpbo entity) {
         Long templateId = entity.getUpboTemplate() == null ? null : entity.getUpboTemplate().getId();
         return new UserResult(
                 entity.getId(),

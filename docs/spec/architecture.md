@@ -337,21 +337,21 @@ adapter/out/persistence
   subscription
     SubscriptionPersistenceAdapter
     entity
-      SubscriptionEntity
+      Subscription
     repository
       SubscriptionRepository
 
   donation
     DonationPersistenceAdapter
     entity
-      DonationEntity
+      Donation
     repository
       DonationRepository
 
   authorization
     AuthorizationPersistenceAdapter
     entity
-      AuthorizationEntity
+      AuthorizationAccount
     repository
       AuthorizationRepository
 
@@ -359,9 +359,9 @@ adapter/out/persistence
     FavoritePersistenceAdapter
     FavoriteAdjustmentPersistenceAdapter
     entity
-      FavoriteEntity
-      FavoriteHistoryEntity
-      FavoriteAdjustmentEntity
+      FavoriteAccount
+      FavoriteHistory
+      FavoriteAdjustment
     repository
       FavoriteRepository
       FavoriteHistoryRepository
@@ -370,10 +370,10 @@ adapter/out/persistence
   roulette
     RoulettePersistenceAdapter
     entity
-      RouletteTableEntity
-      RouletteItemEntity
-      RouletteEventEntity
-      RouletteRoundResultEntity
+      RouletteTable
+      RouletteItem
+      RouletteEvent
+      RouletteRoundResult
     repository
       RouletteTableRepository
       RouletteItemRepository
@@ -384,8 +384,8 @@ adapter/out/persistence
     OverlayTokenPersistenceAdapter
     OverlayDisplayPersistenceAdapter
     entity
-      OverlayTokenEntity
-      OverlayDisplayEventEntity
+      OverlayToken
+      OverlayDisplayEvent
     repository
       OverlayTokenRepository
       OverlayDisplayEventRepository
@@ -393,8 +393,8 @@ adapter/out/persistence
   upbo
     UpboPersistenceAdapter
     entity
-      UpboTemplateEntity
-      UserUpboEntity
+      UpboTemplate
+      UserUpbo
     repository
       UpboTemplateRepository
       UserUpboRepository
@@ -402,7 +402,7 @@ adapter/out/persistence
   weekly
     WeeklyChatRankPersistenceAdapter
     entity
-      WeeklyChatRankEntity
+      WeeklyChatRank
     repository
       WeeklyChatRankRepository
 ```
@@ -411,8 +411,8 @@ adapter/out/persistence
 
 - `adapter/out/persistence/entity`는 만들지 않는다.
 - `adapter/out/persistence/repository`는 만들지 않는다.
-- `adapter/out/persistence/{subject}` 루트에는 `Entity`, `Repository`를 직접 두지 않는다.
-- `Entity`는 `adapter/out/persistence/{subject}/entity`에 둔다.
+- `adapter/out/persistence/{subject}` 루트에는 JPA 모델이나 `Repository`를 직접 두지 않는다.
+- JPA 모델은 `adapter/out/persistence/{subject}/entity`에 둔다.
 - `Repository`는 `adapter/out/persistence/{subject}/repository`에 둔다.
 - JPA entity는 persistence 패키지 밖으로 노출하지 않는다.
 - Spring Data repository는 같은 persistence subject 안의 adapter에서만 직접 사용한다.
@@ -540,7 +540,7 @@ Persistence Entity 예:
 
 ```java
 @Entity
-public class RouletteTableEntity {
+public class RouletteTable {
 
     @Id
     private Long id;
@@ -551,8 +551,8 @@ public class RouletteTableEntity {
         return new RouletteTable(id, title);
     }
 
-    public static RouletteTableEntity from(RouletteTable table) {
-        RouletteTableEntity entity = new RouletteTableEntity();
+    public static RouletteTable from(RouletteTable table) {
+        RouletteTable entity = new RouletteTable();
         entity.id = table.id();
         entity.title = table.title();
         return entity;
@@ -565,8 +565,8 @@ Persistence Adapter 예:
 ```java
 @Override
 public RouletteTable save(RouletteTable table) {
-    RouletteTableEntity saved = repository.save(
-            RouletteTableEntity.from(table)
+    RouletteTable saved = repository.save(
+            RouletteTable.from(table)
     );
 
     return saved.toRouletteTable();
@@ -841,7 +841,7 @@ domain -> Spring/JPA
 
 ## 13. 네이밍 규칙
 
-패키지명과 클래스 접미사는 서로 맞춘다. 예를 들어 `request` 패키지에는 `*Request`, `entity` 패키지에는 `*Entity`, `client` 패키지에는 `*Client`만 둔다.
+패키지명과 클래스 접미사는 역할을 드러내되, persistence entity 클래스에는 `Entity` 접미사를 붙이지 않는다. `entity` 패키지는 ORM 위치를 나타내고, 클래스명은 Hibernate 기본 물리 네이밍으로 매핑될 테이블명과 맞춘다.
 
 | 패키지 | 클래스 이름 |
 | --- | --- |
@@ -857,7 +857,7 @@ domain -> Spring/JPA
 | `adapter/in/web/{feature}/request` | HTTP 요청 DTO + `Request`. 예: `RouletteItemRequest` |
 | `adapter/in/web/{feature}/response` | HTTP 응답 DTO + `Response`. 예: `RouletteItemResponse` |
 | `adapter/out/persistence/{subject}` | outbound port 구현체 + `PersistenceAdapter`. 예: `RoulettePersistenceAdapter` |
-| `adapter/out/persistence/{subject}/entity` | JPA 모델 + `Entity`. 예: `RouletteEventEntity` |
+| `adapter/out/persistence/{subject}/entity` | JPA 모델. `Entity` 접미사 없이 도메인 테이블명과 맞춘다. 예: `RouletteEvent` |
 | `adapter/out/persistence/{subject}/repository` | Spring Data 저장소 + `Repository`. 예: `RouletteEventRepository` |
 | `adapter/out/external/{provider}` | outbound port 구현체 + `ClientAdapter` 또는 `ExternalAdapter`. 예: `ChzzkClientAdapter` |
 | `adapter/out/external/{provider}/client` | API/SDK client + `Client`. 예: `ChzzkOpenApiClient` |

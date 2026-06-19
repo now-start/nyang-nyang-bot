@@ -16,7 +16,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthorizationEntity extends BaseEntity {
+public class AuthorizationAccount extends BaseEntity {
 
     @Id
     @Setter

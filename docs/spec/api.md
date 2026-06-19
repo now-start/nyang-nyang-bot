@@ -24,7 +24,7 @@
 | 공개 | 인증 없이 접근 가능 |
 | 인증 | CHZZK OAuth 로그인 필요 |
 | 본인 또는 관리자 | 요청 대상 `channelId`가 본인이거나 관리자 |
-| 관리자 | `AuthorizationEntity.admin = true` |
+| 관리자 | `AuthorizationAccount.admin = true` |
 | 오버레이 토큰 | `Authorization: Bearer` 헤더의 유효한 오버레이 토큰 |
 | 시스템 | 내부 서버 use case 또는 scheduler 전용 |
 

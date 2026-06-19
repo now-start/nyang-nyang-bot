@@ -21,7 +21,7 @@ import org.nowstart.nyangnyangbot.domain.type.RewardType;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpboTemplateEntity extends BaseEntity {
+public class UpboTemplate extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

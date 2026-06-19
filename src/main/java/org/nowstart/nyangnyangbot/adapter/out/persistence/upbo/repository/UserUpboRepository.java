@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpboEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 
 import java.util.List;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserUpboRepository extends JpaRepository<UserUpboEntity, Long> {
+public interface UserUpboRepository extends JpaRepository<UserUpbo, Long> {
 
-    List<UserUpboEntity> findByUserIdOrderByCreateDateDesc(String userId);
+    List<UserUpbo> findByUserIdOrderByCreateDateDesc(String userId);
 
-    List<UserUpboEntity> findByUserIdAndStatusOrderByCreateDateDesc(String userId, UpboStatus status);
+    List<UserUpbo> findByUserIdAndStatusOrderByCreateDateDesc(String userId, UpboStatus status);
 }

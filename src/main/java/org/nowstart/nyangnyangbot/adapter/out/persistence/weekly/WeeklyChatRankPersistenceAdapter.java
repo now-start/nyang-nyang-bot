@@ -7,7 +7,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
 import org.springframework.data.domain.PageRequest;
@@ -27,9 +27,9 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
 
     @Override
     public WeeklyChatRankRecordResult save(WeeklyChatRankRecordResult record) {
-        WeeklyChatRankEntity entity = record.id() == null
-                ? WeeklyChatRankEntity.builder().build()
-                : weeklyChatRankRepository.findById(record.id()).orElseGet(WeeklyChatRankEntity.builder()::build);
+        WeeklyChatRank entity = record.id() == null
+                ? WeeklyChatRank.builder().build()
+                : weeklyChatRankRepository.findById(record.id()).orElseGet(WeeklyChatRank.builder()::build);
         entity.setWeekStartDate(record.weekStartDate());
         entity.setUserId(record.userId());
         entity.setNickName(record.nickName());
@@ -50,7 +50,7 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
         return ranks;
     }
 
-    private WeeklyChatRankRecordResult toModel(WeeklyChatRankEntity entity) {
+    private WeeklyChatRankRecordResult toModel(WeeklyChatRank entity) {
         return new WeeklyChatRankRecordResult(
                 entity.getId(),
                 entity.getWeekStartDate(),

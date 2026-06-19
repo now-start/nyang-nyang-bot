@@ -22,13 +22,13 @@ import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RouletteRoundResultEntity extends BaseEntity {
+public class RouletteRoundResult extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private RouletteEventEntity rouletteEvent;
+    private RouletteEvent rouletteEvent;
     private Integer roundNo;
     private String itemLabel;
     private Integer probabilityBasisPoints;

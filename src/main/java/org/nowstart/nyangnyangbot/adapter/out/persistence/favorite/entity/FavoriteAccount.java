@@ -15,7 +15,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FavoriteEntity extends BaseEntity {
+public class FavoriteAccount extends BaseEntity {
 
     @Id
     private String userId;

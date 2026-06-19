@@ -77,7 +77,7 @@
 - `FavoriteAccount`, `FavoriteLedgerEntry`, `FavoriteSourceType` domain model을 만든다.
 - `AdjustFavoriteUseCase`, `CorrectFavoriteLedgerUseCase`, `GrantFavoriteUseCase`를 정의한다.
 - `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort`, `CheckIdempotencyPort`를 정의한다.
-- 현행 `FavoriteEntity`, `FavoriteHistoryEntity`를 확장하거나 persistence adapter 모델로 분리한다.
+- 현행 `FavoriteAccount`, `FavoriteHistory`를 확장하거나 persistence adapter 모델로 분리한다.
 - 원장 필드 `delta`, `balanceAfter`, `sourceType`, `actorId`, `idempotencyKey`, `nickNameSnapshot` 등을 추가한다.
 - 잔액 변경 코드를 단일 application service로 집중한다.
 - 사용자별 비관적 락으로 잔액 변경을 직렬화한다.

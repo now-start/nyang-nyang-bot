@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,17 +10,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface OverlayDisplayEventRepository extends JpaRepository<OverlayDisplayEventEntity, Long> {
+public interface OverlayDisplayEventRepository extends JpaRepository<OverlayDisplayEvent, Long> {
 
-    List<OverlayDisplayEventEntity> findByStatusAndExpiresAtBefore(
+    List<OverlayDisplayEvent> findByStatusAndExpiresAtBefore(
             OverlayDisplayStatus status,
             LocalDateTime expiresAt
     );
 
-    Optional<OverlayDisplayEventEntity> findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
+    Optional<OverlayDisplayEvent> findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
             OverlayDisplayStatus status,
             LocalDateTime expiresAt
     );
 
-    List<OverlayDisplayEventEntity> findByRouletteEventIdOrderByCreateDateDesc(Long rouletteEventId);
+    List<OverlayDisplayEvent> findByRouletteEventIdOrderByCreateDateDesc(Long rouletteEventId);
 }

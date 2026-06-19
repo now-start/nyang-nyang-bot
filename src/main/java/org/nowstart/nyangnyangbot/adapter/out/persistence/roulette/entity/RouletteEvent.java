@@ -20,7 +20,7 @@ import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RouletteEventEntity extends BaseEntity {
+public class RouletteEvent extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

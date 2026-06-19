@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
@@ -23,7 +23,7 @@ class AuthorizationPersistenceAdapterTest {
     private AuthorizationRepository authorizationRepository;
 
     @Test
-    void findById_ShouldMapAuthorizationEntity() {
+    void findById_ShouldMapAuthorization() {
         // 준비
         AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(entity("channel-1")));
@@ -41,25 +41,25 @@ class AuthorizationPersistenceAdapterTest {
     void saveOrUpdate_ShouldCreateNewAuthorizationWhenMissing() {
         // 준비
         AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
-        AuthorizationEntity saved = entity("channel-1");
+        AuthorizationAccount saved = entity("channel-1");
         AuthorizationToken token = token("access", "refresh");
         UserResult user = new UserResult("channel-1", "치즈냥", "ACTIVE");
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.empty());
-        given(authorizationRepository.save(org.mockito.ArgumentMatchers.any(AuthorizationEntity.class))).willReturn(saved);
+        given(authorizationRepository.save(org.mockito.ArgumentMatchers.any(AuthorizationAccount.class))).willReturn(saved);
 
         // 실행
         AuthorizationAccountResult result = adapter.saveOrUpdate(user, token);
 
         // 검증
         then(result.channelId()).isEqualTo("channel-1");
-        BDDMockito.then(authorizationRepository).should().save(org.mockito.ArgumentMatchers.any(AuthorizationEntity.class));
+        BDDMockito.then(authorizationRepository).should().save(org.mockito.ArgumentMatchers.any(AuthorizationAccount.class));
     }
 
     @Test
     void saveOrUpdateAndUpdateToken_ShouldMutateExistingEntity() {
         // 준비
         AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
-        AuthorizationEntity existing = entity("channel-1");
+        AuthorizationAccount existing = entity("channel-1");
         AuthorizationToken updatedToken = token("new-access", "new-refresh");
         UserResult user = new UserResult("channel-1", "변경", "ACTIVE");
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
@@ -78,7 +78,7 @@ class AuthorizationPersistenceAdapterTest {
     void markFavoriteHistorySeen_ShouldUpdateOnlyWhenEntityExists() {
         // 준비
         AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
-        AuthorizationEntity existing = entity("channel-1");
+        AuthorizationAccount existing = entity("channel-1");
         LocalDateTime seenAt = LocalDateTime.of(2026, 5, 16, 23, 40);
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
         given(authorizationRepository.findById("missing")).willReturn(Optional.empty());
@@ -91,8 +91,8 @@ class AuthorizationPersistenceAdapterTest {
         then(existing.getFavoriteHistoryLastSeenAt()).isEqualTo(seenAt);
     }
 
-    private AuthorizationEntity entity(String channelId) {
-        return AuthorizationEntity.builder()
+    private AuthorizationAccount entity(String channelId) {
+        return AuthorizationAccount.builder()
                 .channelId(channelId)
                 .channelName("치즈냥")
                 .accessToken("access")

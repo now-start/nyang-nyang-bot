@@ -14,10 +14,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResultEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTableEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
@@ -52,11 +52,11 @@ class RoulettePersistenceAdapterTest {
     void createTableAndAddItem_ShouldPersistEntitiesAndMapResults() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteTableEntity table = table(1L, "기본", "!룰렛", 1_000L, false, 0, 100);
-        RouletteItemEntity item = item(2L, table, "꽝", 1_000, true);
-        given(rouletteTableRepository.save(any(RouletteTableEntity.class))).willReturn(table);
+        RouletteTable table = table(1L, "기본", "!룰렛", 1_000L, false, 0, 100);
+        RouletteItem item = item(2L, table, "꽝", 1_000, true);
+        given(rouletteTableRepository.save(any(RouletteTable.class))).willReturn(table);
         given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(table));
-        given(rouletteItemRepository.save(any(RouletteItemEntity.class))).willReturn(item);
+        given(rouletteItemRepository.save(any(RouletteItem.class))).willReturn(item);
 
         // 실행
         TableResult tableResult = adapter.createTable("기본", "!룰렛", 1_000L, 100);
@@ -77,8 +77,8 @@ class RoulettePersistenceAdapterTest {
         then(itemResult.id()).isEqualTo(2L);
         then(itemResult.tableId()).isEqualTo(1L);
         then(itemResult.losingItem()).isTrue();
-        BDDMockito.then(rouletteTableRepository).should().save(any(RouletteTableEntity.class));
-        BDDMockito.then(rouletteItemRepository).should().save(any(RouletteItemEntity.class));
+        BDDMockito.then(rouletteTableRepository).should().save(any(RouletteTable.class));
+        BDDMockito.then(rouletteItemRepository).should().save(any(RouletteItem.class));
     }
 
     @Test
@@ -106,8 +106,8 @@ class RoulettePersistenceAdapterTest {
     void tableQueriesAndActivation_ShouldMapAndMutateTableState() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteTableEntity target = table(1L, "기본", "!룰렛", 1_000L, false, 1, 100);
-        RouletteTableEntity otherActive = table(2L, "이전", "!이전", 500L, true, 3, 50);
+        RouletteTable target = table(1L, "기본", "!룰렛", 1_000L, false, 1, 100);
+        RouletteTable otherActive = table(2L, "이전", "!이전", 500L, true, 3, 50);
         given(rouletteTableRepository.findAllByOrderByIdDesc()).willReturn(List.of(otherActive, target));
         given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(target));
         given(rouletteTableRepository.findByActiveTrue()).willReturn(List.of(otherActive, target));
@@ -135,10 +135,10 @@ class RoulettePersistenceAdapterTest {
     void itemAndEventQueries_ShouldMapRepositoryResults() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteTableEntity table = table(1L, "기본", "!룰렛", 1_000L, true, 1, 100);
-        RouletteItemEntity item = item(2L, table, "당첨", 9_000, false);
-        RouletteEventEntity event = event(3L, RouletteEventStatus.CONFIRMED);
-        RouletteRoundResultEntity round = round(4L, event, RouletteRoundStatus.CONFIRMED);
+        RouletteTable table = table(1L, "기본", "!룰렛", 1_000L, true, 1, 100);
+        RouletteItem item = item(2L, table, "당첨", 9_000, false);
+        RouletteEvent event = event(3L, RouletteEventStatus.CONFIRMED);
+        RouletteRoundResult round = round(4L, event, RouletteRoundStatus.CONFIRMED);
         given(rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(1L)).willReturn(List.of(item));
         given(rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L))
                 .willReturn(List.of(item));
@@ -179,8 +179,8 @@ class RoulettePersistenceAdapterTest {
     void createEventAndSaveRounds_ShouldPersistSnapshots() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteEventEntity event = event(3L, RouletteEventStatus.CONFIRMED);
-        given(rouletteEventRepository.save(any(RouletteEventEntity.class))).willReturn(event);
+        RouletteEvent event = event(3L, RouletteEventStatus.CONFIRMED);
+        given(rouletteEventRepository.save(any(RouletteEvent.class))).willReturn(event);
         given(rouletteEventRepository.getReferenceById(3L)).willReturn(event);
         given(rouletteRoundResultRepository.saveAll(any())).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -223,8 +223,8 @@ class RoulettePersistenceAdapterTest {
     void statusMutations_ShouldUpdateEventAndRound() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteEventEntity event = event(3L, RouletteEventStatus.CONFIRMED);
-        RouletteRoundResultEntity round = round(4L, event, RouletteRoundStatus.CONFIRMED);
+        RouletteEvent event = event(3L, RouletteEventStatus.CONFIRMED);
+        RouletteRoundResult round = round(4L, event, RouletteRoundStatus.CONFIRMED);
         given(rouletteEventRepository.findById(3L)).willReturn(Optional.of(event));
         given(rouletteRoundResultRepository.findById(4L)).willReturn(Optional.of(round));
 
@@ -264,7 +264,7 @@ class RoulettePersistenceAdapterTest {
     void saveRounds_ShouldMapRoundWithoutEvent() {
         // 준비
         RoulettePersistenceAdapter adapter = adapter();
-        RouletteRoundResultEntity round = round(4L, null, RouletteRoundStatus.CONFIRMED);
+        RouletteRoundResult round = round(4L, null, RouletteRoundStatus.CONFIRMED);
         given(rouletteRoundResultRepository.findById(4L)).willReturn(Optional.of(round));
 
         // 실행
@@ -285,7 +285,7 @@ class RoulettePersistenceAdapterTest {
         );
     }
 
-    private RouletteTableEntity table(
+    private RouletteTable table(
             Long id,
             String title,
             String command,
@@ -294,7 +294,7 @@ class RoulettePersistenceAdapterTest {
             Integer version,
             Integer highRoundThreshold
     ) {
-        return RouletteTableEntity.builder()
+        return RouletteTable.builder()
                 .id(id)
                 .title(title)
                 .command(command)
@@ -305,14 +305,14 @@ class RoulettePersistenceAdapterTest {
                 .build();
     }
 
-    private RouletteItemEntity item(
+    private RouletteItem item(
             Long id,
-            RouletteTableEntity table,
+            RouletteTable table,
             String label,
             Integer probabilityBasisPoints,
             boolean losingItem
     ) {
-        return RouletteItemEntity.builder()
+        return RouletteItem.builder()
                 .id(id)
                 .rouletteTable(table)
                 .label(label)
@@ -326,8 +326,8 @@ class RoulettePersistenceAdapterTest {
                 .build();
     }
 
-    private RouletteEventEntity event(Long id, RouletteEventStatus status) {
-        return RouletteEventEntity.builder()
+    private RouletteEvent event(Long id, RouletteEventStatus status) {
+        return RouletteEvent.builder()
                 .id(id)
                 .donationEventId("donation-1")
                 .idempotencyKey("donation-1")
@@ -345,8 +345,8 @@ class RoulettePersistenceAdapterTest {
                 .build();
     }
 
-    private RouletteRoundResultEntity round(Long id, RouletteEventEntity event, RouletteRoundStatus status) {
-        return RouletteRoundResultEntity.builder()
+    private RouletteRoundResult round(Long id, RouletteEvent event, RouletteRoundStatus status) {
+        return RouletteRoundResult.builder()
                 .id(id)
                 .rouletteEvent(event)
                 .roundNo(1)

@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity;
+package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity;
 
 import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
@@ -13,38 +13,37 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 @Entity
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RouletteItemEntity extends BaseEntity {
+public class UserUpbo extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String userId;
     @ManyToOne
-    private RouletteTableEntity rouletteTable;
-    @Setter
+    private UpboTemplate upboTemplate;
+    private String nickNameSnapshot;
     private String label;
-    @Setter
-    private Integer probabilityBasisPoints;
-    @Setter
-    private boolean losingItem;
-    @Setter
+    @Enumerated(EnumType.STRING)
+    private UpboStatus status;
+    private Integer exchangeFavoriteValue;
     @Enumerated(EnumType.STRING)
     private RewardType rewardType;
-    @Setter
     @Enumerated(EnumType.STRING)
     private ConversionMode conversionMode;
-    @Setter
-    private Integer exchangeFavoriteValue;
-    @Setter
-    private boolean active;
-    @Setter
-    private Integer displayOrder;
+    @Enumerated(EnumType.STRING)
+    private FavoriteSourceType sourceType;
+    private Long ledgerId;
+    private String publicDescription;
+    private String privateMemo;
+    private String actorId;
 }

@@ -20,7 +20,7 @@ import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FavoriteHistoryEntity extends BaseEntity {
+public class FavoriteHistory extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +40,6 @@ public class FavoriteHistoryEntity extends BaseEntity {
     private String idempotencyKey;
     private String nickNameSnapshot;
     @ManyToOne
-    private FavoriteEntity favoriteEntity;
+    private FavoriteAccount favoriteAccount;
 
 }

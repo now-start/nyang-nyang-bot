@@ -1,15 +1,15 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItemEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RouletteItemRepository extends JpaRepository<RouletteItemEntity, Long> {
+public interface RouletteItemRepository extends JpaRepository<RouletteItem, Long> {
 
-    List<RouletteItemEntity> findByRouletteTableIdOrderByDisplayOrderAscIdAsc(Long rouletteTableId);
+    List<RouletteItem> findByRouletteTableIdOrderByDisplayOrderAscIdAsc(Long rouletteTableId);
 
-    List<RouletteItemEntity> findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(Long rouletteTableId);
+    List<RouletteItem> findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(Long rouletteTableId);
 }

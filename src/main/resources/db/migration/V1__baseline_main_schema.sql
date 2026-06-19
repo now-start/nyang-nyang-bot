@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS authorization_entity (
     expires_in INTEGER,
     scope VARCHAR(255),
     admin BOOLEAN NOT NULL,
+    favorite_history_last_seen_at DATETIME(6),
     PRIMARY KEY (channel_id)
 );
 
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS donation_entity (
     pay_amount BIGINT,
     donation_text LONGTEXT,
     emojis_json LONGTEXT,
+    donation_event_id VARCHAR(255),
     PRIMARY KEY (id)
 );
 
@@ -51,8 +53,18 @@ CREATE TABLE IF NOT EXISTS favorite_history_entity (
     history VARCHAR(255),
     favorite INTEGER,
     favorite_entity_user_id VARCHAR(255),
+    actor_id VARCHAR(255),
+    balance_after INTEGER,
+    correction_of_ledger_id BIGINT,
+    delta INTEGER,
+    display_category VARCHAR(255),
+    idempotency_key VARCHAR(255),
+    nick_name_snapshot VARCHAR(255),
+    private_memo VARCHAR(255),
+    public_description VARCHAR(255),
     PRIMARY KEY (id),
-    CONSTRAINT fk_favorite_history_favorite
+    KEY FKnjkqgrcjhyhbc9544fedyj0a0 (favorite_entity_user_id),
+    CONSTRAINT FKnjkqgrcjhyhbc9544fedyj0a0
         FOREIGN KEY (favorite_entity_user_id) REFERENCES favorite_entity (user_id)
 );
 
@@ -65,7 +77,7 @@ CREATE TABLE IF NOT EXISTS subscription_entity (
     subscriber_nickname VARCHAR(255),
     tier_no INTEGER,
     tier_name VARCHAR(255),
-    month INTEGER,
+    `month` INTEGER,
     PRIMARY KEY (id)
 );
 

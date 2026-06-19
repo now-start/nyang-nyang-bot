@@ -91,9 +91,9 @@ org.nowstart.nyangnyangbot
 
 - 사용자 액션은 use case로 표현한다. 예: `AdjustFavoriteUseCase`, `ApplyUpboUseCase`.
 - 저장소와 외부 시스템은 outbound gateway로 표현한다. 예: `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort`.
-- JPA 구현은 adapter 하위에 둔다. 예: `FavoriteJpaEntity`, `FavoritePersistenceAdapter`.
+- JPA 구현은 adapter 하위에 둔다. 예: `FavoriteAccount`, `FavoritePersistenceAdapter`.
 - Web DTO와 Application command/result는 분리한다.
-- Domain 객체는 `Entity` 접미사를 피하고, JPA 객체에만 `JpaEntity` 또는 현재 호환용 `Entity` 접미사를 사용한다.
+- Domain 객체와 JPA 객체 모두 `Entity` 접미사를 피한다. JPA 객체는 `adapter/out/persistence/{subject}/entity` 패키지로 구분하고, 클래스명은 Hibernate 기본 물리 네이밍으로 만들 테이블명과 맞춘다.
 
 ## 3. 우선순위 요약
 
@@ -176,7 +176,7 @@ org.nowstart.nyangnyangbot
   - 원장 거래 저장
   - idempotency key 중복 확인
   - 사용자별 비관적 락 획득
-- Persistence adapter에서 현행 `FavoriteEntity`, `FavoriteHistoryEntity`를 확장하거나 `FavoriteJpaEntity`, `FavoriteLedgerJpaEntity`로 분리한다.
+- Persistence adapter에서 현행 `FavoriteAccount`, `FavoriteHistory`를 확장한다.
 - 원장에 필요한 필드를 추가한다.
   - `delta`
   - `balanceAfter`
@@ -239,12 +239,12 @@ org.nowstart.nyangnyangbot
   - `UseRewardUseCase`
   - `PurchaseRewardUseCase`
   - `CorrectUpboUseCase`
-- Persistence adapter에 `UpboTemplateJpaEntity`를 추가한다.
+- Persistence adapter에 `UpboTemplate`를 추가한다.
   - 라벨, 설명, 활성 여부, 표시 순서
   - 호감도 환산값
   - 리워드 타입
   - 전환 모드: `AUTO`, `MANUAL`, `NONE`
-- Persistence adapter에 `UserUpboJpaEntity`를 추가한다.
+- Persistence adapter에 `UserUpbo`를 추가한다.
   - 상태: `OWNED`, `USED`, `CONVERTED`, `CORRECTED`
   - 획득 당시 닉네임 스냅샷
   - 연결 원장 ID
@@ -307,7 +307,7 @@ org.nowstart.nyangnyangbot
   - CHZZK 후원 이벤트 수신
   - 호감도 원장 반영
   - 업보 보유 목록 반영
-- Persistence adapter에 `RouletteTableJpaEntity`와 `RouletteItemJpaEntity`를 추가한다.
+- Persistence adapter에 `RouletteTable`과 `RouletteItem`을 추가한다.
 - 룰렛 활성화 검증을 구현한다.
   - 확률 합계 100%
   - `꽝` 필수
@@ -345,7 +345,7 @@ org.nowstart.nyangnyangbot
   - `PollOverlayEventUseCase`
   - `MarkOverlayEventDisplayedUseCase`
   - `ReplayOverlayEventUseCase`
-- Persistence adapter에 `OverlayTokenJpaEntity`를 추가한다.
+- Persistence adapter에 `OverlayToken`을 추가한다.
 - 오버레이 토큰 발급, 재발급, 폐기를 구현한다.
 - 토큰 원문은 발급 또는 재발급 직후 한 번만 보여주고 DB에는 해시만 저장한다.
 - OBS 페이지 `/overlay/roulette#token=...`를 구현한다.

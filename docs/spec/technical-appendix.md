@@ -64,16 +64,16 @@
 
 ### 2.1 현행 모델
 
-- `FavoriteEntity`: 사용자 ID, 닉네임, 현재 호감도. 사용자 미확인 배지를 위해 `lastSeenAt` 컬럼 추가가 필요하다.
-- `FavoriteHistoryEntity`: 변경 사유, 변경 후 호감도, 대상 사용자. 현행 모델이며 업보 조회를 위해서는 증감값/출처/공개 설명/닉네임 스냅샷 확장이 필요하다.
-- `FavoriteAdjustmentEntity`: 수동 조정 항목 라벨과 증감값
-- `AuthorizationEntity`: CHZZK OAuth 토큰과 관리자 여부
-- `WeeklyChatRankEntity`: 주차별 채팅 수 집계
-- `DonationEntity`, `SubscriptionEntity`: 후원/구독 이벤트 저장 후보
+- `FavoriteAccount`: 사용자 ID, 닉네임, 현재 호감도. 사용자 미확인 배지를 위해 `lastSeenAt` 컬럼 추가가 필요하다.
+- `FavoriteHistory`: 변경 사유, 변경 후 호감도, 대상 사용자. 현행 모델이며 업보 조회를 위해서는 증감값/출처/공개 설명/닉네임 스냅샷 확장이 필요하다.
+- `FavoriteAdjustment`: 수동 조정 항목 라벨과 증감값
+- `AuthorizationAccount`: CHZZK OAuth 토큰과 관리자 여부
+- `WeeklyChatRank`: 주차별 채팅 수 집계
+- `Donation`, `Subscription`: 후원/구독 이벤트 저장 후보
 
 ### 2.2 추가 후보
 
-`UpboTemplateEntity`:
+`UpboTemplate`:
 
 - `id`, `label`, `amount`, `description`, `active`, `displayOrder`
 - `exchangeFavoriteValue`: 호감도 환산값. 환산 불가 업보는 null
@@ -81,7 +81,7 @@
 - `conversionMode`: `AUTO`, `MANUAL`, `NONE`
 - `createDate`, `modifyDate`
 
-`UserUpboEntity`:
+`UserUpbo`:
 
 - `id`, `userId`, `upboTemplateId`
 - `nickNameSnapshot`: 획득/사용 당시 표시 닉네임
@@ -93,7 +93,7 @@
 - `publicDescription`, `privateMemo`
 - `createDate`, `modifyDate`
 
-`RouletteEventEntity`:
+`RouletteEvent`:
 
 - `id`, `donationEventId`, `donatorChannelId`, `donatorNickname`
 - `payAmount`, `donationText`, `command`, `roundCount`, `status`: `CREATED`, `RESULT_CONFIRMED`, `APPLIED`, `CORRECTED`
@@ -107,7 +107,7 @@
 - `appliedAt`: 원장/보유 목록 반영 완료 시각
 - `createDate`, `modifyDate`
 
-`RouletteRoundResultEntity`:
+`RouletteRoundResult`:
 
 - `id`, `rouletteEventId`, `roundNo`, `status`: `CONFIRMED`, `APPLIED`, `CORRECTED`
 - `resultItemId`, `resultLabelSnapshot`, `probabilitySnapshot`
@@ -117,7 +117,7 @@
 - `(rouletteEventId, roundNo)` **복합 UNIQUE 제약**: 동일 후원의 동일 회차가 중복 insert되지 않게 한다.
 - `createDate`, `modifyDate`
 
-`OverlayTokenEntity`:
+`OverlayToken`:
 
 - `id`, `name`, `scope`: 초기 scope는 `ROULETTE_OVERLAY`
 - `tokenHash`: 토큰 원문은 저장하지 않고 해시만 저장
@@ -125,7 +125,7 @@
 - `rotatedFromTokenId`: 재발급으로 생성된 토큰인 경우 이전 토큰 ID
 - `createdBy`, `createDate`, `modifyDate`
 
-`OverlayDisplayEventEntity`:
+`OverlayDisplayEvent`:
 
 - `id`, `rouletteEventId`, `overlayTokenId`, `status`: `PENDING`, `DISPLAYING`, `DISPLAYED`, `MISSED`, `FAILED`
 - `payloadVersion`
@@ -135,13 +135,13 @@
 - `failureReason`: 표시 실패 사유. 원장 반영 취소 사유가 아니라 오버레이 상태 진단용이다.
 - `createDate`, `modifyDate`
 
-`CorrectionLedgerLinkEntity`:
+`CorrectionLedgerLink`:
 
 - `id`, `sourceLedgerId`, `correctionLedgerId`
 - `sourceType`: `UPBO_MANUAL`, `UPBO_ROULETTE`, `REWARD_USE`, `ADMIN`
 - `reason`, `createdBy`, `createDate`
 
-`RouletteTableEntity`:
+`RouletteTable`:
 
 - `id`, `name`, `version`, `active`
 - `command`: 룰렛 실행 명령어. 기본값은 `!룰렛`
@@ -150,7 +150,7 @@
 - `maxAnimatedRounds`: 다회차 룰렛에서 OBS 순차 애니메이션으로 표시할 최대 회차 수
 - `createDate`, `modifyDate`
 
-`RouletteItemEntity`:
+`RouletteItem`:
 
 - `id`, `rouletteTableId`, `label`, `probability`
 - `requiredNoPrize`: `꽝` 필수 항목 여부. 필수 항목은 삭제하거나 0%로 설정할 수 없음
@@ -242,7 +242,7 @@ Google Sheets는 최종 플랫폼 기능이 아니라 기존 포인트 데이터
 | `before` / `after` | 상태 변화. 잔액 조정 등에 선택 사용 | `before=120 after=170` |
 
 - AUDIT 레벨은 비-원장 관리자 행위(토큰 발급/재발급/폐기, 룰렛 테이블 활성화/변경, 권한 변경 등) 전용으로 사용한다.
-- 호감도 원장 거래는 `FavoriteHistoryEntity`의 `actorId`로 추적하며, 별도 `AdminAuditLog` 테이블은 두지 않는다.
+- 호감도 원장 거래는 `FavoriteHistory`의 `actorId`로 추적하며, 별도 `AdminAuditLog` 테이블은 두지 않는다.
 - CHZZK access/refresh token, 오버레이 토큰 원문, OAuth state 같은 민감 값은 어떤 레벨에서도 로그에 남기지 않는다.
 - 사용자 닉네임은 운영 추적을 위해 로그에 남길 수 있다.
 

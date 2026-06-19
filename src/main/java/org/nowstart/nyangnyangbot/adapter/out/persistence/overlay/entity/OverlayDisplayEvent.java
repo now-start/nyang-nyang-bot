@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 
 @Entity
@@ -22,13 +22,13 @@ import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OverlayDisplayEventEntity extends BaseEntity {
+public class OverlayDisplayEvent extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private RouletteEventEntity rouletteEvent;
+    private RouletteEvent rouletteEvent;
     private Long replayOfDisplayEventId;
     @Enumerated(EnumType.STRING)
     private OverlayDisplayStatus status;

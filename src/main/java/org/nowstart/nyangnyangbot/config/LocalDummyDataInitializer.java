@@ -7,13 +7,13 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistoryEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItemEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTableEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplateEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRankEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
@@ -51,7 +51,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        List<FavoriteEntity> favorites = seedFavorites();
+        List<FavoriteAccount> favorites = seedFavorites();
         seedLocalAuthorization();
         seedFavoriteHistories(favorites);
         seedWeeklyChatRanks();
@@ -60,8 +60,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         log.info("Local dummy data is ready");
     }
 
-    private List<FavoriteEntity> seedFavorites() {
-        List<FavoriteEntity> favorites = List.of(
+    private List<FavoriteAccount> seedFavorites() {
+        List<FavoriteAccount> favorites = List.of(
                 favorite(LOCAL_CHANNEL_ID, "로컬 관리자", 9999),
                 favorite("user-001", "치즈냥", 8720),
                 favorite("user-002", "새벽라떼", 7430),
@@ -75,7 +75,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .filter(favorite -> !favoriteRepository.existsById(favorite.getUserId()))
                 .forEach(favoriteRepository::save);
         return favoriteRepository.findAllById(favorites.stream()
-                .map(FavoriteEntity::getUserId)
+                .map(FavoriteAccount::getUserId)
                 .toList());
     }
 
@@ -83,7 +83,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         if (authorizationRepository.existsById(LOCAL_CHANNEL_ID)) {
             return;
         }
-        authorizationRepository.save(AuthorizationEntity.builder()
+        authorizationRepository.save(AuthorizationAccount.builder()
                 .channelId(LOCAL_CHANNEL_ID)
                 .channelName("로컬 관리자")
                 .accessToken("local-access-token")
@@ -96,7 +96,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build());
     }
 
-    private void seedFavoriteHistories(List<FavoriteEntity> favorites) {
+    private void seedFavoriteHistories(List<FavoriteAccount> favorites) {
         if (favoriteHistoryRepository.count() > 0) {
             return;
         }
@@ -126,7 +126,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         if (rouletteTableRepository.count() > 0) {
             return;
         }
-        RouletteTableEntity table = rouletteTableRepository.save(RouletteTableEntity.builder()
+        RouletteTable table = rouletteTableRepository.save(RouletteTable.builder()
                 .title("로컬 테스트 룰렛")
                 .command("!룰렛")
                 .pricePerRound(1000L)
@@ -154,24 +154,24 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         ));
     }
 
-    private FavoriteEntity favorite(String userId, String nickName, Integer favorite) {
-        return FavoriteEntity.builder()
+    private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {
+        return FavoriteAccount.builder()
                 .userId(userId)
                 .nickName(nickName)
                 .favorite(favorite)
                 .build();
     }
 
-    private FavoriteHistoryEntity history(
-            FavoriteEntity favorite,
+    private FavoriteHistory history(
+            FavoriteAccount favorite,
             FavoriteSourceType sourceType,
             Integer delta,
             String description,
             String sourceId
     ) {
         int balanceAfter = favorite.getFavorite();
-        return FavoriteHistoryEntity.builder()
-                .favoriteEntity(favorite)
+        return FavoriteHistory.builder()
+                .favoriteAccount(favorite)
                 .history(description)
                 .favorite(balanceAfter)
                 .delta(delta)
@@ -187,8 +187,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build();
     }
 
-    private WeeklyChatRankEntity weeklyRank(LocalDate weekStartDate, String userId, String nickName, long chatCount) {
-        return WeeklyChatRankEntity.builder()
+    private WeeklyChatRank weeklyRank(LocalDate weekStartDate, String userId, String nickName, long chatCount) {
+        return WeeklyChatRank.builder()
                 .weekStartDate(weekStartDate)
                 .userId(userId)
                 .nickName(nickName)
@@ -196,8 +196,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build();
     }
 
-    private RouletteItemEntity rouletteItem(
-            RouletteTableEntity table,
+    private RouletteItem rouletteItem(
+            RouletteTable table,
             String label,
             Integer probabilityBasisPoints,
             boolean losingItem,
@@ -206,7 +206,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
             Integer exchangeFavoriteValue,
             Integer displayOrder
     ) {
-        return RouletteItemEntity.builder()
+        return RouletteItem.builder()
                 .rouletteTable(table)
                 .label(label)
                 .probabilityBasisPoints(probabilityBasisPoints)
@@ -219,7 +219,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build();
     }
 
-    private UpboTemplateEntity upboTemplate(
+    private UpboTemplate upboTemplate(
             String label,
             String description,
             Integer exchangeFavoriteValue,
@@ -227,7 +227,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
             ConversionMode conversionMode,
             Integer displayOrder
     ) {
-        return UpboTemplateEntity.builder()
+        return UpboTemplate.builder()
                 .label(label)
                 .description(description)
                 .active(true)

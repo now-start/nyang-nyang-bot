@@ -13,10 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
@@ -49,7 +49,7 @@ class OverlayDisplayPersistenceAdapterTest {
         adapter.enqueueRouletteEvent(1L, expiresAt);
 
         // 검증
-        BDDMockito.then(overlayDisplayEventRepository).should().save(any(OverlayDisplayEventEntity.class));
+        BDDMockito.then(overlayDisplayEventRepository).should().save(any(OverlayDisplayEvent.class));
     }
 
     @Test
@@ -69,12 +69,12 @@ class OverlayDisplayPersistenceAdapterTest {
         // 준비
         OverlayDisplayPersistenceAdapter adapter = adapter();
         LocalDateTime expiresAt = LocalDateTime.of(2026, 5, 16, 23, 10);
-        RouletteEventEntity event = event(1L);
-        OverlayDisplayEventEntity previous = displayEvent(10L, event, OverlayDisplayStatus.DISPLAYED, expiresAt);
-        OverlayDisplayEventEntity saved = displayEvent(11L, event, OverlayDisplayStatus.PENDING, expiresAt);
+        RouletteEvent event = event(1L);
+        OverlayDisplayEvent previous = displayEvent(10L, event, OverlayDisplayStatus.DISPLAYED, expiresAt);
+        OverlayDisplayEvent saved = displayEvent(11L, event, OverlayDisplayStatus.PENDING, expiresAt);
         given(rouletteEventRepository.findById(1L)).willReturn(Optional.of(event));
         given(overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(1L)).willReturn(List.of(previous));
-        given(overlayDisplayEventRepository.save(any(OverlayDisplayEventEntity.class))).willReturn(saved);
+        given(overlayDisplayEventRepository.save(any(OverlayDisplayEvent.class))).willReturn(saved);
         given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(1L))
                 .willReturn(List.of(round(20L, event)));
 
@@ -93,11 +93,11 @@ class OverlayDisplayPersistenceAdapterTest {
         // 준비
         OverlayDisplayPersistenceAdapter adapter = adapter();
         LocalDateTime expiresAt = LocalDateTime.of(2026, 5, 16, 23, 20);
-        RouletteEventEntity event = event(1L);
-        OverlayDisplayEventEntity saved = displayEvent(12L, event, OverlayDisplayStatus.PENDING, expiresAt);
+        RouletteEvent event = event(1L);
+        OverlayDisplayEvent saved = displayEvent(12L, event, OverlayDisplayStatus.PENDING, expiresAt);
         given(rouletteEventRepository.findById(1L)).willReturn(Optional.of(event));
         given(overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(1L)).willReturn(List.of());
-        given(overlayDisplayEventRepository.save(any(OverlayDisplayEventEntity.class))).willReturn(saved);
+        given(overlayDisplayEventRepository.save(any(OverlayDisplayEvent.class))).willReturn(saved);
         given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(1L)).willReturn(List.of());
 
         // 실행
@@ -113,9 +113,9 @@ class OverlayDisplayPersistenceAdapterTest {
         // 준비
         OverlayDisplayPersistenceAdapter adapter = adapter();
         LocalDateTime now = LocalDateTime.of(2026, 5, 16, 23, 30);
-        RouletteEventEntity event = event(1L);
-        OverlayDisplayEventEntity expired = displayEvent(13L, event, OverlayDisplayStatus.PENDING, now.minusMinutes(1));
-        OverlayDisplayEventEntity pending = displayEvent(14L, event, OverlayDisplayStatus.PENDING, now.plusMinutes(1));
+        RouletteEvent event = event(1L);
+        OverlayDisplayEvent expired = displayEvent(13L, event, OverlayDisplayStatus.PENDING, now.minusMinutes(1));
+        OverlayDisplayEvent pending = displayEvent(14L, event, OverlayDisplayStatus.PENDING, now.plusMinutes(1));
         given(overlayDisplayEventRepository.findByStatusAndExpiresAtBefore(OverlayDisplayStatus.PENDING, now))
                 .willReturn(List.of(expired));
         given(overlayDisplayEventRepository.findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
@@ -156,8 +156,8 @@ class OverlayDisplayPersistenceAdapterTest {
         );
     }
 
-    private RouletteEventEntity event(Long id) {
-        return RouletteEventEntity.builder()
+    private RouletteEvent event(Long id) {
+        return RouletteEvent.builder()
                 .id(id)
                 .donationEventId("donation-1")
                 .idempotencyKey("donation-1")
@@ -175,13 +175,13 @@ class OverlayDisplayPersistenceAdapterTest {
                 .build();
     }
 
-    private OverlayDisplayEventEntity displayEvent(
+    private OverlayDisplayEvent displayEvent(
             Long id,
-            RouletteEventEntity event,
+            RouletteEvent event,
             OverlayDisplayStatus status,
             LocalDateTime expiresAt
     ) {
-        return OverlayDisplayEventEntity.builder()
+        return OverlayDisplayEvent.builder()
                 .id(id)
                 .rouletteEvent(event)
                 .status(status)
@@ -189,8 +189,8 @@ class OverlayDisplayPersistenceAdapterTest {
                 .build();
     }
 
-    private RouletteRoundResultEntity round(Long id, RouletteEventEntity event) {
-        return RouletteRoundResultEntity.builder()
+    private RouletteRoundResult round(Long id, RouletteEvent event) {
+        return RouletteRoundResult.builder()
                 .id(id)
                 .rouletteEvent(event)
                 .roundNo(1)

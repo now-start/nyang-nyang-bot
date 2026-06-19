@@ -18,7 +18,7 @@ class FlywayMigrationTest {
     @DisplayName("Flyway SQL 마이그레이션을 신규 DB에 적용할 수 있다")
     void flywayMigration_ShouldApplyToEmptyDatabase() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-migration-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-migration-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
                 "sa",
                 ""
         );
@@ -31,30 +31,66 @@ class FlywayMigrationTest {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
         Integer migrationCount = jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where success = true and version is not null",
+                "select count(*) from \"flyway_schema_history\" "
+                        + "where \"success\" = true and \"version\" is not null",
                 Integer.class
         );
         Integer rouletteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table_entity'",
+                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table'",
                 Integer.class
         );
         Integer ledgerColumnCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'favorite_history_entity' "
+                        + "where lower(table_name) = 'favorite_history' "
                         + "and lower(column_name) = 'idempotency_key'",
                 Integer.class
         );
+        Integer sourceTypeColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'favorite_history' "
+                        + "and lower(column_name) = 'source_type'",
+                Integer.class
+        );
+        Integer subscriptionMonthColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'subscription' "
+                        + "and lower(column_name) = 'subscription_month'",
+                Integer.class
+        );
+        Integer legacyMonthColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'subscription' "
+                        + "and lower(column_name) = 'month'",
+                Integer.class
+        );
+        Integer oldFavoriteTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where lower(table_name) = 'favorite_entity'",
+                Integer.class
+        );
+        Integer foreignKeyCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.referential_constraints",
+                Integer.class
+        );
+        Integer weeklyUniqueIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "uk_weekly_chat_rank_week_user");
+        Integer weeklyWeekIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "idx_weekly_chat_rank_week");
 
         assertThat(migrationCount).isEqualTo(2);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
+        assertThat(sourceTypeColumnCount).isEqualTo(1);
+        assertThat(subscriptionMonthColumnCount).isEqualTo(1);
+        assertThat(legacyMonthColumnCount).isZero();
+        assertThat(oldFavoriteTableCount).isZero();
+        assertThat(foreignKeyCount).isZero();
+        assertThat(weeklyUniqueIndexCount).isEqualTo(1);
+        assertThat(weeklyWeekIndexCount).isEqualTo(1);
     }
 
     @Test
     @DisplayName("Flyway SQL은 JPA 기본 물리 네이밍으로 매핑되는 모든 엔티티 테이블을 생성한다")
     void flywayMigration_ShouldCreateTablesForImplicitJpaEntityNames() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-entity-naming-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-entity-naming-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
                 "sa",
                 ""
         );
@@ -77,7 +113,7 @@ class FlywayMigrationTest {
     @DisplayName("이미 main 스키마가 있는 DB는 baseline 후 증분 마이그레이션만 적용할 수 있다")
     void flywayMigration_ShouldBaselineExistingMainSchemaAndApplyDeltaMigration() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-baseline-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=MONTH;DB_CLOSE_DELAY=-1",
+                "jdbc:h2:mem:flyway-baseline-test;MODE=MySQL;DB_CLOSE_DELAY=-1",
                 "sa",
                 ""
         );
@@ -90,7 +126,10 @@ class FlywayMigrationTest {
                 .migrate();
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.execute("drop table flyway_schema_history");
+        jdbcTemplate.update("insert into donation_entity (donation_event_id) values (''), ('')");
+        jdbcTemplate.update("insert into favorite_history_entity (history, favorite, idempotency_key) values "
+                + "('legacy-1', 10, ''), ('legacy-2', 20, '')");
+        jdbcTemplate.execute("drop table \"flyway_schema_history\"");
 
         Flyway.configure()
                 .dataSource(dataSource)
@@ -101,23 +140,81 @@ class FlywayMigrationTest {
                 .migrate();
 
         Integer versionTwoCount = jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where success = true and version = '2'",
+                "select count(*) from \"flyway_schema_history\" "
+                        + "where \"success\" = true and \"version\" = '2'",
                 Integer.class
         );
         Integer rouletteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table_entity'",
+                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table'",
                 Integer.class
         );
         Integer ledgerColumnCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'favorite_history_entity' "
+                        + "where lower(table_name) = 'favorite_history' "
                         + "and lower(column_name) = 'idempotency_key'",
+                Integer.class
+        );
+        Integer sourceTypeColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'favorite_history' "
+                        + "and lower(column_name) = 'source_type'",
+                Integer.class
+        );
+        Integer favoriteAccountColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'favorite_history' "
+                        + "and lower(column_name) = 'favorite_account_user_id'",
+                Integer.class
+        );
+        Integer subscriptionMonthColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'subscription' "
+                        + "and lower(column_name) = 'subscription_month'",
+                Integer.class
+        );
+        Integer legacyMonthColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'subscription' "
+                        + "and lower(column_name) = 'month'",
+                Integer.class
+        );
+        Integer oldFavoriteTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where lower(table_name) = 'favorite_entity'",
+                Integer.class
+        );
+        Integer foreignKeyCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.referential_constraints",
+                Integer.class
+        );
+        Integer weeklyUniqueIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "uk_weekly_chat_rank_week_user");
+        Integer weeklyWeekIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "idx_weekly_chat_rank_week");
+        Integer normalizedDonationEventIdCount = jdbcTemplate.queryForObject(
+                "select count(*) from donation where donation_event_id is null",
+                Integer.class
+        );
+        Integer blankFavoriteIdempotencyKeyCount = jdbcTemplate.queryForObject(
+                "select count(*) from favorite_history where idempotency_key = ''",
+                Integer.class
+        );
+        Integer migratedFavoriteIdempotencyKeyCount = jdbcTemplate.queryForObject(
+                "select count(*) from favorite_history where idempotency_key like 'legacy-favorite-history:%'",
                 Integer.class
         );
 
         assertThat(versionTwoCount).isEqualTo(1);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
+        assertThat(sourceTypeColumnCount).isEqualTo(1);
+        assertThat(favoriteAccountColumnCount).isEqualTo(1);
+        assertThat(subscriptionMonthColumnCount).isEqualTo(1);
+        assertThat(legacyMonthColumnCount).isZero();
+        assertThat(oldFavoriteTableCount).isZero();
+        assertThat(foreignKeyCount).isZero();
+        assertThat(weeklyUniqueIndexCount).isEqualTo(1);
+        assertThat(weeklyWeekIndexCount).isEqualTo(1);
+        assertThat(normalizedDonationEventIdCount).isEqualTo(2);
+        assertThat(blankFavoriteIdempotencyKeyCount).isZero();
+        assertThat(migratedFavoriteIdempotencyKeyCount).isEqualTo(2);
     }
 
     private List<String> entityTableNames() {
@@ -141,6 +238,18 @@ class FlywayMigrationTest {
                 "select count(*) from information_schema.tables where lower(table_name) = ?",
                 Integer.class,
                 tableName
+        );
+    }
+
+    private Integer indexExists(JdbcTemplate jdbcTemplate, String tableName, String indexName) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.indexes "
+                        + "where lower(table_name) = ? "
+                        + "and (lower(index_name) = ? or lower(index_name) like ?)",
+                Integer.class,
+                tableName,
+                indexName,
+                indexName + "_%"
         );
     }
 }

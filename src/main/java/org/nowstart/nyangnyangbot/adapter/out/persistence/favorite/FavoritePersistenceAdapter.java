@@ -11,8 +11,7 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPor
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistoryEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
@@ -37,8 +36,8 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public FavoriteAccount save(FavoriteAccount account) {
-        FavoriteEntity entity = favoriteRepository.findById(account.getUserId())
-                .orElseGet(() -> FavoriteEntity.builder()
+        var entity = favoriteRepository.findById(account.getUserId())
+                .orElseGet(() -> org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount.builder()
                         .userId(account.getUserId())
                         .favorite(0)
                         .build());
@@ -50,9 +49,10 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public FavoriteLedgerEntry save(FavoriteLedgerEntry ledgerEntry) {
-        FavoriteEntity favoriteEntity = favoriteRepository.getReferenceById(ledgerEntry.userId());
-        FavoriteHistoryEntity saved = favoriteHistoryRepository.save(FavoriteHistoryEntity.builder()
-                .favoriteEntity(favoriteEntity)
+        var favoriteAccount = favoriteRepository.getReferenceById(ledgerEntry.userId());
+        String idempotencyKey = normalizeIdempotencyKey(ledgerEntry.idempotencyKey());
+        FavoriteHistory saved = favoriteHistoryRepository.save(FavoriteHistory.builder()
+                .favoriteAccount(favoriteAccount)
                 .history(ledgerEntry.publicDescription())
                 .favorite(ledgerEntry.balanceAfter())
                 .delta(ledgerEntry.delta())
@@ -64,7 +64,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 .privateMemo(ledgerEntry.privateMemo())
                 .correctionOfLedgerId(ledgerEntry.correctionOfLedgerId())
                 .actorId(ledgerEntry.actorId())
-                .idempotencyKey(ledgerEntry.idempotencyKey())
+                .idempotencyKey(idempotencyKey)
                 .nickNameSnapshot(ledgerEntry.nickNameSnapshot())
                 .build());
         return FavoriteLedgerEntry.builder()
@@ -79,7 +79,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 .privateMemo(ledgerEntry.privateMemo())
                 .correctionOfLedgerId(ledgerEntry.correctionOfLedgerId())
                 .actorId(ledgerEntry.actorId())
-                .idempotencyKey(ledgerEntry.idempotencyKey())
+                .idempotencyKey(idempotencyKey)
                 .nickNameSnapshot(ledgerEntry.nickNameSnapshot())
                 .build();
     }
@@ -108,12 +108,14 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public SummaryResult getOrCreate(String userId, String nickName) {
-        FavoriteEntity entity = favoriteRepository.findById(userId)
-                .orElseGet(() -> favoriteRepository.save(FavoriteEntity.builder()
-                        .userId(userId)
-                        .nickName(nickName)
-                        .favorite(0)
-                        .build()));
+        var entity = favoriteRepository.findById(userId)
+                .orElseGet(() -> favoriteRepository.save(
+                        org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount.builder()
+                                .userId(userId)
+                                .nickName(nickName)
+                                .favorite(0)
+                                .build()
+                ));
         return toSummary(entity);
     }
 
@@ -125,7 +127,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public List<HistoryResult> findHistory(String userId, int limit) {
-        return favoriteHistoryRepository.findByFavoriteEntityUserId(
+        return favoriteHistoryRepository.findByFavoriteAccountUserId(
                         userId,
                         PageRequest.of(0, limit, Sort.by("createDate").descending())
                 )
@@ -137,26 +139,30 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public long countHistory(String userId) {
-        return favoriteHistoryRepository.countByFavoriteEntityUserId(userId);
+        return favoriteHistoryRepository.countByFavoriteAccountUserId(userId);
     }
 
     @Override
     public long countHistoryAfter(String userId, LocalDateTime createDate) {
-        return favoriteHistoryRepository.countByFavoriteEntityUserIdAndCreateDateAfter(userId, createDate);
+        return favoriteHistoryRepository.countByFavoriteAccountUserIdAndCreateDateAfter(userId, createDate);
     }
 
-    private FavoriteAccount favoriteAccount(FavoriteEntity entity) {
+    private FavoriteAccount favoriteAccount(
+            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
+    ) {
         return FavoriteAccount.of(entity.getUserId(), entity.getNickName(), entity.getFavorite());
     }
 
-    private SummaryResult toSummary(FavoriteEntity entity) {
+    private SummaryResult toSummary(
+            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
+    ) {
         return new SummaryResult(entity.getUserId(), entity.getNickName(), entity.getFavorite());
     }
 
-    private HistoryResult toHistoryView(FavoriteHistoryEntity entity) {
+    private HistoryResult toHistoryView(FavoriteHistory entity) {
         Integer balanceAfter = entity.getBalanceAfter() == null ? entity.getFavorite() : entity.getBalanceAfter();
         String publicDescription = entity.getPublicDescription() == null ? entity.getHistory() : entity.getPublicDescription();
-        String channelId = entity.getFavoriteEntity() == null ? null : entity.getFavoriteEntity().getUserId();
+        String channelId = entity.getFavoriteAccount() == null ? null : entity.getFavoriteAccount().getUserId();
         return new HistoryResult(
                 entity.getId(),
                 channelId,
@@ -171,5 +177,12 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 entity.getHistory(),
                 entity.getCreateDate()
         );
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return null;
+        }
+        return idempotencyKey;
     }
 }

@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEventEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEventEntity;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResultEntity;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
@@ -26,9 +26,9 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     @Override
     public void enqueueRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
-        RouletteEventEntity rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
+        RouletteEvent rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        overlayDisplayEventRepository.save(OverlayDisplayEventEntity.builder()
+        overlayDisplayEventRepository.save(OverlayDisplayEvent.builder()
                 .rouletteEvent(rouletteEvent)
                 .status(OverlayDisplayStatus.PENDING)
                 .expiresAt(expiresAt)
@@ -37,14 +37,14 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     @Override
     public DisplayEventResult replayRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
-        RouletteEventEntity rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
+        RouletteEvent rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
         Long replayOf = overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(rouletteEventId)
                 .stream()
                 .findFirst()
-                .map(OverlayDisplayEventEntity::getId)
+                .map(OverlayDisplayEvent::getId)
                 .orElse(null);
-        OverlayDisplayEventEntity saved = overlayDisplayEventRepository.save(OverlayDisplayEventEntity.builder()
+        OverlayDisplayEvent saved = overlayDisplayEventRepository.save(OverlayDisplayEvent.builder()
                 .rouletteEvent(rouletteEvent)
                 .replayOfDisplayEventId(replayOf)
                 .status(OverlayDisplayStatus.PENDING)
@@ -56,7 +56,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
     @Override
     public void markPendingExpiredBefore(LocalDateTime current) {
         overlayDisplayEventRepository.findByStatusAndExpiresAtBefore(OverlayDisplayStatus.PENDING, current)
-                .forEach(OverlayDisplayEventEntity::markMissed);
+                .forEach(OverlayDisplayEvent::markMissed);
     }
 
     @Override
@@ -73,13 +73,13 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     @Override
     public void markDisplayed(Long displayEventId, LocalDateTime displayedAt) {
-        OverlayDisplayEventEntity displayEvent = overlayDisplayEventRepository.findById(displayEventId)
+        OverlayDisplayEvent displayEvent = overlayDisplayEventRepository.findById(displayEventId)
                 .orElseThrow(() -> new IllegalArgumentException("overlay display event not found"));
         displayEvent.markDisplayed(displayedAt);
     }
 
-    private DisplayEventResult toModel(OverlayDisplayEventEntity displayEvent) {
-        RouletteEventEntity event = displayEvent.getRouletteEvent();
+    private DisplayEventResult toModel(OverlayDisplayEvent displayEvent) {
+        RouletteEvent event = displayEvent.getRouletteEvent();
         List<RoundResult> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
                 .stream()
                 .map(this::toRound)
@@ -94,8 +94,8 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
         );
     }
 
-    private RoundResult toRound(RouletteRoundResultEntity entity) {
-        RouletteEventEntity event = entity.getRouletteEvent();
+    private RoundResult toRound(RouletteRoundResult entity) {
+        RouletteEvent event = entity.getRouletteEvent();
         return new RoundResult(
                 entity.getId(),
                 event == null ? null : event.getId(),
