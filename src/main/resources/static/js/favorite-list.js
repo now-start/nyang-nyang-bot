@@ -26,8 +26,11 @@ let attendanceSelectedIds = new Set();
 let attendanceDeselectedIds = new Set();
 let attendanceSelectionInitialized = false;
 let attendancePollingId = null;
+let attendanceCaptureActive = false;
 let rouletteTables = [];
 let selectedRouletteTableId = null;
+let rouletteEventPage = 0;
+const ROULETTE_EVENT_PAGE_SIZE = 5;
 
 function getUiPermissions() {
     const root = document.body;
@@ -211,33 +214,37 @@ function loadHistoryForRow(row) {
         });
 }
 
-function openAttendanceModal() {
+function startAttendanceManagement() {
     if (!requireAdminPermission()) {
         return;
     }
-    attendanceSelectedIds.clear();
-    attendanceDeselectedIds.clear();
-    attendanceSelectionInitialized = false;
+    if (attendanceCaptureActive) {
+        return;
+    }
+    attendanceCaptureActive = true;
     const amountInput = document.getElementById('attendance-amount');
-    if (amountInput) {
+    if (amountInput && !attendanceSelectionInitialized) {
         amountInput.value = '1';
     }
-    document.getElementById('attendance-modal').style.display = 'flex';
     startAttendanceCapture()
         .then(function () {
+            if (!attendanceCaptureActive) {
+                return;
+            }
             fetchAttendanceUsers();
             startAttendancePolling();
         })
         .catch(function () {
+            attendanceCaptureActive = false;
             showToast('권한이 없습니다.');
         });
 }
 
-function closeAttendanceModal() {
-    document.getElementById('attendance-modal').style.display = 'none';
-    attendanceSelectedIds.clear();
-    attendanceDeselectedIds.clear();
-    attendanceSelectionInitialized = false;
+function stopAttendanceManagement() {
+    if (!attendanceCaptureActive) {
+        return;
+    }
+    attendanceCaptureActive = false;
     stopAttendancePolling();
     stopAttendanceCapture();
 }
@@ -405,7 +412,7 @@ function applyAttendance() {
         })
         .then(function () {
             showToast('출석체크 완료');
-            closeAttendanceModal();
+            stopAttendanceManagement();
             setTimeout(function () {
                 window.location.reload();
             }, 400);
@@ -419,16 +426,12 @@ function applyAttendance() {
         });
 }
 
-function openRouletteModal() {
+function loadRouletteManagement() {
     if (!requireAdminPermission()) {
         return;
     }
-    document.getElementById('roulette-modal').style.display = 'flex';
     loadRouletteTables();
-}
-
-function closeRouletteModal() {
-    document.getElementById('roulette-modal').style.display = 'none';
+    loadRouletteEvents(rouletteEventPage);
 }
 
 function loadRouletteTables() {
@@ -454,6 +457,22 @@ function loadRouletteTables() {
         })
         .catch(function () {
             showToast('룰렛 설정을 불러오지 못했습니다.');
+        });
+}
+
+function loadRouletteEvents(page) {
+    if (!getUiPermissions().isAdmin) {
+        return Promise.resolve();
+    }
+    const safePage = Math.max(page || 0, 0);
+    return fetch(buildUrl('/admin/roulette/events?page=' + safePage + '&size=' + ROULETTE_EVENT_PAGE_SIZE))
+        .then(requireOk)
+        .then(function (data) {
+            rouletteEventPage = data.number || 0;
+            renderRouletteEvents(data);
+        })
+        .catch(function () {
+            showToast('룰렛 실행 목록을 불러오지 못했습니다.');
         });
 }
 
@@ -528,7 +547,7 @@ function renderSelectedRouletteTable() {
             label.textContent = item.label || '-';
             const probability = document.createElement('div');
             probability.className = 'roulette-item-probability';
-            probability.textContent = item.probabilityBasisPoints + ' bp';
+            probability.textContent = formatProbability(item.probabilityBasisPoints);
             const reward = document.createElement('div');
             reward.className = 'roulette-item-reward';
             reward.textContent = item.losingItem ? '꽝' : rewardLabel(item);
@@ -539,6 +558,95 @@ function renderSelectedRouletteTable() {
         });
     }
     updateRouletteStatus(table);
+}
+
+function renderRouletteEvents(page) {
+    const list = document.getElementById('roulette-event-list');
+    const pagination = document.getElementById('roulette-event-pagination');
+    if (!list) {
+        return;
+    }
+    list.innerHTML = '';
+    const events = Array.isArray(page.content) ? page.content : [];
+    if (events.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'roulette-empty';
+        empty.textContent = '룰렛 실행 기록이 없습니다.';
+        list.appendChild(empty);
+    } else {
+        list.appendChild(createRouletteEventHeader());
+        events.forEach(function (item) {
+            list.appendChild(createRouletteEventRow(item));
+        });
+    }
+    renderRouletteEventPagination(page, pagination);
+}
+
+function createRouletteEventHeader() {
+    const row = document.createElement('div');
+    row.className = 'roulette-event-row is-head';
+    ['ID', '닉네임', '후원', '횟수', '상태', '재송출'].forEach(function (text) {
+        const cell = document.createElement('span');
+        cell.textContent = text;
+        row.appendChild(cell);
+    });
+    return row;
+}
+
+function createRouletteEventRow(item) {
+    const row = document.createElement('div');
+    row.className = 'roulette-event-row';
+    row.appendChild(rouletteEventCell('#' + (item.eventId || '-')));
+    row.appendChild(rouletteEventCell(item.nickNameSnapshot || item.userId || '-'));
+    row.appendChild(rouletteEventCell(formatNumber(item.donationAmount), 'numeric'));
+    row.appendChild(rouletteEventCell(formatNumber(item.roundCount) + '회', 'numeric'));
+    row.appendChild(rouletteEventCell(rouletteEventStatusLabel(item.status)));
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'roulette-event-replay';
+    button.dataset.eventId = item.eventId;
+    button.textContent = '재송출';
+    row.appendChild(button);
+    return row;
+}
+
+function rouletteEventCell(text, className) {
+    const cell = document.createElement('span');
+    if (className) {
+        cell.className = className;
+    }
+    cell.textContent = text;
+    return cell;
+}
+
+function renderRouletteEventPagination(page, pagination) {
+    if (!pagination) {
+        return;
+    }
+    pagination.innerHTML = '';
+    const totalPages = page.totalPages || 0;
+    if (totalPages <= 1) {
+        return;
+    }
+    const current = page.number || 0;
+    pagination.appendChild(createRouletteEventPageButton('이전', current - 1, current <= 0));
+    for (let index = 0; index < totalPages; index++) {
+        const button = createRouletteEventPageButton(String(index + 1), index, false);
+        button.classList.toggle('is-active', index === current);
+        pagination.appendChild(button);
+    }
+    pagination.appendChild(createRouletteEventPageButton('다음', current + 1, current >= totalPages - 1));
+}
+
+function createRouletteEventPageButton(label, page, disabled) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'roulette-event-page-button';
+    button.dataset.page = page;
+    button.disabled = disabled;
+    button.textContent = label;
+    return button;
 }
 
 function updateRouletteStatus(table) {
@@ -552,7 +660,7 @@ function updateRouletteStatus(table) {
     }
     if (!table) {
         if (totalEl) {
-            totalEl.textContent = '0 / 10000';
+            totalEl.textContent = formatProbabilityTotal(0);
         }
         if (losingEl) {
             losingEl.textContent = '없음';
@@ -567,7 +675,7 @@ function updateRouletteStatus(table) {
     }
     const validation = table.validation || {};
     if (totalEl) {
-        totalEl.textContent = (validation.probabilityTotal || 0) + ' / 10000';
+        totalEl.textContent = formatProbabilityTotal(validation.probabilityTotal || 0);
     }
     if (losingEl) {
         losingEl.textContent = validation.hasLosingItem ? '있음' : '없음';
@@ -586,7 +694,7 @@ function updateRouletteStatus(table) {
         } else {
             reasons.forEach(function (reason) {
                 const chip = document.createElement('span');
-                chip.textContent = reason;
+                chip.textContent = rouletteReasonLabel(reason);
                 reasonsEl.appendChild(chip);
             });
         }
@@ -636,15 +744,15 @@ function addRouletteItem() {
         return;
     }
     const label = valueOf('roulette-item-label');
-    const probability = parseInt(valueOf('roulette-item-probability'), 10);
+    const probability = parsePercentageToBasisPoints(valueOf('roulette-item-probability'));
     const losing = Boolean(document.getElementById('roulette-item-losing') &&
         document.getElementById('roulette-item-losing').checked);
     const rewardType = losing ? 'CUSTOM' : valueOf('roulette-item-reward');
     const conversionMode = losing ? 'NONE' : valueOf('roulette-item-conversion');
     const rawValue = valueOf('roulette-item-value');
     const exchangeFavoriteValue = rawValue ? parseInt(rawValue, 10) : null;
-    if (!label || Number.isNaN(probability) || probability < 0) {
-        showToast('항목 이름과 확률을 입력해 주세요.');
+    if (!label || probability === null) {
+        showToast('항목 이름과 확률(%)을 입력해 주세요.');
         return;
     }
     if (conversionMode === 'AUTO' && (!exchangeFavoriteValue || exchangeFavoriteValue === 0)) {
@@ -742,7 +850,18 @@ function replayOverlayEvent() {
     }
     const rouletteEventId = parseInt(valueOf('overlay-replay-event-id'), 10);
     if (Number.isNaN(rouletteEventId) || rouletteEventId <= 0) {
-        showToast('룰렛 이벤트 ID를 입력해 주세요.');
+        showToast('재송출 실행 ID를 입력해 주세요.');
+        return;
+    }
+    replayOverlayEventById(rouletteEventId);
+}
+
+function replayOverlayEventById(rouletteEventId) {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    if (!rouletteEventId || Number.isNaN(Number(rouletteEventId))) {
+        showToast('재송출 실행 ID를 확인해 주세요.');
         return;
     }
     fetch(buildUrl('/admin/overlay/roulette/events/' + rouletteEventId + '/replay'), {method: 'POST'})
@@ -811,6 +930,27 @@ function setValue(id, value) {
     }
 }
 
+function activateAdminTab(targetId) {
+    document.querySelectorAll('.admin-tab').forEach(function (button) {
+        const active = button.getAttribute('data-tab-target') === targetId;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('.tab-panel').forEach(function (panel) {
+        panel.classList.toggle('is-active', panel.id === targetId);
+    });
+
+    if (targetId === 'attendance-tab') {
+        startAttendanceManagement();
+    } else {
+        stopAttendanceManagement();
+    }
+
+    if (targetId === 'roulette-tab') {
+        loadRouletteManagement();
+    }
+}
+
 function requireOk(response) {
     if (!response.ok) {
         throw new Error('REQUEST_FAILED');
@@ -820,6 +960,54 @@ function requireOk(response) {
 
 function formatNumber(value) {
     return Number(value || 0).toLocaleString('ko-KR');
+}
+
+function formatProbability(value) {
+    const basisPoints = Number(value || 0);
+    return formatPercentValue(basisPoints / 100) + '%';
+}
+
+function formatProbabilityTotal(value) {
+    const basisPoints = Number(value || 0);
+    return formatProbability(basisPoints) + ' / 100%';
+}
+
+function rouletteReasonLabel(reason) {
+    const labels = {
+        'command is required': '명령어를 입력해야 합니다.',
+        'pricePerRound is required': '1회 금액을 입력해야 합니다.',
+        'probability total must be 10000': '확률 합계가 100%가 되어야 합니다.',
+        'losing item is required': '꽝 항목이 하나 이상 필요합니다.'
+    };
+    return labels[reason] || reason;
+}
+
+function rouletteEventStatusLabel(status) {
+    const labels = {
+        CONFIRMED: '확정',
+        APPLIED: '반영',
+        PARTIALLY_APPLIED: '부분 반영',
+        FAILED: '실패'
+    };
+    return labels[status] || status || '-';
+}
+
+function parsePercentageToBasisPoints(value) {
+    if (!value) {
+        return null;
+    }
+    const percent = Number(value);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+        return null;
+    }
+    return Math.round(percent * 100);
+}
+
+function formatPercentValue(value) {
+    return Number(value || 0).toLocaleString('ko-KR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
 }
 
 function loadAdjustments() {
@@ -1012,25 +1200,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
         });
-    } else {
-        console.error('Element with ID "sync-button" not found.');
     }
 
-    const attendanceButton = document.getElementById('attendance-button');
-    if (attendanceButton) {
-        attendanceButton.addEventListener('click', function (event) {
+    document.querySelectorAll('.admin-tab').forEach(function (button) {
+        button.addEventListener('click', function (event) {
             event.preventDefault();
-            openAttendanceModal();
+            activateAdminTab(button.getAttribute('data-tab-target'));
         });
-    }
-
-    const rouletteButton = document.getElementById('roulette-button');
-    if (rouletteButton) {
-        rouletteButton.addEventListener('click', function (event) {
-            event.preventDefault();
-            openRouletteModal();
-        });
-    }
+    });
 
     document.querySelectorAll('.board-row').forEach(function (row) {
         row.addEventListener('click', function (event) {
@@ -1073,21 +1250,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (event.target.id === 'attendance-close' || event.target.id === 'attendance-cancel') {
-            event.preventDefault();
-            closeAttendanceModal();
-            return;
-        }
-
         if (event.target.id === 'attendance-apply') {
             event.preventDefault();
             applyAttendance();
-            return;
-        }
-
-        if (event.target.id === 'roulette-close') {
-            event.preventDefault();
-            closeRouletteModal();
             return;
         }
 
@@ -1127,6 +1292,20 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const rouletteEventReplay = event.target.closest('.roulette-event-replay');
+        if (rouletteEventReplay) {
+            event.preventDefault();
+            replayOverlayEventById(rouletteEventReplay.dataset.eventId);
+            return;
+        }
+
+        const rouletteEventPageButton = event.target.closest('.roulette-event-page-button');
+        if (rouletteEventPageButton) {
+            event.preventDefault();
+            loadRouletteEvents(parseInt(rouletteEventPageButton.dataset.page, 10));
+            return;
+        }
+
         if (event.target.id === 'overlay-replay') {
             event.preventDefault();
             replayOverlayEvent();
@@ -1162,14 +1341,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (event.target.id === 'attendance-modal') {
-            closeAttendanceModal();
-            return;
-        }
-
-        if (event.target.id === 'roulette-modal') {
-            closeRouletteModal();
-        }
     });
 
     const manualAmount = document.getElementById('manual-amount');

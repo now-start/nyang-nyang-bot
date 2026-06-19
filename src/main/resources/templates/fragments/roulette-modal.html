@@ -1,89 +1,90 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<div th:fragment="roulette-modal">
-    <div class="modal-backdrop" id="roulette-modal">
-        <div class="modal-panel roulette-panel">
-            <div class="modal-header">
-                <div class="modal-title">룰렛 관리</div>
-                <button aria-label="닫기" class="modal-close" id="roulette-close" title="닫기" type="button">×</button>
+<div class="management-panel roulette-panel" th:fragment="roulette-panel">
+    <div class="roulette-layout">
+        <div class="roulette-section">
+            <div class="roulette-section-title">테이블</div>
+            <div class="roulette-form roulette-table-form">
+                <input id="roulette-title" placeholder="테이블 이름" type="text">
+                <input id="roulette-command" placeholder="!룰렛" type="text" value="!룰렛">
+                <input id="roulette-price" min="1" placeholder="1회 금액" type="number" value="1000">
+                <button class="btn-strong btn-auth" id="roulette-create" type="button">생성</button>
             </div>
+            <div class="roulette-table-list" id="roulette-table-list"></div>
+        </div>
 
-            <div class="roulette-layout">
-                <div class="roulette-section">
-                    <div class="roulette-section-title">테이블</div>
-                    <div class="roulette-form roulette-table-form">
-                        <input id="roulette-title" placeholder="테이블 이름" type="text">
-                        <input id="roulette-command" placeholder="!룰렛" type="text" value="!룰렛">
-                        <input id="roulette-price" min="1" placeholder="1회 금액" type="number" value="1000">
-                        <button class="btn-strong btn-auth" id="roulette-create" type="button">생성</button>
-                    </div>
-                    <div class="roulette-table-list" id="roulette-table-list"></div>
-                </div>
-
-                <div class="roulette-section">
-                    <div class="roulette-section-title">항목</div>
-                    <div class="roulette-form roulette-item-form">
-                        <input id="roulette-item-label" placeholder="항목 이름" type="text">
-                        <input id="roulette-item-probability" max="10000" min="0" placeholder="확률 bp" type="number">
-                        <label class="roulette-checkbox">
-                            <input id="roulette-item-losing" type="checkbox">
-                            <span>꽝</span>
-                        </label>
-                        <select id="roulette-item-reward">
-                            <option value="FAVORITE">호감도</option>
-                            <option value="COUPON">쿠폰</option>
-                            <option value="MISSION">미션</option>
-                            <option value="PARTICIPATION_PRIORITY">참여 우선권</option>
-                            <option value="CUSTOM">기타</option>
-                        </select>
-                        <select id="roulette-item-conversion">
-                            <option value="AUTO">자동 반영</option>
-                            <option value="MANUAL">수동 처리</option>
-                            <option value="NONE">반영 없음</option>
-                        </select>
-                        <input id="roulette-item-value" placeholder="호감도 값" type="number">
-                        <button class="btn-strong btn-auth" id="roulette-item-add" type="button">추가</button>
-                    </div>
-                    <div class="roulette-item-list" id="roulette-item-list"></div>
-                </div>
-            </div>
-
-            <div class="roulette-status">
-                <div class="roulette-status-grid">
-                    <div>
-                        <span>확률 합계</span>
-                        <strong id="roulette-probability-total">0 / 10000</strong>
-                    </div>
-                    <div>
-                        <span>꽝 항목</span>
-                        <strong id="roulette-losing-state">없음</strong>
-                    </div>
-                    <div>
-                        <span>활성 상태</span>
-                        <strong id="roulette-active-state">비활성</strong>
-                    </div>
-                </div>
-                <div class="roulette-reasons" id="roulette-reasons"></div>
-                <div class="roulette-simulation" id="roulette-simulation"></div>
-            </div>
-
-            <div class="roulette-overlay-admin">
-                <div class="roulette-section-title">오버레이</div>
-                <div class="roulette-form roulette-overlay-form">
-                    <button class="btn-ghost" id="overlay-token-issue" type="button">토큰 발급</button>
-                    <input id="overlay-token-url" readonly type="text">
-                    <input id="overlay-replay-event-id" min="1" placeholder="룰렛 이벤트 ID" type="number">
-                    <button class="btn-ghost" id="overlay-replay" type="button">재송출</button>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn-ghost" id="roulette-simulate" type="button">시뮬레이션</button>
-                <button class="btn-ghost" id="roulette-deactivate" type="button">비활성화</button>
-                <button class="btn-strong btn-auth" id="roulette-activate" type="button">활성화</button>
+        <div class="roulette-section">
+            <div class="roulette-section-title">항목</div>
+            <div class="roulette-form roulette-item-form">
+                <input id="roulette-item-label" placeholder="항목 이름" type="text">
+                <input id="roulette-item-probability" max="100" min="0" placeholder="확률(%)" step="0.01" type="number">
+                <label class="roulette-checkbox">
+                    <input id="roulette-item-losing" type="checkbox">
+                    <span>꽝</span>
+                </label>
+                <select id="roulette-item-reward">
+                    <option value="FAVORITE">호감도</option>
+                    <option value="COUPON">쿠폰</option>
+                    <option value="MISSION">미션</option>
+                    <option value="PARTICIPATION_PRIORITY">참여 우선권</option>
+                    <option value="CUSTOM">기타</option>
+                </select>
+                <select id="roulette-item-conversion">
+                    <option value="AUTO">자동 반영</option>
+                    <option value="MANUAL">수동 처리</option>
+                    <option value="NONE">반영 없음</option>
+                </select>
+                <input id="roulette-item-value" placeholder="호감도 값" type="number">
+                <button class="btn-strong btn-auth" id="roulette-item-add" type="button">추가</button>
             </div>
         </div>
+
+        <div class="roulette-section roulette-item-list-section">
+            <div class="roulette-section-title">현재 항목</div>
+            <div class="roulette-item-list" id="roulette-item-list"></div>
+        </div>
+    </div>
+
+    <div class="roulette-status">
+        <div class="roulette-status-grid">
+            <div>
+                <span>확률 합계</span>
+                <strong id="roulette-probability-total">0% / 100%</strong>
+            </div>
+            <div>
+                <span>꽝 항목</span>
+                <strong id="roulette-losing-state">없음</strong>
+            </div>
+            <div>
+                <span>활성 상태</span>
+                <strong id="roulette-active-state">비활성</strong>
+            </div>
+        </div>
+        <div class="roulette-reasons" id="roulette-reasons"></div>
+        <div class="roulette-simulation" id="roulette-simulation"></div>
+    </div>
+
+    <div class="roulette-overlay-admin">
+        <div class="roulette-section-title">오버레이</div>
+        <div class="roulette-form roulette-overlay-form">
+            <button class="btn-ghost" id="overlay-token-issue" type="button">토큰 발급</button>
+            <input id="overlay-token-url" placeholder="OBS 오버레이 URL" readonly type="text">
+            <input id="overlay-replay-event-id" min="1" placeholder="재송출 실행 ID" title="룰렛 실행 로그 ID" type="number">
+            <button class="btn-ghost" id="overlay-replay" type="button">이벤트 재송출</button>
+        </div>
+    </div>
+
+    <div class="modal-actions">
+        <button class="btn-ghost" id="roulette-simulate" type="button">시뮬레이션</button>
+        <button class="btn-ghost" id="roulette-deactivate" type="button">비활성화</button>
+        <button class="btn-strong btn-auth" id="roulette-activate" type="button">활성화</button>
+    </div>
+
+    <div class="roulette-events">
+        <div class="roulette-section-title">최근 실행</div>
+        <div class="roulette-event-list" id="roulette-event-list"></div>
+        <div class="roulette-event-pagination" id="roulette-event-pagination"></div>
     </div>
 </div>
 </body>
