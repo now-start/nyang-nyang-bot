@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteHistoryResponse;
 import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response.WeeklyChatRankResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.WeeklyChatRankResponse;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.springframework.data.domain.PageRequest;

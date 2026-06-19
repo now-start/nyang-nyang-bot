@@ -234,6 +234,20 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void inboundWebAdapters_ShouldNotOwnScheduledTasks() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
+                .filter(path -> containsAny(path,
+                        "org.springframework.scheduling.annotation.Scheduled",
+                        "@Scheduled"
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
     void inboundWebCommonPackage_ShouldNotContainJavaSources() throws IOException {
         // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("adapter/in/web/common")).toList();

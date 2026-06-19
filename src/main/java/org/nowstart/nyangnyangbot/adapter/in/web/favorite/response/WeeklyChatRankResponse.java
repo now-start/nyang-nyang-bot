@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.adapter.in.web.weeklychat.response;
+package org.nowstart.nyangnyangbot.adapter.in.web.favorite.response;
 
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 

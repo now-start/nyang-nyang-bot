@@ -10,14 +10,15 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.service.google.GoogleSheetService;
+import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @ExtendWith(MockitoExtension.class)
 class GoogleControllerTest {
 
     @Mock
-    private GoogleSheetService googleSheetService;
+    private SyncGoogleSheetUseCase syncGoogleSheetUseCase;
 
     @InjectMocks
     private GoogleController googleController;
@@ -31,7 +32,7 @@ class GoogleControllerTest {
         // 검증
         then(result.getStatusCode().is2xxSuccessful()).isTrue();
         then(result.getBody()).isEqualTo("SUCCESS");
-        BDDMockito.then(googleSheetService).should().updateFavorite();
+        BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
     }
 
     @Test
@@ -39,12 +40,24 @@ class GoogleControllerTest {
     void syncDatabase_ShouldPropagateServiceException() {
         // 준비
         BDDMockito.willThrow(new IllegalStateException("sync failed"))
-                .given(googleSheetService)
+                .given(syncGoogleSheetUseCase)
                 .updateFavorite();
 
         // 실행 및 검증
         thenThrownBy(() -> googleController.syncDatabase())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("sync failed");
+    }
+
+    @Test
+    @DisplayName("컨트롤러 동기화 API는 스케줄러 책임을 갖지 않는다")
+    void syncDatabase_ShouldNotHaveScheduledAnnotation() throws NoSuchMethodException {
+        // 실행
+        boolean scheduled = GoogleController.class
+                .getMethod("syncDatabase")
+                .isAnnotationPresent(Scheduled.class);
+
+        // 검증
+        then(scheduled).isFalse();
     }
 }

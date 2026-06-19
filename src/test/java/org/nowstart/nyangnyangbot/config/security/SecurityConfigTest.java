@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
+import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
-import org.nowstart.nyangnyangbot.application.service.google.GoogleSheetService;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,7 +64,7 @@ class SecurityConfigTest {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
-            GoogleSheetService googleSheetService = context.getBean(GoogleSheetService.class);
+            SyncGoogleSheetUseCase syncGoogleSheetUseCase = context.getBean(SyncGoogleSheetUseCase.class);
 
         // 실행
             mockMvc.perform(get("/google/sync").session(session(
@@ -75,7 +75,7 @@ class SecurityConfigTest {
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));
 
-            BDDMockito.then(googleSheetService).should().updateFavorite();
+            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
         }
     }
 
@@ -88,7 +88,7 @@ class SecurityConfigTest {
                 "nyang.local-auth.admin=true"
         )) {
             MockMvc mockMvc = createMockMvc(context);
-            GoogleSheetService googleSheetService = context.getBean(GoogleSheetService.class);
+            SyncGoogleSheetUseCase syncGoogleSheetUseCase = context.getBean(SyncGoogleSheetUseCase.class);
 
         // 실행
             mockMvc.perform(get("/google/sync"))
@@ -96,7 +96,7 @@ class SecurityConfigTest {
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));
 
-            BDDMockito.then(googleSheetService).should().updateFavorite();
+            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
         }
     }
 
@@ -133,13 +133,13 @@ class SecurityConfigTest {
     static class TestSecurityConfiguration {
 
         @Bean
-        GoogleSheetService googleSheetService() {
-            return mock(GoogleSheetService.class);
+        SyncGoogleSheetUseCase syncGoogleSheetUseCase() {
+            return mock(SyncGoogleSheetUseCase.class);
         }
 
         @Bean
-        GoogleController googleController(GoogleSheetService googleSheetService) {
-            return new GoogleController(googleSheetService);
+        GoogleController googleController(SyncGoogleSheetUseCase syncGoogleSheetUseCase) {
+            return new GoogleController(syncGoogleSheetUseCase);
         }
     }
 }
