@@ -10,10 +10,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -42,7 +43,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> {
+                    csrf.ignoringRequestMatchers(PathPatternRequestMatcher.pathPattern(
+                            HttpMethod.POST,
+                            "/overlay/roulette/events/{displayEventId}/displayed"
+                    ));
+                    if (h2ConsoleEnabled) {
+                        csrf.ignoringRequestMatchers("/h2-console/**");
+                    }
+                })
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta name="_csrf" th:content="${_csrf.token}" th:if="${_csrf != null}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" th:if="${_csrf != null}">
     <title th:text="${landingMode} ? '치즈냥 호감도' : '호감도'">치즈냥 호감도</title>
     <meta content="치즈냥의 호감도 보드와 주간 채팅 순위를 확인해 보세요."
           name="description"

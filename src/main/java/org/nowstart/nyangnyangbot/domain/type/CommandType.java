@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.domain.type;
 
+import java.util.Locale;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.StringUtils;
 
 @Getter
 @RequiredArgsConstructor
@@ -15,7 +15,7 @@ public enum CommandType {
     public static String findNameByCommand(String command) {
         for (CommandType cmd : CommandType.values()) {
             if (cmd.getCommand().equals(command)) {
-                return StringUtils.lowerCase(cmd.name());
+                return cmd.name().toLowerCase(Locale.ROOT);
             }
         }
         return null;

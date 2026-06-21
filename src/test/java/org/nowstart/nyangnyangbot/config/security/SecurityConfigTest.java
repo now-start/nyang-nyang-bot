@@ -1,9 +1,10 @@
 package org.nowstart.nyangnyangbot.config.security;
 
 import static org.assertj.core.api.BDDAssertions.thenCode;
-import org.mockito.BDDMockito;
 import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,6 +13,7 @@ import jakarta.servlet.Filter;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
@@ -30,6 +32,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
@@ -116,6 +120,78 @@ class SecurityConfigTest {
         }
     }
 
+    @Test
+    void authenticatedPostRejectsMissingCsrfToken() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/test/mutation").session(session(
+                            "admin",
+                            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                    )))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void authenticatedPostAllowsValidCsrfToken() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/test/mutation")
+                            .session(session(
+                                    "admin",
+                                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                            ))
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("MUTATED"));
+        }
+    }
+
+    @Test
+    void overlayDisplayedEndpointAllowsPostWithoutCsrfToken() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/overlay/roulette/events/1/displayed"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("DISPLAYED"));
+        }
+    }
+
+    @Test
+    void otherOverlayEventPostRejectsMissingCsrfToken() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/overlay/roulette/events/1/replay"))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void h2ConsolePostAllowsMissingCsrfTokenWhenEnabled() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "spring.h2.console.enabled=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/h2-console/login.do"))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
     private AnnotationConfigWebApplicationContext createWebContext(String... properties) {
         AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
@@ -156,6 +232,25 @@ class SecurityConfigTest {
         @Bean
         GoogleController googleController(SyncGoogleSheetUseCase syncGoogleSheetUseCase) {
             return new GoogleController(syncGoogleSheetUseCase);
+        }
+
+        @Bean
+        TestMutationController testMutationController() {
+            return new TestMutationController();
+        }
+    }
+
+    @RestController
+    static class TestMutationController {
+
+        @PostMapping("/test/mutation")
+        String mutate() {
+            return "MUTATED";
+        }
+
+        @PostMapping("/overlay/roulette/events/{displayEventId}/displayed")
+        String markDisplayed() {
+            return "DISPLAYED";
         }
     }
 }

@@ -15,6 +15,16 @@ function buildUrl(path) {
     return baseNormalized + pathNormalized;
 }
 
+function csrfHeaders(headers) {
+    const result = Object.assign({}, headers || {});
+    const token = document.querySelector('meta[name="_csrf"]');
+    const header = document.querySelector('meta[name="_csrf_header"]');
+    if (token && header && token.content && header.content) {
+        result[header.content] = token.content;
+    }
+    return result;
+}
+
 let adjustmentsCache = null;
 let historyCache = new Map();
 let historyRequests = new Map();
@@ -262,7 +272,10 @@ function stopAttendancePolling() {
 }
 
 function startAttendanceCapture() {
-    return fetch(buildUrl('/attendance/start'), {method: 'POST'}).then(function (response) {
+    return fetch(buildUrl('/attendance/start'), {
+        method: 'POST',
+        headers: csrfHeaders()
+    }).then(function (response) {
         if (!response.ok) {
             throw new Error('Failed to start attendance');
         }
@@ -270,7 +283,10 @@ function startAttendanceCapture() {
 }
 
 function stopAttendanceCapture() {
-    return fetch(buildUrl('/attendance/stop'), {method: 'POST'});
+    return fetch(buildUrl('/attendance/stop'), {
+        method: 'POST',
+        headers: csrfHeaders()
+    });
 }
 
 function fetchAttendanceUsers() {
@@ -393,7 +409,7 @@ function applyAttendance() {
 
     fetch(buildUrl('/attendance/apply'), {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
         body: JSON.stringify({
             amount: amount,
             users: selectedUsers.map(function (user) {
@@ -714,7 +730,7 @@ function createRouletteTable() {
     }
     fetch(buildUrl('/admin/roulette/tables'), {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
         body: JSON.stringify({
             title: title,
             command: command,
@@ -761,7 +777,7 @@ function addRouletteItem() {
     }
     fetch(buildUrl('/admin/roulette/tables/' + table.id + '/items'), {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
         body: JSON.stringify({
             label: label,
             probabilityBasisPoints: probability,
@@ -803,7 +819,10 @@ function postRouletteAction(path, successMessage, failureMessage) {
     if (!requireAdminPermission()) {
         return;
     }
-    fetch(buildUrl(path), {method: 'POST'})
+    fetch(buildUrl(path), {
+        method: 'POST',
+        headers: csrfHeaders()
+    })
         .then(requireOk)
         .then(function (table) {
             selectedRouletteTableId = table.id;
@@ -832,7 +851,10 @@ function issueOverlayToken() {
     if (!requireAdminPermission()) {
         return;
     }
-    fetch(buildUrl('/admin/overlay/roulette/token'), {method: 'POST'})
+    fetch(buildUrl('/admin/overlay/roulette/token'), {
+        method: 'POST',
+        headers: csrfHeaders()
+    })
         .then(requireOk)
         .then(function (data) {
             const tokenUrl = window.location.origin + buildUrl('/overlay/roulette') + '#token=' + data.token;
@@ -864,7 +886,10 @@ function replayOverlayEventById(rouletteEventId) {
         showToast('재송출 실행 ID를 확인해 주세요.');
         return;
     }
-    fetch(buildUrl('/admin/overlay/roulette/events/' + rouletteEventId + '/replay'), {method: 'POST'})
+    fetch(buildUrl('/admin/overlay/roulette/events/' + rouletteEventId + '/replay'), {
+        method: 'POST',
+        headers: csrfHeaders()
+    })
         .then(requireOk)
         .then(function () {
             showToast('오버레이 재송출 대기열에 추가했습니다.');
@@ -1125,7 +1150,7 @@ function applyAdjustments() {
 
     fetch(buildUrl('/favorite/adjustments/apply'), {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
         body: JSON.stringify({
             userId: currentUserId,
             adjustmentIds: ids,
