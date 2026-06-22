@@ -11,9 +11,12 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTempla
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
+import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,6 +27,7 @@ public class UpboPersistenceAdapter implements UpboPort {
     private final UserUpboRepository userUpboRepository;
 
     @Override
+    @Cacheable(cacheNames = CacheNames.UPBO_ACTIVE_TEMPLATES)
     public List<TemplateResult> findActiveTemplates() {
         return upboTemplateRepository.findByActiveTrueOrderByDisplayOrderAscIdAsc().stream()
                 .map(this::toModel)
@@ -31,6 +35,7 @@ public class UpboPersistenceAdapter implements UpboPort {
     }
 
     @Override
+    @CacheEvict(cacheNames = CacheNames.UPBO_ACTIVE_TEMPLATES, allEntries = true)
     public TemplateResult createTemplate(
             String label,
             String description,
@@ -52,6 +57,7 @@ public class UpboPersistenceAdapter implements UpboPort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.UPBO_TEMPLATE_BY_ID, key = "#templateId", unless = "#result == null")
     public Optional<TemplateResult> findTemplateById(Long templateId) {
         return upboTemplateRepository.findById(templateId).map(this::toModel);
     }

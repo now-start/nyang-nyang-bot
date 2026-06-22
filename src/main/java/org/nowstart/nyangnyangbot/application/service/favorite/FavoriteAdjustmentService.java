@@ -60,7 +60,9 @@ public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCas
 
         List<OptionResult> adjustments = List.of();
         if (adjustmentIds != null && !adjustmentIds.isEmpty()) {
-            adjustments = favoriteAdjustmentPort.findAllById(adjustmentIds);
+            adjustments = favoriteAdjustmentPort.findAll().stream()
+                    .filter(option -> adjustmentIds.contains(option.id()))
+                    .toList();
             if (adjustments.size() != adjustmentIds.size()) {
                 Map<Long, OptionResult> foundMap = adjustments.stream()
                         .collect(Collectors.toMap(OptionResult::id, entity -> entity));

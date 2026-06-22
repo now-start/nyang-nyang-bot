@@ -18,9 +18,13 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -35,6 +39,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
 
     @Override
+    @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true)
     public TableResult createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
         RouletteTable saved = rouletteTableRepository.save(RouletteTable.builder()
                 .title(title)
@@ -48,6 +53,10 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_ITEMS_BY_TABLE_ID, key = "#tableId"),
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID, key = "#tableId")
+    })
     public ItemResult addItem(
             Long tableId,
             String label,
@@ -75,6 +84,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.ROULETTE_TABLES)
     public List<TableResult> findTablesOrderByIdDesc() {
         return rouletteTableRepository.findAllByOrderByIdDesc().stream()
                 .map(this::toModel)
@@ -82,11 +92,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, key = "#tableId", unless = "#result == null")
     public Optional<TableResult> findTableById(Long tableId) {
         return rouletteTableRepository.findById(tableId).map(this::toModel);
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.ROULETTE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(tableId).stream()
                 .map(this::toModel)
@@ -94,6 +106,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findActiveItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(tableId).stream()
                 .map(this::toModel)
@@ -101,6 +114,11 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_LATEST_ACTIVE_TABLE, allEntries = true)
+    })
     public TableResult activateTable(Long tableId) {
         RouletteTable table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
@@ -112,6 +130,11 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, key = "#tableId"),
+            @CacheEvict(cacheNames = CacheNames.ROULETTE_LATEST_ACTIVE_TABLE, allEntries = true)
+    })
     public TableResult deactivateTable(Long tableId) {
         RouletteTable table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
@@ -120,6 +143,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.ROULETTE_LATEST_ACTIVE_TABLE, unless = "#result == null")
     public Optional<TableResult> findLatestActiveTable() {
         return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(this::toModel);
     }

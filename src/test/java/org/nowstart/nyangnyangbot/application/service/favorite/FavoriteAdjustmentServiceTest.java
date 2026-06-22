@@ -86,7 +86,7 @@ class FavoriteAdjustmentServiceTest {
     void applyAdjustments_ShouldApplySelectedOptionsAndManualAmount() {
         // 준비
         FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
-        given(favoriteAdjustmentPort.findAllById(List.of(1L, 2L))).willReturn(List.of(
+        given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스"),
                 new OptionResult(2L, -3, "벌점")
         ));
@@ -144,7 +144,7 @@ class FavoriteAdjustmentServiceTest {
     void applyAdjustments_ShouldApplySelectedOptionsWithoutManualAmount() {
         // 준비
         FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
-        given(favoriteAdjustmentPort.findAllById(List.of(1L))).willReturn(List.of(
+        given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스")
         ));
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
@@ -167,7 +167,7 @@ class FavoriteAdjustmentServiceTest {
     void applyAdjustments_ShouldRejectMissingAdjustmentIds() {
         // 준비
         FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
-        given(favoriteAdjustmentPort.findAllById(List.of(1L, 2L))).willReturn(List.of(
+        given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스")
         ));
 

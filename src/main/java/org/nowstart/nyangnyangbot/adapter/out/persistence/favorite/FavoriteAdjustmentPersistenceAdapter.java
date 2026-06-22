@@ -6,6 +6,9 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustme
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
+import org.nowstart.nyangnyangbot.config.cache.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,6 +18,7 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
 
     @Override
+    @Cacheable(cacheNames = CacheNames.FAVORITE_ADJUSTMENTS)
     public List<OptionResult> findAll() {
         return favoriteAdjustmentRepository.findAll().stream()
                 .map(this::toModel)
@@ -22,19 +26,13 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
     }
 
     @Override
+    @CacheEvict(cacheNames = CacheNames.FAVORITE_ADJUSTMENTS, allEntries = true)
     public OptionResult save(Integer amount, String label) {
         FavoriteAdjustment saved = favoriteAdjustmentRepository.save(FavoriteAdjustment.builder()
                 .amount(amount)
                 .label(label)
                 .build());
         return toModel(saved);
-    }
-
-    @Override
-    public List<OptionResult> findAllById(List<Long> ids) {
-        return favoriteAdjustmentRepository.findAllById(ids).stream()
-                .map(this::toModel)
-                .toList();
     }
 
     private OptionResult toModel(FavoriteAdjustment entity) {

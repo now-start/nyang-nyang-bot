@@ -8,8 +8,6 @@ public interface FavoriteAdjustmentPort {
 
     OptionResult save(Integer amount, String label);
 
-    List<OptionResult> findAllById(List<Long> ids);
-
     record OptionResult(
             Long id,
             Integer amount,
