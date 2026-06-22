@@ -19,7 +19,7 @@
 
 | ID | 요구사항 | 우선순위 | 상태 | Phase | 주요 Use Case | 주요 검증 |
 | --- | --- | --- | --- | --- | --- | --- |
-| FR-001 | CHZZK OAuth 로그인 | P0 | 부분 구현 | Phase 1 | `LoginWithChzzkUseCase` | OAuth state 검증, 토큰 로그 미노출 |
+| FR-001 | CHZZK OAuth 로그인 | P0 | 현행 구현 | Phase 1 | Spring Security OAuth2 Client | OAuth state 검증, 토큰 로그 미노출 |
 | FR-002 | 관리자 권한 구분 | P0 | 부분 구현 | Phase 1 | `AuthorizeAdminUseCase` | 일반 사용자 관리자 API 거부 |
 | FR-003 | 호감도 보드 조회 | P0 | 현행 구현 | Phase 3 | `ViewFavoriteBoardUseCase` | 페이지네이션, 음수 잔액 표시 |
 | FR-004 | 전체 히스토리 조회 | P0 | 부분 구현 | Phase 3 | `ViewFavoriteHistoryUseCase` | 본인/관리자 권한, 50건 제한 |

@@ -21,9 +21,9 @@
 
 | Method | Path | 권한 | 설명 |
 | --- | --- | --- | --- |
-| GET | `/` | 공개 | 랜딩 모드 렌더링 후 로그인으로 이동 |
-| GET | `/login` | 공개 | CHZZK 인증 페이지로 리다이렉트 |
-| GET | `/token` | 공개 | CHZZK OAuth 콜백 처리 |
+| GET | `/` | 인증 | 호감도 화면으로 이동 |
+| GET | `/oauth2/authorization/chzzk` | 공개 | Spring Security OAuth2 인증 시작 |
+| GET | `/login/oauth2/code/chzzk` | 공개 | CHZZK OAuth 콜백 처리 |
 | GET | `/favorite/list` | 인증 | 호감도 보드 조회 |
 | GET | `/favorite/history` | 본인 또는 관리자 | 특정 사용자의 호감도 히스토리 조회 |
 | GET | `/favorite/upbo` | 본인 또는 관리자 | 특정 사용자의 업보 반영 내역 조회 |
@@ -197,7 +197,7 @@ Google Sheets는 최종 플랫폼 기능이 아니라 기존 포인트 데이터
 - 일반 사용자는 다른 사용자 검색 기능을 가지지 않으며, 호감도 보드 전체 랭킹만 조회할 수 있다.
 - 관리자만 닉네임 부분 문자열 일치(ILIKE 등) 검색을 수행할 수 있다.
 - CHZZK access token과 refresh token은 로그에 노출되지 않아야 한다.
-- OAuth `state`는 요청별 난수로 생성하고 콜백에서 검증하는 구조가 필요하다.
+- OAuth `state`는 Spring Security OAuth2 Client의 세션 기반 검증을 사용한다.
 - OBS 오버레이 페이지는 공개로 열 수 있지만, 룰렛 이벤트 조회와 표시 완료 API는 추측 불가능한 오버레이 토큰으로 보호해야 한다.
 - OBS 오버레이 토큰은 URL query string에 넣지 않고 URL fragment와 `Authorization: Bearer` 헤더를 사용한다.
 - 오버레이 토큰은 보안 난수 기반의 충분히 긴 opaque token으로 생성한다.
@@ -263,7 +263,7 @@ Loki 색인 정책 (카디널리티 관리):
 
 | 항목 | 현재 상태 | 리스크 | 권장 조치 |
 | --- | --- | --- | --- |
-| OAuth state | 고정 문자열 사용 | CSRF/로그인 위조 방어 약함 | 세션 기반 난수 state 생성 및 검증 |
+| OAuth state | Spring Security OAuth2 Client 사용 | 세션 손실 시 로그인 재시도 필요 | 세션 기반 state 검증 유지 |
 | CSRF | 전역 비활성화 | 상태 변경 API가 세션 쿠키 기반 요청에 노출 | CSRF 활성화 또는 API 토큰/동일 출처 정책 강화 |
 | 관리자 권한 관리 | DB의 `admin` 플래그 의존 | 관리 도구 부재 시 운영 변경이 수동 DB 작업에 의존 | 관리자 승격/해제 운영 절차 또는 API 정의 |
 | 출석 수집 | 인메모리 Map 사용 | 재시작/다중 인스턴스에서 데이터 유실 또는 불일치 | DB 기반 영속화 또는 다른 공유 저장소 검토 |

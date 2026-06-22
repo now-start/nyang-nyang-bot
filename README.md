@@ -56,8 +56,9 @@ Fork → feature/* 개발 → PR → main merge
 ```bash
 export CHZZK_CLIENT_ID=
 export CHZZK_CLIENT_SECRET=
-export CHZZK_REDIRECT_URI=http://localhost:8080/token
 ```
+
+CHZZK 개발자 콘솔의 로컬 리다이렉트 URI는 `http://localhost:8080/login/oauth2/code/chzzk`로 등록합니다.
 
 Google Sheets 마이그레이션 API를 직접 호출하려면 아래 값도 필요합니다.
 
@@ -80,7 +81,7 @@ export GOOGLE_SPREADSHEET_KEY='서비스 계정 JSON'
 |--------------|-----------------------------|
 | clientId     | ***********                 |
 | clientSecret | ***********                 |
-| redirectUrl  | http://localhost:8080/token |
+| redirectUrl  | http://localhost:8080/login/oauth2/code/chzzk |
 
 ---
 

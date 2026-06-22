@@ -97,9 +97,9 @@ JSON API의 기본 실패 응답:
 
 | Method | Path | 권한 | 설명 | FR |
 | --- | --- | --- | --- | --- |
-| GET | `/` | 공개 | 랜딩 모드 렌더링 후 로그인으로 이동 | FR-001 |
-| GET | `/login` | 공개 | CHZZK 인증 페이지로 리다이렉트 | FR-001 |
-| GET | `/token` | 공개 | CHZZK OAuth 콜백 처리 | FR-001 |
+| GET | `/` | 인증 | 호감도 화면으로 이동 | FR-001 |
+| GET | `/oauth2/authorization/chzzk` | 공개 | Spring Security OAuth2 인증 시작 | FR-001 |
+| GET | `/login/oauth2/code/chzzk` | 공개 | CHZZK OAuth 콜백 처리 | FR-001 |
 | GET | `/favorite/list` | 인증 | 호감도 보드 화면/조회 | FR-003 |
 | GET | `/favorite/history` | 본인 또는 관리자 | 특정 사용자의 호감도 히스토리 조회 | FR-004 |
 | GET | `/favorite/upbo` | 본인 또는 관리자 | 특정 사용자의 업보 반영 내역 조회 | FR-005 |

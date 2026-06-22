@@ -17,6 +17,9 @@ import org.mockito.BDDMockito;
 import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AccessTokenResponseClient;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AuthorizationRequestResolver;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2UserService;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +32,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -61,6 +69,19 @@ class SecurityConfigTest {
             mockMvc.perform(get("/google/sync").session(session("user", Collections.emptyList())))
         // 검증
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void unauthenticatedRootRedirectsToChzzkOAuth2AuthorizationEndpoint() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(get("/"))
+                    .andExpect(status().isFound())
+                    .andExpect(header().string("Location", "/oauth2/authorization/chzzk"));
         }
     }
 
@@ -237,6 +258,37 @@ class SecurityConfigTest {
         @Bean
         TestMutationController testMutationController() {
             return new TestMutationController();
+        }
+
+        @Bean
+        ClientRegistrationRepository clientRegistrationRepository() {
+            return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId("chzzk")
+                    .clientId("client-id")
+                    .clientSecret("client-secret")
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .redirectUri("http://localhost/login/oauth2/code/chzzk")
+                    .authorizationUri("https://chzzk.naver.com/account-interlock")
+                    .tokenUri("https://openapi.chzzk.naver.com/auth/v1/token")
+                    .userInfoUri("https://openapi.chzzk.naver.com/open/v1/users/me")
+                    .userNameAttributeName("channelId")
+                    .clientName("Chzzk")
+                    .build());
+        }
+
+        @Bean
+        ChzzkOAuth2AuthorizationRequestResolver chzzkOAuth2AuthorizationRequestResolver() {
+            return mock(ChzzkOAuth2AuthorizationRequestResolver.class);
+        }
+
+        @Bean
+        ChzzkOAuth2AccessTokenResponseClient chzzkOAuth2AccessTokenResponseClient() {
+            return mock(ChzzkOAuth2AccessTokenResponseClient.class);
+        }
+
+        @Bean
+        ChzzkOAuth2UserService chzzkOAuth2UserService() {
+            return mock(ChzzkOAuth2UserService.class);
         }
     }
 

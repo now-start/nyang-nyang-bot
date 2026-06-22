@@ -7,6 +7,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AccessTokenResponseClient;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AuthorizationRequestResolver;
+import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +30,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private static final String OAUTH2_AUTHORIZATION_ENDPOINT = "/oauth2/authorization/chzzk";
+    private static final String OAUTH2_SUCCESS_LOCATION = "/favorite/list";
 
     @Value("${nyang.local-auth.enabled:false}")
     private boolean localAuthEnabled;
@@ -39,6 +47,10 @@ public class SecurityConfig {
 
     @Value("${spring.h2.console.enabled:false}")
     private boolean h2ConsoleEnabled;
+
+    private final ChzzkOAuth2AuthorizationRequestResolver chzzkOAuth2AuthorizationRequestResolver;
+    private final ChzzkOAuth2AccessTokenResponseClient chzzkOAuth2AccessTokenResponseClient;
+    private final ChzzkOAuth2UserService chzzkOAuth2UserService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -55,14 +67,27 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
-                            .requestMatchers("/", "/login", "/token").permitAll()
+                            .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                             .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll();
                     if (h2ConsoleEnabled) {
                         auth.requestMatchers("/h2-console/**").permitAll();
                     }
                     auth.anyRequest().authenticated();
                 }).exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint(OAUTH2_AUTHORIZATION_ENDPOINT))
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage(OAUTH2_AUTHORIZATION_ENDPOINT)
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(chzzkOAuth2AuthorizationRequestResolver)
+                        )
+                        .tokenEndpoint(token -> token
+                                .accessTokenResponseClient(chzzkOAuth2AccessTokenResponseClient)
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(chzzkOAuth2UserService)
+                        )
+                        .defaultSuccessUrl(OAUTH2_SUCCESS_LOCATION, true)
                 );
 
         if (h2ConsoleEnabled) {

@@ -50,7 +50,7 @@
 <noscript th:if="${landingMode}">
     <p>
         자바스크립트가 꺼져 있어 자동 이동이 되지 않았습니다.
-        <a href="/login" th:href="@{/login}">로그인하기</a>
+        <a href="/oauth2/authorization/chzzk" th:href="@{/oauth2/authorization/chzzk}">로그인하기</a>
     </p>
 </noscript>
 
@@ -217,7 +217,7 @@
 
 <script th:if="${landingMode}" th:inline="javascript">
     (function () {
-        var loginUrl = /*[[@{/login}]]*/ '/login';
+        var loginUrl = /*[[@{/oauth2/authorization/chzzk}]]*/ '/oauth2/authorization/chzzk';
         window.location.replace(loginUrl);
     })();
 </script>

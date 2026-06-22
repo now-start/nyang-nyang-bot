@@ -63,6 +63,7 @@ class AuthorizationPersistenceAdapterTest {
         AuthorizationToken updatedToken = token("new-access", "new-refresh");
         UserResult user = new UserResult("channel-1", "변경", "ACTIVE");
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
+        given(authorizationRepository.save(existing)).willReturn(existing);
 
         // 실행
         AuthorizationAccountResult saved = adapter.saveOrUpdate(user, updatedToken);
@@ -72,6 +73,7 @@ class AuthorizationPersistenceAdapterTest {
         then(saved.accessToken()).isEqualTo("new-access");
         then(updated.channelName()).isEqualTo("변경");
         then(existing.getRefreshToken()).isEqualTo("new-refresh");
+        BDDMockito.then(authorizationRepository).should().save(existing);
     }
 
     @Test

@@ -93,14 +93,14 @@ FK가 남아 있으면:
 
 증상:
 
-- 로그인 후 `/token`에서 실패.
+- 로그인 후 `/login/oauth2/code/chzzk`에서 실패.
 - 사용자가 반복적으로 로그인 페이지로 돌아감.
 - CHZZK 토큰 갱신 실패.
 
 확인:
 
 - OAuth `clientId`, `clientSecret`, `redirectUrl` 설정.
-- OAuth `state` 생성/검증 실패 로그.
+- Spring Security OAuth2 state 검증 실패 로그.
 - CHZZK token API 응답 상태.
 - access/refresh token 원문이 로그에 남지 않는지.
 

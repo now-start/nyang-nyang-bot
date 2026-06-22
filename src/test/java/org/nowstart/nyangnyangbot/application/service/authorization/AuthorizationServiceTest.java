@@ -40,36 +40,6 @@ class AuthorizationServiceTest {
     private AuthorizationService authorizationService;
 
     @Test
-    void login_ShouldExchangeAuthorizationCodeAndReturnSavedAccount() {
-        // 준비
-        AuthorizationToken authorization = new AuthorizationToken("access", "refresh", "Bearer", 3600, "chat");
-        UserResult user = new UserResult("channel-1", "tester", "ACTIVE");
-        AuthorizationAccountResult saved = new AuthorizationAccountResult(
-                "channel-1", "tester", "access", "refresh", "Bearer", 3600, "chat", true, null, null
-        );
-        given(chzzkProperty.clientId()).willReturn("client-id");
-        given(chzzkProperty.clientSecret()).willReturn("client-secret");
-        given(chzzkClientPort.getAccessToken(new AuthorizationTokenCommand(
-                "authorization_code",
-                "client-id",
-                "client-secret",
-                "code-1",
-                "state-1",
-                null
-        ))).willReturn(new ApiResult<>(200, "OK", authorization));
-        given(chzzkClientPort.getUser("Bearer access")).willReturn(new ApiResult<>(200, "OK", user));
-        given(authorizationPort.saveOrUpdate(user, authorization)).willReturn(saved);
-
-        // 실행
-        var result = authorizationService.login("code-1", "state-1");
-
-        // 검증
-        then(result.channelId()).isEqualTo("channel-1");
-        then(result.admin()).isTrue();
-        BDDMockito.then(authorizationPort).should().saveOrUpdate(user, authorization);
-    }
-
-    @Test
     void getAccessToken_ShouldRefreshWhenExpiresInIsNull() {
         // 준비
         AuthorizationAccountResult account = new AuthorizationAccountResult(

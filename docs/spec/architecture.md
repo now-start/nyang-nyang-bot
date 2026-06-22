@@ -122,8 +122,6 @@ data
 domain
   attendance
     AttendanceUserState
-  authorization
-    OAuthStatePolicy
   chat
     ChatCommandCooldown
   favorite

@@ -25,7 +25,7 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
     @Override
     public AuthorizationAccountResult saveOrUpdate(UserResult user, AuthorizationToken authorization) {
         AuthorizationAccount saved = authorizationRepository.findById(user.channelId())
-                .map(existing -> update(existing, user, authorization))
+                .map(existing -> authorizationRepository.save(update(existing, user, authorization)))
                 .orElseGet(() -> authorizationRepository.save(AuthorizationAccount.builder()
                         .channelId(user.channelId())
                         .channelName(user.channelName())
