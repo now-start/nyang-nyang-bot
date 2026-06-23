@@ -29,6 +29,7 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustme
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheConfig;
+import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,20 @@ class LocalCacheBehaviorTest {
                 rouletteTableRepository,
                 rouletteItemRepository
         );
+    }
+
+    @Test
+    void localCaches_ShouldRecordStatisticsForActuatorMetrics() {
+        CacheNames.ALL.forEach(name -> {
+            org.springframework.cache.Cache cache = Objects.requireNonNull(cacheManager.getCache(name));
+            Object nativeCache = cache.getNativeCache();
+
+            if (nativeCache instanceof com.github.benmanes.caffeine.cache.Cache<?, ?> caffeineCache) {
+                then(caffeineCache.policy().isRecordingStats()).isTrue();
+                return;
+            }
+            throw new AssertionError("Expected Caffeine cache for " + name + " but was " + nativeCache.getClass());
+        });
     }
 
     @Test

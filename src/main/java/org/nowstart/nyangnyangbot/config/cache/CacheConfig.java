@@ -21,7 +21,8 @@ public class CacheConfig {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager(CacheNames.ALL.toArray(String[]::new));
         caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(MAXIMUM_SIZE)
-                .expireAfterWrite(EXPIRE_AFTER_WRITE));
+                .expireAfterWrite(EXPIRE_AFTER_WRITE)
+                .recordStats());
         caffeineCacheManager.setAllowNullValues(false);
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
