@@ -40,3 +40,6 @@ out/
 
 # Local Codex helper
 .autocp
+
+### macOS ###
+.DS_Store
