@@ -29,7 +29,6 @@ repositories {
 }
 
 ext {
-    springBootAdminVersion = "4.0.4"
     springDocVersion = "3.0.3"
     opentelemetryVersion = "2.29.0"
     springCloudVersion = "2025.1.2"
