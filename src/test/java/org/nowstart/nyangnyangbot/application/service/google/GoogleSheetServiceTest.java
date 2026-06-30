@@ -4,11 +4,18 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -158,6 +165,36 @@ class GoogleSheetServiceTest {
 
         // 검증
         BDDMockito.then(favoriteQueryPort).should().updateNickName("user123", "새닉네임");
+        BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
+    }
+
+    @Test
+    void updateFavorite_ShouldSkip_WhenSyncAlreadyInProgress() throws Exception {
+        // 준비 - 첫 번째 동기화를 가드 안에서 멈춰두고, 그 사이 두 번째 호출을 시도한다.
+        CountDownLatch firstEntered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            firstEntered.countDown();
+            release.await();
+            return List.<GoogleSheetRow>of();
+        }).when(googleSheetService).getSheetValues();
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            Future<?> first = pool.submit(() -> googleSheetService.updateFavorite());
+            then(firstEntered.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // 실행 - 첫 동기화가 진행 중인 동안의 두 번째 호출은 즉시 건너뛰어야 한다.
+            googleSheetService.updateFavorite();
+
+            release.countDown();
+            first.get(2, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        // 검증 - 가드 덕분에 시트 조회는 첫 호출에서 단 한 번만 수행된다.
+        BDDMockito.then(googleSheetService).should(times(1)).getSheetValues();
         BDDMockito.then(adjustFavoriteUseCase).should(never()).adjust(any(AdjustFavoriteCommand.class));
     }
 }
