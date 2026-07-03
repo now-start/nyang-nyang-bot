@@ -11,6 +11,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceAdapter;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
@@ -25,11 +28,14 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceAd
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheConfig;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
+import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
+import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +63,9 @@ class LocalCacheBehaviorTest {
     private RoulettePort roulettePort;
 
     @Autowired
+    private CommandPort commandPort;
+
+    @Autowired
     private FavoriteAdjustmentRepository favoriteAdjustmentRepository;
 
     @Autowired
@@ -68,6 +77,9 @@ class LocalCacheBehaviorTest {
     @Autowired
     private RouletteItemRepository rouletteItemRepository;
 
+    @Autowired
+    private CommandRepository commandRepository;
+
     @BeforeEach
     void setUp() {
         cacheManager.getCacheNames()
@@ -76,7 +88,8 @@ class LocalCacheBehaviorTest {
                 favoriteAdjustmentRepository,
                 upboTemplateRepository,
                 rouletteTableRepository,
-                rouletteItemRepository
+                rouletteItemRepository,
+                commandRepository
         );
     }
 
@@ -185,6 +198,69 @@ class LocalCacheBehaviorTest {
         BDDMockito.then(rouletteTableRepository).should(times(2)).findFirstByActiveTrueOrderByIdDesc();
     }
 
+    @Test
+    void commandActiveTrigger_ShouldCacheAndEvictWhenUpdated() {
+        Command first = command(1L, "!호감도", CommandActionKey.FAVORITE_STATUS);
+        Command second = command(2L, "!호감도", CommandActionKey.FAVORITE_STATUS);
+        given(commandRepository.findByTriggerTokenAndActiveTrue("!호감도"))
+                .willReturn(Optional.of(first))
+                .willReturn(Optional.of(second));
+        given(commandRepository.findById(1L)).willReturn(Optional.of(first));
+
+        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(1L);
+        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(1L);
+        BDDMockito.then(commandRepository).should(times(1)).findByTriggerTokenAndActiveTrue("!호감도");
+
+        commandPort.update(new CommandPort.UpdateData(1L, "!호감도", null, null, null, true, "USER", 30, "admin"));
+
+        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(2L);
+        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!호감도");
+    }
+
+    @Test
+    void commandActiveActionKey_ShouldCacheAndEvictWhenCreated() {
+        Command first = command(1L, "!룰렛", CommandActionKey.ROULETTE_DONATION);
+        Command second = command(2L, "!룰렛", CommandActionKey.ROULETTE_DONATION);
+        given(commandRepository.findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION))
+                .willReturn(Optional.of(first))
+                .willReturn(Optional.of(second));
+        given(commandRepository.save(any(Command.class))).willReturn(second);
+
+        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(1L);
+        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(1L);
+        BDDMockito.then(commandRepository)
+                .should(times(1))
+                .findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION);
+
+        commandPort.create(new CommandPort.CreateData(
+                CommandType.TRIGGER,
+                "!새룰렛",
+                CommandActionKey.ROULETTE_DONATION,
+                null,
+                null,
+                null,
+                true,
+                "USER",
+                0,
+                "admin",
+                "admin"
+        ));
+
+        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(2L);
+        BDDMockito.then(commandRepository)
+                .should(times(2))
+                .findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION);
+    }
+
+    @Test
+    void commandActiveTrigger_ShouldNotCacheMissingCommand() {
+        given(commandRepository.findByTriggerTokenAndActiveTrue("!없음")).willReturn(Optional.empty());
+
+        then(commandPort.findActiveByTrigger("!없음")).isEmpty();
+        then(commandPort.findActiveByTrigger("!없음")).isEmpty();
+        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!없음");
+    }
+
     private FavoriteAdjustment adjustment(Long id, Integer amount, String label) {
         return FavoriteAdjustment.builder()
                 .id(id)
@@ -233,8 +309,27 @@ class LocalCacheBehaviorTest {
                 .build();
     }
 
+    private Command command(Long id, String trigger, CommandActionKey actionKey) {
+        return Command.builder()
+                .id(id)
+                .type(CommandType.TRIGGER)
+                .triggerToken(trigger)
+                .actionKey(actionKey)
+                .active(true)
+                .requiredRole("USER")
+                .userCooldownSeconds(30)
+                .createdBy("system")
+                .updatedBy("system")
+                .build();
+    }
+
     @TestConfiguration
     static class TestConfig {
+
+        @Bean
+        CommandPort commandPort(CommandRepository commandRepository) {
+            return new CommandPersistenceAdapter(commandRepository);
+        }
 
         @Bean
         FavoriteAdjustmentPort favoriteAdjustmentPort(FavoriteAdjustmentRepository favoriteAdjustmentRepository) {
@@ -297,6 +392,11 @@ class LocalCacheBehaviorTest {
         @Bean
         RouletteRoundResultRepository rouletteRoundResultRepository() {
             return BDDMockito.mock(RouletteRoundResultRepository.class);
+        }
+
+        @Bean
+        CommandRepository commandRepository() {
+            return BDDMockito.mock(CommandRepository.class);
         }
 
     }

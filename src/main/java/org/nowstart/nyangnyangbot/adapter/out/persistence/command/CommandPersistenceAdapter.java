@@ -6,7 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
+import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,16 +42,22 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, key = "#trigger", unless = "#result == null")
     public Optional<CommandRecord> findActiveByTrigger(String trigger) {
         return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(this::commandRecord);
     }
 
     @Override
+    @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, key = "#actionKey", unless = "#result == null")
     public Optional<CommandRecord> findActiveByActionKey(CommandActionKey actionKey) {
         return commandRepository.findByActionKeyAndActiveTrue(actionKey).map(this::commandRecord);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, allEntries = true)
+    })
     public CommandRecord create(CreateData data) {
         Command saved = commandRepository.save(Command.builder()
                 .type(data.type())
@@ -66,6 +76,10 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, allEntries = true)
+    })
     public CommandRecord update(UpdateData data) {
         Command command = commandRepository.findById(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));

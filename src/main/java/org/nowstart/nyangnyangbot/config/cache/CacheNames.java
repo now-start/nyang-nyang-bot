@@ -12,6 +12,8 @@ public final class CacheNames {
     public static final String ROULETTE_ITEMS_BY_TABLE_ID = "rouletteItemsByTableId";
     public static final String ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID = "rouletteActiveItemsByTableId";
     public static final String ROULETTE_LATEST_ACTIVE_TABLE = "rouletteLatestActiveTable";
+    public static final String COMMAND_ACTIVE_BY_TRIGGER = "commandActiveByTrigger";
+    public static final String COMMAND_ACTIVE_BY_ACTION_KEY = "commandActiveByActionKey";
     public static final List<String> ALL = List.of(
             FAVORITE_ADJUSTMENTS,
             UPBO_ACTIVE_TEMPLATES,
@@ -20,7 +22,9 @@ public final class CacheNames {
             ROULETTE_TABLE_BY_ID,
             ROULETTE_ITEMS_BY_TABLE_ID,
             ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID,
-            ROULETTE_LATEST_ACTIVE_TABLE
+            ROULETTE_LATEST_ACTIVE_TABLE,
+            COMMAND_ACTIVE_BY_TRIGGER,
+            COMMAND_ACTIVE_BY_ACTION_KEY
     );
 
     private CacheNames() {
