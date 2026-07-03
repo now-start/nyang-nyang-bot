@@ -110,7 +110,7 @@ class RoulettePersistenceAdapterTest {
         RouletteTable otherActive = table(2L, "이전", "!이전", 500L, true, 3, 50);
         given(rouletteTableRepository.findAllByOrderByIdDesc()).willReturn(List.of(otherActive, target));
         given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(target));
-        given(rouletteTableRepository.findByActiveTrue()).willReturn(List.of(otherActive, target));
+        given(rouletteTableRepository.findByActiveTrue()).willReturn(List.of());
         given(rouletteTableRepository.save(target)).willReturn(target);
         given(rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc()).willReturn(Optional.of(target));
 
@@ -127,8 +127,22 @@ class RoulettePersistenceAdapterTest {
         then(activated.active()).isTrue();
         then(activated.version()).isEqualTo(2);
         then(deactivated.active()).isFalse();
-        then(otherActive.isActive()).isFalse();
         then(latest).isPresent();
+    }
+
+    @Test
+    void activateTable_ShouldRejectWhenAnotherTableIsActive() {
+        // 준비
+        RoulettePersistenceAdapter adapter = adapter();
+        RouletteTable target = table(1L, "기본", "!룰렛", 1_000L, false, 1, 100);
+        RouletteTable otherActive = table(2L, "이전", "!이전", 500L, true, 3, 50);
+        given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(target));
+        given(rouletteTableRepository.findByActiveTrue()).willReturn(List.of(otherActive));
+
+        // 실행 및 검증
+        thenThrownBy(() -> adapter.activateTable(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("another roulette table is already active");
     }
 
     @Test

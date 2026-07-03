@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.application.service.chat;
+package org.nowstart.nyangnyangbot.application.service.command;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +11,10 @@ import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.Mes
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
+@Service("favorite")
 @Transactional
 @RequiredArgsConstructor
-public class Favorite implements Command {
+public class Favorite implements CommandHandler {
 
     private final ChzzkClientPort chzzkClientPort;
     private final FavoriteQueryPort favoriteQueryPort;

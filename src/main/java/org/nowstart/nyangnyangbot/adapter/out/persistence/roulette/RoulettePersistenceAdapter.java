@@ -114,6 +114,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
+    public List<TableResult> findActiveTables() {
+        return rouletteTableRepository.findByActiveTrue().stream()
+                .map(this::toModel)
+                .toList();
+    }
+
+    @Override
     @Caching(evict = {
             @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true),
             @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, allEntries = true),
@@ -123,8 +130,11 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         RouletteTable table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         rouletteTableRepository.findByActiveTrue().stream()
-                .filter(activeTable -> !activeTable.getId().equals(table.getId()))
-                .forEach(RouletteTable::deactivate);
+                .filter(activeTable -> !activeTable.getId().equals(tableId))
+                .findAny()
+                .ifPresent(activeTable -> {
+                    throw new IllegalStateException("another roulette table is already active");
+                });
         table.activate();
         return toModel(rouletteTableRepository.save(table));
     }

@@ -77,7 +77,7 @@ class FlywayMigrationTest {
         Integer weeklyUniqueIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "uk_weekly_chat_rank_week_user");
         Integer weeklyWeekIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "idx_weekly_chat_rank_week");
 
-        assertThat(migrationCount).isEqualTo(2);
+        assertThat(migrationCount).isEqualTo(3);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
         assertThat(sourceTypeColumnCount).isEqualTo(1);

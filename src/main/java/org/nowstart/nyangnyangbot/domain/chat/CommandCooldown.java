@@ -4,12 +4,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ChatCommandCooldown {
+public class CommandCooldown {
 
     private final long cooldownMillis;
     private final ConcurrentMap<String, Long> lastCommandTimes = new ConcurrentHashMap<>();
 
-    public ChatCommandCooldown(long cooldownMillis) {
+    public CommandCooldown(long cooldownMillis) {
         if (cooldownMillis < 0) {
             throw new IllegalArgumentException("cooldownMillis must not be negative");
         }
@@ -17,6 +17,13 @@ public class ChatCommandCooldown {
     }
 
     public boolean isInCooldown(String userId, String commandName, long currentTimeMillis) {
+        return isInCooldown(userId, commandName, currentTimeMillis, cooldownMillis);
+    }
+
+    public boolean isInCooldown(String userId, String commandName, long currentTimeMillis, long cooldownMillis) {
+        if (cooldownMillis < 0) {
+            throw new IllegalArgumentException("cooldownMillis must not be negative");
+        }
         if (isBlank(userId) || isBlank(commandName)) {
             return false;
         }

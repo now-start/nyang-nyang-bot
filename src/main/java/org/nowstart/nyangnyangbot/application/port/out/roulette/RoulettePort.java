@@ -34,6 +34,8 @@ public interface RoulettePort {
 
     List<ItemResult> findActiveItemsByTableId(Long tableId);
 
+    List<TableResult> findActiveTables();
+
     TableResult activateTable(Long tableId);
 
     TableResult deactivateTable(Long tableId);

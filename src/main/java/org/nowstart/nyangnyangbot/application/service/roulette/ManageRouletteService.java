@@ -10,11 +10,16 @@ import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUse
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteSimulationResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.application.service.command.CommandService;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
+import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
+import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.stereotype.Service;
@@ -27,14 +32,17 @@ public class ManageRouletteService implements ManageRouletteUseCase {
 
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
     private final RoulettePort roulettePort;
+    private final CommandPort commandPort;
 
     @Override
     @Transactional
     public RouletteTableResult createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
         roulettePolicy.validateTableInput(title, command, pricePerRound);
+        String normalizedCommand = CommandService.normalizeTrigger(command);
+        validateRouletteCommandConflict(normalizedCommand);
         TableResult saved = roulettePort.createTable(
                 title.trim(),
-                command.trim(),
+                normalizedCommand,
                 pricePerRound,
                 highRoundThreshold == null
                         ? RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD
@@ -105,6 +113,13 @@ public class ManageRouletteService implements ManageRouletteUseCase {
         if (!validation.activatable()) {
             throw new IllegalStateException(String.join(", ", validation.reasons()));
         }
+        roulettePort.findActiveTables().stream()
+                .filter(activeTable -> !activeTable.id().equals(tableId))
+                .findAny()
+                .ifPresent(activeTable -> {
+                    throw new IllegalStateException("another roulette table is already active");
+                });
+        syncRouletteDonationCommand(table.command());
         TableResult saved = roulettePort.activateTable(tableId);
         log.info("level=AUDIT action=roulette_table.activate result=success tableId={}", saved.id());
         return tableResult(saved, items, validation);
@@ -197,6 +212,48 @@ public class ManageRouletteService implements ManageRouletteUseCase {
         return items.stream()
                 .filter(ItemResult::active)
                 .toList();
+    }
+
+    private void syncRouletteDonationCommand(String command) {
+        String normalizedCommand = CommandService.normalizeTrigger(command);
+        validateRouletteCommandConflict(normalizedCommand);
+        CommandRecord current = commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION)
+                .orElse(null);
+        if (current == null) {
+            commandPort.create(new CommandPort.CreateData(
+                    CommandType.TRIGGER,
+                    normalizedCommand,
+                    CommandActionKey.ROULETTE_DONATION,
+                    null,
+                    null,
+                    null,
+                    true,
+                    "USER",
+                    0,
+                    "system",
+                    "system"
+            ));
+            return;
+        }
+        commandPort.update(new CommandPort.UpdateData(
+                current.id(),
+                normalizedCommand,
+                current.messageTemplate(),
+                current.timerIntervalMinutes(),
+                current.timerMinChatCount(),
+                true,
+                current.requiredRole() == null ? "USER" : current.requiredRole(),
+                current.userCooldownSeconds() == null ? 0 : current.userCooldownSeconds(),
+                "system"
+        ));
+    }
+
+    private void validateRouletteCommandConflict(String command) {
+        commandPort.findByTrigger(command).ifPresent(current -> {
+            if (current.actionKey() != CommandActionKey.ROULETTE_DONATION) {
+                throw new IllegalArgumentException("roulette command conflicts with existing command");
+            }
+        });
     }
 
     private RewardType parseRewardType(String value) {

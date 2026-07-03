@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.application.service.chat;
+package org.nowstart.nyangnyangbot.application.service.command;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Service("roulette_result")
 @Transactional
 @RequiredArgsConstructor
-public class RouletteResult implements Command {
+public class RouletteResult implements CommandHandler {
 
     private final ChzzkClientPort chzzkClientPort;
     private final RoulettePort roulettePort;
