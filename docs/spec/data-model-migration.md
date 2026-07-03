@@ -8,6 +8,7 @@
   - [호감도 포인트 제도](point-system.md)
   - [호감도/업보/쿠폰 카탈로그](reward-catalog.md)
   - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md)
+  - [관리자 명령어 관리 PRD](command-management.md)
 
 ## 1. 목적
 
@@ -166,6 +167,7 @@ spring:
 
 핵심 제약:
 
+- 활성 룰렛 테이블은 전체에서 1개만 허용한다.
 - 활성 룰렛 테이블은 application/domain 검증으로 확률 합계 100%, 꽝 필수를 보장한다.
 - `roulette_event.idempotency_key`와 `donation_event_id`는 UNIQUE.
 - `roulette_round_result(roulette_event_id, round_no)`는 UNIQUE.
@@ -185,6 +187,31 @@ spring:
 - 재발급 시 기존 토큰은 `active=false`, `revoked_at` 설정.
 - `overlay_display_event.replay_of_display_event_id`로 재송출 이벤트를 연결한다.
 - 재송출 이벤트는 원장/보유 목록을 재반영하지 않는다.
+
+### 4.5 Chat Command
+
+추가 테이블:
+
+- `chat_command`
+
+핵심 필드:
+
+- `type`, `trigger`, `action_key`, `message_template`
+- `timer_interval_minutes`, `timer_min_chat_count`
+- `active`, `required_role`, `user_cooldown_seconds`
+- `created_by`, `updated_by`, `create_date`, `modify_date`
+
+핵심 제약:
+
+- `TEXT`, `TRIGGER`, `TIMER`는 하나의 `chat_command` 테이블에서 관리한다.
+- 별칭 테이블은 만들지 않는다.
+- `TEXT`, `TRIGGER`는 하나의 `trigger`를 가진다. `TIMER`는 `trigger` null을 허용한다.
+- `TRIGGER`는 allow-list 기반 `action_key`가 필요하다.
+- 룰렛 후원 명령어도 `TRIGGER/action_key=ROULETTE_DONATION` row로 저장한다. 어떤 룰렛을 실행할지는 현재 활성 룰렛 테이블 1개로 결정한다.
+- 저장 전 정규화한 `trigger`에 unique index를 둔다. MariaDB는 unique index에서 null 중복을 허용하므로 `TIMER`의 `trigger=null`은 여러 row를 저장할 수 있다.
+- P1 템플릿 변수 중 DB 조회 값은 `{favorite}` 하나만 제공한다. 이 값은 마이그레이션된 `favorite_account.favorite`를 읽는다.
+- 업보/쿠폰, 룰렛 결과, 랭킹 변수는 P1에서 제공하지 않는다.
+- 타이머 interval 시작 시각과 채팅 수 같은 실행 상태는 `chat_command` 정의 컬럼에 넣지 않는다. P2에서 런타임 상태 관리 방식으로 결정한다.
 
 ## 5. 단계별 마이그레이션
 
@@ -209,6 +236,7 @@ spring:
 완료 기준:
 
 - 사용자별 마지막 `balanceAfter`가 `FavoriteAccount.favorite`와 일치한다.
+- `{favorite}` 템플릿 변수는 이 검증이 끝난 `favorite_account.favorite` 값을 읽는다.
 - 불일치 사용자는 별도 리포트로 추적하고 관리자 보정 거래로 처리한다.
 
 ### Step 3. 새 유스케이스로 쓰기 전환
@@ -244,7 +272,21 @@ spring:
 - 동일 후원 이벤트가 재수신되어도 중복 반영되지 않는다.
 - 오버레이 재송출이 원장 재반영 없이 표시 이벤트만 만든다.
 
-### Step 6. 제약 강화
+### Step 6. 명령어 모델 추가
+
+- `chat_command`를 추가한다.
+- 기존 `!호감도`, `!룰렛결과`를 `TRIGGER` row로 seed한다.
+- 룰렛 테이블 명령어는 `TRIGGER/action_key=ROULETTE_DONATION` row로 backfill한다.
+- `roulette_table.command`는 전환기 표시용 사본으로만 유지하고 런타임 매칭은 `chat_command`를 기준으로 한다.
+- 트리거 중복은 `trigger` unique index로 차단한다.
+
+완료 기준:
+
+- `TEXT`, `TRIGGER`는 활성 여부와 관계없이 같은 트리거를 동시에 가질 수 없다.
+- `TIMER`는 `trigger=null`로 여러 row를 저장할 수 있다.
+- 룰렛 테이블 명령어 변경과 `chat_command` 변경이 같은 트랜잭션에서 처리된다.
+
+### Step 7. 제약 강화
 
 - 백필과 신규 쓰기 전환이 안정화되면 필수 컬럼에 NOT NULL 제약을 검토한다.
 - `source_type`, `delta`, `balance_after`, `nick_name_snapshot`은 신규 거래 기준 필수로 둔다.

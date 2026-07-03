@@ -17,6 +17,7 @@
 - [호감도 포인트 제도](point-system.md): 호감도 핵심 원칙, 상태 모델, 관리자 처리, 원장 모델
 - [호감도/업보/쿠폰 카탈로그](reward-catalog.md): 무료 획득, 사용처, 업보 교환표, 관리자 수동 입력
 - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md): 후원 명령어 룰렛, 확률표, OBS 오버레이, 재송출, 토큰 정책
+- [관리자 명령어 관리 PRD](command-management.md): 관리자 추가 명령어, 시스템 명령어 정책, 권한, 쿨타임, 변수
 - [클린 아키텍처](architecture.md): 레이어, 의존성 규칙, 포트/어댑터, 점진적 전환 기준
 - [클린 아키텍처 채택 결정](decision-clean-architecture.md): 클린 아키텍처 선택 배경, 대안, 트레이드오프
 - [API 명세](api.md): HTTP API, 권한, 요청/응답, 에러, 페이지네이션 기준
@@ -61,7 +62,8 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 7. 관리자는 대출성 운영 판단에 따라 사용 가능한 업보/리워드를 수동 사용 처리하고 호감도를 음수로 만들 수 있다.
 8. 이후 치지직 후원 메시지의 `!룰렛` 명령어를 감지해 OBS 오버레이 룰렛을 실행하고 결과를 호감도 원장에 반영한다.
 9. 실제 채널 운영 정책에 맞춰 무료 획득, 사용처, 업보 교환표를 관리 가능한 정책 데이터로 제공한다.
-10. 우선 출시는 호감도 중심 플랫폼으로 제한하고, 빵떡이식 범용 채팅봇 기능은 후순위 로드맵으로 확장한다.
+10. 관리자는 안내성 채팅 명령어와 기존 시스템 명령어의 운영 정책을 배포 없이 관리할 수 있어야 한다.
+11. 우선 출시는 호감도 중심 플랫폼으로 제한하고, 빵떡이식 범용 채팅봇 기능은 후순위 로드맵으로 확장한다.
 
 ## 5. 비목표
 
@@ -71,6 +73,7 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 - Google Sheets 연동 고도화 또는 완전한 스프레드시트 편집기
 - 초기 단계의 복수 채널 멀티테넌시
 - 초기 단계의 음악 시스템, 게임 전적 연동, 범용 미니게임 전체 구현
+- 임의 코드, 임의 URL, SQL, shell을 실행하는 범용 명령어 엔진
 
 ## 6. 사용자와 권한
 
@@ -78,7 +81,7 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 | --- | --- |
 | 방문자 | `/` 접근 시 로그인으로 이동 |
 | 인증 사용자 | 호감도 보드 조회, 본인 전체 히스토리 조회, 본인 업보 내역과 호감도 반영 점수 조회 |
-| 관리자 | 전체 히스토리 조회, 호감도/업보 수동 조정, 출석체크, Google Sheets 마이그레이션, CHZZK 소켓 연결 |
+| 관리자 | 전체 히스토리 조회, 호감도/업보 수동 조정, 출석체크, Google Sheets 마이그레이션, CHZZK 소켓 연결, 명령어 관리 |
 | 시스템 | CHZZK 소켓 연결 유지, 채팅/후원 이벤트 처리, 예약 작업 실행 |
 
 관리자 권한은 현재 `AuthorizationAccount.admin = true`를 기준으로 한다.
@@ -150,8 +153,8 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 | FR-019 | 룰렛 결과 반영/조회 | P1 | 룰렛 결과는 채팅에 자동 공지하지 않고 `UPBO_ROULETTE` 원장과 사용자 히스토리로 기록 |
 | FR-020 | 룰렛 확률표 관리 | P1 | 관리자는 룰렛 금액, 항목, 확률, 결과 타입, 공개 여부, 활성 여부, 꽝 필수 정책을 변경할 수 있어야 한다. |
 | FR-021 | 룰렛 결과 정정 | P1 | 룰렛 결과는 삭제/취소하지 않고, 관리자는 별도 보정 거래로 정정할 수 있어야 한다. |
-| FR-022 | 명령어 템플릿 관리 | P1 | 권한, 쿨타임, 변수 |
-| FR-023 | 공개 채널 페이지 | P2 | 랭킹, 명령어, 이벤트 규칙 |
+| FR-022 | 관리자 명령어 관리 | P1 | 텍스트 응답형 명령어, 시스템 명령어 정책, 권한, 쿨타임, 변수 |
+| FR-023 | 공개 채널 페이지 | P2 | 랭킹, 이벤트 규칙 |
 | FR-024 | 오버레이 토큰 관리 | P1 | 관리자는 OBS 오버레이용 토큰을 발급, 재발급, 확인, 폐기할 수 있어야 한다. |
 | FR-025 | 룰렛 오버레이 재송출 | P1 | 관리자는 놓친 룰렛 이벤트를 오버레이에 재송출할 수 있어야 하며, 재송출은 원장/보유 목록을 다시 반영하지 않는다. |
 
@@ -187,8 +190,8 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 
 ### Phase 4. 채팅봇 플랫폼 확장
 
-- 채널별 공개 명령어 페이지
-- 명령어 템플릿 변수 시스템
+- 채널별 공개 랭킹/이벤트 페이지
+- 관리자 명령어 이후의 템플릿 변수와 타이머 확장
 - 호감도 기반 미니게임 또는 이벤트 응모
 - 스트리머/매니저/조회 전용 관리자 권한 체계 확장
 - 장기적으로 다중 채널 운영 모델 검토
@@ -214,10 +217,13 @@ https://accounts.skilljar.com/accounts/login/?t=3gufixqhei80k&d=cahl60vup5xv&nex
 | 사용자 UX | 보유 목록 기본 최신순 + 상태 필터(기본 OWNED) | [point-system.md §4.2](point-system.md) |
 | 사용자 UX | 후원자 결과 확인은 마이페이지 + `!룰렛결과` 채팅 명령어 | [reward-catalog.md §6](reward-catalog.md) |
 | 사용자 UX | 채팅 명령어 사용자별 쿨타임 30초 기본, 명령어별 관리자 설정 | [reward-catalog.md §7](reward-catalog.md) |
+| 명령어 | 명령어 모델은 `TEXT`, `TRIGGER`, `TIMER`를 정의하고 P1은 `TEXT`, `TRIGGER`를 우선 구현 | [command-management.md §6](command-management.md) |
+| 명령어 | `TEXT`, `TRIGGER`는 MVP에서 별칭 없이 하나의 트리거만 가진다 | [command-management.md §9.1](command-management.md) |
+| 명령어 | 기존 명령어와 룰렛 후원 트리거의 중복은 `chat_command` 단일 테이블로 차단 | [command-management.md §9.2](command-management.md) |
 | 운영 | 출석체크는 활성화 사이클 단위, 한 사이클 내 1회 부여 | [reward-catalog.md §2.0](reward-catalog.md) |
 | 운영 | 일반 사용자 검색 없음, 관리자만 닉네임 부분 일치 검색 | [point-system.md §4](point-system.md), [technical-appendix.md §4.1](technical-appendix.md) |
 | 운영 | 사용자 탈퇴 자동 처리 없음, 데이터 보존 | [point-system.md §7](point-system.md) |
 | 운영 | 권한 분리(STREAMER/MANAGER 등)는 실 수요 발생 시 도입 | [technical-appendix.md §4.1](technical-appendix.md) |
 | 운영 | 오버레이 토큰 무기한 + 관리자 수동 폐기, lastUsedAt Grafana | [technical-appendix.md §4.1](technical-appendix.md) |
 | 운영 | 운영 로그는 logfmt 표준 키, 별도 AdminAuditLog 테이블 없음 | [technical-appendix.md §4.4](technical-appendix.md) |
-| 미정 | 등업 단계명, 주간 캐쉬백, 인증 업로드 등은 TBD 표로 추적 | [technical-appendix.md §8](technical-appendix.md) |
+| 후순위 | 등업 단계명, 주간 캐쉬백, 인증 업로드 등은 후순위 정책 결정으로 추적 | [technical-appendix.md §8](technical-appendix.md) |

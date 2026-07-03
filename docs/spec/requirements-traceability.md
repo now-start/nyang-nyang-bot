@@ -13,7 +13,7 @@
 | `현행 구현` | 현재 PRD 기준으로 이미 존재하는 기능이다. 클린 아키텍처 전환과 보안/테스트 보강은 별도 필요할 수 있다. |
 | `부분 구현` | 기능 일부가 있으나 PRD 요구사항을 모두 만족하지 않는다. |
 | `미구현` | 신규 구현이 필요하다. |
-| `보류` | PRD상 후순위 또는 TBD로 남긴다. |
+| `보류` | PRD상 후순위 정책으로 남긴다. |
 
 ## 2. 추적표
 
@@ -35,13 +35,13 @@
 | FR-014 | 호감도 원장 확장 | P0 | 미구현 | Phase 2 | `RecordFavoriteLedgerUseCase` | `delta`, `balanceAfter`, 출처, 주체 |
 | FR-015 | 호감도 정책 관리 | P0 | 미구현 | Phase 4 | `ManageFavoritePolicyUseCase` | 정책값 코드 고정 제거 |
 | FR-016 | 치지직 후원 이벤트 구독 | P1 | 현행 구현 | Phase 6 | `SubscribeDonationEventUseCase` | 후원 이벤트 저장, 재연결 |
-| FR-017 | 후원 명령어 기반 룰렛 실행 | P1 | 현행 구현 | Phase 6 | `RunRouletteFromDonationUseCase` | 토큰 단위 명령 매칭, 회차 계산 |
+| FR-017 | 후원 명령어 기반 룰렛 실행 | P1 | 현행 구현 | Phase 6 | `RunRouletteFromDonationUseCase` | `ROULETTE_DONATION` 토큰 단위 명령 매칭, 현재 활성 룰렛 테이블 기준 실행, 회차 계산 |
 | FR-018 | OBS 룰렛 오버레이 | P1 | 현행 구현 | Phase 7 | `PollOverlayEventUseCase` | 120초 유효시간, 순차/요약 표시 |
 | FR-019 | 룰렛 결과 반영/조회 | P1 | 현행 구현 | Phase 6, Phase 7 | `ApplyRouletteRoundResultUseCase`, `ViewRecentRouletteResultUseCase` | 원장 반영, 자동 채팅 공지 없음 |
-| FR-020 | 룰렛 확률표 관리 | P1 | 현행 구현 | Phase 6 | `ManageRouletteTableUseCase` | 합계 100%, 꽝 필수, 공개 여부 |
+| FR-020 | 룰렛 확률표 관리 | P1 | 현행 구현 | Phase 6 | `ManageRouletteTableUseCase` | 합계 100%, 꽝 필수, 공개 여부, 활성 룰렛 테이블 1개 제한 |
 | FR-021 | 룰렛 결과 정정 | P1 | 미구현 | Phase 6 | `CorrectRouletteResultUseCase` | 삭제 없는 보정 거래 |
-| FR-022 | 명령어 템플릿 관리 | P1 | 보류 | Phase 4 이후 | `ManageCommandTemplateUseCase` | 권한, 쿨타임, 변수 |
-| FR-023 | 공개 채널 페이지 | P2 | 보류 | Phase 4 이후 | `ViewPublicChannelPageUseCase` | 공개 랭킹/명령어/이벤트 규칙 |
+| FR-022 | 관리자 명령어 관리 | P1 | 미구현 | Phase 5 | `ManageChatCommandUseCase`, `ResolveChatCommandUseCase` | 텍스트 명령어 CRUD, 시스템 명령어 정책, 단일 테이블 트리거 검증 |
+| FR-023 | 공개 채널 페이지 | P2 | 보류 | Phase 4 이후 | `ViewPublicChannelPageUseCase` | 공개 랭킹/이벤트 규칙 |
 | FR-024 | 오버레이 토큰 관리 | P1 | 현행 구현 | Phase 7 | `IssueOverlayTokenUseCase`, `RotateOverlayTokenUseCase` | 원문 1회 표시, 해시 저장 |
 | FR-025 | 룰렛 오버레이 재송출 | P1 | 현행 구현 | Phase 7 | `ReplayOverlayEventUseCase` | 원장 재반영 없음 |
 
@@ -53,7 +53,7 @@
 | Phase 2 | FR-007, FR-014가 원장 기반으로 동작한다. |
 | Phase 3 | FR-003, FR-004, FR-005 조회 권한과 DTO가 정리된다. |
 | Phase 4 | FR-006, FR-011, FR-012, FR-013, FR-015가 관리자 흐름으로 동작한다. |
-| Phase 5 | FR-008, FR-009가 원장과 쿨타임 기준을 따른다. |
+| Phase 5 | FR-008, FR-009, FR-022가 원장, 쿨타임, 관리자 명령어 기준을 따른다. |
 | Phase 6 | FR-016, FR-017, FR-019, FR-020, FR-021의 서버 확정/반영 흐름이 동작한다. |
 | Phase 7 | FR-018, FR-024, FR-025의 오버레이 표시/토큰/재송출 흐름이 동작한다. |
 

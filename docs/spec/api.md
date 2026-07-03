@@ -9,6 +9,7 @@
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
   - [웹 UI 명세](web-ui.md)
   - [OBS 오버레이 디자인 명세](overlay-design.md)
+  - [관리자 명령어 관리 PRD](command-management.md)
   - [테스트 전략](test-strategy.md)
 
 ## 1. 범위
@@ -34,6 +35,7 @@
 - 관리자는 닉네임 부분 일치 검색과 전체 히스토리 조회를 수행할 수 있다.
 - 오버레이 페이지 자체는 공개할 수 있지만 이벤트 조회/표시 완료 API는 오버레이 토큰이 필요하다.
 - 관리자 상태 변경 API는 Spring Security와 application use case에서 모두 권한 의도를 명확히 한다.
+- `/admin/commands` 상태 변경 API는 세션 쿠키만으로 처리하지 않는다. CSRF 토큰 또는 동일 출처 JSON 요청 검증과 별도 관리자 API 토큰 중 하나를 적용한다.
 
 ### 2.2 응답 형식
 
@@ -123,6 +125,11 @@ JSON API의 기본 실패 응답:
 | POST | `/admin/roulette/tables/{id}/simulate` | 관리자 | 활성화 전 1만 회 시뮬레이션 | FR-020 |
 | POST | `/admin/roulette/results/{id}/complete` | 관리자 | 룰렛 결과 처리 완료 | FR-019 |
 | POST | `/admin/roulette/results/{id}/corrections` | 관리자 | 룰렛 결과 보정 거래 생성 | FR-021 |
+| GET | `/admin/commands` | 관리자 | 명령어 목록 조회 | FR-022 |
+| POST | `/admin/commands` | 관리자 | 명령어 생성 | FR-022 |
+| PATCH | `/admin/commands/{id}` | 관리자 | 명령어 수정, 활성/비활성 변경 | FR-022 |
+| POST | `/admin/commands/preview` | 관리자 | 메시지 템플릿 미리보기 | FR-022 |
+| POST | `/admin/commands/validate` | 관리자 | 저장 전 충돌/변수 검증 | FR-022 |
 | GET | `/favorite/me/roulette/recent` | 인증 | 본인 최근 룰렛 결과 조회 | FR-019 |
 | GET | `/admin/overlay-tokens` | 관리자 | OBS 오버레이 토큰 목록 조회 | FR-024 |
 | POST | `/admin/overlay-tokens` | 관리자 | OBS 오버레이 토큰 발급 | FR-024 |
@@ -224,6 +231,7 @@ Request:
 
 활성화 검증:
 
+- 다른 활성 룰렛 테이블이 있으면 활성화할 수 없다.
 - 전체 확률 합계 100%.
 - `꽝` 필수.
 - `꽝` 0% 금지.
