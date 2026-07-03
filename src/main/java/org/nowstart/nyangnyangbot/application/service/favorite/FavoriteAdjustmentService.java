@@ -19,6 +19,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdj
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,6 +29,7 @@ public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCas
 
     private final FavoriteAdjustmentPort favoriteAdjustmentPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
+    private final UseCaseValidator useCaseValidator;
 
     @Override
     public List<FavoriteAdjustmentOptionResult> getAdjustments() {
@@ -40,16 +42,14 @@ public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCas
 
     @Override
     public FavoriteAdjustmentOptionResult createAdjustment(FavoriteAdjustmentCreateCommand command) {
-        validateCreateCommand(command);
+        useCaseValidator.validate(command, "request is required");
         return favoriteAdjustmentOptionResult(favoriteAdjustmentPort.save(command.amount(), command.label().trim()));
     }
 
     @Override
     public FavoriteAdjustmentApplyResult applyAdjustments(FavoriteAdjustmentApplyCommand command) {
+        useCaseValidator.validate(command, "request is required");
         String userId = command.userId();
-        if (StringUtils.isBlank(userId)) {
-            throw new IllegalArgumentException("userId is required");
-        }
         List<Long> adjustmentIds = command.adjustmentIds();
         Integer manualAmount = command.manualAmount();
         String manualHistory = command.manualHistory();
@@ -101,18 +101,6 @@ public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCas
                 result.afterBalance(),
                 history
         );
-    }
-
-    private void validateCreateCommand(FavoriteAdjustmentCreateCommand command) {
-        if (command == null) {
-            throw new IllegalArgumentException("request is required");
-        }
-        if (command.amount() == null) {
-            throw new IllegalArgumentException("amount is required");
-        }
-        if (StringUtils.isBlank(command.label())) {
-            throw new IllegalArgumentException("label is required");
-        }
     }
 
     private String buildHistory(

@@ -5,6 +5,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import org.nowstart.nyangnyangbot.application.port.in.favorite.CorrectFavoriteLedgerUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
@@ -26,10 +27,11 @@ public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavori
     private final SaveFavoriteAccountPort saveFavoriteAccountPort;
     private final SaveFavoriteLedgerPort saveFavoriteLedgerPort;
     private final CheckIdempotencyPort checkIdempotencyPort;
+    private final UseCaseValidator useCaseValidator;
 
     @Override
     public FavoriteLedgerResult adjust(AdjustFavoriteCommand command) {
-        validate(command);
+        useCaseValidator.validate(command, "command is required");
         if (hasText(command.idempotencyKey()) && checkIdempotencyPort.existsByIdempotencyKey(command.idempotencyKey())) {
             return FavoriteLedgerResult.duplicate(command.userId());
         }
@@ -96,21 +98,6 @@ public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavori
                 .createIfMissing(false)
                 .build();
         return adjust(correctionCommand);
-    }
-
-    private void validate(AdjustFavoriteCommand command) {
-        if (command == null) {
-            throw new IllegalArgumentException("command is required");
-        }
-        if (!hasText(command.userId())) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        if (command.delta() == 0) {
-            throw new IllegalArgumentException("delta must not be zero");
-        }
-        if (command.sourceType() == null) {
-            throw new IllegalArgumentException("sourceType is required");
-        }
     }
 
     private String resolveHistory(AdjustFavoriteCommand command) {

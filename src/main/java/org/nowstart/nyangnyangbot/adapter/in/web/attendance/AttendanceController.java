@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.attendance;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.attendance.request.AttendanceApplyRequest;
@@ -50,7 +51,7 @@ public class AttendanceController {
     @Operation(summary = "출석체크 적용")
     @PostMapping("/apply")
     public ResponseEntity<AttendanceApplyResponse> applyAttendance(
-            @RequestBody AttendanceApplyRequest request
+            @Valid @RequestBody AttendanceApplyRequest request
     ) {
         return ResponseEntity.ok(AttendanceApplyResponse.from(
                 manageAttendanceUseCase.applyAttendance(request.toApplyAttendanceCommand())

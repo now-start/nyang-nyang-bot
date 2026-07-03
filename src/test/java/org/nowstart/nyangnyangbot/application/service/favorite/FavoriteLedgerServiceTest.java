@@ -5,6 +5,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
+import jakarta.validation.Validation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotency
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
@@ -26,7 +28,7 @@ class FavoriteLedgerServiceTest {
     @BeforeEach
     void setUp() {
         ports = new FakeFavoritePorts();
-        service = new FavoriteLedgerService(ports, ports, ports, ports);
+        service = new FavoriteLedgerService(ports, ports, ports, ports, validator());
     }
 
     @Test
@@ -226,5 +228,9 @@ class FavoriteLedgerServiceTest {
         public boolean existsByIdempotencyKey(String idempotencyKey) {
             return idempotencyKey != null && idempotencyKey.equals(existingIdempotencyKey);
         }
+    }
+
+    private UseCaseValidator validator() {
+        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
     }
 }

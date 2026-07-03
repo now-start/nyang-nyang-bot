@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command.request;
 
 import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
 
 public record CommandUpdateRequest(
         String type,
@@ -12,8 +12,8 @@ public record CommandUpdateRequest(
         Integer timerMinChatCount,
         Boolean active,
         String requiredRole,
-        @Min(0)
-        @Max(3600)
+        @PositiveOrZero(message = "userCooldownSeconds must be between 0 and 3600")
+        @Max(value = 3600, message = "userCooldownSeconds must be between 0 and 3600")
         Integer userCooldownSeconds
 ) {
 }

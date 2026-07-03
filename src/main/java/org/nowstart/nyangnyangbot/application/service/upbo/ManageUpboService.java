@@ -20,6 +20,7 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.upbo.UpboPolicy;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +31,7 @@ public class ManageUpboService implements ManageUpboUseCase {
     private final UpboPolicy upboPolicy = new UpboPolicy();
     private final UpboPort upboPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
+    private final UseCaseValidator useCaseValidator;
 
     @Override
     public List<UpboTemplateResult> getActiveTemplates() {
@@ -40,9 +42,7 @@ public class ManageUpboService implements ManageUpboUseCase {
 
     @Override
     public UpboTemplateResult createTemplate(UpboTemplateCreateCommand command) {
-        if (command == null) {
-            throw new IllegalArgumentException("request is required");
-        }
+        useCaseValidator.validate(command, "request is required");
         RewardType rewardType = parseRewardType(command.rewardType());
         ConversionMode conversionMode = parseConversionMode(command.conversionMode());
         upboPolicy.validateTemplate(
@@ -64,9 +64,7 @@ public class ManageUpboService implements ManageUpboUseCase {
 
     @Override
     public UserUpboResult applyUpbo(UpboApplyCommand command, String actorId) {
-        if (command == null) {
-            throw new IllegalArgumentException("request is required");
-        }
+        useCaseValidator.validate(command, "request is required");
         TemplateResult template = resolveTemplate(command.templateId());
         RewardType rewardType = template == null ? parseRewardType(command.rewardType()) : template.rewardType();
         ConversionMode conversionMode = template == null

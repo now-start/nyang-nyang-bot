@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class ChatServiceTest {
     void setUp() {
         chatService = new ChatService(
                 objectMapper,
-                Map.of(),
+                List.of(),
                 attendanceService,
                 weeklyChatRankService,
                 commandPort,
@@ -91,9 +91,10 @@ class ChatServiceTest {
     @Test
     void call_ShouldSuppressSameUserCommandWithinCooldown() throws Exception {
         // 준비
+        given(favoriteCommand.actionKey()).willReturn(CommandActionKey.FAVORITE_STATUS);
         chatService = BDDMockito.spy(new ChatService(
                 objectMapper,
-                Map.of("favorite", favoriteCommand),
+                List.of(favoriteCommand),
                 attendanceService,
                 weeklyChatRankService,
                 commandPort,

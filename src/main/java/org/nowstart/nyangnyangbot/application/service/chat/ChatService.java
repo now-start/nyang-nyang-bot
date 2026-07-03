@@ -5,8 +5,10 @@ import io.socket.emitter.Emitter;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import java.util.Objects;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
@@ -23,19 +25,19 @@ import org.nowstart.nyangnyangbot.application.service.command.CommandService;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer.TemplateContext;
 import org.nowstart.nyangnyangbot.domain.chat.CommandCooldown;
+import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 @Transactional
-@RequiredArgsConstructor
 public class ChatService implements Emitter.Listener {
 
     private static final long DEFAULT_COMMAND_COOLDOWN_MILLIS = 30_000L;
 
     private final ObjectMapper objectMapper;
-    private final Map<String, CommandHandler> commandHandlers;
+    private final Map<CommandActionKey, CommandHandler> commandHandlers;
     private final RecordAttendanceChatUseCase recordAttendanceChatUseCase;
     private final RecordWeeklyChatUseCase recordWeeklyChatUseCase;
     private final CommandPort commandPort;
@@ -43,6 +45,26 @@ public class ChatService implements Emitter.Listener {
     private final FavoriteQueryPort favoriteQueryPort;
     private final CommandTemplateRenderer templateRenderer;
     private final CommandCooldown commandCooldown = new CommandCooldown(DEFAULT_COMMAND_COOLDOWN_MILLIS);
+
+    public ChatService(
+            ObjectMapper objectMapper,
+            List<CommandHandler> commandHandlers,
+            RecordAttendanceChatUseCase recordAttendanceChatUseCase,
+            RecordWeeklyChatUseCase recordWeeklyChatUseCase,
+            CommandPort commandPort,
+            ChzzkClientPort chzzkClientPort,
+            FavoriteQueryPort favoriteQueryPort,
+            CommandTemplateRenderer templateRenderer
+    ) {
+        this.objectMapper = objectMapper;
+        this.commandHandlers = commandHandlers(commandHandlers);
+        this.recordAttendanceChatUseCase = recordAttendanceChatUseCase;
+        this.recordWeeklyChatUseCase = recordWeeklyChatUseCase;
+        this.commandPort = commandPort;
+        this.chzzkClientPort = chzzkClientPort;
+        this.favoriteQueryPort = favoriteQueryPort;
+        this.templateRenderer = templateRenderer;
+    }
 
     @Override
     @SneakyThrows
@@ -73,12 +95,22 @@ public class ChatService implements Emitter.Listener {
         if (command.type() != CommandType.TRIGGER || command.actionKey() == null) {
             return;
         }
-        command.actionKey().commandBeanName().ifPresent(commandName -> {
-            CommandHandler commandHandler = commandHandlers.get(commandName);
-            if (commandHandler != null) {
-                commandHandler.run(chat);
+        CommandHandler commandHandler = commandHandlers.get(command.actionKey());
+        if (commandHandler != null) {
+            commandHandler.run(chat);
+        }
+    }
+
+    private Map<CommandActionKey, CommandHandler> commandHandlers(List<CommandHandler> handlers) {
+        Map<CommandActionKey, CommandHandler> result = new EnumMap<>(CommandActionKey.class);
+        for (CommandHandler handler : handlers) {
+            CommandActionKey actionKey = Objects.requireNonNull(handler.actionKey(), "command actionKey is required");
+            CommandHandler previous = result.put(actionKey, handler);
+            if (previous != null) {
+                throw new IllegalStateException("duplicate command handler: " + actionKey);
             }
-        });
+        }
+        return Map.copyOf(result);
     }
 
     private void sendTextCommand(CommandRecord command, ChatEventPayload chat, String commandToken) {

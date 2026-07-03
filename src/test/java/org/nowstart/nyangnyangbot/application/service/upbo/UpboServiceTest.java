@@ -8,11 +8,12 @@ import static org.mockito.BDDMockito.given;
 import org.mockito.BDDMockito;
 import static org.mockito.Mockito.never;
 
+import jakarta.validation.Validation;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
@@ -24,6 +25,7 @@ import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.Upb
 import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
@@ -40,8 +42,12 @@ class ManageUpboServiceTest {
     @Mock
     private AdjustFavoriteUseCase adjustFavoriteUseCase;
 
-    @InjectMocks
     private ManageUpboService upboService;
+
+    @BeforeEach
+    void setUp() {
+        upboService = new ManageUpboService(upboPort, adjustFavoriteUseCase, validator());
+    }
 
     @Test
     void getActiveTemplates_ShouldMapNullableTemplateFields() {
@@ -428,5 +434,9 @@ class ManageUpboServiceTest {
                 "admin-1",
                 null
         );
+    }
+
+    private UseCaseValidator validator() {
+        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
     }
 }

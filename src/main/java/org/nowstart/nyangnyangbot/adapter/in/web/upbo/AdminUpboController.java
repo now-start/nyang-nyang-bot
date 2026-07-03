@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.upbo;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.upbo.request.UpboApplyRequest;
@@ -38,7 +39,7 @@ public class AdminUpboController {
     @Operation(summary = "업보 템플릿 생성")
     @PostMapping("/templates")
     public ResponseEntity<UpboTemplateResponse> createTemplate(
-            @RequestBody UpboTemplateCreateRequest request
+            @Valid @RequestBody UpboTemplateCreateRequest request
     ) {
         return ResponseEntity.ok(UpboTemplateResponse.from(manageUpboUseCase.createTemplate(request.toCreateTemplateCommand())));
     }
@@ -46,7 +47,7 @@ public class AdminUpboController {
     @Operation(summary = "업보 수동 적용")
     @PostMapping("/apply")
     public ResponseEntity<UpboApplyResponse> applyUpbo(
-            @RequestBody UpboApplyRequest request,
+            @Valid @RequestBody UpboApplyRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.ok(UpboApplyResponse.from(

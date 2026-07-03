@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer.TemplateContext;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ public class CommandService implements ManageCommandUseCase {
 
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
+    private final UseCaseValidator useCaseValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,7 +61,7 @@ public class CommandService implements ManageCommandUseCase {
                 state.type(),
                 state.trigger(),
                 state.actionKey(),
-                cleanTemplate(request.messageTemplate()),
+                state.messageTemplate(),
                 state.timerIntervalMinutes(),
                 state.timerMinChatCount(),
                 Boolean.TRUE.equals(request.active()),
@@ -99,10 +103,10 @@ public class CommandService implements ManageCommandUseCase {
     @Override
     @Transactional(readOnly = true)
     public PreviewResult preview(PreviewCommand request) {
-        List<String> errors = templateErrors(request.messageTemplate());
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", errors));
+        if (request == null) {
+            throw new IllegalArgumentException("preview is required");
         }
+        useCaseValidator.validate(new PreviewDefinition(request.messageTemplate()), "preview is required");
         String message = templateRenderer.render(
                 cleanTemplate(request.messageTemplate()),
                 new TemplateContext(
@@ -121,6 +125,9 @@ public class CommandService implements ManageCommandUseCase {
     @Override
     @Transactional(readOnly = true)
     public ValidationResult validate(ValidateCommand request) {
+        if (request == null) {
+            return new ValidationResult(false, List.of("command is required"));
+        }
         List<String> errors = validationForRequest(
                 request.commandId(),
                 request.type(),
@@ -143,6 +150,9 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private ValidationState validationForCreate(CreateCommand request) {
+        if (request == null) {
+            throw new IllegalArgumentException("command is required");
+        }
         return validationForRequest(
                 null,
                 request.type(),
@@ -157,25 +167,24 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private ValidationState validationForUpdate(CommandRecord current, UpdateCommand request) {
+        if (request == null) {
+            throw new IllegalArgumentException("command is required");
+        }
         List<String> errors = new ArrayList<>();
         if (request.type() != null && !request.type().isBlank()) {
-            try {
-                CommandType requestedType = CommandType.parse(request.type());
-                if (requestedType != current.type()) {
-                    errors.add("type cannot be changed");
-                }
-            } catch (IllegalArgumentException ex) {
+            CommandType requestedType = parseTypeOrNull(request.type());
+            if (requestedType == null) {
                 errors.add("type is invalid");
+            } else if (requestedType != current.type()) {
+                errors.add("type cannot be changed");
             }
         }
         if (request.actionKey() != null && !request.actionKey().isBlank()) {
-            try {
-                CommandActionKey requestedActionKey = CommandActionKey.parse(request.actionKey());
-                if (requestedActionKey != current.actionKey()) {
-                    errors.add("actionKey cannot be changed");
-                }
-            } catch (IllegalArgumentException ex) {
+            CommandActionKey requestedActionKey = parseActionKeyOrNull(request.actionKey());
+            if (requestedActionKey == null) {
                 errors.add("actionKey is invalid");
+            } else if (requestedActionKey != current.actionKey()) {
+                errors.add("actionKey cannot be changed");
             }
         }
         ValidationState merged = validationForRequest(
@@ -263,10 +272,20 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private CommandType parseType(String value, List<String> errors) {
+        CommandType type = parseTypeOrNull(value);
+        if (type == null) {
+            errors.add(value == null || value.isBlank() ? "type is required" : "type is invalid");
+        }
+        return type;
+    }
+
+    private CommandType parseTypeOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
         try {
             return CommandType.parse(value);
         } catch (IllegalArgumentException ex) {
-            errors.add(value == null || value.isBlank() ? "type is required" : "type is invalid");
             return null;
         }
     }
@@ -283,10 +302,20 @@ public class CommandService implements ManageCommandUseCase {
             errors.add("actionKey is required");
             return null;
         }
+        CommandActionKey actionKey = parseActionKeyOrNull(value);
+        if (actionKey == null) {
+            errors.add("actionKey is invalid");
+        }
+        return actionKey;
+    }
+
+    private CommandActionKey parseActionKeyOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
         try {
             return CommandActionKey.parse(value);
         } catch (IllegalArgumentException ex) {
-            errors.add("actionKey is invalid");
             return null;
         }
     }
@@ -326,7 +355,7 @@ public class CommandService implements ManageCommandUseCase {
         if (template.length() > MAX_TEMPLATE_LENGTH) {
             errors.add("messageTemplate length must be " + MAX_TEMPLATE_LENGTH + " or less");
         }
-        Set<String> unknown = templateRenderer.unknownVariables(template);
+        Set<String> unknown = CommandTemplateRenderer.unknownVariables(template);
         if (!unknown.isEmpty()) {
             errors.add("unknown template variables: " + String.join(", ", unknown));
         }
@@ -361,18 +390,6 @@ public class CommandService implements ManageCommandUseCase {
         });
     }
 
-    private void validateDuplicateActionKey(
-            Long commandId,
-            CommandActionKey actionKey,
-            List<String> errors
-    ) {
-        commandPort.findByActionKey(actionKey).ifPresent(existing -> {
-            if (!existing.id().equals(commandId)) {
-                errors.add("actionKey already exists");
-            }
-        });
-    }
-
     private String role(String value, List<String> errors) {
         String role = value == null || value.isBlank()
                 ? DEFAULT_ROLE
@@ -394,6 +411,18 @@ public class CommandService implements ManageCommandUseCase {
             errors.add("userCooldownSeconds must be between 5 and 3600");
         }
         return value;
+    }
+
+    private void validateDuplicateActionKey(
+            Long commandId,
+            CommandActionKey actionKey,
+            List<String> errors
+    ) {
+        commandPort.findByActionKey(actionKey).ifPresent(existing -> {
+            if (!existing.id().equals(commandId)) {
+                errors.add("actionKey already exists");
+            }
+        });
     }
 
     private CommandResult commandResult(CommandRecord command) {
@@ -437,6 +466,13 @@ public class CommandService implements ManageCommandUseCase {
             String requiredRole,
             Integer userCooldownSeconds,
             List<String> errors
+    ) {
+    }
+
+    private record PreviewDefinition(
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = 300, message = "messageTemplate length must be 300 or less")
+            String messageTemplate
     ) {
     }
 }

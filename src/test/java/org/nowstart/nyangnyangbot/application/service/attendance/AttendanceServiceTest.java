@@ -5,7 +5,7 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 
-import java.util.Arrays;
+import jakarta.validation.Validation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +19,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload.Profile;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {
@@ -29,7 +30,7 @@ class AttendanceServiceTest {
     @Test
     void recordChatUser_ShouldCollectAndSortUsersOnlyDuringActiveCycle() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         attendanceService.recordChatUser(chat("ignored", "무시"));
         attendanceService.startCapture();
         attendanceService.recordChatUser(null);
@@ -50,7 +51,7 @@ class AttendanceServiceTest {
     @Test
     void applyAttendance_ShouldUseCapturedUsersAndDefaultAmount() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         attendanceService.startCapture();
         attendanceService.recordChatUser(chat("user-1", "치즈냥"));
 
@@ -74,7 +75,7 @@ class AttendanceServiceTest {
     @Test
     void applyAttendance_ShouldCloseCycleAfterReward() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         AttendanceApplyCommand command = new AttendanceApplyCommand(
                 List.of(new AttendanceUserSnapshot("user-1", "치즈냥", 1L)),
                 3
@@ -93,7 +94,7 @@ class AttendanceServiceTest {
     @Test
     void applyAttendance_ShouldRejectCanceledCycle() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         attendanceService.startCapture();
         attendanceService.stopCapture();
 
@@ -110,7 +111,7 @@ class AttendanceServiceTest {
     @Test
     void applyAttendance_ShouldRejectEmptyTargetsAndNonPositiveAmount() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         attendanceService.startCapture();
 
         // 실행 및 검증
@@ -125,28 +126,35 @@ class AttendanceServiceTest {
     }
 
     @Test
-    void applyAttendance_ShouldSkipInvalidTargetAndUseSafeNickname() {
+    void applyAttendance_ShouldRejectInvalidExplicitTarget() {
         // 준비
-        AttendanceService attendanceService = new AttendanceService(grantFavoriteUseCase);
+        AttendanceService attendanceService = service();
         attendanceService.startCapture();
 
-        // 실행
-        AttendanceApplyResult result = attendanceService.applyAttendance(new AttendanceApplyCommand(
-                Arrays.asList(
-                        null,
-                        new AttendanceUserSnapshot("", "공백", 1L),
-                        new AttendanceUserSnapshot("user-1", " ", 2L)
-                ),
+        // 실행 및 검증
+        thenThrownBy(() -> attendanceService.applyAttendance(new AttendanceApplyCommand(
+                List.of(new AttendanceUserSnapshot("", "공백", 1L)),
                 2
-        ));
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("userId is required");
+        BDDMockito.then(grantFavoriteUseCase).shouldHaveNoInteractions();
+    }
 
-        // 검증
-        then(result.count()).isEqualTo(3);
-        BDDMockito.then(grantFavoriteUseCase).should().grant(argThat(command ->
-                command.userId().equals("user-1")
-                        && command.nickName().equals("")
-                        && command.delta() == 2
-        ));
+    @Test
+    void applyAttendance_ShouldRejectNullExplicitTarget() {
+        // 준비
+        AttendanceService attendanceService = service();
+        attendanceService.startCapture();
+
+        // 실행 및 검증
+        thenThrownBy(() -> attendanceService.applyAttendance(new AttendanceApplyCommand(
+                java.util.Arrays.asList((AttendanceUserSnapshot) null),
+                2
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("attendance target is required");
+        BDDMockito.then(grantFavoriteUseCase).shouldHaveNoInteractions();
     }
 
     private ChatEventPayload chat(String userId, String nickName) {
@@ -155,5 +163,13 @@ class AttendanceServiceTest {
 
     private Profile profile(String nickName) {
         return new Profile(nickName, List.of(), false);
+    }
+
+    private AttendanceService service() {
+        return new AttendanceService(grantFavoriteUseCase, validator());
+    }
+
+    private UseCaseValidator validator() {
+        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
     }
 }

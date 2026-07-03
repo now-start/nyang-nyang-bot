@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,8 +28,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException exception) {
-        String message = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+        String message = exception.getBindingResult().getAllErrors().stream()
+                .map(this::validationMessage)
                 .collect(Collectors.joining(", "));
         log.warn("[400] 요청 본문 검증 실패: {}", message);
         return response(HttpStatus.BAD_REQUEST, message);
@@ -44,5 +46,12 @@ public class GlobalExceptionHandler {
         String safeMessage = (message == null || message.isBlank()) ? status.getReasonPhrase() : message;
         return ResponseEntity.status(status)
                 .body(new ErrorResponse(status.value(), status.getReasonPhrase(), safeMessage));
+    }
+
+    private String validationMessage(ObjectError error) {
+        if (error instanceof FieldError fieldError) {
+            return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+        }
+        return error.getDefaultMessage();
     }
 }

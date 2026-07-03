@@ -16,6 +16,7 @@ import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanc
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.attendance.AttendanceUserState;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 public class AttendanceService implements ManageAttendanceUseCase, RecordAttendanceChatUseCase {
 
     private final GrantFavoriteUseCase grantFavoriteUseCase;
+    private final UseCaseValidator useCaseValidator;
     private final Map<String, AttendanceUserState> presence = new ConcurrentHashMap<>();
     private volatile boolean collecting = false;
 
@@ -81,6 +83,9 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
 
     @Override
     public AttendanceApplyResult applyAttendance(AttendanceApplyCommand command) {
+        if (command != null) {
+            useCaseValidator.validate(command, "command is required");
+        }
         if (!collecting) {
             throw new IllegalStateException("attendance cycle is not active");
         }
@@ -94,9 +99,6 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
         }
 
         for (AttendanceUserSnapshot target : targets) {
-            if (target == null || StringUtils.isBlank(target.userId())) {
-                continue;
-            }
             grantFavoriteUseCase.grant(AdjustFavoriteCommand.builder()
                     .userId(target.userId())
                     .nickName(safeNickname(target))

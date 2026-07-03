@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 
+import jakarta.validation.Validation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +22,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdj
 import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentOptionResult;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,7 +37,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void getAdjustments_ShouldSortOptionsByAmount() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(2L, 50, "큰 보정"),
                 new OptionResult(1L, -10, "차감")
@@ -52,7 +54,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void createAdjustment_ShouldTrimLabelAndReturnSavedOption() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(favoriteAdjustmentPort.save(30, "보너스")).willReturn(new OptionResult(3L, 30, "보너스"));
 
         // 실행
@@ -68,7 +70,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void createAdjustment_ShouldRejectInvalidCommand() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
 
         // 실행 및 검증
         thenThrownBy(() -> service.createAdjustment(null))
@@ -85,7 +87,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void applyAdjustments_ShouldApplySelectedOptionsAndManualAmount() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스"),
                 new OptionResult(2L, -3, "벌점")
@@ -119,7 +121,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void applyAdjustments_ShouldApplyManualAmountOnlyWithDefaultHistoryLabel() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(adjustFavoriteUseCase.adjust(any(AdjustFavoriteCommand.class)))
                 .willReturn(new FavoriteLedgerResult("user-1", 20, -4, 16, "history", false, 100L));
 
@@ -143,7 +145,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void applyAdjustments_ShouldApplySelectedOptionsWithoutManualAmount() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스")
         ));
@@ -166,7 +168,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void applyAdjustments_ShouldRejectMissingAdjustmentIds() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
         given(favoriteAdjustmentPort.findAll()).willReturn(List.of(
                 new OptionResult(1L, 10, "출석 보너스")
         ));
@@ -186,7 +188,7 @@ class FavoriteAdjustmentServiceTest {
     @Test
     void applyAdjustments_ShouldRejectMissingTargetAndDelta() {
         // 준비
-        FavoriteAdjustmentService service = new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase);
+        FavoriteAdjustmentService service = service();
 
         // 실행 및 검증
         thenThrownBy(() -> service.applyAdjustments(new FavoriteAdjustmentApplyCommand(" ", List.of(), null, null)))
@@ -195,5 +197,13 @@ class FavoriteAdjustmentServiceTest {
         thenThrownBy(() -> service.applyAdjustments(new FavoriteAdjustmentApplyCommand("user-1", List.of(), 0, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("adjustmentIds or manualAmount is required");
+    }
+
+    private FavoriteAdjustmentService service() {
+        return new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase, validator());
+    }
+
+    private UseCaseValidator validator() {
+        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
     }
 }

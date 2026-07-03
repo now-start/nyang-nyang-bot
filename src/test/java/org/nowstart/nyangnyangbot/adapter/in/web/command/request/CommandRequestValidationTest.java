@@ -64,4 +64,23 @@ class CommandRequestValidationTest {
         // 실행 및 검증
         then(validator.validate(request)).isNotEmpty();
     }
+
+    @Test
+    void createRequest_ShouldAllowRouletteDonationZeroCooldown() {
+        // 준비
+        CommandCreateRequest request = new CommandCreateRequest(
+                "TRIGGER",
+                "!룰렛",
+                "ROULETTE_DONATION",
+                null,
+                null,
+                null,
+                true,
+                null,
+                0
+        );
+
+        // 실행 및 검증
+        then(validator.validate(request)).isEmpty();
+    }
 }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CreateData;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 
@@ -272,7 +274,11 @@ class CommandServiceTest {
     }
 
     private CommandService service() {
-        return new CommandService(commandPort, templateRenderer);
+        return new CommandService(commandPort, templateRenderer, validator());
+    }
+
+    private UseCaseValidator validator() {
+        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
     }
 
     private CommandRecord record(

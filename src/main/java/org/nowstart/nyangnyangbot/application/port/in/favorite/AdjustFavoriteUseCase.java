@@ -1,5 +1,8 @@
 package org.nowstart.nyangnyangbot.application.port.in.favorite;
 
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
@@ -9,9 +12,11 @@ public interface AdjustFavoriteUseCase {
 
     @Builder
     record AdjustFavoriteCommand(
+            @NotBlank(message = "userId is required")
             String userId,
             String nickName,
             int delta,
+            @NotNull(message = "sourceType is required")
             FavoriteSourceType sourceType,
             String sourceId,
             String displayCategory,
@@ -23,6 +28,11 @@ public interface AdjustFavoriteUseCase {
             boolean allowNegativeBalance,
             boolean createIfMissing
     ) {
+
+        @AssertTrue(message = "delta must not be zero")
+        public boolean isDeltaNonZero() {
+            return delta != 0;
+        }
     }
 
     record FavoriteLedgerResult(

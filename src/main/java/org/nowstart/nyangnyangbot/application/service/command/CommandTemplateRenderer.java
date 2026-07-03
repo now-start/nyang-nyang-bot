@@ -32,7 +32,7 @@ public class CommandTemplateRenderer {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public Set<String> unknownVariables(String template) {
+    public static Set<String> unknownVariables(String template) {
         if (template == null || template.isBlank()) {
             return Set.of();
         }

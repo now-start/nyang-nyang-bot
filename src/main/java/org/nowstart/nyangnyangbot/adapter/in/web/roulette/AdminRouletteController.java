@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRequest;
@@ -60,7 +61,7 @@ public class AdminRouletteController {
     @Operation(summary = "룰렛 테이블 생성")
     @PostMapping("/tables")
     public ResponseEntity<RouletteTableResponse> createTable(
-            @RequestBody RouletteTableCreateRequest request
+            @Valid @RequestBody RouletteTableCreateRequest request
     ) {
         return ResponseEntity.ok(RouletteTableResponse.from(
                 manageRouletteUseCase.createTable(
@@ -76,7 +77,7 @@ public class AdminRouletteController {
     @PostMapping("/tables/{tableId}/items")
     public ResponseEntity<RouletteItemResponse> addItem(
             @PathVariable Long tableId,
-            @RequestBody RouletteItemRequest request
+            @Valid @RequestBody RouletteItemRequest request
     ) {
         return ResponseEntity.ok(RouletteItemResponse.from(
                 manageRouletteUseCase.addItem(

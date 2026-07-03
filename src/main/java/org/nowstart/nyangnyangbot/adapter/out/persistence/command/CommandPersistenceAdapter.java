@@ -6,9 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CreateData;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.UpdateData;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.springframework.stereotype.Component;
 
