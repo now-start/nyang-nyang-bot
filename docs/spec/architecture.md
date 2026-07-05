@@ -40,6 +40,12 @@ application -X-> adapter
 adapter/in  -X-> adapter/out
 ```
 
+코드 작성 기준:
+
+- 반복적인 생성자 주입, logger 선언, JPA entity getter/build constructor, utility class private constructor는 Lombok을 사용한다.
+- 단순 데이터 전달은 Java `record`를 우선 사용하고, Lombok DTO/class는 상태나 프레임워크 제약 때문에 record가 맞지 않을 때만 사용한다.
+- 불변식 검증, 의존성 변환, `@Value` 같은 생성자 파라미터 애노테이션이 필요한 경우에는 명시적 생성자를 유지한다.
+
 ## 2. 레이어 책임
 
 | 레이어 | 책임 | 포함 대상 |

@@ -2,10 +2,9 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;

@@ -1363,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (event.target.id === 'karma-modal') {
             closeModal();
-            return;
+
         }
 
     });

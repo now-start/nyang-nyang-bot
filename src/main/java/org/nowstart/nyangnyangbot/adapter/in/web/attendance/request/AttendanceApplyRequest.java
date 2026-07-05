@@ -14,6 +14,13 @@ public record AttendanceApplyRequest(
         Integer amount
 ) {
 
+    public AttendanceApplyCommand toApplyAttendanceCommand() {
+        List<AttendanceUserSnapshot> snapshots = users == null
+                ? null
+                : users.stream().map(AttendanceUser::toSnapshot).toList();
+        return new AttendanceApplyCommand(snapshots, amount);
+    }
+
     public record AttendanceUser(
             @NotBlank(message = "userId is required")
             String userId,
@@ -24,12 +31,5 @@ public record AttendanceApplyRequest(
         AttendanceUserSnapshot toSnapshot() {
             return new AttendanceUserSnapshot(userId, nickName, lastMessageTime);
         }
-    }
-
-    public AttendanceApplyCommand toApplyAttendanceCommand() {
-        List<AttendanceUserSnapshot> snapshots = users == null
-                ? null
-                : users.stream().map(AttendanceUser::toSnapshot).toList();
-        return new AttendanceApplyCommand(snapshots, amount);
     }
 }

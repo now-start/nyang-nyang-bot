@@ -1,10 +1,9 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

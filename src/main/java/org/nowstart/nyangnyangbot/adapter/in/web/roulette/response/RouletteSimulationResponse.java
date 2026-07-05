@@ -8,6 +8,13 @@ public record RouletteSimulationResponse(
         List<SimulationItem> items
 ) {
 
+    public static RouletteSimulationResponse from(RouletteSimulationResult result) {
+        return new RouletteSimulationResponse(
+                result.iterations(),
+                result.items().stream().map(SimulationItem::from).toList()
+        );
+    }
+
     public record SimulationItem(
             String label,
             Integer count,
@@ -17,12 +24,5 @@ public record RouletteSimulationResponse(
         public static SimulationItem from(RouletteSimulationResult.Entry entry) {
             return new SimulationItem(entry.label(), entry.count(), entry.ratio());
         }
-    }
-
-    public static RouletteSimulationResponse from(RouletteSimulationResult result) {
-        return new RouletteSimulationResponse(
-                result.iterations(),
-                result.items().stream().map(SimulationItem::from).toList()
-        );
     }
 }

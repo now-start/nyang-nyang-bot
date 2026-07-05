@@ -8,13 +8,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort.GoogleSheetRow;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 

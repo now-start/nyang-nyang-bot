@@ -5,11 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
-import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 

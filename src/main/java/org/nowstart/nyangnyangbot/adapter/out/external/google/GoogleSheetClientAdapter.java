@@ -13,7 +13,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.out.external.google.response.GoogleSheetRowResponse;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
-import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort.GoogleSheetRow;
 import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 import org.springframework.stereotype.Component;
 

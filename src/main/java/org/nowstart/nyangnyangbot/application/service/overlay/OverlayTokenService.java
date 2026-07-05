@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase.OverlayTokenIssueResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.domain.overlay.OverlayTokenPolicy;
 import org.springframework.stereotype.Service;

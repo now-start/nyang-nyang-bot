@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
 @Entity
 @Getter

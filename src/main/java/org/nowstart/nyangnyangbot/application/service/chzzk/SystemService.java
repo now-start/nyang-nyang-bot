@@ -17,10 +17,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SystemService implements Emitter.Listener {
 
-    private String sessionKey;
     private final ObjectMapper objectMapper;
     private final ChzzkProperty chzzkProperty;
     private final ChzzkClientPort chzzkClientPort;
+    private String sessionKey;
 
     @Override
     @SneakyThrows

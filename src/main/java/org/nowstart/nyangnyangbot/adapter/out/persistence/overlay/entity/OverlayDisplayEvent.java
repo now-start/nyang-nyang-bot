@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -14,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 

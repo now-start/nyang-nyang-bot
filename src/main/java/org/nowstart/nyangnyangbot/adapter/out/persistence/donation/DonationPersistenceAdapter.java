@@ -1,10 +1,10 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,10 +11,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 @Entity
 @Getter

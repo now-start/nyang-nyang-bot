@@ -35,22 +35,17 @@ public class SecurityConfig {
 
     private static final String OAUTH2_AUTHORIZATION_ENDPOINT = "/oauth2/authorization/chzzk";
     private static final String OAUTH2_SUCCESS_LOCATION = "/favorite/list";
-
-    @Value("${nyang.local-auth.enabled:false}")
-    private boolean localAuthEnabled;
-
-    @Value("${nyang.local-auth.user-id:local-channel}")
-    private String localAuthUserId;
-
-    @Value("${nyang.local-auth.admin:true}")
-    private boolean localAuthAdmin;
-
-    @Value("${spring.h2.console.enabled:false}")
-    private boolean h2ConsoleEnabled;
-
     private final ChzzkOAuth2AuthorizationRequestResolver chzzkOAuth2AuthorizationRequestResolver;
     private final ChzzkOAuth2AccessTokenResponseClient chzzkOAuth2AccessTokenResponseClient;
     private final ChzzkOAuth2UserService chzzkOAuth2UserService;
+    @Value("${nyang.local-auth.enabled:false}")
+    private boolean localAuthEnabled;
+    @Value("${nyang.local-auth.user-id:local-channel}")
+    private String localAuthUserId;
+    @Value("${nyang.local-auth.admin:true}")
+    private boolean localAuthAdmin;
+    @Value("${spring.h2.console.enabled:false}")
+    private boolean h2ConsoleEnabled;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {

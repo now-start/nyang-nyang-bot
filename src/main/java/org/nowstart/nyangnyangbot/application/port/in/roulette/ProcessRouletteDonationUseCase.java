@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 
 public interface ProcessRouletteDonationUseCase {
 
@@ -16,12 +16,6 @@ public interface ProcessRouletteDonationUseCase {
             List<RouletteRoundResult> rounds
     ) {
 
-        public enum Status {
-            CONFIRMED,
-            IGNORED,
-            DUPLICATE
-        }
-
         public static RouletteRunResult ignored(String reason) {
             return new RouletteRunResult(Status.IGNORED, null, reason, 0, List.of());
         }
@@ -32,6 +26,12 @@ public interface ProcessRouletteDonationUseCase {
 
         public static RouletteRunResult confirmed(Long eventId, Integer roundCount, List<RouletteRoundResult> rounds) {
             return new RouletteRunResult(Status.CONFIRMED, eventId, null, roundCount, rounds);
+        }
+
+        public enum Status {
+            CONFIRMED,
+            IGNORED,
+            DUPLICATE
         }
     }
 }

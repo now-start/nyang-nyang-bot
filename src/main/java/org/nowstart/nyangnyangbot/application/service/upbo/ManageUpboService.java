@@ -7,20 +7,16 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
 import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateCreateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UpboTemplateResult;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.upbo.UpboPolicy;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.springframework.stereotype.Service;
 
 @Service

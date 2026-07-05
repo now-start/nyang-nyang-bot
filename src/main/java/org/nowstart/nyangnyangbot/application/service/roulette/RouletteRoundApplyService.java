@@ -1,18 +1,18 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.FavoriteLedgerResult;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
+import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
+import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

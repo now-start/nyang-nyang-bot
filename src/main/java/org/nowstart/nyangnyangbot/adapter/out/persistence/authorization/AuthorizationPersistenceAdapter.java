@@ -3,12 +3,11 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.authorization;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.springframework.stereotype.Component;
 
 @Component

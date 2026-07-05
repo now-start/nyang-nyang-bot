@@ -1,7 +1,10 @@
 package org.nowstart.nyangnyangbot.config.cache;
 
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CacheNames {
 
     public static final String FAVORITE_ADJUSTMENTS = "favoriteAdjustments";
@@ -27,6 +30,4 @@ public final class CacheNames {
             COMMAND_ACTIVE_BY_ACTION_KEY
     );
 
-    private CacheNames() {
-    }
 }

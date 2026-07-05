@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity;
 
-import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
@@ -10,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.common.BaseEntity;
 
 @Entity
 @Getter

@@ -41,6 +41,13 @@ public class CommandService implements ManageCommandUseCase {
     private final CommandTemplateRenderer templateRenderer;
     private final UseCaseValidator useCaseValidator;
 
+    public static String normalizeTrigger(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Normalizer.normalize(value.trim(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<CommandResult> getCommands() {
@@ -140,13 +147,6 @@ public class CommandService implements ManageCommandUseCase {
                 request.userCooldownSeconds()
         ).errors();
         return new ValidationResult(errors.isEmpty(), errors);
-    }
-
-    public static String normalizeTrigger(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return Normalizer.normalize(value.trim(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
     }
 
     private ValidationState validationForCreate(CreateCommand request) {

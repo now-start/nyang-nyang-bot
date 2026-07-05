@@ -5,7 +5,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
