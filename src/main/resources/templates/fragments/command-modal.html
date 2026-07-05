@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="management-panel command-panel" th:fragment="command-panel">
+    <div class="command-layout">
+        <div class="command-section command-list-section">
+            <div class="command-section-title">목록</div>
+            <div class="command-toolbar">
+                <label class="command-filter">
+                    <span>유형</span>
+                    <select id="command-filter-type">
+                        <option value="">전체</option>
+                        <option value="TEXT">TEXT</option>
+                        <option value="TRIGGER">TRIGGER</option>
+                        <option value="TIMER">TIMER</option>
+                    </select>
+                </label>
+                <label class="command-filter">
+                    <span>상태</span>
+                    <select id="command-filter-active">
+                        <option value="">전체</option>
+                        <option value="true">활성</option>
+                        <option value="false">비활성</option>
+                    </select>
+                </label>
+                <button class="btn-strong btn-auth" id="command-new" type="button">추가</button>
+                <button class="btn-ghost" id="command-refresh" type="button">새로고침</button>
+            </div>
+            <div class="command-list" id="command-list"></div>
+        </div>
+
+        <div class="command-section command-editor-section">
+            <div class="command-section-title">편집</div>
+            <div class="command-form">
+                <input id="command-id" type="hidden">
+                <label class="command-field">
+                    <span>유형</span>
+                    <select id="command-type">
+                        <option value="TEXT">TEXT</option>
+                        <option value="TRIGGER">TRIGGER</option>
+                        <option value="TIMER">TIMER</option>
+                    </select>
+                </label>
+                <label class="command-field">
+                    <span>트리거</span>
+                    <input id="command-trigger" maxlength="20" placeholder="!공지" type="text">
+                </label>
+                <label class="command-field">
+                    <span>Action</span>
+                    <select id="command-action-key">
+                        <option value="">없음</option>
+                        <option value="FAVORITE_STATUS">FAVORITE_STATUS</option>
+                        <option value="ROULETTE_RESULT">ROULETTE_RESULT</option>
+                        <option value="ROULETTE_DONATION">ROULETTE_DONATION</option>
+                    </select>
+                </label>
+                <label class="command-field">
+                    <span>권한</span>
+                    <select id="command-required-role">
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </label>
+                <label class="command-field">
+                    <span>쿨타임</span>
+                    <input id="command-cooldown" max="3600" min="0" type="number" value="30">
+                </label>
+                <label class="command-field command-active-field">
+                    <span>활성</span>
+                    <input id="command-active" type="checkbox">
+                </label>
+                <label class="command-field">
+                    <span>타이머 분</span>
+                    <input id="command-timer-interval" max="1440" min="5" type="number" value="10">
+                </label>
+                <label class="command-field">
+                    <span>타이머 채팅</span>
+                    <input id="command-timer-chat-count" max="10000" min="1" type="number" value="10">
+                </label>
+                <label class="command-field command-template-field">
+                    <span>응답 템플릿</span>
+                    <textarea id="command-message-template" maxlength="300" placeholder="{nickname}님, 오늘 공지는 ..."></textarea>
+                </label>
+            </div>
+            <div class="command-actions">
+                <button class="btn-ghost" id="command-validate" type="button">검증</button>
+                <button class="btn-ghost" id="command-preview" type="button">미리보기</button>
+                <button class="btn-ghost" id="command-deactivate" type="button">비활성화</button>
+                <button class="btn-strong btn-auth" id="command-save" type="button">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="command-preview-grid">
+        <div class="command-section">
+            <div class="command-section-title">샘플</div>
+            <div class="command-sample-form">
+                <input id="command-preview-nickname" placeholder="닉네임" type="text" value="치즈냥">
+                <input id="command-preview-args" placeholder="인자" type="text" value="첫번째 두번째">
+                <input id="command-preview-favorite" placeholder="호감도" type="number" value="100">
+            </div>
+        </div>
+        <div class="command-section">
+            <div class="command-section-title">결과</div>
+            <div class="command-result" id="command-validation-result"></div>
+            <div class="command-preview-result" id="command-preview-result"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -26,16 +26,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommandService implements ManageCommandUseCase {
 
     public static final int DEFAULT_USER_COOLDOWN_SECONDS = 30;
-    private static final int MAX_TRIGGER_LENGTH = 30;
+    private static final int MAX_TRIGGER_LENGTH = 20;
     private static final int MAX_TEMPLATE_LENGTH = 300;
     private static final int MIN_USER_COOLDOWN_SECONDS = 5;
     private static final int MAX_USER_COOLDOWN_SECONDS = 3_600;
     private static final int MIN_TIMER_INTERVAL_MINUTES = 5;
+    private static final int DEFAULT_TIMER_INTERVAL_MINUTES = 10;
     private static final int MAX_TIMER_INTERVAL_MINUTES = 1_440;
     private static final int MIN_TIMER_CHAT_COUNT = 1;
+    private static final int DEFAULT_TIMER_CHAT_COUNT = 10;
     private static final int MAX_TIMER_CHAT_COUNT = 10_000;
     private static final String DEFAULT_ROLE = "USER";
     private static final Set<String> ALLOWED_ROLES = Set.of("USER", "ADMIN");
+    private static final Set<String> TIMER_BLOCKED_VARIABLES = Set.of(
+            "nickname",
+            "command",
+            "args",
+            "arg1",
+            "arg2",
+            "favorite"
+    );
 
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
@@ -240,13 +250,19 @@ public class CommandService implements ManageCommandUseCase {
         if (type != null) {
             validateTrigger(type, trigger, errors);
             validateTemplate(type, template, errors);
-            validateTimer(type, timerIntervalMinutes, timerMinChatCount, errors);
             if (type != CommandType.TIMER) {
                 timerIntervalMinutes = null;
                 timerMinChatCount = null;
+                if (type == CommandType.TRIGGER) {
+                    template = null;
+                }
             } else if (timerMinChatCount == null) {
-                timerMinChatCount = MIN_TIMER_CHAT_COUNT;
+                timerMinChatCount = DEFAULT_TIMER_CHAT_COUNT;
             }
+            if (type == CommandType.TIMER && timerIntervalMinutes == null) {
+                timerIntervalMinutes = DEFAULT_TIMER_INTERVAL_MINUTES;
+            }
+            validateTimer(type, timerIntervalMinutes, timerMinChatCount, template, errors);
             if (type != CommandType.TRIGGER && actionKey != null) {
                 errors.add("actionKey is only allowed for TRIGGER");
             }
@@ -334,6 +350,9 @@ public class CommandService implements ManageCommandUseCase {
         if (trigger.length() < 2 || trigger.length() > MAX_TRIGGER_LENGTH) {
             errors.add("trigger length must be between 2 and " + MAX_TRIGGER_LENGTH);
         }
+        if (trigger.chars().anyMatch(Character::isISOControl)) {
+            errors.add("trigger must not contain control characters");
+        }
         if (trigger.matches(".*\\s+.*")) {
             errors.add("trigger must be a single token");
         }
@@ -366,6 +385,7 @@ public class CommandService implements ManageCommandUseCase {
             CommandType type,
             Integer timerIntervalMinutes,
             Integer timerMinChatCount,
+            String template,
             List<String> errors
     ) {
         if (type != CommandType.TIMER) {
@@ -379,6 +399,13 @@ public class CommandService implements ManageCommandUseCase {
         if (timerMinChatCount != null
                 && (timerMinChatCount < MIN_TIMER_CHAT_COUNT || timerMinChatCount > MAX_TIMER_CHAT_COUNT)) {
             errors.add("timerMinChatCount must be between 1 and 10000");
+        }
+        List<String> blockedVariables = TIMER_BLOCKED_VARIABLES.stream()
+                .filter(variable -> templateRenderer.usesVariable(template, variable))
+                .sorted()
+                .toList();
+        if (!blockedVariables.isEmpty()) {
+            errors.add("timer messageTemplate cannot use caller variables: " + String.join(", ", blockedVariables));
         }
     }
 

@@ -75,6 +75,9 @@
         <button aria-controls="roulette-tab" aria-selected="false" class="admin-tab"
                 data-tab-target="roulette-tab" role="tab" type="button">룰렛 관리
         </button>
+        <button aria-controls="command-tab" aria-selected="false" class="admin-tab"
+                data-tab-target="command-tab" role="tab" type="button">명령어 관리
+        </button>
     </div>
 
     <section class="tab-panel is-active" id="favorite-tab" role="tabpanel">
@@ -211,6 +214,10 @@
 
     <section class="tab-panel" id="roulette-tab" role="tabpanel" th:if="${isAdmin}">
         <div th:replace="~{fragments/roulette-modal :: roulette-panel}"></div>
+    </section>
+
+    <section class="tab-panel" id="command-tab" role="tabpanel" th:if="${isAdmin}">
+        <div th:replace="~{fragments/command-modal :: command-panel}"></div>
     </section>
 </div>
 

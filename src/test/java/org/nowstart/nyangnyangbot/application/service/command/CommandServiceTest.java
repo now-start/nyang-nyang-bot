@@ -17,10 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewCommand;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidateCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CreateData;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.UpdateData;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
@@ -195,6 +197,149 @@ class CommandServiceTest {
         then(validation.errors()).anySatisfy(error ->
                 then(error).contains("unknown template variables").contains("bad_var").contains("1bad")
         );
+    }
+
+    @Test
+    void validate_ShouldRejectTriggerLongerThanTwentyAndControlCharacter() {
+        // 준비
+        CommandService service = service();
+
+        // 실행
+        var longValidation = service.validate(new ValidateCommand(
+                null,
+                "TEXT",
+                "!12345678901234567890",
+                null,
+                "{nickname}",
+                null,
+                null,
+                null,
+                null
+        ));
+        var controlValidation = service.validate(new ValidateCommand(
+                null,
+                "TEXT",
+                "!\u0007공지",
+                null,
+                "{nickname}",
+                null,
+                null,
+                null,
+                null
+        ));
+
+        // 검증
+        then(longValidation.valid()).isFalse();
+        then(longValidation.errors()).contains("trigger length must be between 2 and 20");
+        then(controlValidation.valid()).isFalse();
+        then(controlValidation.errors()).contains("trigger must not contain control characters");
+    }
+
+    @Test
+    void validate_ShouldRejectCallerVariablesForTimer() {
+        // 준비
+        CommandService service = service();
+
+        // 실행
+        var validation = service.validate(new ValidateCommand(
+                null,
+                "TIMER",
+                null,
+                null,
+                "{datetime} {nickname} {args}",
+                null,
+                null,
+                null,
+                null
+        ));
+
+        // 검증
+        then(validation.valid()).isFalse();
+        then(validation.errors()).contains("timer messageTemplate cannot use caller variables: args, nickname");
+    }
+
+    @Test
+    void createCommand_ShouldDefaultTimerSettings() {
+        // 준비
+        CommandService service = service();
+        given(commandPort.create(any(CreateData.class))).willAnswer(invocation -> {
+            CreateData data = invocation.getArgument(0);
+            return record(1L, data.type(), data.trigger(), data.actionKey(), data.messageTemplate(),
+                    data.timerIntervalMinutes(), data.timerMinChatCount());
+        });
+
+        // 실행
+        CommandResult result = service.createCommand(new CreateCommand(
+                "TIMER",
+                null,
+                null,
+                "{datetime} 공지",
+                null,
+                null,
+                true,
+                null,
+                null,
+                "admin-1"
+        ));
+
+        // 검증
+        then(result.timerIntervalMinutes()).isEqualTo(10);
+        then(result.timerMinChatCount()).isEqualTo(10);
+    }
+
+    @Test
+    void updateCommand_ShouldDropMessageTemplateForTriggerCommand() {
+        // 준비
+        CommandService service = service();
+        given(commandPort.findById(1L)).willReturn(Optional.of(record(
+                1L,
+                CommandType.TRIGGER,
+                "!호감도",
+                CommandActionKey.FAVORITE_STATUS,
+                null,
+                null,
+                null
+        )));
+        given(commandPort.findByTrigger("!호감도")).willReturn(Optional.of(record(
+                1L,
+                CommandType.TRIGGER,
+                "!호감도",
+                CommandActionKey.FAVORITE_STATUS,
+                null,
+                null,
+                null
+        )));
+        given(commandPort.findByActionKey(CommandActionKey.FAVORITE_STATUS)).willReturn(Optional.of(record(
+                1L,
+                CommandType.TRIGGER,
+                "!호감도",
+                CommandActionKey.FAVORITE_STATUS,
+                null,
+                null,
+                null
+        )));
+        given(commandPort.update(any(UpdateData.class))).willAnswer(invocation -> {
+            UpdateData data = invocation.getArgument(0);
+            return record(data.id(), CommandType.TRIGGER, data.trigger(), CommandActionKey.FAVORITE_STATUS,
+                    data.messageTemplate(), data.timerIntervalMinutes(), data.timerMinChatCount());
+        });
+
+        // 실행
+        CommandResult result = service.updateCommand(1L, new UpdateCommand(
+                null,
+                null,
+                null,
+                "{nickname}",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "admin-1"
+        ));
+
+        // 검증
+        then(result.messageTemplate()).isNull();
     }
 
     @Test

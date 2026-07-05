@@ -184,6 +184,49 @@ class ManageRouletteServiceTest {
     }
 
     @Test
+    void deactivateTable_ShouldDeactivateMatchingRouletteDonationCommand() {
+        // 준비
+        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, true, 10)));
+        given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
+        given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
+                item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
+        ));
+        given(commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION))
+                .willReturn(Optional.of(command(100L, "!룰렛", CommandActionKey.ROULETTE_DONATION)));
+
+        // 실행
+        RouletteTableResult result = service.deactivateTable(1L);
+
+        // 검증
+        then(result.active()).isFalse();
+        BDDMockito.then(commandPort).should().update(argThat(data ->
+                data.id().equals(100L)
+                        && data.trigger().equals("!룰렛")
+                        && !data.active()
+        ));
+    }
+
+    @Test
+    void deactivateTable_ShouldNotDeactivateCommandWhenTableWasAlreadyInactive() {
+        // 준비
+        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
+        given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
+        given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
+                item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
+        ));
+
+        // 실행
+        RouletteTableResult result = service.deactivateTable(1L);
+
+        // 검증
+        then(result.active()).isFalse();
+        BDDMockito.then(commandPort).should(never()).findByActionKey(CommandActionKey.ROULETTE_DONATION);
+        BDDMockito.then(commandPort).should(never()).update(any());
+    }
+
+    @Test
     void activateTable_ShouldRejectWhenAnotherTableIsActive() {
         // 준비
         ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);

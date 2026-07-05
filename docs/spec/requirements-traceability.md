@@ -40,7 +40,7 @@
 | FR-019 | 룰렛 결과 반영/조회 | P1 | 현행 구현 | Phase 6, Phase 7 | `ApplyRouletteRoundResultUseCase`, `ViewRecentRouletteResultUseCase` | 원장 반영, 자동 채팅 공지 없음 |
 | FR-020 | 룰렛 확률표 관리 | P1 | 현행 구현 | Phase 6 | `ManageRouletteTableUseCase` | 합계 100%, 꽝 필수, 공개 여부, 활성 룰렛 테이블 1개 제한 |
 | FR-021 | 룰렛 결과 정정 | P1 | 미구현 | Phase 6 | `CorrectRouletteResultUseCase` | 삭제 없는 보정 거래 |
-| FR-022 | 관리자 명령어 관리 | P1 | 미구현 | Phase 5 | `ManageChatCommandUseCase`, `ResolveChatCommandUseCase` | 텍스트 명령어 CRUD, 시스템 명령어 정책, 단일 테이블 트리거 검증 |
+| FR-022 | 관리자 명령어 관리 | P1 | 현행 구현 | Phase 5 | `ManageCommandUseCase`, `ChatService` | 텍스트 명령어 CRUD, 시스템 명령어 정책, 단일 테이블 트리거 검증, 관리자 UI |
 | FR-023 | 공개 채널 페이지 | P2 | 보류 | Phase 4 이후 | `ViewPublicChannelPageUseCase` | 공개 랭킹/이벤트 규칙 |
 | FR-024 | 오버레이 토큰 관리 | P1 | 현행 구현 | Phase 7 | `IssueOverlayTokenUseCase`, `RotateOverlayTokenUseCase` | 원문 1회 표시, 해시 저장 |
 | FR-025 | 룰렛 오버레이 재송출 | P1 | 현행 구현 | Phase 7 | `ReplayOverlayEventUseCase` | 원장 재반영 없음 |

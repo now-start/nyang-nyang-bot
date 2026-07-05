@@ -40,6 +40,8 @@ let attendanceCaptureActive = false;
 let rouletteTables = [];
 let selectedRouletteTableId = null;
 let rouletteEventPage = 0;
+let commandRecords = [];
+let selectedCommandId = null;
 const ROULETTE_EVENT_PAGE_SIZE = 5;
 
 function getUiPermissions() {
@@ -955,6 +957,410 @@ function setValue(id, value) {
     }
 }
 
+function loadCommandManagement() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    loadCommands();
+}
+
+function loadCommands() {
+    return fetch(buildUrl('/admin/commands'))
+        .then(requireOk)
+        .then(function (data) {
+            commandRecords = Array.isArray(data) ? data : [];
+            if (selectedCommandId && !commandRecords.some(function (command) {
+                return command.id === selectedCommandId;
+            })) {
+                selectedCommandId = null;
+            }
+            renderCommandList();
+            if (selectedCommandId) {
+                populateCommandForm(getSelectedCommand());
+            } else {
+                resetCommandForm();
+            }
+        })
+        .catch(function () {
+            showToast('명령어 목록을 불러오지 못했습니다.');
+        });
+}
+
+function getSelectedCommand() {
+    return commandRecords.find(function (command) {
+        return command.id === selectedCommandId;
+    }) || null;
+}
+
+function renderCommandList() {
+    const list = document.getElementById('command-list');
+    if (!list) {
+        return;
+    }
+    const visibleCommands = filteredCommandRecords();
+    list.innerHTML = '';
+    if (visibleCommands.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'command-empty';
+        empty.textContent = commandRecords.length === 0 ? '등록된 명령어가 없습니다.' : '조건에 맞는 명령어가 없습니다.';
+        list.appendChild(empty);
+        return;
+    }
+    list.appendChild(createCommandHeader());
+    visibleCommands.forEach(function (command) {
+        list.appendChild(createCommandRow(command));
+    });
+}
+
+function filteredCommandRecords() {
+    const typeFilter = valueOf('command-filter-type');
+    const activeFilter = valueOf('command-filter-active');
+    return commandRecords.filter(function (command) {
+        const matchesType = !typeFilter || command.type === typeFilter;
+        const matchesActive = !activeFilter || String(Boolean(command.active)) === activeFilter;
+        return matchesType && matchesActive;
+    });
+}
+
+function createCommandHeader() {
+    const row = document.createElement('div');
+    row.className = 'command-row is-head';
+    ['유형', '트리거', '상태', '쿨타임', '수정자'].forEach(function (text) {
+        const cell = document.createElement('span');
+        cell.textContent = text;
+        row.appendChild(cell);
+    });
+    return row;
+}
+
+function createCommandRow(command) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'command-row';
+    if (command.id === selectedCommandId) {
+        row.classList.add('is-selected');
+    }
+    if (!command.active) {
+        row.classList.add('is-inactive');
+    }
+    row.dataset.commandId = command.id;
+    row.appendChild(commandCell(command.type || '-'));
+    row.appendChild(commandCell(command.trigger || '-'));
+    row.appendChild(commandCell(command.active ? '활성' : '비활성'));
+    row.appendChild(commandCell(command.userCooldownSeconds == null ? '-' : command.userCooldownSeconds + '초', 'numeric'));
+    row.appendChild(commandCell(command.updatedBy || command.createdBy || '-'));
+    return row;
+}
+
+function commandCell(text, className) {
+    const cell = document.createElement('span');
+    if (className) {
+        cell.className = className;
+    }
+    cell.textContent = text;
+    return cell;
+}
+
+function resetCommandForm() {
+    selectedCommandId = null;
+    setValue('command-id', '');
+    setValue('command-type', 'TEXT');
+    setValue('command-trigger', '');
+    setValue('command-action-key', '');
+    setValue('command-required-role', 'USER');
+    setValue('command-cooldown', '30');
+    setValue('command-timer-interval', '10');
+    setValue('command-timer-chat-count', '10');
+    setValue('command-message-template', '');
+    const active = document.getElementById('command-active');
+    if (active) {
+        active.checked = false;
+    }
+    clearCommandFeedback();
+    updateCommandFieldState();
+    renderCommandList();
+}
+
+function populateCommandForm(command) {
+    if (!command) {
+        resetCommandForm();
+        return;
+    }
+    selectedCommandId = command.id;
+    setValue('command-id', command.id);
+    setValue('command-type', command.type || 'TEXT');
+    setValue('command-trigger', command.trigger || '');
+    setValue('command-action-key', command.actionKey || '');
+    setValue('command-required-role', command.requiredRole || 'USER');
+    setValue('command-cooldown', String(command.userCooldownSeconds == null ? 30 : command.userCooldownSeconds));
+    setValue('command-timer-interval', String(command.timerIntervalMinutes == null ? 10 : command.timerIntervalMinutes));
+    setValue('command-timer-chat-count', String(command.timerMinChatCount == null ? 10 : command.timerMinChatCount));
+    setValue('command-message-template', command.messageTemplate || '');
+    const active = document.getElementById('command-active');
+    if (active) {
+        active.checked = Boolean(command.active);
+    }
+    clearCommandFeedback();
+    updateCommandFieldState();
+    renderCommandList();
+}
+
+function updateCommandFieldState() {
+    const type = valueOf('command-type') || 'TEXT';
+    const hasSelectedCommand = Boolean(selectedCommandId);
+    const trigger = document.getElementById('command-trigger');
+    const actionKey = document.getElementById('command-action-key');
+    const template = document.getElementById('command-message-template');
+    const timerInterval = document.getElementById('command-timer-interval');
+    const timerChatCount = document.getElementById('command-timer-chat-count');
+    const typeSelect = document.getElementById('command-type');
+    const deactivateButton = document.getElementById('command-deactivate');
+
+    if (typeSelect) {
+        typeSelect.disabled = hasSelectedCommand;
+    }
+    if (trigger) {
+        trigger.disabled = type === 'TIMER';
+        if (type === 'TIMER') {
+            trigger.value = '';
+        }
+    }
+    if (actionKey) {
+        actionKey.disabled = type !== 'TRIGGER' || hasSelectedCommand;
+        if (type !== 'TRIGGER') {
+            actionKey.value = '';
+        }
+    }
+    if (template) {
+        template.disabled = type === 'TRIGGER';
+        if (type === 'TRIGGER') {
+            template.value = '';
+        }
+    }
+    [timerInterval, timerChatCount].forEach(function (field) {
+        if (field) {
+            field.disabled = type !== 'TIMER';
+        }
+    });
+    if (deactivateButton) {
+        const command = getSelectedCommand();
+        deactivateButton.disabled = !command || !command.active;
+    }
+}
+
+function collectCommandPayload() {
+    const type = valueOf('command-type') || 'TEXT';
+    return {
+        type: type,
+        trigger: type === 'TIMER' ? null : valueOf('command-trigger'),
+        actionKey: type === 'TRIGGER' ? valueOf('command-action-key') : null,
+        messageTemplate: type === 'TRIGGER' ? null : valueOf('command-message-template'),
+        timerIntervalMinutes: type === 'TIMER' ? nullableInt(valueOf('command-timer-interval')) : null,
+        timerMinChatCount: type === 'TIMER' ? nullableInt(valueOf('command-timer-chat-count')) : null,
+        active: Boolean(document.getElementById('command-active') && document.getElementById('command-active').checked),
+        requiredRole: valueOf('command-required-role') || 'USER',
+        userCooldownSeconds: nullableInt(valueOf('command-cooldown'))
+    };
+}
+
+function nullableInt(value) {
+    if (value === '') {
+        return null;
+    }
+    const parsed = parseInt(value, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+}
+
+function validateCommand() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    const payload = collectCommandPayload();
+    payload.commandId = selectedCommandId;
+    commandRequest('/admin/commands/validate', {
+        method: 'POST',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify(payload)
+    })
+        .then(function (result) {
+            renderCommandValidation(result);
+        })
+        .catch(function (error) {
+            renderCommandErrors([error.message]);
+        });
+}
+
+function previewCommand() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    const template = valueOf('command-message-template');
+    if (!template) {
+        showToast('응답 템플릿을 입력해 주세요.');
+        return;
+    }
+    const args = valueOf('command-preview-args');
+    const tokens = args ? args.split(/\s+/) : [];
+    commandRequest('/admin/commands/preview', {
+        method: 'POST',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify({
+            messageTemplate: template,
+            nickname: valueOf('command-preview-nickname') || '치즈냥',
+            command: valueOf('command-trigger') || '!명령어',
+            args: args,
+            arg1: tokens[0] || '',
+            arg2: tokens[1] || '',
+            favorite: nullableInt(valueOf('command-preview-favorite')) || 0
+        })
+    })
+        .then(function (result) {
+            renderCommandPreview(result.message || '');
+        })
+        .catch(function (error) {
+            renderCommandErrors([error.message]);
+        });
+}
+
+function saveCommand() {
+    if (!requireAdminPermission()) {
+        return;
+    }
+    const payload = collectCommandPayload();
+    const path = selectedCommandId ? '/admin/commands/' + selectedCommandId : '/admin/commands';
+    const method = selectedCommandId ? 'PATCH' : 'POST';
+    commandRequest(path, {
+        method: method,
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify(payload)
+    })
+        .then(function (saved) {
+            selectedCommandId = saved.id;
+            showToast('명령어 저장 완료');
+            loadCommands();
+        })
+        .catch(function (error) {
+            renderCommandErrors([error.message]);
+            showToast('명령어 저장에 실패했습니다.');
+        });
+}
+
+function deactivateCommand() {
+    const command = getSelectedCommand();
+    if (!command) {
+        return;
+    }
+    if (!window.confirm('선택한 명령어를 비활성화할까요?')) {
+        return;
+    }
+    commandRequest('/admin/commands/' + command.id, {
+        method: 'PATCH',
+        headers: csrfHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify({active: false})
+    })
+        .then(function (saved) {
+            selectedCommandId = saved.id;
+            showToast('명령어 비활성화 완료');
+            loadCommands();
+        })
+        .catch(function (error) {
+            renderCommandErrors([error.message]);
+        });
+}
+
+function commandRequest(path, options) {
+    return fetch(buildUrl(path), options)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            }
+            return response.json()
+                .catch(function () {
+                    return {};
+                })
+                .then(function (error) {
+                    throw new Error(error.message || '요청에 실패했습니다.');
+                });
+        });
+}
+
+function renderCommandValidation(result) {
+    if (result.valid) {
+        renderCommandStatus('저장 가능');
+        return;
+    }
+    renderCommandErrors(result.errors || []);
+}
+
+function renderCommandStatus(text) {
+    const result = document.getElementById('command-validation-result');
+    if (!result) {
+        return;
+    }
+    result.innerHTML = '';
+    const chip = document.createElement('span');
+    chip.className = 'is-ok';
+    chip.textContent = text;
+    result.appendChild(chip);
+}
+
+function renderCommandErrors(errors) {
+    const result = document.getElementById('command-validation-result');
+    if (!result) {
+        return;
+    }
+    result.innerHTML = '';
+    const safeErrors = errors.length > 0 ? errors : ['요청에 실패했습니다.'];
+    safeErrors.forEach(function (error) {
+        const chip = document.createElement('span');
+        chip.textContent = commandErrorLabel(error);
+        result.appendChild(chip);
+    });
+}
+
+function renderCommandPreview(message) {
+    const result = document.getElementById('command-preview-result');
+    if (result) {
+        result.textContent = message || '-';
+    }
+}
+
+function clearCommandFeedback() {
+    renderCommandPreview('');
+    const result = document.getElementById('command-validation-result');
+    if (result) {
+        result.innerHTML = '';
+    }
+}
+
+function commandErrorLabel(error) {
+    if (error && error.startsWith('timer messageTemplate cannot use caller variables:')) {
+        return '타이머에는 호출자 변수를 사용할 수 없습니다.';
+    }
+    const labels = {
+        'type is required': '유형을 선택해 주세요.',
+        'type is invalid': '지원하지 않는 유형입니다.',
+        'type cannot be changed': '유형은 생성 후 바꿀 수 없습니다.',
+        'trigger is required': '트리거를 입력해 주세요.',
+        'trigger must start with !': '트리거는 !로 시작해야 합니다.',
+        'trigger length must be between 2 and 20': '트리거는 2자 이상 20자 이하입니다.',
+        'trigger must not contain control characters': '트리거에 제어문자는 사용할 수 없습니다.',
+        'trigger must be a single token': '트리거에는 공백을 사용할 수 없습니다.',
+        'trigger already exists': '이미 사용 중인 트리거입니다.',
+        'actionKey is required': 'TRIGGER action을 선택해 주세요.',
+        'actionKey is invalid': '지원하지 않는 action입니다.',
+        'actionKey cannot be changed': 'Action은 생성 후 바꿀 수 없습니다.',
+        'actionKey already exists': '이미 등록된 action입니다.',
+        'messageTemplate is required': '응답 템플릿을 입력해 주세요.',
+        'messageTemplate length must be 300 or less': '응답 템플릿은 300자 이하입니다.',
+        'timerIntervalMinutes must be between 5 and 1440': '타이머 주기는 5분 이상 1440분 이하입니다.',
+        'timerMinChatCount must be between 1 and 10000': '타이머 채팅 수는 1 이상 10000 이하입니다.',
+        'requiredRole is invalid': '지원하지 않는 권한입니다.',
+        'userCooldownSeconds must be between 5 and 3600': '쿨타임은 5초 이상 3600초 이하입니다.'
+    };
+    return labels[error] || error || '요청에 실패했습니다.';
+}
+
 function activateAdminTab(targetId) {
     document.querySelectorAll('.admin-tab').forEach(function (button) {
         const active = button.getAttribute('data-tab-target') === targetId;
@@ -973,6 +1379,10 @@ function activateAdminTab(targetId) {
 
     if (targetId === 'roulette-tab') {
         loadRouletteManagement();
+    }
+
+    if (targetId === 'command-tab') {
+        loadCommandManagement();
     }
 }
 
@@ -1337,6 +1747,53 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        if (event.target.id === 'command-new') {
+            event.preventDefault();
+            resetCommandForm();
+            return;
+        }
+
+        if (event.target.id === 'command-refresh') {
+            event.preventDefault();
+            loadCommands();
+            return;
+        }
+
+        const commandRow = event.target.closest('.command-row:not(.is-head)');
+        if (commandRow) {
+            event.preventDefault();
+            const commandId = parseInt(commandRow.dataset.commandId, 10);
+            const command = commandRecords.find(function (item) {
+                return item.id === commandId;
+            });
+            populateCommandForm(command);
+            return;
+        }
+
+        if (event.target.id === 'command-validate') {
+            event.preventDefault();
+            validateCommand();
+            return;
+        }
+
+        if (event.target.id === 'command-preview') {
+            event.preventDefault();
+            previewCommand();
+            return;
+        }
+
+        if (event.target.id === 'command-save') {
+            event.preventDefault();
+            saveCommand();
+            return;
+        }
+
+        if (event.target.id === 'command-deactivate') {
+            event.preventDefault();
+            deactivateCommand();
+            return;
+        }
+
         if (event.target.id === 'karma-clear') {
             event.preventDefault();
             selectedIds.clear();
@@ -1363,9 +1820,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (event.target.id === 'karma-modal') {
             closeModal();
-
+            return;
         }
 
+    });
+
+    const commandType = document.getElementById('command-type');
+    if (commandType) {
+        commandType.addEventListener('change', function () {
+            updateCommandFieldState();
+            clearCommandFeedback();
+        });
+    }
+    [
+        'command-filter-type',
+        'command-filter-active',
+        'command-trigger',
+        'command-action-key',
+        'command-message-template',
+        'command-timer-interval',
+        'command-timer-chat-count',
+        'command-required-role',
+        'command-cooldown',
+        'command-active'
+    ].forEach(function (id) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', clearCommandFeedback);
+            element.addEventListener('change', function () {
+                clearCommandFeedback();
+                if (id === 'command-filter-type' || id === 'command-filter-active') {
+                    renderCommandList();
+                }
+            });
+        }
     });
 
     const manualAmount = document.getElementById('manual-amount');

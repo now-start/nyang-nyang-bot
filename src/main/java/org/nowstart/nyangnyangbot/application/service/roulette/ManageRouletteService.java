@@ -124,7 +124,12 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     @Override
     @Transactional
     public RouletteTableResult deactivateTable(Long tableId) {
+        TableResult current = roulettePort.findTableById(tableId)
+                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         TableResult table = roulettePort.deactivateTable(tableId);
+        if (current.active()) {
+            deactivateRouletteDonationCommand(table.command());
+        }
         log.info("level=AUDIT action=roulette_table.deactivate result=success tableId={}", table.id());
         return tableResult(table);
     }
@@ -238,6 +243,26 @@ public class ManageRouletteService implements ManageRouletteUseCase {
                 current.timerIntervalMinutes(),
                 current.timerMinChatCount(),
                 true,
+                current.requiredRole() == null ? "USER" : current.requiredRole(),
+                current.userCooldownSeconds() == null ? 0 : current.userCooldownSeconds(),
+                "system"
+        ));
+    }
+
+    private void deactivateRouletteDonationCommand(String command) {
+        String normalizedCommand = CommandService.normalizeTrigger(command);
+        CommandRecord current = commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION)
+                .orElse(null);
+        if (current == null || normalizedCommand == null || !normalizedCommand.equals(current.trigger())) {
+            return;
+        }
+        commandPort.update(new CommandPort.UpdateData(
+                current.id(),
+                current.trigger(),
+                current.messageTemplate(),
+                current.timerIntervalMinutes(),
+                current.timerMinChatCount(),
+                false,
                 current.requiredRole() == null ? "USER" : current.requiredRole(),
                 current.userCooldownSeconds() == null ? 0 : current.userCooldownSeconds(),
                 "system"
