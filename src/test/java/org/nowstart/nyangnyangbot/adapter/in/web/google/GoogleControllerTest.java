@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @ExtendWith(MockitoExtension.class)
 class GoogleControllerTest {
@@ -59,5 +60,18 @@ class GoogleControllerTest {
 
         // 검증
         then(scheduled).isFalse();
+    }
+
+    @Test
+    @DisplayName("데이터베이스 동기화 API는 POST로만 노출한다")
+    void syncDatabase_ShouldUsePostMapping() throws NoSuchMethodException {
+        // 실행
+        PostMapping postMapping = GoogleController.class
+                .getMethod("syncDatabase")
+                .getAnnotation(PostMapping.class);
+
+        // 검증
+        then(postMapping).isNotNull();
+        then(postMapping.value()).containsExactly("/sync");
     }
 }

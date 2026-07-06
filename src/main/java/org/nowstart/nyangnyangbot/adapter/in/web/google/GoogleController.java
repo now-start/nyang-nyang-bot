@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,7 +25,7 @@ public class GoogleController {
             summary = "데이터베이스 동기화",
             description = "구글 시트의 데이터를 데이터베이스와 동기화합니다."
     )
-    @GetMapping("/sync")
+    @PostMapping("/sync")
     public ResponseEntity<String> syncDatabase() {
         log.info("[DBSync][START]");
         syncGoogleSheetUseCase.updateFavorite();

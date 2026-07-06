@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="alert alert-secondary mb-0" th:fragment="empty-state(message)">
+    <span th:text="${message}">표시할 데이터가 없습니다.</span>
+</div>
+
+<div class="alert mb-0"
+     role="alert"
+     th:classappend="${tone == 'success'} ? ' alert-success' :
+       (${tone == 'warning'} ? ' alert-warning' :
+       (${tone == 'danger'} ? ' alert-danger' :
+       (${tone == 'info'} ? ' alert-info' : ' alert-secondary')))"
+     th:fragment="alert(message, tone)"
+     th:text="${message}">상태 메시지</div>
+
+<div class="alert alert-danger mb-0" role="alert" th:fragment="validation-summary(title, errors)">
+    <strong th:text="${title}">검증 실패</strong>
+    <ul class="mb-0 mt-2" th:if="${errors != null and !#lists.isEmpty(errors)}">
+        <li th:each="error : ${errors}" th:text="${error}">오류</li>
+    </ul>
+</div>
+
+<div class="toast position-fixed bottom-0 end-0 m-3" id="toast" style="display: none;" th:fragment="toast">
+    <div class="toast-body">
+        <span id="toast-text"></span>
+    </div>
+</div>
+
+<div id="loading-spinner" th:fragment="loading">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">불러오는 중...</span>
+    </div>
+</div>
+</body>
+</html>

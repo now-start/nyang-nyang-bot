@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<button th:fragment="action-button(id, label, variant, type, extraClass)"
+        th:id="${id}"
+        th:type="${type}"
+        th:with="variantClass=${variant == 'primary' or variant == 'success'} ? ' btn-success' :
+          (${variant == 'danger'} ? ' btn-outline-danger' :
+          (${variant == 'ghost'} ? ' btn-outline-secondary' :
+          (${variant == 'light'} ? ' btn-light' : ' btn-secondary'))),
+          extra=${extraClass == null ? '' : ' ' + extraClass}"
+        th:class="${'btn' + variantClass + extra}"
+        th:text="${label}">버튼</button>
+
+<button th:fragment="hx-get-button(id, label, variant, size, url, target, swap, extraClass)"
+        th:id="${id}"
+        th:hx-get="${url}"
+        th:hx-swap="${swap}"
+        th:hx-target="${target}"
+        th:type="button"
+        th:with="variantClass=${variant == 'primary' or variant == 'success'} ? ' btn-success' :
+          (${variant == 'danger'} ? ' btn-outline-danger' :
+          (${variant == 'ghost'} ? ' btn-outline-secondary' :
+          (${variant == 'light'} ? ' btn-light' : ' btn-secondary'))),
+          sizeClass=${size == 'sm'} ? ' btn-sm' : (${size == 'lg'} ? ' btn-lg' : ''),
+          extra=${extraClass == null ? '' : ' ' + extraClass}"
+        th:class="${'btn' + variantClass + sizeClass + extra}"
+        th:text="${label}">버튼</button>
+
+<button th:fragment="hx-post-button(id, label, variant, size, url, target, include, swap, extraClass)"
+        th:hx-include="${include}"
+        th:hx-post="${url}"
+        th:hx-swap="${swap}"
+        th:hx-target="${target}"
+        th:id="${id}"
+        th:type="button"
+        th:with="variantClass=${variant == 'primary' or variant == 'success'} ? ' btn-success' :
+          (${variant == 'danger'} ? ' btn-outline-danger' :
+          (${variant == 'ghost'} ? ' btn-outline-secondary' :
+          (${variant == 'light'} ? ' btn-light' : ' btn-secondary'))),
+          sizeClass=${size == 'sm'} ? ' btn-sm' : (${size == 'lg'} ? ' btn-lg' : ''),
+          extra=${extraClass == null ? '' : ' ' + extraClass}"
+        th:class="${'btn' + variantClass + sizeClass + extra}"
+        th:text="${label}">버튼</button>
+</body>
+</html>

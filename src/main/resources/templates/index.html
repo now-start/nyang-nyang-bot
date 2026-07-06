@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html data-bs-theme="dark" lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
@@ -32,9 +32,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
           th:unless="${landingMode}">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           rel="stylesheet"
+          crossorigin="anonymous"
           th:unless="${landingMode}">
+    <script defer src="https://unpkg.com/htmx.org@2.0.4" th:unless="${landingMode}"></script>
     <link href="/css/design-system.css"
           rel="stylesheet"
           th:href="@{/css/design-system.css}"
@@ -46,7 +48,7 @@
     <link href="https://nng-phinf.pstatic.net/MjAyNDAzMDlfMjQg/MDAxNzA5OTI3ODk5MTk4.-R_7VTIWynEx4CSWpUvSgqWIGlylkkv-hv8JsHugcvQg.d3Vl9GN584w3__Lxbaq5zWYBBhugPJ-CIZHl6KoZ1-8g.PNG/%ED%95%98%ED%8A%B8%EC%86%90_%EC%95%8C%ED%8A%B8%EB%B8%8C%EC%9D%B4.png?type=f120_120_na"
           rel="icon">
 </head>
-<body th:attr="data-current-user-id=${currentUserId},data-is-admin=${isAdmin}">
+<body class="bg-dark bg-gradient text-light" th:attr="data-current-user-id=${currentUserId},data-is-admin=${isAdmin}">
 <noscript th:if="${landingMode}">
     <p>
         자바스크립트가 꺼져 있어 자동 이동이 되지 않았습니다.
@@ -55,176 +57,31 @@
 </noscript>
 
 <div class="page" th:unless="${landingMode}">
-    <header class="hero">
-        <div class="hero-title">
-            <span class="badge" th:text="${currentNickName != null ? currentNickName : '치즈냥'}">치즈냥</span>
-            <h1>호감도</h1>
-            <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
-        </div>
-    </header>
+    <header th:replace="~{features/favorite/components :: hero(${currentNickName})}"></header>
 
     <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-    <div class="admin-tabs" role="tablist" th:if="${isAdmin}">
-        <button aria-controls="favorite-tab" aria-selected="true" class="admin-tab is-active"
-                data-tab-target="favorite-tab" role="tab" type="button">호감도 목록
-        </button>
-        <button aria-controls="attendance-tab" aria-selected="false" class="admin-tab"
-                data-tab-target="attendance-tab" role="tab" type="button">출석체크
-        </button>
-        <button aria-controls="roulette-tab" aria-selected="false" class="admin-tab"
-                data-tab-target="roulette-tab" role="tab" type="button">룰렛 관리
-        </button>
-        <button aria-controls="command-tab" aria-selected="false" class="admin-tab"
-                data-tab-target="command-tab" role="tab" type="button">명령어 관리
-        </button>
-    </div>
+    <div th:if="${isAdmin}" th:replace="~{features/favorite/components :: admin-tabs}"></div>
 
-    <section class="tab-panel is-active" id="favorite-tab" role="tabpanel">
-        <section class="controls">
-            <section class="ticker-shell">
-                <div class="ticker-header">
-                    <span class="ticker-title">주간 채팅 순위</span>
-                    <span class="ticker-subtitle">이번 주 채팅왕</span>
-                </div>
-                <div class="ticker-viewport">
-                    <div class="ticker-track" th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
-                        <div class="ticker-row">
-                            <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
-                                <span class="rank-emoji" th:switch="${rank.rank}">
-                                    <span th:case="1">🥇</span>
-                                    <span th:case="2">🥈</span>
-                                    <span th:case="3">🥉</span>
-                                    <span th:case="*"></span>
-                                </span>
-                                <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
-                            </span>
-                        </div>
-                        <div aria-hidden="true" class="ticker-row">
-                            <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
-                                <span class="rank-emoji" th:switch="${rank.rank}">
-                                    <span th:case="1">🥇</span>
-                                    <span th:case="2">🥈</span>
-                                    <span th:case="3">🥉</span>
-                                    <span th:case="*"></span>
-                                </span>
-                                <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="ticker-empty" th:if="${weeklyChatRanks == null or #lists.isEmpty(weeklyChatRanks)}">
-                        이번 주 채팅 기록 없음
-                    </div>
-                </div>
-            </section>
-
-            <form class="search-form" method="get" th:action="@{/favorite/list}">
-                <div class="search-field">
-                    <span>닉네임</span>
-                    <input id="nickName" name="nickName" placeholder="닉네임 입력" th:value="${nickName}" type="text">
-                </div>
-                <div class="d-flex flex-column flex-sm-row gap-2 search-actions">
-                    <button class="btn-strong" type="submit">검색</button>
-                    <button class="btn-ghost btn-auth" id="sync-button" th:if="${isAdmin}" type="button">데이터 동기화
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <section class="board" th:classappend="${isAdmin} ? '' : ' board-readonly'">
-            <div class="board-head">
-                <div>닉네임</div>
-                <div>호감도</div>
-                <div th:if="${isAdmin}">호감도 수정</div>
-            </div>
-            <div class="board-body" th:if="${favoriteList != null}">
-                <div class="board-row" th:data-favorite="${favoriteEntity.favorite}"
-                     th:data-nick-name="${favoriteEntity.nickName}"
-                     th:data-user-id="${favoriteEntity.userId}"
-                     th:each="favoriteEntity, iterStat : ${favoriteList.content}"
-                     th:style="'--i:' + ${iterStat.index}">
-                    <div>
-                        <div class="nickname-line">
-                            <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
-                                 th:text="${favoriteEntity.nickName}">테스트
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
-                    </div>
-                    <div th:if="${isAdmin}">
-                        <button class="karma-button btn-auth" type="button">호감도 수정</button>
-                    </div>
-                    <div class="history-details">
-                        <div class="history-grid"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div th:if="${favoriteList != null}">
-            <nav th:if="${favoriteList.totalPages > 1}"
-                 th:with="blockSize=${10}, start=${(favoriteList.number / blockSize) * blockSize},
-                  end=${T(java.lang.Math).min(favoriteList.totalPages - 1, start + blockSize - 1)}">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item" th:classappend="${favoriteList.number == 0} ? 'disabled'">
-                        <a aria-label="이전 페이지" class="page-link"
-                           th:href="@{/favorite/list(page=${favoriteList.number - 1})}">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-
-                    <li class="page-item" th:if="${start > 0}">
-                        <a class="page-link" th:href="@{/favorite/list(page=0)}">1</a>
-                    </li>
-                    <li class="page-item disabled" th:if="${start > 1}">
-                        <span class="page-link">...</span>
-                    </li>
-
-                    <li class="page-item"
-                        th:classappend="${i == favoriteList.number} ? 'active'"
-                        th:each="i : ${#numbers.sequence(start, end)}">
-                        <a class="page-link" th:href="@{/favorite/list(page=${i})}" th:text="${i + 1}"></a>
-                    </li>
-
-                    <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
-                        <span class="page-link">...</span>
-                    </li>
-                    <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
-                        <a class="page-link" th:href="@{/favorite/list(page=${favoriteList.totalPages - 1})}"
-                           th:text="${favoriteList.totalPages}"></a>
-                    </li>
-
-                    <li class="page-item"
-                        th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
-                        <a aria-label="다음 페이지" class="page-link"
-                           th:href="@{/favorite/list(page=${favoriteList.number + 1})}">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </section>
+    <section th:replace="~{features/favorite/components :: favorite-tab(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks})}"></section>
 
     <section class="tab-panel" id="attendance-tab" role="tabpanel" th:if="${isAdmin}">
-        <div th:replace="~{fragments/attendance-modal :: attendance-panel}"></div>
+        <div th:replace="~{features/attendance/components :: attendance-panel}"></div>
     </section>
 
     <section class="tab-panel" id="roulette-tab" role="tabpanel" th:if="${isAdmin}">
-        <div th:replace="~{fragments/roulette-modal :: roulette-panel}"></div>
+        <div th:replace="~{features/roulette/components :: roulette-panel}"></div>
     </section>
 
     <section class="tab-panel" id="command-tab" role="tabpanel" th:if="${isAdmin}">
-        <div th:replace="~{fragments/command-modal :: command-panel}"></div>
+        <div th:replace="~{features/command/regions :: command-panel}"></div>
     </section>
 </div>
 
-<div th:replace="~{fragments/toast :: toast}" th:unless="${landingMode}"></div>
+<div th:replace="~{components/feedback :: toast}" th:unless="${landingMode}"></div>
 <th:block th:if="${!landingMode and isAdmin}">
-    <div th:replace="~{fragments/karma-modal :: karma-modal}"></div>
-    <div th:replace="~{fragments/loading :: loading}"></div>
+    <div th:replace="~{features/favorite/overlays :: karma-modal}"></div>
+    <div th:replace="~{components/feedback :: loading}"></div>
 </th:block>
 
 <script th:if="${landingMode}" th:inline="javascript">
@@ -238,9 +95,6 @@
     <script th:inline="javascript">
         window.baseUrl = /*[[@{/}]]*/ '/';
     </script>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <script src="/js/favorite-list.js" th:src="@{/js/favorite-list.js}"></script>
 </th:block>
 </body>

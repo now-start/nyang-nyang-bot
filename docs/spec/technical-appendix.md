@@ -35,7 +35,7 @@
 | POST | `/attendance/stop` | 관리자 | 출석 수집 종료 |
 | GET | `/attendance/users` | 관리자 | 출석 수집 대상자 조회 |
 | POST | `/attendance/apply` | 관리자 | 출석 보상 적용 |
-| GET | `/google/sync` | 관리자 | 전환 기간의 Google Sheets 포인트 마이그레이션 |
+| POST | `/google/sync` | 관리자 | 전환 기간의 Google Sheets 포인트 마이그레이션 |
 | GET | `/chzzk/connect` | 관리자 | CHZZK 소켓 수동 연결 |
 | GET | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 조회 |
 | POST | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 생성 |

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="vstack gap-3"
+         th:fragment="command-panel"
+         th:with="listUrl=@{/admin/commands/fragments/list},
+                  editorUrl=@{/admin/commands/fragments/editor}">
+    <div th:replace="~{features/command/components :: panel-header(${listUrl}, ${commandTypeOptions}, ${commandActiveOptions})}"></div>
+    <div th:replace="~{features/command/components :: workspace(${listUrl}, ${editorUrl})}"></div>
+</section>
+
+<section class="border border-secondary-subtle rounded p-3"
+         data-component="command-list"
+         hx-include="#command-filter-form"
+         hx-swap="outerHTML"
+         hx-trigger="command-list-refresh from:body"
+         id="command-list-region"
+         th:fragment="command-list-region"
+         th:hx-get="@{/admin/commands/fragments/list}"
+         th:with="editorUrl=@{/admin/commands/fragments/editor}">
+    <div th:replace="~{features/command/components :: list-header(${editorUrl})}"></div>
+    <div th:replace="~{features/command/components :: command-table(${commands}, ${editorUrl})}"></div>
+</section>
+
+<section class="border border-secondary-subtle rounded p-3"
+         data-component="command-editor"
+         id="command-editor-region"
+         th:fragment="command-editor-region"
+         th:with="saveUrl=@{/admin/commands/fragments/save},
+                  validateUrl=@{/admin/commands/fragments/validate},
+                  previewUrl=@{/admin/commands/fragments/preview},
+                  deactivateUrl=@{/admin/commands/fragments/deactivate}">
+    <div th:replace="~{features/command/components :: editor-header(${saveMessage})}"></div>
+    <div th:replace="~{features/command/components :: save-error(${saveError})}"></div>
+
+    <form class="vstack gap-3"
+          hx-disabled-elt="find button"
+          hx-swap="outerHTML"
+          hx-target="#command-editor-region"
+          id="command-editor-form"
+          th:hx-post="${saveUrl}">
+        <input th:replace="~{components/forms :: hidden-field('commandId', ${commandForm == null ? '' : commandForm.commandId})}">
+        <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+
+        <div th:replace="~{features/command/components :: editor-fields(${commandForm}, ${commandEditorTypeOptions}, ${commandActionOptions}, ${commandRoleOptions})}"></div>
+        <div th:replace="~{features/command/components :: preview-sample}"></div>
+        <div th:replace="~{features/command/components :: editor-actions(${validateUrl}, ${previewUrl}, ${deactivateUrl})}"></div>
+    </form>
+
+    <div class="mt-3" th:replace="~{features/command/regions :: command-validation-region}"></div>
+    <div class="mt-3" th:replace="~{features/command/regions :: command-preview-region}"></div>
+</section>
+
+<section id="command-validation-region" th:fragment="command-validation-region">
+    <th:block th:if="${validationResult != null and validationResult.valid}">
+        <div th:replace="~{components/feedback :: alert('저장 가능한 명령어입니다.', 'success')}"></div>
+    </th:block>
+    <th:block th:if="${validationResult != null and !validationResult.valid}">
+        <div th:replace="~{components/feedback :: validation-summary('검증 실패', ${validationResult.errors})}"></div>
+    </th:block>
+</section>
+
+<section id="command-preview-region" th:fragment="command-preview-region">
+    <th:block th:if="${previewError}">
+        <div th:replace="~{components/feedback :: alert(${previewError}, 'danger')}"></div>
+    </th:block>
+    <th:block th:if="${previewMessage}">
+        <div th:replace="~{components/feedback :: alert(${previewMessage}, 'success')}"></div>
+    </th:block>
+</section>
+</body>
+</html>

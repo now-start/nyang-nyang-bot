@@ -6,6 +6,8 @@
 - 관련 문서:
   - [PRD](../PRD.md)
   - [API 명세](api.md)
+  - [UX/UI 가이드라인](ux-ui-guidelines.md)
+  - [컴포넌트 가이드](component-guidelines.md)
   - [디자인 와이어프레임](wireframes.md)
   - [호감도 포인트 제도](point-system.md)
   - [호감도/업보/쿠폰 카탈로그](reward-catalog.md)
@@ -15,7 +17,9 @@
 
 이 문서는 Nyang-Nyang Bot의 웹 화면, 사용자/관리자 UI, 공통 컴포넌트, 상태 표현, 반응형 기준을 정의한다. OBS 브라우저 소스 화면은 [OBS 오버레이 디자인 명세](overlay-design.md)를 따른다.
 
-현재 구현은 `templates/index.html`, `static/css/favorite-list.css`, `static/js/favorite-list.js`, `templates/fragments/*`를 중심으로 호감도 보드, 주간 채팅 순위, 관리자 호감도 조정 모달, 출석체크 모달을 제공한다. 신규 화면은 현행 사용성을 유지하되 클린 아키텍처 adapter 경계에 맞춰 request/response DTO와 화면 상태를 분리한다.
+현재 웹 관리자 화면은 `templates/index.html`과 Thymeleaf fragment를 중심으로 Bootstrap 5와 htmx 기반 전환을 진행한다.
+기존 출석체크, 룰렛, 호감도 수정, 히스토리, 명령어 관리 기능은 유지하며, `favorite-list.css`, `favorite-list.js`, 커스텀 탭/모달/목록 구현은 동등 동작을 가진 컴포넌트로 전환된 뒤 제거한다.
+페이지는 `components/*`와 `features/*/components.html` fragment를 조합하고, 별도 Storybook 또는 `/ui-catalog` 화면은 두지 않는다.
 
 ## 2. 디자인 원칙
 
@@ -29,12 +33,16 @@
 
 ### 2.1 디자인 시스템 규칙
 
+신규 전환의 컴포넌트, 색상, htmx 적용 기준은 [컴포넌트 가이드](component-guidelines.md)를 우선한다.
+아래 규칙은 현행 화면 맥락을 설명하는 기준이며, 신규 전환 시 CHZZK 브랜드 컬러와 Bootstrap/htmx 컴포넌트 규칙으로 대체한다.
+
 이 프로젝트의 웹 UI는 `방송 커뮤니티 운영 도구`로 보이게 만든다. 화면은 귀엽거나 이벤트성인 느낌보다, 운영자가 반복적으로 조회하고 처리하기 쉬운 조용한 대시보드 톤을 우선한다.
 
 #### 2.1.1 시각 언어
 
 - 기본 테마는 어두운 운영 화면으로 유지한다.
-- 주 색상은 청록 계열 1개, 관리자/주의 액션은 주황 계열 1개만 사용한다.
+- 주 색상은 CHZZK Neon Green 계열 1개와 CHZZK Black 계열 배경을 사용한다.
+- 관리자 전용 액션은 별도 hue가 아니라 위치, label, icon, 권한 badge로 구분한다.
 - 위험/실패/음수 상태는 붉은 계열을 사용하되, 일반 강조색으로 쓰지 않는다.
 - 배경은 전체 화면에 한 번만 적용한다. 개별 섹션마다 별도 그라데이션을 반복하지 않는다.
 - 장식용 blob, orb, bokeh, 과한 glow는 사용하지 않는다.
@@ -64,8 +72,8 @@
 
 | 용도 | 규칙 |
 | --- | --- |
-| Primary | 저장, 적용, 발급, 활성화 |
-| Admin | 관리자 전용 실행, 주황 계열 |
+| Primary | 저장, 적용, 발급, 활성화. CHZZK Neon Green 계열 |
+| Admin | 관리자 전용 실행. 위치, label, icon, 권한 badge로 구분 |
 | Warning | 음수 가능, 비활성화, 정책 위반 근접 상태 |
 | Danger | 삭제, 폐기, 실패, 음수 잔액 강조 |
 | Success | 성공 toast 또는 완료 badge에만 제한 |
@@ -132,7 +140,7 @@
 
 새 UI 또는 UI 수정은 다음 조건을 만족해야 한다.
 
-- 공통 CSS token을 먼저 사용하고, 화면별 새 색상/spacing을 임의로 추가하지 않는다.
+- Bootstrap 5 컴포넌트와 utility class를 먼저 사용하고, 화면별 CSS/JS를 새로 추가하지 않는다.
 - 동일 화면 안의 버튼 높이, radius, padding이 일관된다.
 - desktop `1280px`, mobile `360px`에서 텍스트 겹침이 없다.
 - hover/focus/loading/disabled 상태가 정의되어 있다.
@@ -171,16 +179,24 @@
 - 관리자 다중 입력 폼은 한 열로 쌓는다.
 - 모달은 화면 높이를 넘으면 내부 스크롤을 사용한다.
 
-### 4.3 현행 화면 유지 기준
+### 4.3 현행 기능 유지 기준
 
-현행 호감도 보드는 다음 요소를 유지한다.
+Bootstrap/htmx 전환 중에도 기존 기능 페이지는 다음 요소를 계속 유지한다.
 
 - hero 영역의 현재 사용자/채널 표시
-- 주간 채팅 순위 ticker
+- 주간 채팅 순위
 - 닉네임 검색
 - 호감도 목록과 페이지네이션
-- 관리자 전용 출석체크/데이터 동기화/호감도 수정 버튼
+- 본인/관리자 히스토리 펼침
+- 관리자 전용 호감도 수정 모달
+- 관리자 전용 출석체크 패널
+- 관리자 전용 룰렛 관리 패널
+- 관리자 전용 데이터 동기화 버튼
+- 관리자 명령어 관리 fragment
 - toast, loading, modal fragment
+
+기존 `favorite-list.js`와 화면별 CSS는 동등 기능을 가진 Bootstrap/Thymeleaf/htmx 컴포넌트가 마련된 뒤 제거한다.
+기능을 숨기거나 삭제하는 방식의 전환은 허용하지 않는다.
 
 개선 필요:
 
@@ -292,6 +308,8 @@
 
 ## 8. 관리자 호감도/업보 처리
 
+현행 호감도 수정 기능을 유지하며, Bootstrap/Thymeleaf/htmx 전환 시에도 아래 계약을 만족해야 한다.
+
 목적:
 
 - 관리자가 호감도 지급/차감, 업보 지급, 쿠폰 구매/사용, 정정 거래를 안전하게 처리한다.
@@ -319,6 +337,8 @@
 
 ## 9. 출석체크 UI
 
+현행 출석체크 기능을 유지하며, Bootstrap/Thymeleaf/htmx 전환 시에도 아래 계약을 만족해야 한다.
+
 목적:
 
 - 관리자가 방송 중 출석체크 사이클을 시작하고 채팅 참여자를 수집해 일괄 지급한다.
@@ -344,6 +364,8 @@
 | 취소 | 지급 없음 toast |
 
 ## 10. 룰렛 관리 UI
+
+현행 룰렛 관리 기능을 유지하며, Bootstrap/Thymeleaf/htmx 전환 시에도 아래 계약을 만족해야 한다.
 
 목적:
 

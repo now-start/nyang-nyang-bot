@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<input th:fragment="hidden-field(name, value)" th:name="${name}" th:value="${value}" type="hidden">
+
+<input th:fragment="csrf-field"
+       th:name="${_csrf == null ? '_csrf' : _csrf.parameterName}"
+       th:value="${_csrf == null ? '' : _csrf.token}"
+       type="hidden">
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="text-field(id, name, label, value, placeholder, maxLength, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">텍스트</label>
+    <input class="form-control"
+           th:id="${id}"
+           th:maxlength="${maxLength}"
+           th:name="${name}"
+           th:placeholder="${placeholder}"
+           th:value="${value}"
+           type="text">
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="text-input(id, label, value, placeholder, readonly, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">텍스트</label>
+    <input class="form-control"
+           th:id="${id}"
+           th:name="${id}"
+           th:placeholder="${placeholder}"
+           th:readonly="${readonly}"
+           th:value="${value}"
+           type="text">
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="number-field(id, name, label, value, min, max, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">숫자</label>
+    <input class="form-control"
+           th:id="${id}"
+           th:max="${max}"
+           th:min="${min}"
+           th:name="${name}"
+           th:value="${value}"
+           type="number">
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="number-input(id, label, value, placeholder, min, max, step, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">숫자</label>
+    <input class="form-control"
+           th:id="${id}"
+           th:max="${max}"
+           th:min="${min}"
+           th:name="${id}"
+           th:placeholder="${placeholder}"
+           th:step="${step}"
+           th:value="${value}"
+           type="number">
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="textarea-field(id, name, label, value, placeholder, rows, maxLength, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">긴 텍스트</label>
+    <textarea class="form-control"
+              th:id="${id}"
+              th:maxlength="${maxLength}"
+              th:name="${name}"
+              th:placeholder="${placeholder}"
+              th:rows="${rows}"
+              th:text="${value}"></textarea>
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="select-field(id, name, label, value, options, disabled, extraClass)">
+    <label class="form-label" th:for="${id}" th:text="${label}">선택</label>
+    <input th:if="${disabled}" th:name="${name}" th:value="${value}" type="hidden">
+    <select class="form-select"
+            th:disabled="${disabled}"
+            th:id="${id}"
+            th:name="${name}">
+        <option th:each="option : ${options}"
+                th:selected="${option.value == value}"
+                th:text="${option.label}"
+                th:value="${option.value}">옵션</option>
+    </select>
+</div>
+
+<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="filter-select(id, name, label, value, options, extraClass)">
+    <label class="visually-hidden" th:for="${id}" th:text="${label}">필터</label>
+    <select class="form-select" th:id="${id}" th:name="${name}">
+        <option th:each="option : ${options}"
+                th:selected="${option.value == value}"
+                th:text="${option.label}"
+                th:value="${option.value}">옵션</option>
+    </select>
+</div>
+
+<div class="form-check form-switch mb-0"
+     th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="switch-field(id, name, label, checked, extraClass)">
+    <input class="form-check-input"
+           th:checked="${checked}"
+           th:id="${id}"
+           th:name="${name}"
+           type="checkbox"
+           value="true">
+    <label class="form-check-label" th:for="${id}" th:text="${label}">활성</label>
+</div>
+
+<div class="form-check mb-0"
+     th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
+     th:fragment="checkbox-input(id, label, checked, extraClass)">
+    <input class="form-check-input"
+           th:checked="${checked}"
+           th:id="${id}"
+           th:name="${id}"
+           type="checkbox">
+    <label class="form-check-label" th:for="${id}" th:text="${label}">선택</label>
+</div>
+</body>
+</html>

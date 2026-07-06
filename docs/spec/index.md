@@ -22,6 +22,9 @@
 - [클린 아키텍처 채택 결정](decision-clean-architecture.md): 클린 아키텍처 선택 배경, 대안, 트레이드오프
 - [API 명세](api.md): HTTP API, 권한, 요청/응답, 에러, 페이지네이션 기준
 - [이벤트 명세](events.md): CHZZK/룰렛/오버레이 이벤트, 상태, 중복 방지, 재처리 기준
+- [UX/UI 가이드라인](ux-ui-guidelines.md): Bootstrap, htmx, CHZZK 색상 기준, UX writing, 프론트 리팩터링 기준
+- [컴포넌트 가이드](component-guidelines.md): 신규 전환용 Bootstrap/Thymeleaf/htmx 컴포넌트 구조, 상태, 레이아웃 규칙
+- [프론트 리팩터링 다음 단계](frontend-refactor-next-steps.md): 현재 전환 상태, 남은 JS/CSS 범위, 다음 htmx/Bootstrap 전환 순서
 - [웹 UI 명세](web-ui.md): 사용자/관리자 화면, 공통 컴포넌트, 상태, 반응형 기준
 - [OBS 오버레이 디자인 명세](overlay-design.md): OBS 브라우저 소스, 룰렛 애니메이션, 안전 영역, replay 기준
 - [디자인 와이어프레임](wireframes.md): 주요 웹 화면과 OBS 오버레이 저해상도 구조

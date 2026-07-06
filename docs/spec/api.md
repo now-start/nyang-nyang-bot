@@ -112,7 +112,7 @@ JSON API의 기본 실패 응답:
 | POST | `/attendance/stop` | 관리자 | 출석 수집 종료 | FR-008 |
 | GET | `/attendance/users` | 관리자 | 출석 수집 대상자 조회 | FR-008 |
 | POST | `/attendance/apply` | 관리자 | 출석 보상 적용 | FR-008 |
-| GET | `/google/sync` | 관리자 | 전환 기간의 Google Sheets 포인트 마이그레이션 | FR-010 |
+| POST | `/google/sync` | 관리자 | 전환 기간의 Google Sheets 포인트 마이그레이션 | FR-010 |
 | GET | `/chzzk/connect` | 관리자 | CHZZK 소켓 수동 연결 | FR-016 |
 | GET | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 조회 | FR-011 |
 | POST | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 생성 | FR-011 |

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="row g-3 align-items-end" th:fragment="panel-header(listUrl, typeOptions, activeOptions)">
+    <div class="col-12 col-lg-7">
+        <h2 class="h4 fw-bold mb-1">명령어 관리</h2>
+        <p class="mb-0 text-secondary">목록, 편집, 검증, 미리보기를 서버 fragment 기준으로 갱신합니다.</p>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div th:replace="~{features/command/components :: filter-toolbar(${listUrl}, ${typeOptions}, ${activeOptions})}"></div>
+    </div>
+</div>
+
+<form class="row g-2"
+      hx-swap="outerHTML"
+      hx-target="#command-list-region"
+      hx-trigger="change, submit"
+      id="command-filter-form"
+      th:fragment="filter-toolbar(listUrl, typeOptions, activeOptions)"
+      th:hx-get="${listUrl}">
+    <div class="col-12 col-sm-5">
+        <div th:replace="~{components/forms :: filter-select('command-filter-type', 'type', '유형', '', ${typeOptions}, null)}"></div>
+    </div>
+    <div class="col-12 col-sm-5">
+        <div th:replace="~{components/forms :: filter-select('command-filter-active', 'active', '상태', '', ${activeOptions}, null)}"></div>
+    </div>
+    <div class="col-12 col-sm-2 d-grid">
+        <th:block th:replace="~{components/buttons :: action-button(null, '조회', 'ghost', 'submit', null)}"></th:block>
+    </div>
+</form>
+
+<div class="row g-3" th:fragment="workspace(listUrl, editorUrl)">
+    <div class="col-12 col-xl-7">
+        <section class="border border-secondary-subtle rounded p-3"
+                 hx-swap="outerHTML"
+                 hx-trigger="load"
+                 id="command-list-region"
+                 th:hx-get="${listUrl}">
+            <div class="text-secondary">명령어 목록을 불러오는 중입니다.</div>
+        </section>
+    </div>
+    <div class="col-12 col-xl-5">
+        <section class="border border-secondary-subtle rounded p-3"
+                 hx-swap="outerHTML"
+                 hx-trigger="load"
+                 id="command-editor-region"
+                 th:hx-get="${editorUrl}">
+            <div class="text-secondary">편집 폼을 불러오는 중입니다.</div>
+        </section>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
+     th:fragment="list-header(editorUrl)">
+    <div>
+        <h3 class="h6 fw-bold mb-1">목록</h3>
+        <p class="mb-0 small text-secondary">행을 선택하면 오른쪽 편집 영역이 갱신됩니다.</p>
+    </div>
+    <th:block th:replace="~{components/buttons :: hx-get-button(null, '추가', 'primary', 'sm', ${editorUrl}, '#command-editor-region', 'outerHTML', null)}"></th:block>
+</div>
+
+<th:block th:fragment="command-table(commands, editorUrl)">
+    <div th:if="${commands == null or #lists.isEmpty(commands)}"
+         th:replace="~{components/feedback :: empty-state('표시할 명령어가 없습니다.')}"></div>
+
+    <div class="table-responsive" th:if="${commands != null and !#lists.isEmpty(commands)}">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead th:replace="~{components/tables :: header('유형', '명령어', '상태', '쿨타임', '수정자', '작업')}"></thead>
+            <tbody>
+            <th:block th:each="command : ${commands}">
+                <tr th:replace="~{features/command/components :: command-row(${command}, ${editorUrl})}"></tr>
+            </th:block>
+            </tbody>
+        </table>
+    </div>
+</th:block>
+
+<tr th:fragment="command-row(command, editorUrl)">
+    <td><span th:replace="~{components/badges :: status(${command.type}, 'secondary')}">TEXT</span></td>
+    <td>
+        <strong th:text="${command.triggerLabel}">!공지</strong>
+        <span class="d-block small text-secondary" th:text="${command.messageSummary}">응답 메시지</span>
+    </td>
+    <td>
+        <span th:replace="~{components/badges :: status(${command.statusLabel}, ${command.active} ? 'success' : 'secondary')}">활성</span>
+    </td>
+    <td class="text-end" th:text="${command.cooldownLabel}">30초</td>
+    <td th:text="${command.updatedByLabel}">admin</td>
+    <td class="text-end">
+        <th:block th:replace="~{components/buttons :: hx-get-button(null, '편집', 'ghost', 'sm', ${editorUrl + '?commandId=' + command.id}, '#command-editor-region', 'outerHTML', null)}"></th:block>
+    </td>
+</tr>
+
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
+     th:fragment="editor-header(saveMessage)">
+    <div>
+        <h3 class="h6 fw-bold mb-1">편집</h3>
+        <p class="mb-0 small text-secondary">저장 전에 검증과 미리보기를 확인합니다.</p>
+    </div>
+    <span th:if="${saveMessage}" th:replace="~{components/badges :: status(${saveMessage}, 'success')}">저장됨</span>
+</div>
+
+<div class="alert alert-danger" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
+
+<div class="row g-3"
+     th:fragment="editor-fields(commandForm, typeOptions, actionOptions, roleOptions)"
+     th:with="isExisting=${commandForm != null and commandForm.commandId != null}">
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: select-field('command-type', 'type', '유형', ${commandForm == null ? 'TEXT' : commandForm.type}, ${typeOptions}, ${isExisting}, null)}"></div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '트리거', ${commandForm == null ? '' : commandForm.trigger}, '!공지', 20, null)}"></div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: select-field('command-action-key', 'actionKey', 'Action', ${commandForm == null ? '' : commandForm.actionKey}, ${actionOptions}, ${isExisting}, null)}"></div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: select-field('command-required-role', 'requiredRole', '권한', ${commandForm == null ? 'USER' : commandForm.requiredRole}, ${roleOptions}, false, null)}"></div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '쿨타임', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 0, 3600, null)}"></div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div th:replace="~{components/forms :: number-field('command-timer-interval', 'timerIntervalMinutes', '타이머 분', ${commandForm == null ? 10 : commandForm.timerIntervalMinutes}, 5, 1440, null)}"></div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div th:replace="~{components/forms :: number-field('command-timer-chat-count', 'timerMinChatCount', '타이머 채팅', ${commandForm == null ? 10 : commandForm.timerMinChatCount}, 1, 10000, null)}"></div>
+    </div>
+    <div class="col-12">
+        <div th:replace="~{components/forms :: switch-field('command-active', 'active', '활성', ${commandForm != null and commandForm.active}, null)}"></div>
+    </div>
+    <div class="col-12">
+        <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '응답 템플릿', ${commandForm == null ? '' : commandForm.messageTemplate}, '{nickname}님, 오늘 공지는 ...', 4, 300, null)}"></div>
+    </div>
+</div>
+
+<div class="border-top border-secondary-subtle pt-3" th:fragment="preview-sample">
+    <h4 class="h6 fw-bold mb-3">미리보기 샘플</h4>
+    <div class="row g-2">
+        <div class="col-12 col-md-4">
+            <div th:replace="~{components/forms :: text-field('command-preview-nickname', 'nickname', '닉네임', '치즈냥', '닉네임', null, null)}"></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div th:replace="~{components/forms :: text-field('command-preview-args', 'args', '인자', '첫번째 두번째', '첫번째 두번째', null, null)}"></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div th:replace="~{components/forms :: number-field('command-preview-favorite', 'favorite', '호감도', 100, null, null, null)}"></div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2" th:fragment="editor-actions(validateUrl, previewUrl, deactivateUrl)">
+    <th:block th:replace="~{components/buttons :: hx-post-button(null, '검증', 'ghost', null, ${validateUrl}, '#command-validation-region', '#command-editor-form', 'outerHTML', null)}"></th:block>
+    <th:block th:replace="~{components/buttons :: hx-post-button(null, '미리보기', 'ghost', null, ${previewUrl}, '#command-preview-region', '#command-editor-form', 'outerHTML', null)}"></th:block>
+    <th:block th:replace="~{components/buttons :: hx-post-button(null, '비활성화', 'ghost', null, ${deactivateUrl}, '#command-editor-region', '#command-editor-form', 'outerHTML', null)}"></th:block>
+    <th:block th:replace="~{components/buttons :: action-button(null, '저장', 'primary', 'submit', null)}"></th:block>
+</div>
+</body>
+</html>

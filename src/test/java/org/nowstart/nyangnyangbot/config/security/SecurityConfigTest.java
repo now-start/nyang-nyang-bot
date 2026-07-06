@@ -66,7 +66,9 @@ class SecurityConfigTest {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행
-            mockMvc.perform(get("/google/sync").session(session("user", Collections.emptyList())))
+            mockMvc.perform(post("/google/sync")
+                            .session(session("user", Collections.emptyList()))
+                            .with(csrf()))
         // 검증
                     .andExpect(status().isForbidden());
         }
@@ -93,15 +95,33 @@ class SecurityConfigTest {
             SyncGoogleSheetUseCase syncGoogleSheetUseCase = context.getBean(SyncGoogleSheetUseCase.class);
 
         // 실행
-            mockMvc.perform(get("/google/sync").session(session(
-                            "admin",
-                            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-                    )))
+            mockMvc.perform(post("/google/sync")
+                            .session(session(
+                                    "admin",
+                                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                            ))
+                            .with(csrf()))
         // 검증
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));
 
             BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+        }
+    }
+
+    @Test
+    void adminSyncRejectsMissingCsrfToken() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/google/sync")
+                            .session(session(
+                                    "admin",
+                                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                            )))
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -117,7 +137,7 @@ class SecurityConfigTest {
             SyncGoogleSheetUseCase syncGoogleSheetUseCase = context.getBean(SyncGoogleSheetUseCase.class);
 
         // 실행
-            mockMvc.perform(get("/google/sync"))
+            mockMvc.perform(post("/google/sync").with(csrf()))
         // 검증
                     .andExpect(status().isOk())
                     .andExpect(content().string("SUCCESS"));

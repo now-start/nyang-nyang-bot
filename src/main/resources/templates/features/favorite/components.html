@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header class="hero" th:fragment="hero(currentNickName)">
+    <div class="hero-title">
+        <span class="badge" th:text="${currentNickName != null ? currentNickName : '치즈냥'}">치즈냥</span>
+        <h1>호감도</h1>
+        <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
+    </div>
+</header>
+
+<div class="admin-tabs" role="tablist" th:fragment="admin-tabs">
+    <th:block th:replace="~{components/navigation :: tab-button('호감도 목록', 'favorite-tab', true)}"></th:block>
+    <th:block th:replace="~{components/navigation :: tab-button('출석체크', 'attendance-tab', false)}"></th:block>
+    <th:block th:replace="~{components/navigation :: tab-button('룰렛 관리', 'roulette-tab', false)}"></th:block>
+    <th:block th:replace="~{components/navigation :: tab-button('명령어 관리', 'command-tab', false)}"></th:block>
+</div>
+
+<section class="tab-panel is-active" id="favorite-tab" role="tabpanel"
+         th:fragment="favorite-tab(favoriteList, nickName, isAdmin, weeklyChatRanks)">
+    <section th:replace="~{features/favorite/components :: controls(${weeklyChatRanks}, ${nickName}, ${isAdmin})}"></section>
+    <section th:replace="~{features/favorite/components :: board(${favoriteList}, ${isAdmin})}"></section>
+    <div th:replace="~{features/favorite/components :: pagination(${favoriteList})}"></div>
+</section>
+
+<section class="controls" th:fragment="controls(weeklyChatRanks, nickName, isAdmin)">
+    <section th:replace="~{features/favorite/components :: weekly-ranks(${weeklyChatRanks})}"></section>
+    <form th:replace="~{features/favorite/components :: search-form(${nickName}, ${isAdmin})}"></form>
+</section>
+
+<section class="ticker-shell" th:fragment="weekly-ranks(weeklyChatRanks)">
+    <div class="ticker-header">
+        <span class="ticker-title">주간 채팅 순위</span>
+        <span class="ticker-subtitle">이번 주 채팅왕</span>
+    </div>
+    <div class="ticker-viewport">
+        <div class="ticker-track" th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
+            <div class="ticker-row">
+                <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
+                    <span class="rank-emoji" th:switch="${rank.rank}">
+                        <span th:case="1">🥇</span>
+                        <span th:case="2">🥈</span>
+                        <span th:case="3">🥉</span>
+                        <span th:case="*"></span>
+                    </span>
+                    <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
+                </span>
+            </div>
+            <div aria-hidden="true" class="ticker-row">
+                <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
+                    <span class="rank-emoji" th:switch="${rank.rank}">
+                        <span th:case="1">🥇</span>
+                        <span th:case="2">🥈</span>
+                        <span th:case="3">🥉</span>
+                        <span th:case="*"></span>
+                    </span>
+                    <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
+                </span>
+            </div>
+        </div>
+        <div class="ticker-empty" th:if="${weeklyChatRanks == null or #lists.isEmpty(weeklyChatRanks)}">
+            이번 주 채팅 기록 없음
+        </div>
+    </div>
+</section>
+
+<form class="search-form" method="get" th:action="@{/favorite/list}" th:fragment="search-form(nickName, isAdmin)">
+    <div th:replace="~{components/forms :: text-field('nickName', 'nickName', '닉네임', ${nickName}, '닉네임 입력', null, 'search-field')}"></div>
+    <div class="d-flex flex-column flex-sm-row gap-2 search-actions">
+        <th:block th:replace="~{components/buttons :: action-button(null, '검색', 'primary', 'submit', null)}"></th:block>
+        <th:block th:if="${isAdmin}"
+                  th:replace="~{components/buttons :: action-button('sync-button', '데이터 동기화', 'ghost', 'button', 'btn-auth')}"></th:block>
+    </div>
+</form>
+
+<section class="board" th:classappend="${isAdmin} ? '' : ' board-readonly'" th:fragment="board(favoriteList, isAdmin)">
+    <div class="board-head">
+        <div>닉네임</div>
+        <div>호감도</div>
+        <div th:if="${isAdmin}">호감도 수정</div>
+    </div>
+    <div class="board-body" th:if="${favoriteList != null}">
+        <th:block th:each="favoriteEntity, iterStat : ${favoriteList.content}">
+            <div th:replace="~{features/favorite/components :: favorite-row(${favoriteEntity}, ${iterStat.index}, ${isAdmin})}"></div>
+        </th:block>
+    </div>
+</section>
+
+<div class="board-row"
+     th:data-favorite="${favoriteEntity.favorite}"
+     th:data-nick-name="${favoriteEntity.nickName}"
+     th:data-user-id="${favoriteEntity.userId}"
+     th:fragment="favorite-row(favoriteEntity, rowIndex, isAdmin)"
+     th:style="'--i:' + ${rowIndex}">
+    <div>
+        <div class="nickname-line">
+            <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
+                 th:text="${favoriteEntity.nickName}">테스트
+            </div>
+        </div>
+    </div>
+    <div>
+        <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
+    </div>
+    <div th:if="${isAdmin}">
+        <th:block th:replace="~{components/buttons :: action-button(null, '호감도 수정', 'ghost', 'button', 'karma-button btn-auth')}"></th:block>
+    </div>
+    <div class="history-details">
+        <div class="history-grid"></div>
+    </div>
+</div>
+
+<div th:fragment="pagination(favoriteList)" th:if="${favoriteList != null}" th:with="baseUrl=@{/favorite/list}">
+    <div th:replace="~{components/navigation :: pagination(${favoriteList}, ${baseUrl})}"></div>
+</div>
+</body>
+</html>

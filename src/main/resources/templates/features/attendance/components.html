@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="management-panel attendance-panel vstack gap-3" th:fragment="attendance-panel">
+    <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+            <div th:replace="~{components/forms :: number-input('attendance-amount', '호감도 증가', 1, null, 1, null, null, 'attendance-field')}"></div>
+        </div>
+        <div class="col-12 col-md-8">
+            <div class="attendance-status d-flex flex-wrap gap-2 justify-content-md-end">
+                <span class="badge text-bg-secondary" id="attendance-count">0명 선택</span>
+                <span class="badge text-bg-secondary" id="attendance-total">0명 현재</span>
+            </div>
+        </div>
+    </div>
+    <div class="attendance-list" id="attendance-list"></div>
+    <div class="modal-actions d-flex justify-content-end">
+        <th:block th:replace="~{components/buttons :: action-button('attendance-apply', '선택 대상 반영', 'primary', 'button', 'btn-auth')}"></th:block>
+    </div>
+</div>
+</body>
+</html>

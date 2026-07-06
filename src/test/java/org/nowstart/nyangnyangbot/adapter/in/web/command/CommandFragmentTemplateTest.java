@@ -1,15 +1,15 @@
-package org.nowstart.nyangnyangbot.adapter.in.web.favorite;
+package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandForm;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandView;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.OptionView;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.WeeklyChatRankResponse;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletContext;
@@ -19,63 +19,64 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
-class FavoriteListTemplateTest {
+class CommandFragmentTemplateTest {
 
     @Test
-    void indexTemplate_ShouldRenderAdminCommandPanel() {
+    void commandTemplate_ShouldRenderComponentizedRegions() {
         // 준비
-        SpringTemplateEngine templateEngine = templateEngine();
         WebContext context = webContext();
-        context.setVariable("landingMode", false);
-        context.setVariable("isAdmin", true);
-        context.setVariable("currentUserId", "admin");
-        context.setVariable("currentNickName", "관리자");
         setCommandOptions(context);
-        context.setVariable("weeklyChatRanks", List.of(new WeeklyChatRankResponse(1, "치즈냥", 10L)));
-        context.setVariable("favoriteList", new PageImpl<>(
-                List.of(new FavoriteSummaryResult("user1", "유저1", 100)),
-                PageRequest.of(0, 10),
-                1
-        ));
+        context.setVariable("commands", List.of(CommandView.from(command())));
+        context.setVariable("commandForm", CommandForm.from(command()));
+        context.setVariable("saveMessage", "저장됨");
 
         // 실행
-        String html = templateEngine.process("index", context);
+        String html = templateEngine().process("features/command/regions", context);
 
         // 검증
-        then(html).contains("명령어 관리");
-        then(html).contains("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css");
-        then(html).contains("https://unpkg.com/htmx.org@2.0.4");
-        then(html).contains("bg-dark bg-gradient");
-        then(html).contains("favorite-list.css");
-        then(html).contains("favorite-list.js");
-        then(html).contains("id=\"sync-button\"");
-        then(html).contains("id=\"attendance-tab\"");
-        then(html).contains("id=\"roulette-tab\"");
-        then(html).contains("id=\"command-tab\"");
-        then(html).contains("id=\"karma-modal\"");
-        then(html).contains("id=\"loading-spinner\"");
-        then(html).contains("class=\"board-row\"");
-        then(html).contains("class=\"history-details\"");
+        then(html).contains("id=\"command-filter-form\"");
         then(html).contains("id=\"command-list-region\"");
-        then(html).contains("hx-get=\"/admin/commands/fragments/list\"");
         then(html).contains("id=\"command-editor-region\"");
-        then(html).contains("id=\"command-filter-type\"");
-        then(html).contains("id=\"command-filter-active\"");
-        then(html).contains("id=\"attendance-amount\"");
-        then(html).contains("id=\"roulette-title\"");
-        then(html).contains("id=\"overlay-token-url\"");
-        then(html).contains("id=\"manual-amount\"");
+        then(html).contains("table table-dark table-hover");
+        then(html).contains("쿨타임");
+        then(html).contains("수정자");
+        then(html).contains("30초");
+        then(html).contains("admin");
+        then(html).contains("hx-trigger=\"command-list-refresh from:body\"");
+        then(html).contains("name=\"type\"");
+        then(html).contains("value=\"TEXT\"");
+        then(html).contains("type=\"hidden\"");
+        then(html).contains("id=\"command-type\"");
+        then(html).contains("disabled=\"disabled\"");
+        then(html).contains("hx-post=\"/admin/commands/fragments/save\"");
+        then(html).contains("hx-post=\"/admin/commands/fragments/validate\"");
+        then(html).contains("hx-post=\"/admin/commands/fragments/preview\"");
         then(html).contains("form-select");
         then(html).contains("form-control");
-        then(html).contains("btn btn-success");
-        then(html).doesNotContain("jquery");
-        then(html).doesNotContain("bootstrap/4.0.0");
+        then(html).doesNotContain("components/common");
         then(html).doesNotContain("command-modal");
-        then(html).doesNotContain("btn-strong");
-        then(html).doesNotContain("btn-ghost");
     }
 
-    private void setCommandOptions(WebContext context) {
+    @Test
+    void commandTemplate_ShouldRenderContextPathAwareHtmxUrls() {
+        // 준비
+        WebContext context = webContext("/nyang-nyang-bot");
+        setCommandOptions(context);
+        context.setVariable("commands", List.of(CommandView.from(command())));
+        context.setVariable("commandForm", CommandForm.from(command()));
+
+        // 실행
+        String html = templateEngine().process("features/command/regions", context);
+
+        // 검증
+        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands/fragments/list\"");
+        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands/fragments/editor\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/save\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/validate\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/preview\"");
+    }
+
+    static void setCommandOptions(WebContext context) {
         context.setVariable("commandTypeOptions", List.of(
                 new OptionView("", "전체 유형"),
                 new OptionView("TEXT", "TEXT"),
@@ -104,10 +105,34 @@ class FavoriteListTemplateTest {
         ));
     }
 
+    private CommandResult command() {
+        LocalDateTime now = LocalDateTime.of(2026, 7, 6, 12, 0);
+        return new CommandResult(
+                1L,
+                "TEXT",
+                "!공지",
+                null,
+                "{nickname}님",
+                10,
+                10,
+                true,
+                "USER",
+                30,
+                "admin",
+                "admin",
+                now,
+                now
+        );
+    }
+
     private WebContext webContext() {
+        return webContext("");
+    }
+
+    private WebContext webContext(String contextPath) {
         MockServletContext servletContext = new MockServletContext();
         MockHttpServletRequest request = new MockHttpServletRequest(servletContext, "GET", "/favorite/list");
-        request.setContextPath("");
+        request.setContextPath(contextPath);
         MockHttpServletResponse response = new MockHttpServletResponse();
         return new WebContext(
                 JakartaServletWebApplication.buildApplication(servletContext).buildExchange(request, response),
