@@ -182,7 +182,7 @@
 - OBS 브라우저 소스는 `/overlay/roulette#token=...` 형태의 URL을 호출해 오버레이 페이지를 연다.
 - URL fragment의 토큰은 초기 HTTP 요청에 포함되지 않으므로 서버 접근 로그에 남지 않는다.
 - 오버레이 페이지는 투명 배경의 HTML/JavaScript 화면이며, 표시할 룰렛 이벤트가 없을 때는 아무 UI도 보여주지 않는다.
-- 오버레이 JavaScript는 fragment에서 읽은 토큰을 `Authorization: Bearer` 헤더에 넣어 HTTP 기반 이벤트 조회를 수행한다.
+- 오버레이 htmx 요청은 fragment에서 읽은 토큰을 `Authorization: Bearer` 헤더에 넣어 HTTP 기반 이벤트 조회를 수행한다.
 - 구현 방식은 헤더 인증이 가능한 `fetch` 기반 long polling 또는 streaming fetch를 우선 사용한다.
 - 오버레이는 결과를 결정하지 않고 표시만 담당한다.
 

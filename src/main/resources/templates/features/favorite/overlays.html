@@ -1,32 +1,76 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
-<div th:fragment="karma-modal">
-    <div class="modal-backdrop" id="karma-modal">
-        <div class="modal-panel">
+<div aria-hidden="true" aria-labelledby="karma-modal-title" class="modal fade" id="karma-modal" tabindex="-1" th:fragment="karma-modal">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content" id="karma-modal-content">
             <div class="modal-header">
-                <div class="modal-header-content">
-                    <div class="badge" id="karma-target"></div>
-                </div>
-                <button aria-label="닫기" class="modal-close btn btn-outline-secondary btn-sm" id="karma-close" title="닫기" type="button">×</button>
+                <h2 class="modal-title h6" id="karma-modal-title">호감도 수정</h2>
+                <button aria-label="닫기" class="btn-close" data-bs-dismiss="modal" type="button"></button>
             </div>
-            <div class="adjustment-list" id="adjustment-list"></div>
-            <div class="manual-adjustment">
-                <div th:replace="~{components/forms :: number-input('manual-amount', '수동 입력', '', '+5 / -5', null, null, 1, null)}"></div>
-                <div th:replace="~{components/forms :: text-input('manual-history', '사유', '', '사유 입력', false, null)}"></div>
-            </div>
-            <div class="calc-panel">
-                <div class="calc-row"><span>현재 호감도</span><strong id="calc-current">0</strong></div>
-                <div class="calc-row"><span>수동 입력</span><strong id="calc-manual">0</strong></div>
-                <div class="calc-row"><span>선택 합계</span><strong id="calc-delta">0</strong></div>
-                <div class="calc-row"><span>적용 후</span><strong id="calc-after">0</strong></div>
-            </div>
-            <div class="modal-actions d-flex flex-wrap gap-2 justify-content-end">
-                <th:block th:replace="~{components/buttons :: action-button('karma-clear', '선택 초기화', 'ghost', 'button', null)}"></th:block>
-                <th:block th:replace="~{components/buttons :: action-button('karma-apply', '수정 적용', 'primary', 'button', 'btn-auth')}"></th:block>
-            </div>
+            <div class="modal-body text-secondary">대상을 불러오는 중입니다.</div>
         </div>
     </div>
+</div>
+
+<div class="modal-content" id="karma-modal-content" th:fragment="karma-modal-content">
+    <form hx-disabled-elt="find button"
+          hx-swap="innerHTML"
+          hx-target="#karma-feedback"
+          id="karma-form"
+          method="post"
+          th:hx-post="@{/favorite/adjustments/apply}">
+        <div class="modal-header">
+            <div>
+                <h2 class="modal-title h6" id="karma-modal-title"
+                    th:text="${target.nickName != null and !#strings.isEmpty(target.nickName) ? target.nickName : target.userId}">치즈냥</h2>
+                <p class="mb-0 small text-secondary"
+                   th:text="${'현재 호감도 ' + (target.favorite == null ? 0 : target.favorite)}">현재 호감도 0</p>
+            </div>
+            <button aria-label="닫기" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+        </div>
+        <div class="modal-body vstack gap-3">
+            <input name="userId" th:value="${target.userId}" type="hidden">
+            <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+
+            <div th:replace="~{features/favorite/overlays :: adjustment-list(${adjustments})}"></div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div th:replace="~{components/forms :: number-field('manual-amount', 'manualAmount', '수동 입력', '', null, null, null)}"></div>
+                </div>
+                <div class="col-12 col-md-8">
+                    <div th:replace="~{components/forms :: text-field('manual-history', 'manualHistory', '사유', '', '사유 입력', null, null)}"></div>
+                </div>
+            </div>
+
+            <div class="mt-2" id="karma-feedback"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="reset">선택 초기화</button>
+            <button class="btn btn-success" type="submit">수정 적용</button>
+        </div>
+    </form>
+</div>
+
+<div class="d-flex flex-wrap gap-2"
+     id="adjustment-list"
+     th:fragment="adjustment-list(adjustments)">
+    <th:block th:each="adjustment : ${adjustments}">
+        <input autocomplete="off"
+               class="btn-check"
+               name="adjustmentIds"
+               th:id="${'adjustment-' + adjustment.id}"
+               th:value="${adjustment.id}"
+               type="checkbox">
+        <label class="btn btn-outline-secondary"
+               th:classappend="${adjustment.amount < 0} ? ' btn-outline-danger' : (${adjustment.amount > 0} ? ' btn-outline-success' : '')"
+               th:for="${'adjustment-' + adjustment.id}">
+            <span th:text="${adjustment.label}">출석 보너스</span>
+            <strong th:text="${adjustment.amount > 0 ? '+' + adjustment.amount : adjustment.amount}">+1</strong>
+        </label>
+    </th:block>
+    <div class="text-secondary small" th:if="${adjustments != null and #lists.isEmpty(adjustments)}">조정 항목 없음</div>
 </div>
 </body>
 </html>

@@ -6,7 +6,7 @@
 - 관련 문서:
   - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md)
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
 
 ## 1. 범위
 

@@ -5,14 +5,14 @@ import static org.assertj.core.api.BDDAssertions.then;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.OptionView;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.WeeklyChatRankResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.OptionView;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletContext;
+import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -30,12 +30,14 @@ class FavoriteListTemplateTest {
         context.setVariable("isAdmin", true);
         context.setVariable("currentUserId", "admin");
         context.setVariable("currentNickName", "관리자");
+        context.setVariable("nickName", "유저1");
+        context.setVariable("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
         setCommandOptions(context);
-        context.setVariable("weeklyChatRanks", List.of(new WeeklyChatRankResponse(1, "치즈냥", 10L)));
+        context.setVariable("weeklyChatRanks", List.of(new FavoriteController.WeeklyChatRankView(1, "치즈냥", 10L)));
         context.setVariable("favoriteList", new PageImpl<>(
                 List.of(new FavoriteSummaryResult("user1", "유저1", 100)),
-                PageRequest.of(0, 10),
-                1
+                PageRequest.of(1, 10),
+                25
         ));
 
         // 실행
@@ -44,27 +46,55 @@ class FavoriteListTemplateTest {
         // 검증
         then(html).contains("명령어 관리");
         then(html).contains("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css");
+        then(html).contains("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js");
         then(html).contains("https://unpkg.com/htmx.org@2.0.4");
-        then(html).contains("bg-dark bg-gradient");
-        then(html).contains("favorite-list.css");
-        then(html).contains("favorite-list.js");
+        then(html).contains("bg-dark text-light");
+        then(html).contains("hx-headers=");
+        then(html).doesNotContain("favorite-list.css");
+        then(html).doesNotContain("favorite-list.js");
+        then(html).doesNotContain("design-system.css");
         then(html).contains("id=\"sync-button\"");
+        then(html).contains("id=\"favorite-board-region\"");
+        then(html).contains("hx-get=\"/favorite/list");
+        then(html).contains("hx-trigger=\"favorite-board-refresh from:body\"");
+        then(html).contains("hx-post=\"/google/sync\"");
+        then(html).contains("hx-target=\"#sync-feedback\"");
+        then(html).contains("id=\"chzzk-connect-button\"");
+        then(html).contains("hx-post=\"/chzzk/connect\"");
+        then(html).contains("hx-get=\"/favorite/history?userId=user1");
         then(html).contains("id=\"attendance-tab\"");
         then(html).contains("id=\"roulette-tab\"");
         then(html).contains("id=\"command-tab\"");
+        then(html).contains("data-bs-toggle=\"tab\"");
+        then(html).contains("data-bs-target=\"#favorite-tab\"");
+        then(html).contains("class=\"tab-pane fade show active\"");
         then(html).contains("id=\"karma-modal\"");
-        then(html).contains("id=\"loading-spinner\"");
-        then(html).contains("class=\"board-row\"");
-        then(html).contains("class=\"history-details\"");
+        then(html).contains("class=\"modal fade\"");
+        then(html).contains("data-bs-dismiss=\"modal\"");
+        then(html).contains("hx-get=\"/favorite/adjustments/modal?userId=user1");
+        then(html).contains("hx-target=\"#karma-modal-content\"");
+        then(html).contains("data-bs-toggle=\"collapse\"");
         then(html).contains("id=\"command-list-region\"");
-        then(html).contains("hx-get=\"/admin/commands/fragments/list\"");
+        then(html).contains("hx-get=\"/admin/commands\"");
         then(html).contains("id=\"command-editor-region\"");
         then(html).contains("id=\"command-filter-type\"");
         then(html).contains("id=\"command-filter-active\"");
         then(html).contains("id=\"attendance-amount\"");
-        then(html).contains("id=\"roulette-title\"");
+        then(html).contains("hx-post=\"/attendance/apply\"");
+        then(html).contains("hx-trigger=\"shown.bs.tab from:#attendance-tab-button\"");
+        then(html).contains("hx-trigger=\"hidden.bs.tab from:#attendance-tab-button\"");
+        then(html).contains("id=\"attendance-list\"");
+        then(html).contains("attendance-users-refresh from:body");
+        then(html).contains("id=\"roulette-config-region\"");
+        then(html).contains("룰렛 설정을 불러오는 중입니다.");
+        then(html).contains("hx-get=\"/admin/roulette/tables\"");
+        then(html).contains("id=\"roulette-events-region\"");
+        then(html).contains("최근 실행 기록을 불러오는 중입니다.");
+        then(html).doesNotContain("hx-trigger=\"load, roulette-event-refresh");
         then(html).contains("id=\"overlay-token-url\"");
-        then(html).contains("id=\"manual-amount\"");
+        then(html).contains("hx-post=\"/admin/overlay/roulette/token\"");
+        then(html).contains("id=\"overlay-replay-form\"");
+        then(html).contains("hx-post=\"/admin/overlay/roulette/events/replay\"");
         then(html).contains("form-select");
         then(html).contains("form-control");
         then(html).contains("btn btn-success");
@@ -73,6 +103,31 @@ class FavoriteListTemplateTest {
         then(html).doesNotContain("command-modal");
         then(html).doesNotContain("btn-strong");
         then(html).doesNotContain("btn-ghost");
+    }
+
+    @Test
+    void karmaModalContentTemplate_ShouldRenderApplyForm() {
+        // 준비
+        SpringTemplateEngine templateEngine = templateEngine();
+        WebContext context = webContext();
+        context.setVariable("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
+        context.setVariable("target", new FavoriteAdjustmentController.FavoriteAdjustmentTarget("user1", "유저1", 100));
+        context.setVariable("adjustments", List.of(new FavoriteAdjustmentController.FavoriteAdjustmentOptionView(1L, 5, "출석 보너스")));
+
+        // 실행
+        String html = templateEngine.process("features/favorite/overlays", context);
+
+        // 검증
+        then(html).contains("id=\"karma-form\"");
+        then(html).contains("hx-post=\"/favorite/adjustments/apply\"");
+        then(html).contains("name=\"userId\"");
+        then(html).contains("value=\"user1\"");
+        then(html).contains("name=\"adjustmentIds\"");
+        then(html).contains("value=\"1\"");
+        then(html).contains("id=\"manual-amount\"");
+        then(html).contains("id=\"manual-history\"");
+        then(html).contains("value=\"test-token\"");
+        then(html).contains("btn btn-success");
     }
 
     private void setCommandOptions(WebContext context) {

@@ -2,13 +2,15 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <button aria-selected="false"
-        class="admin-tab"
+        class="nav-link"
+        data-bs-toggle="tab"
         role="tab"
         th:aria-controls="${target}"
         th:aria-selected="${active}"
-        th:classappend="${active} ? ' is-active'"
-        th:attr="data-tab-target=${target}"
+        th:classappend="${active} ? ' active'"
+        th:data-bs-target="${'#' + target}"
         th:fragment="tab-button(label, target, active)"
+        th:id="${target + '-button'}"
         th:text="${label}"
         type="button">탭</button>
 

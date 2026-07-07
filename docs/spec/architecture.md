@@ -6,7 +6,7 @@
 - 관련 문서:
   - [클린 아키텍처 채택 결정](decision-clean-architecture.md)
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
   - [이벤트 명세](events.md)
   - [테스트 전략](test-strategy.md)
 
@@ -85,8 +85,6 @@ org.nowstart.nyangnyangbot
     in
       web
         {feature}
-          request
-          response
     out
       external
         chzzk
@@ -206,8 +204,9 @@ application
 
 Application 경계 객체 이름은 HTTP 용어를 쓰지 않는다.
 
-- `request`, `response`는 web adapter 전용 이름이다.
 - application 경계 객체에는 `Request`, `Response`, `Dto` 접미사를 쓰지 않는다.
+- web adapter의 화면 form binding 값은 `Form`, Thymeleaf model 값은 `View`로 표현한다.
+- `Request`, `Response` 접미사는 화면용 web adapter에 쓰지 않는다. provider 원본 계약이나 전역 예외 응답처럼 실제 데이터 계약이 있는 경우에만 제한적으로 사용한다.
 - 별도 `command`, `query`, `criteria`, `result` 패키지는 기본으로 만들지 않는다.
 - 특정 use case에서만 쓰는 입력/결과 값은 해당 `UseCase` 인터페이스 내부 record로 둔다. 예: `ManageRouletteUseCase.CreateTableCommand`, `ManageRouletteUseCase.TableResult`.
 - 특정 outbound port에서만 쓰는 저장 입력/조회 조건/결과 값은 해당 `Port` 인터페이스 내부 record로 둔다. 예: `RoulettePort.CreateEventCommand`, `RoulettePort.EventResult`.
@@ -283,45 +282,63 @@ Web adapter는 기능별 패키지로 나눈다.
 adapter/in/web
   roulette
     AdminRouletteController
-    FavoriteRouletteController
-    request
-      RouletteItemRequest
-      RouletteTableCreateRequest
-    response
-      RouletteTableResponse
-      RouletteRoundResponse
   favorite
     FavoriteController
     FavoriteAdjustmentController
-    request
-    response
+  command
+    CommandController
+    CommandModelAdvice
 ```
 
 규칙:
 
-- Controller는 HTTP, 인증 주체, request/response 변환만 담당한다.
+- Controller는 HTTP method/path, 인증 주체, form binding, fragment model 조립만 담당한다.
 - Controller는 application inbound use case 인터페이스만 주입한다.
 - Controller는 `application.service.*` 구현체를 직접 주입하지 않는다.
 - Controller는 persistence entity나 repository를 알면 안 된다.
 - Controller는 비즈니스 계산을 하지 않는다.
 - 전역 ControllerAdvice는 web feature 패키지에 두지 않고 `config/web`에 둔다.
-- request DTO는 `adapter/in/web/{feature}/request`에 둔다.
-- response DTO는 `adapter/in/web/{feature}/response`에 둔다.
-- response DTO는 application result 값을 web 응답 형태로 변환한다.
+- 화면 form binding 값은 컨트롤러 내부 record 또는 같은 feature 패키지의 `*Form`으로 둔다.
+- Thymeleaf model 전용 값은 컨트롤러 내부 record 또는 같은 feature 패키지의 `*View`로 둔다.
+- 화면용 `request`/`response` 하위 패키지는 만들지 않는다.
+- 화면 route는 page 또는 Thymeleaf fragment 이름을 반환한다. 화면 조작만을 위한 JSON wrapper를 병행하지 않는다.
+- `RestController`, `ResponseEntity`, `@RequestBody`는 외부 데이터 계약이 명확한 route에만 사용한다.
 
 예:
 
 ```java
-@RestController
+@Controller
+@RequestMapping("/admin/roulette")
 class AdminRouletteController {
 
     private final ManageRouletteUseCase manageRouletteUseCase;
 
-    @PostMapping("/tables")
-    ResponseEntity<RouletteTableResponse> createTable(@RequestBody RouletteTableCreateRequest request) {
-        return ResponseEntity.ok(RouletteTableResponse.from(
-                manageRouletteUseCase.createTable(request.toCreateTableCommand())
-        ));
+    @PostMapping("/items")
+    String addItem(@ModelAttribute RouletteItemForm form, Model model) {
+        manageRouletteUseCase.addItem(
+                form.tableId(),
+                form.label(),
+                form.probabilityBasisPoints(),
+                form.losingItem(),
+                form.rewardType(),
+                form.conversionMode(),
+                form.exchangeFavoriteValue(),
+                form.displayOrder()
+        );
+        model.addAttribute("tables", manageRouletteUseCase.getTables());
+        return "features/roulette/components :: roulette-config-region";
+    }
+
+    public record RouletteItemForm(
+            Long tableId,
+            String label,
+            Integer probabilityBasisPoints,
+            Boolean losingItem,
+            String rewardType,
+            String conversionMode,
+            Integer exchangeFavoriteValue,
+            Integer displayOrder
+    ) {
     }
 }
 ```
@@ -491,8 +508,8 @@ adapter/out/external
 
 | 위치 | 변환 방향 | 메서드 |
 | --- | --- | --- |
-| `adapter/in/web/{feature}/request` | Web Request -> UseCase Command | `to{Action}Command()` |
-| `adapter/in/web/{feature}/response` | UseCase Result -> Web Response | `from()` |
+| Web controller 내부 `*Form` | HTML form -> UseCase 입력 | 필요하면 `to{Action}Command()` |
+| Web controller 내부 `*View` | UseCase Result -> Thymeleaf model | 필요하면 `from()` |
 | `adapter/out/persistence/{subject}/entity` | Persistence Entity -> Domain | `to{DomainName}()` |
 | `adapter/out/persistence/{subject}/entity` | Domain -> Persistence Entity | `from()` |
 | `adapter/out/external/{provider}/request` | Port Command -> Provider Request | `from()` |
@@ -503,42 +520,10 @@ adapter/out/external
 - `application`에는 adapter 타입 변환용 `to{SpecificTarget}()`, `from(...)` 메서드를 두지 않는다.
 - `domain`에는 adapter 타입 변환용 `to{SpecificTarget}()`, `from(...)` 메서드를 두지 않는다.
 - `Mapper`, `Converter`, `Assembler`, `Translator` 클래스는 만들지 않는다.
-- Web request/response는 persistence entity를 알지 않는다.
-- Persistence entity는 web request/response를 알지 않는다.
-- Domain은 web request/response, persistence entity, external request/response를 알지 않는다.
-- Application은 web request/response, persistence entity, external request/response를 알지 않는다.
-
-Web Request 예:
-
-```java
-public record RouletteTableCreateRequest(
-        String title
-) {
-
-    public ManageRouletteUseCase.CreateTableCommand toCreateTableCommand() {
-        return new ManageRouletteUseCase.CreateTableCommand(title);
-    }
-}
-```
-
-Web Response 예:
-
-```java
-public record RouletteTableResponse(
-        Long tableId,
-        String title
-) {
-
-    public static RouletteTableResponse from(
-            ManageRouletteUseCase.TableResult result
-    ) {
-        return new RouletteTableResponse(
-                result.tableId(),
-                result.title()
-        );
-    }
-}
-```
+- Web form/view model은 persistence entity를 알지 않는다.
+- Persistence entity는 web form/view model을 알지 않는다.
+- Domain은 web form/view model, persistence entity, external request/response를 알지 않는다.
+- Application은 web form/view model, persistence entity, external request/response를 알지 않는다.
 
 Persistence Entity 예:
 
@@ -807,7 +792,7 @@ config
 - config에 비즈니스 정책을 넣지 않는다.
 - `config/web`은 Spring MVC 전역 예외 처리와 HTTP status 매핑만 담당한다.
 - `config/web`은 예외 타입을 새로 만들지 않고 `domain/exception`의 `NyangNyangException`, `ErrorCode`만 처리한다.
-- `config/web`에는 feature controller, feature request/response, use case 호출 로직을 두지 않는다.
+- `config/web`에는 feature controller, feature form/view model, use case 호출 로직을 두지 않는다.
 - local dummy data처럼 persistence 타입을 직접 써야 하는 초기화 코드는 config 예외로 둔다.
 
 ## 12. 의존성 상세 규칙
@@ -858,8 +843,8 @@ domain -> Spring/JPA
 | `Port` 내부 입력 record | 저장/변경 입력은 행위 + `Command`. 조회 조건은 가능하면 메서드 파라미터를 사용한다. 예: `RoulettePort.CreateEventCommand` |
 | `Port` 내부 결과 record | 결과 이름 + `Result`. 예: `RoulettePort.EventResult` |
 | `application/service/{feature}` | use case 구현체 또는 application 내부 조합 서비스 + `Service`. 예: `ManageRouletteService`, `ProcessRouletteDonationService`, `RouletteRoundApplyService` |
-| `adapter/in/web/{feature}/request` | HTTP 요청 DTO + `Request`. 예: `RouletteItemRequest` |
-| `adapter/in/web/{feature}/response` | HTTP 응답 DTO + `Response`. 예: `RouletteItemResponse` |
+| `adapter/in/web/{feature}` controller 내부 `*Form` | HTML form binding 값. 예: `RouletteItemForm`, `FavoriteAdjustmentApplyForm` |
+| `adapter/in/web/{feature}` controller 내부 `*View` | Thymeleaf model 전용 값. 예: `RouletteItemView`, `FavoriteHistoryView` |
 | `adapter/out/persistence/{subject}` | outbound port 구현체 + `PersistenceAdapter`. 예: `RoulettePersistenceAdapter` |
 | `adapter/out/persistence/{subject}/entity` | JPA 모델. `Entity` 접미사 없이 도메인 테이블명과 맞춘다. 예: `RouletteEvent` |
 | `adapter/out/persistence/{subject}/repository` | Spring Data 저장소 + `Repository`. 예: `RouletteEventRepository` |

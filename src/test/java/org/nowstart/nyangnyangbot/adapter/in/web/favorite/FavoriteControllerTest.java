@@ -18,7 +18,6 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.WeeklyChatRankResponse;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
@@ -28,6 +27,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.servlet.ModelAndView;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,7 +48,7 @@ class FavoriteControllerTest {
 
     private List<FavoriteSummaryResult> favoriteEntities;
     private List<WeeklyChatRankView> weeklyChatRanks;
-    private List<WeeklyChatRankResponse> weeklyChatRankResponses;
+    private List<FavoriteController.WeeklyChatRankView> weeklyChatRankViews;
     private Pageable pageable;
 
     @BeforeEach
@@ -59,8 +63,8 @@ class FavoriteControllerTest {
                 new WeeklyChatRankView(1, "채터1", 11L),
                 new WeeklyChatRankView(2, "채터2", 7L)
         );
-        weeklyChatRankResponses = weeklyChatRanks.stream()
-                .map(WeeklyChatRankResponse::from)
+        weeklyChatRankViews = weeklyChatRanks.stream()
+                .map(FavoriteController.WeeklyChatRankView::from)
                 .toList();
         given(weeklyChatRankService.getWeeklyRanks(5)).willReturn(weeklyChatRanks);
     }
@@ -73,13 +77,13 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, null, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, null, request(), response(), null);
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
         then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
-        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRankResponses);
+        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRankViews);
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
@@ -96,7 +100,7 @@ class FavoriteControllerTest {
         given(favoriteService.getByNickName(any(Pageable.class), eq(nickName))).willReturn(expectedPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, nickName, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, nickName, request(), response(), adminAuthentication());
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
@@ -113,7 +117,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, "", null);
+        ModelAndView result = favoriteController.favoriteList(pageable, "", request(), response(), null);
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
@@ -129,7 +133,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, "   ", null);
+        ModelAndView result = favoriteController.favoriteList(pageable, "   ", request(), response(), null);
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
@@ -137,20 +141,19 @@ class FavoriteControllerTest {
     }
 
     @Test
-    @DisplayName("닉네임의 HTML 특수문자를 이스케이프하여 검색한다")
-    void favoriteList_ShouldEscapeHtml_InNickName() {
+    @DisplayName("HTML 문자를 포함한 닉네임도 검색 조건으로 그대로 전달한다")
+    void favoriteList_ShouldPassHtmlLikeNickNameThrough() {
         // 준비
-        String maliciousNickName = "<script>alert('xss')</script>";
-        String escapedNickName = "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;";
+        String htmlLikeNickName = "<치즈냥>";
 
         Page<FavoriteSummaryResult> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        given(favoriteService.getByNickName(any(Pageable.class), eq(escapedNickName))).willReturn(emptyPage);
+        given(favoriteService.getByNickName(any(Pageable.class), eq(htmlLikeNickName))).willReturn(emptyPage);
 
         // 실행
-        favoriteController.favoriteList(pageable, maliciousNickName, null);
+        favoriteController.favoriteList(pageable, htmlLikeNickName, request(), response(), adminAuthentication());
 
         // 검증
-        BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(escapedNickName));
+        BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), eq(htmlLikeNickName));
     }
 
     @Test
@@ -161,7 +164,7 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        favoriteController.favoriteList(pageable, null, null);
+        favoriteController.favoriteList(pageable, null, request(), response(), null);
 
         // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p ->
@@ -178,22 +181,22 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        favoriteController.favoriteList(page2, null, null);
+        favoriteController.favoriteList(page2, null, request(), response(), null);
 
         // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageNumber() == 2));
     }
 
     @Test
-    @DisplayName("페이지 크기를 유지한다")
-    void favoriteList_ShouldPreservePageSize() {
+    @DisplayName("페이지 크기는 최대 50으로 제한한다")
+    void favoriteList_ShouldClampPageSizeTo50() {
         // 준비
-        Pageable customPageable = PageRequest.of(0, 50);
-        Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, customPageable, favoriteEntities.size());
+        Pageable requestedPageable = PageRequest.of(0, 500);
+        Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, PageRequest.of(0, 50), favoriteEntities.size());
         given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
 
         // 실행
-        favoriteController.favoriteList(customPageable, null, null);
+        favoriteController.favoriteList(requestedPageable, null, request(), response(), null);
 
         // 검증
         BDDMockito.then(favoriteService).should().getList(argThat(p -> p.getPageSize() == 50));
@@ -208,11 +211,33 @@ class FavoriteControllerTest {
         given(favoriteService.getByNickName(any(Pageable.class), anyString())).willReturn(emptyPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, specialNickName, request(), response(), adminAuthentication());
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
         BDDMockito.then(favoriteService).should().getByNickName(any(Pageable.class), anyString());
+    }
+
+    @Test
+    @DisplayName("관리자가 아니면 닉네임 검색 파라미터를 무시한다")
+    void favoriteList_ShouldIgnoreNickNameSearch_WhenNotAdmin() {
+        // 준비
+        Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
+
+        // 실행
+        ModelAndView result = favoriteController.favoriteList(
+                pageable,
+                "유저1",
+                request(),
+                response(),
+                userAuthentication()
+        );
+
+        // 검증
+        then(result.getModel().get("nickName")).isEqualTo("");
+        BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
+        BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
 
     @Test
@@ -223,11 +248,63 @@ class FavoriteControllerTest {
         given(favoriteService.getList(any(Pageable.class))).willReturn(emptyPage);
 
         // 실행
-        ModelAndView result = favoriteController.favoriteList(pageable, null, null);
+        ModelAndView result = favoriteController.favoriteList(pageable, null, request(), response(), null);
 
         // 검증
         then(result.getViewName()).isEqualTo("index");
         Page<FavoriteSummaryResult> resultPage = (Page<FavoriteSummaryResult>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("htmx 호감도 목록 요청은 board fragment와 full page URL push 헤더를 반환한다")
+    void favoriteList_ShouldReturnBoardRegionAndPushFullPageUrl_WhenHtmxRequest() {
+        // 준비
+        String nickName = "유저1";
+        Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(List.of(favoriteEntities.get(0)), pageable, 1);
+        given(favoriteService.getByNickName(any(Pageable.class), eq(nickName))).willReturn(expectedPage);
+        MockHttpServletRequest request = htmxRequest();
+        request.setContextPath("/nyang-nyang-bot");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // 실행
+        ModelAndView result = favoriteController.favoriteList(pageable, nickName, request, response, adminAuthentication());
+
+        // 검증
+        then(result.getViewName()).isEqualTo("features/favorite/components :: favorite-board-region");
+        then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
+        then(result.getModel().get("nickName")).isEqualTo(nickName);
+        then(response.getHeader("HX-Push-Url"))
+                .isEqualTo("/nyang-nyang-bot/favorite/list?page=0&size=10&nickName=%EC%9C%A0%EC%A0%801");
+    }
+
+    private MockHttpServletRequest request() {
+        return new MockHttpServletRequest();
+    }
+
+    private MockHttpServletRequest htmxRequest() {
+        MockHttpServletRequest request = request();
+        request.addHeader("HX-Request", "true");
+        return request;
+    }
+
+    private MockHttpServletResponse response() {
+        return new MockHttpServletResponse();
+    }
+
+    private Authentication adminAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                "admin",
+                "N/A",
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+    }
+
+    private Authentication userAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                "user1",
+                "N/A",
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
     }
 }

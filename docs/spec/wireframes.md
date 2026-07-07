@@ -6,7 +6,7 @@
 - 관련 문서:
   - [웹 UI 명세](web-ui.md)
   - [OBS 오버레이 디자인 명세](overlay-design.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
 
 ## 1. 범위
 

@@ -2,121 +2,295 @@ package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRequest;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteTableCreateRequest;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteEventPageResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteSimulationResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteValidationResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/admin/roulette")
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin Roulette API", description = "관리자 후원 룰렛 API")
 public class AdminRouletteController {
+
+    private static final String CONFIG_FRAGMENT = "features/roulette/components :: roulette-config-region";
+    private static final String EVENTS_FRAGMENT = "features/roulette/components :: roulette-events";
+    private static final String SIMULATION_FRAGMENT = "features/roulette/components :: roulette-simulation";
 
     private final ManageRouletteUseCase manageRouletteUseCase;
     private final QueryRouletteResultUseCase queryRouletteResultUseCase;
 
     @Operation(summary = "룰렛 테이블 조회")
     @GetMapping("/tables")
-    public ResponseEntity<List<RouletteTableResponse>> getTables() {
-        return ResponseEntity.ok(manageRouletteUseCase.getTables().stream()
-                .map(RouletteTableResponse::from)
-                .toList());
+    public String getTables(
+            @RequestParam(required = false) Long selectedTableId,
+            Model model
+    ) {
+        addRouletteConfig(model, selectedTableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "최근 룰렛 실행 목록 조회")
     @GetMapping("/events")
-    public ResponseEntity<RouletteEventPageResponse> getEvents(
+    public String getEvents(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
+            @RequestParam(defaultValue = "5") int size,
+            Model model
     ) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 20);
         Pageable pageable = PageRequest.of(safePage, safeSize);
-        return ResponseEntity.ok(RouletteEventPageResponse.from(
-                queryRouletteResultUseCase.getRecentEvents(pageable)
-        ));
+        model.addAttribute("eventsPage", queryRouletteResultUseCase.getRecentEvents(pageable));
+        return EVENTS_FRAGMENT;
+    }
+
+    @Operation(summary = "룰렛 테이블 상세 조회")
+    @GetMapping("/tables/{tableId}/detail")
+    public String getTableDetail(
+            @PathVariable Long tableId,
+            Model model
+    ) {
+        addRouletteConfig(model, tableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "룰렛 테이블 생성")
     @PostMapping("/tables")
-    public ResponseEntity<RouletteTableResponse> createTable(
-            @Valid @RequestBody RouletteTableCreateRequest request
+    public String createTable(
+            @ModelAttribute RouletteTableForm form,
+            Model model
     ) {
-        return ResponseEntity.ok(RouletteTableResponse.from(
-                manageRouletteUseCase.createTable(
-                        request.title(),
-                        request.command(),
-                        request.pricePerRound(),
-                        request.highRoundThreshold()
-                )
-        ));
+        Long selectedTableId = null;
+        try {
+            validateTableForm(form);
+            RouletteTableResult table = manageRouletteUseCase.createTable(
+                    form.title(),
+                    form.command(),
+                    form.pricePerRound(),
+                    form.highRoundThresholdOrDefault()
+            );
+            selectedTableId = table.id();
+            model.addAttribute("rouletteMessage", "룰렛 생성 완료");
+            model.addAttribute("rouletteTone", "success");
+        } catch (RuntimeException e) {
+            log.warn(
+                    "Failed to create roulette table. title={}, command={}",
+                    form == null ? null : form.title(),
+                    form == null ? null : form.command(),
+                    e
+            );
+            model.addAttribute("rouletteMessage", "룰렛 생성에 실패했습니다.");
+            model.addAttribute("rouletteTone", "danger");
+        }
+        addRouletteConfig(model, selectedTableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "룰렛 항목 추가")
-    @PostMapping("/tables/{tableId}/items")
-    public ResponseEntity<RouletteItemResponse> addItem(
-            @PathVariable Long tableId,
-            @Valid @RequestBody RouletteItemRequest request
+    @PostMapping("/items")
+    public String addItem(
+            @ModelAttribute RouletteItemForm form,
+            Model model
     ) {
-        return ResponseEntity.ok(RouletteItemResponse.from(
-                manageRouletteUseCase.addItem(
-                        tableId,
-                        request.label(),
-                        request.probabilityBasisPoints(),
-                        request.losingItem(),
-                        request.rewardType(),
-                        request.conversionMode(),
-                        request.exchangeFavoriteValue(),
-                        request.displayOrder()
-                )
-        ));
-    }
-
-    @Operation(summary = "룰렛 활성화 검증")
-    @GetMapping("/tables/{tableId}/validation")
-    public ResponseEntity<RouletteValidationResponse> validateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteValidationResponse.from(manageRouletteUseCase.validateTable(tableId)));
+        Long selectedTableId = form.tableId();
+        try {
+            RouletteTableResult table = requireTable(selectedTableId);
+            validateItemForm(form);
+            manageRouletteUseCase.addItem(
+                    selectedTableId,
+                    form.label(),
+                    form.probabilityBasisPoints(),
+                    form.losingItemOrDefault(),
+                    form.rewardTypeOrDefault(),
+                    form.conversionModeOrDefault(),
+                    form.exchangeFavoriteValue(),
+                    table.items().size() + 1
+            );
+            model.addAttribute("rouletteMessage", "룰렛 항목 추가 완료");
+            model.addAttribute("rouletteTone", "success");
+        } catch (RuntimeException e) {
+            log.warn("Failed to add roulette item. tableId={}, label={}", selectedTableId, form == null ? null : form.label(), e);
+            model.addAttribute("rouletteMessage", "룰렛 항목 추가에 실패했습니다.");
+            model.addAttribute("rouletteTone", "danger");
+        }
+        addRouletteConfig(model, selectedTableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "룰렛 테이블 활성화")
     @PostMapping("/tables/{tableId}/activate")
-    public ResponseEntity<RouletteTableResponse> activateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteTableResponse.from(manageRouletteUseCase.activateTable(tableId)));
+    public String activateTable(
+            @PathVariable Long tableId,
+            Model model
+    ) {
+        try {
+            manageRouletteUseCase.activateTable(tableId);
+            model.addAttribute("rouletteMessage", "룰렛 활성화 완료");
+            model.addAttribute("rouletteTone", "success");
+        } catch (RuntimeException e) {
+            log.warn("Failed to activate roulette table. tableId={}", tableId, e);
+            model.addAttribute("rouletteMessage", "룰렛 활성화에 실패했습니다.");
+            model.addAttribute("rouletteTone", "danger");
+        }
+        addRouletteConfig(model, tableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "룰렛 테이블 비활성화")
     @PostMapping("/tables/{tableId}/deactivate")
-    public ResponseEntity<RouletteTableResponse> deactivateTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(RouletteTableResponse.from(manageRouletteUseCase.deactivateTable(tableId)));
+    public String deactivateTable(
+            @PathVariable Long tableId,
+            Model model
+    ) {
+        try {
+            manageRouletteUseCase.deactivateTable(tableId);
+            model.addAttribute("rouletteMessage", "룰렛 비활성화 완료");
+            model.addAttribute("rouletteTone", "success");
+        } catch (RuntimeException e) {
+            log.warn("Failed to deactivate roulette table. tableId={}", tableId, e);
+            model.addAttribute("rouletteMessage", "룰렛 비활성화에 실패했습니다.");
+            model.addAttribute("rouletteTone", "danger");
+        }
+        addRouletteConfig(model, tableId);
+        return CONFIG_FRAGMENT;
     }
 
     @Operation(summary = "룰렛 확률 시뮬레이션")
     @GetMapping("/tables/{tableId}/simulation")
-    public ResponseEntity<RouletteSimulationResponse> simulate(
+    public String simulate(
             @PathVariable Long tableId,
-            @RequestParam(defaultValue = "10000") int iterations
+            @RequestParam(defaultValue = "10000") int iterations,
+            Model model
     ) {
-        return ResponseEntity.ok(RouletteSimulationResponse.from(manageRouletteUseCase.simulate(tableId, iterations)));
+        model.addAttribute("simulation", manageRouletteUseCase.simulate(tableId, iterations));
+        return SIMULATION_FRAGMENT;
+    }
+
+    private void addRouletteConfig(Model model, Long selectedTableId) {
+        List<RouletteTableResult> tables = manageRouletteUseCase.getTables();
+        Long effectiveSelectedTableId = effectiveSelectedTableId(tables, selectedTableId);
+        model.addAttribute("tables", tables);
+        model.addAttribute("selectedTableId", effectiveSelectedTableId);
+        model.addAttribute("table", findTable(tables, effectiveSelectedTableId));
+    }
+
+    private void validateTableForm(RouletteTableForm form) {
+        if (form == null
+                || form.title() == null || form.title().isBlank()
+                || form.command() == null || form.command().isBlank()
+                || form.pricePerRound() == null || form.pricePerRound() <= 0) {
+            throw new IllegalArgumentException("roulette table form is invalid");
+        }
+    }
+
+    private void validateItemForm(RouletteItemForm form) {
+        Integer probabilityBasisPoints = form.probabilityBasisPoints();
+        if (form.label() == null || form.label().isBlank() || probabilityBasisPoints == null) {
+            throw new IllegalArgumentException("roulette item form is invalid");
+        }
+        if (!form.losingItemOrDefault()
+                && "AUTO".equals(form.conversionModeOrDefault())
+                && (form.exchangeFavoriteValue() == null || form.exchangeFavoriteValue() == 0)) {
+            throw new IllegalArgumentException("exchangeFavoriteValue is required");
+        }
+    }
+
+    private RouletteTableResult requireTable(Long tableId) {
+        RouletteTableResult table = findTable(tableId);
+        if (table == null) {
+            throw new IllegalArgumentException("roulette table is required");
+        }
+        return table;
+    }
+
+    private RouletteTableResult findTable(Long tableId) {
+        if (tableId == null) {
+            return null;
+        }
+        return manageRouletteUseCase.getTables().stream()
+                .filter(table -> tableId.equals(table.id()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private RouletteTableResult findTable(List<RouletteTableResult> tables, Long tableId) {
+        if (tableId == null) {
+            return null;
+        }
+        return tables.stream()
+                .filter(table -> tableId.equals(table.id()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Long effectiveSelectedTableId(List<RouletteTableResult> tables, Long selectedTableId) {
+        if (tables.isEmpty()) {
+            return null;
+        }
+        if (selectedTableId != null && tables.stream().anyMatch(table -> selectedTableId.equals(table.id()))) {
+            return selectedTableId;
+        }
+        return tables.getFirst().id();
+    }
+
+    public record RouletteTableForm(
+            String title,
+            String command,
+            Long pricePerRound,
+            Integer highRoundThreshold
+    ) {
+
+        Integer highRoundThresholdOrDefault() {
+            return highRoundThreshold == null ? 100 : highRoundThreshold;
+        }
+    }
+
+    public record RouletteItemForm(
+            Long tableId,
+            String label,
+            String probabilityPercent,
+            Boolean losingItem,
+            String rewardType,
+            String conversionMode,
+            Integer exchangeFavoriteValue
+    ) {
+
+        Integer probabilityBasisPoints() {
+            if (probabilityPercent == null || probabilityPercent.isBlank()) {
+                return null;
+            }
+            double percent = Double.parseDouble(probabilityPercent);
+            if (!Double.isFinite(percent) || percent < 0 || percent > 100) {
+                throw new IllegalArgumentException("probabilityPercent must be between 0 and 100");
+            }
+            return (int) Math.round(percent * 100);
+        }
+
+        Boolean losingItemOrDefault() {
+            return Boolean.TRUE.equals(losingItem);
+        }
+
+        String rewardTypeOrDefault() {
+            return Boolean.TRUE.equals(losingItem) ? "CUSTOM" : rewardType;
+        }
+
+        String conversionModeOrDefault() {
+            return Boolean.TRUE.equals(losingItem) ? "NONE" : conversionMode;
+        }
     }
 }

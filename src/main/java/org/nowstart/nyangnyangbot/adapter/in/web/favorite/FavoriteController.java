@@ -3,28 +3,28 @@ package org.nowstart.nyangnyangbot.adapter.in.web.favorite;
 import io.micrometer.common.util.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteHistoryResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.WeeklyChatRankResponse;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Controller
@@ -34,8 +34,12 @@ import org.springframework.web.util.HtmlUtils;
 public class FavoriteController {
 
     private static final String FAVORITE_LIST_VIEW = "index";
+    private static final String FAVORITE_BOARD_FRAGMENT = "features/favorite/components :: favorite-board-region";
+    private static final String FAVORITE_HISTORY_FRAGMENT = "features/favorite/components :: history-grid";
     private static final int MAX_HISTORY_LIMIT = 50;
+    private static final int MAX_PAGE_SIZE = 50;
     private static final int WEEKLY_CHAT_RANK_LIMIT = 5;
+    private static final DateTimeFormatter HISTORY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final QueryFavoriteUseCase queryFavoriteUseCase;
     private final QueryWeeklyChatRankUseCase queryWeeklyChatRankUseCase;
@@ -48,50 +52,147 @@ public class FavoriteController {
     public ModelAndView favoriteList(
             @PageableDefault Pageable pageable,
             @RequestParam(required = false) String nickName,
+            HttpServletRequest request,
+            HttpServletResponse response,
             Authentication authentication
     ) {
         log.info("[GET][/favorite/list]");
-        String safeNickName = Optional.ofNullable(nickName).map(HtmlUtils::htmlEscape).orElse("");
-        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("favorite").descending());
-        var favoriteList =
-                StringUtils.isBlank(safeNickName) ? queryFavoriteUseCase.getList(page) : queryFavoriteUseCase.getByNickName(page, safeNickName);
-
-        ModelAndView modelAndView = new ModelAndView(FAVORITE_LIST_VIEW, "favoriteList", favoriteList);
-        modelAndView.addObject("landingMode", false);
-        modelAndView.addObject("weeklyChatRanks", queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
-                .map(WeeklyChatRankResponse::from)
-                .toList());
-        boolean isAdmin = false;
-        String currentUserId = null;
-        if (authentication != null && authentication.isAuthenticated()) {
-            currentUserId = authentication.getName();
-            isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-            queryFavoriteUseCase.getCurrentNickName(authentication.getName())
-                    .ifPresent(name -> modelAndView.addObject("currentNickName", name));
+        FavoriteListModel favoriteListModel = favoriteListModel(pageable, nickName, authentication);
+        String viewName = isHtmxRequest(request) ? FAVORITE_BOARD_FRAGMENT : FAVORITE_LIST_VIEW;
+        ModelAndView modelAndView = new ModelAndView(viewName, "favoriteList", favoriteListModel.favoriteList());
+        addFavoriteListModel(modelAndView, favoriteListModel);
+        if (isHtmxRequest(request)) {
+            response.setHeader("HX-Push-Url", favoriteListUrl(request, favoriteListModel.page(), favoriteListModel.nickName()));
         }
-        modelAndView.addObject("currentUserId", currentUserId);
-        modelAndView.addObject("isAdmin", isAdmin);
         return modelAndView;
     }
 
-    @Operation(summary = "호감도 히스토리 조회", description = "ADMIN은 전체 조회, 그 외는 본인 계정만 조회 가능합니다.")
+    @Operation(summary = "호감도 히스토리 fragment 조회", description = "ADMIN은 전체 조회, 그 외는 본인 계정만 조회 가능합니다.")
     @GetMapping("/history")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.name")
-    public ResponseEntity<List<FavoriteHistoryResponse>> favoriteHistory(
+    public String favoriteHistory(
             @RequestParam String userId,
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "10") int limit,
+            Model model
     ) {
-        int safeLimit = Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
-        List<FavoriteHistoryResponse> body = queryFavoriteUseCase.getHistory(userId, safeLimit).stream()
-                .map(FavoriteHistoryResponse::from)
-                .toList();
-        return ResponseEntity.ok(body);
+        model.addAttribute("histories", favoriteHistories(userId, limit));
+        return FAVORITE_HISTORY_FRAGMENT;
     }
 
-    @Operation(summary = "본인 호감도 요약 조회", description = "인증 사용자의 현재 호감도와 최근 히스토리를 조회하고 미확인 내역을 읽음 처리합니다.")
-    @GetMapping("/me")
-    public ResponseEntity<FavoriteMeResponse> favoriteMe(Authentication authentication) {
-        return ResponseEntity.ok(FavoriteMeResponse.from(queryFavoriteUseCase.getMyFavorite(authentication.getName())));
+    private FavoriteListModel favoriteListModel(Pageable pageable, String nickName, Authentication authentication) {
+        boolean isAdmin = isAdmin(authentication);
+        String searchNickName = isAdmin && nickName != null ? nickName : "";
+        int pageSize = Math.min(Math.max(pageable.getPageSize(), 1), MAX_PAGE_SIZE);
+        Pageable page = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("favorite").descending());
+        var favoriteList =
+                StringUtils.isBlank(searchNickName) ? queryFavoriteUseCase.getList(page) : queryFavoriteUseCase.getByNickName(page, searchNickName);
+        List<WeeklyChatRankView> weeklyChatRanks = queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
+                .map(WeeklyChatRankView::from)
+                .toList();
+        String currentUserId = currentUserId(authentication);
+        String currentNickName = currentUserId == null
+                ? null
+                : queryFavoriteUseCase.getCurrentNickName(currentUserId).orElse(null);
+        return new FavoriteListModel(favoriteList, page, searchNickName, weeklyChatRanks, currentUserId, currentNickName, isAdmin);
+    }
+
+    private void addFavoriteListModel(ModelAndView modelAndView, FavoriteListModel favoriteListModel) {
+        modelAndView.addObject("landingMode", false);
+        modelAndView.addObject("nickName", favoriteListModel.nickName());
+        modelAndView.addObject("weeklyChatRanks", favoriteListModel.weeklyChatRanks());
+        modelAndView.addObject("currentUserId", favoriteListModel.currentUserId());
+        modelAndView.addObject("currentNickName", favoriteListModel.currentNickName());
+        modelAndView.addObject("isAdmin", favoriteListModel.isAdmin());
+    }
+
+    private List<FavoriteHistoryView> favoriteHistories(String userId, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
+        return queryFavoriteUseCase.getHistory(userId, safeLimit).stream()
+                .map(FavoriteHistoryView::from)
+                .toList();
+    }
+
+    private String favoriteListUrl(HttpServletRequest request, Pageable page, String nickName) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath(request.getContextPath() + "/favorite/list")
+                .queryParam("page", page.getPageNumber())
+                .queryParam("size", page.getPageSize());
+        if (!StringUtils.isBlank(nickName)) {
+            builder.queryParam("nickName", nickName);
+        }
+        return builder.build().encode().toUriString();
+    }
+
+    private boolean isHtmxRequest(HttpServletRequest request) {
+        return "true".equalsIgnoreCase(request.getHeader("HX-Request"));
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
+    private String currentUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        return authentication.getName();
+    }
+
+    private record FavoriteListModel(
+            org.springframework.data.domain.Page<QueryFavoriteUseCase.FavoriteSummaryResult> favoriteList,
+            Pageable page,
+            String nickName,
+            List<WeeklyChatRankView> weeklyChatRanks,
+            String currentUserId,
+            String currentNickName,
+            boolean isAdmin
+    ) {
+    }
+
+    public record WeeklyChatRankView(
+            Integer rank,
+            String nickname,
+            Long chatCount
+    ) {
+
+        static WeeklyChatRankView from(QueryWeeklyChatRankUseCase.WeeklyChatRankView view) {
+            return new WeeklyChatRankView(view.rank(), view.nickname(), view.chatCount());
+        }
+    }
+
+    public record FavoriteHistoryView(
+            Long ledgerId,
+            String channelId,
+            String nickNameSnapshot,
+            Integer delta,
+            Integer balanceAfter,
+            String sourceType,
+            String displayCategory,
+            String publicDescription,
+            Boolean correction,
+            Integer favorite,
+            String history,
+            String date
+    ) {
+
+        static FavoriteHistoryView from(FavoriteHistoryResult result) {
+            String formattedDate = result.createdAt() == null ? null : result.createdAt().format(HISTORY_DATE_FORMATTER);
+            return new FavoriteHistoryView(
+                    result.ledgerId(),
+                    result.channelId(),
+                    result.nickNameSnapshot(),
+                    result.delta(),
+                    result.balanceAfter(),
+                    result.sourceType(),
+                    result.displayCategory(),
+                    result.publicDescription(),
+                    result.correction(),
+                    result.favorite(),
+                    result.history(),
+                    formattedDate
+            );
+        }
     }
 }

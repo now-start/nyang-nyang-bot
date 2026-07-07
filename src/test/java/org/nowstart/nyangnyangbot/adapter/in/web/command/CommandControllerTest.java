@@ -13,8 +13,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandForm;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandView;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandForm;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandView;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
@@ -26,13 +26,13 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
 
 @ExtendWith(MockitoExtension.class)
-class CommandFragmentControllerTest {
+class CommandControllerTest {
 
     @Mock
     private ManageCommandUseCase manageCommandUseCase;
 
     @InjectMocks
-    private CommandFragmentController controller;
+    private CommandController controller;
 
     private MockHttpServletResponse response;
 

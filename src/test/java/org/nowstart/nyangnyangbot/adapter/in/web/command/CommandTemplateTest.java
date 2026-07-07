@@ -6,9 +6,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandForm;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.CommandView;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandFragmentController.OptionView;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandForm;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandView;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.OptionView;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -19,7 +19,7 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
-class CommandFragmentTemplateTest {
+class CommandTemplateTest {
 
     @Test
     void commandTemplate_ShouldRenderComponentizedRegions() {
@@ -48,9 +48,9 @@ class CommandFragmentTemplateTest {
         then(html).contains("type=\"hidden\"");
         then(html).contains("id=\"command-type\"");
         then(html).contains("disabled=\"disabled\"");
-        then(html).contains("hx-post=\"/admin/commands/fragments/save\"");
-        then(html).contains("hx-post=\"/admin/commands/fragments/validate\"");
-        then(html).contains("hx-post=\"/admin/commands/fragments/preview\"");
+        then(html).contains("hx-post=\"/admin/commands\"");
+        then(html).contains("hx-post=\"/admin/commands/validate\"");
+        then(html).contains("hx-post=\"/admin/commands/preview\"");
         then(html).contains("form-select");
         then(html).contains("form-control");
         then(html).doesNotContain("components/common");
@@ -69,11 +69,11 @@ class CommandFragmentTemplateTest {
         String html = templateEngine().process("features/command/regions", context);
 
         // 검증
-        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands/fragments/list\"");
-        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands/fragments/editor\"");
-        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/save\"");
-        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/validate\"");
-        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/fragments/preview\"");
+        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands\"");
+        then(html).contains("hx-get=\"/nyang-nyang-bot/admin/commands/editor\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/validate\"");
+        then(html).contains("hx-post=\"/nyang-nyang-bot/admin/commands/preview\"");
     }
 
     static void setCommandOptions(WebContext context) {

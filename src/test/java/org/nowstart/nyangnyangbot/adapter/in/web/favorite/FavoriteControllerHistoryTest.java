@@ -3,9 +3,6 @@ package org.nowstart.nyangnyangbot.adapter.in.web.favorite;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,14 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.response.FavoriteMeResponse;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.ui.ExtendedModelMap;
 
 @ExtendWith(MockitoExtension.class)
 class FavoriteControllerHistoryTest {
@@ -33,19 +27,15 @@ class FavoriteControllerHistoryTest {
     private WeeklyChatRankService weeklyChatRankService;
 
     private FavoriteController favoriteController;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         favoriteController = new FavoriteController(favoriteService, weeklyChatRankService);
-        objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     @Test
-    @DisplayName("즐겨찾기 히스토리 응답에 프론트엔드가 기대하는 date 필드가 포함된다")
-    void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() throws Exception {
+    @DisplayName("즐겨찾기 히스토리 fragment 모델에 화면이 기대하는 date 필드가 포함된다")
+    void favoriteHistory_ShouldExposeDateFieldExpectedByFrontend() {
         // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
                 null,
@@ -62,22 +52,22 @@ class FavoriteControllerHistoryTest {
                 LocalDateTime.of(2026, 3, 22, 14, 30)
         );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
+        ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
-        ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);
-        String json = objectMapper.writeValueAsString(result.getBody());
+        String view = favoriteController.favoriteHistory("user1", 10, model);
 
         // 검증
-        then(result.getStatusCode().is2xxSuccessful()).isTrue();
-        then(json).contains("\"favorite\":12");
-        then(json).contains("\"history\":\"출석체크(+1)\"");
-        then(json).contains("\"date\":\"2026-03-22 14:30\"");
-        then(json).doesNotContain("createDate");
+        then(view).isEqualTo("features/favorite/components :: history-grid");
+        FavoriteController.FavoriteHistoryView response = firstHistory(model);
+        then(response.favorite()).isEqualTo(12);
+        then(response.history()).isEqualTo("출석체크(+1)");
+        then(response.date()).isEqualTo("2026-03-22 14:30");
     }
 
     @Test
-    @DisplayName("즐겨찾기 히스토리 응답에 원장 필드들이 포함된다")
-    void favoriteHistory_ShouldExposeLedgerFields() throws Exception {
+    @DisplayName("즐겨찾기 히스토리 fragment 모델에 원장 필드들이 포함된다")
+    void favoriteHistory_ShouldExposeLedgerFields() {
         // 준비
         FavoriteHistoryResult history = new FavoriteHistoryResult(
                 7L,
@@ -94,20 +84,20 @@ class FavoriteControllerHistoryTest {
                 LocalDateTime.of(2026, 5, 9, 13, 20)
         );
         given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
+        ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
-        ResponseEntity<?> result = favoriteController.favoriteHistory("user1", 10);
-        String json = objectMapper.writeValueAsString(result.getBody());
+        favoriteController.favoriteHistory("user1", 10, model);
 
         // 검증
-        then(result.getStatusCode().is2xxSuccessful()).isTrue();
-        then(json).contains("\"ledgerId\":7");
-        then(json).contains("\"delta\":5");
-        then(json).contains("\"balanceAfter\":20");
-        then(json).contains("\"sourceType\":\"ATTENDANCE\"");
-        then(json).contains("\"displayCategory\":\"ATTENDANCE\"");
-        then(json).contains("\"nickNameSnapshot\":\"치즈냥\"");
-        then(json).contains("\"correction\":false");
+        FavoriteController.FavoriteHistoryView response = firstHistory(model);
+        then(response.ledgerId()).isEqualTo(7L);
+        then(response.delta()).isEqualTo(5);
+        then(response.balanceAfter()).isEqualTo(20);
+        then(response.sourceType()).isEqualTo("ATTENDANCE");
+        then(response.displayCategory()).isEqualTo("ATTENDANCE");
+        then(response.nickNameSnapshot()).isEqualTo("치즈냥");
+        then(response.correction()).isFalse();
     }
 
     @Test
@@ -117,27 +107,43 @@ class FavoriteControllerHistoryTest {
         given(favoriteService.getHistory("user1", 50)).willReturn(List.of());
 
         // 실행
-        favoriteController.favoriteHistory("user1", 500);
+        favoriteController.favoriteHistory("user1", 500, new ExtendedModelMap());
 
         // 검증
         org.mockito.BDDMockito.then(favoriteService).should().getHistory("user1", 50);
     }
 
     @Test
-    @DisplayName("로그인한 사용자의 userId를 사용하여 내 즐겨찾기를 조회한다")
-    void favoriteMe_ShouldUseAuthenticatedUserId() {
+    @DisplayName("즐겨찾기 히스토리는 history-grid 조각을 반환한다")
+    void favoriteHistory_ShouldReturnHistoryGridFragment() {
         // 준비
-        FavoriteMeResult resultDto = new FavoriteMeResult("user1", "치즈냥", 12, 2L, List.of());
-        given(favoriteService.getMyFavorite("user1")).willReturn(resultDto);
+        FavoriteHistoryResult history = new FavoriteHistoryResult(
+                7L,
+                null,
+                "치즈냥",
+                5,
+                20,
+                FavoriteSourceType.ATTENDANCE.name(),
+                "ATTENDANCE",
+                "출석체크(+5)",
+                false,
+                20,
+                "출석체크(+5)",
+                LocalDateTime.of(2026, 5, 9, 13, 20)
+        );
+        given(favoriteService.getHistory("user1", 10)).willReturn(List.of(history));
+        ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
-        ResponseEntity<FavoriteMeResponse> result = favoriteController.favoriteMe(
-                new UsernamePasswordAuthenticationToken("user1", "N/A")
-        );
+        String view = favoriteController.favoriteHistory("user1", 10, model);
 
         // 검증
-        then(result.getStatusCode().is2xxSuccessful()).isTrue();
-        then(result.getBody()).isEqualTo(FavoriteMeResponse.from(resultDto));
-        org.mockito.BDDMockito.then(favoriteService).should().getMyFavorite("user1");
+        then(view).isEqualTo("features/favorite/components :: history-grid");
+        then((List<?>) model.get("histories")).hasSize(1);
+    }
+
+    @SuppressWarnings("unchecked")
+    private FavoriteController.FavoriteHistoryView firstHistory(ExtendedModelMap model) {
+        return ((List<FavoriteController.FavoriteHistoryView>) model.get("histories")).get(0);
     }
 }

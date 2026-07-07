@@ -13,8 +13,8 @@
 
 ## 1. 목적
 
-이 문서는 Nyang-Nyang Bot 웹 UI를 신규 프론트 구조로 전환할 때 사용할 컴포넌트 단위 UX/UI 기준을 정의한다.
-기존 `favorite-list.css`, `favorite-list.js`, 커스텀 탭/모달/목록 구현은 보존 대상이 아니라 전환 대상이다.
+이 문서는 Nyang-Nyang Bot 웹 UI의 컴포넌트 단위 UX/UI 기준을 정의한다.
+기존 화면 전용 CSS/JavaScript와 커스텀 탭/모달/목록 구현은 보존하지 않는다.
 
 목표 스택:
 
@@ -47,18 +47,19 @@
 허용되는 JavaScript:
 
 - htmx runtime.
-- OBS 오버레이, 채팅 소켓, 룰렛 애니메이션처럼 클라이언트 상태와 시간축이 핵심인 영역.
+- Bootstrap component bundle.
 
 ### 2.2 서버 렌더링 계약
 
-각 화면은 full page endpoint와 fragment endpoint를 분리한다.
+각 화면은 full page route와 fragment/action route의 반환 범위를 명확히 한다.
+같은 path가 일반 브라우저 요청에서는 full page, htmx 요청에서는 fragment를 반환할 수 있다.
 
 | 유형 | 반환 | 용도 |
 | --- | --- | --- |
 | Page | 전체 Thymeleaf page | 직접 접근, 새로고침, fallback |
 | Fragment | Thymeleaf fragment HTML | htmx 부분 갱신 |
 | Redirect | HTTP redirect | 인증, 권한, 완료 후 전체 이동 |
-| JSON | JSON | 외부 API, socket, OBS runtime 등 화면 fragment가 아닌 경우 |
+| JSON | JSON | OpenAPI, Actuator, 외부 provider 계약처럼 화면 fragment가 아닌 경우 |
 
 UI에서 htmx로 호출하는 endpoint는 가능한 한 HTML fragment를 반환한다.
 클라이언트가 JSON을 받아 DOM을 직접 조립해야 한다면 해당 영역은 htmx 대상이 아니다.
@@ -407,7 +408,7 @@ htmx 기준:
 <input class="form-control"
        name="keyword"
        type="search"
-       hx-get="/admin/commands/fragments/list"
+       hx-get="/admin/commands"
        hx-trigger="keyup changed delay:300ms, search"
        hx-target="#command-list-region"
        hx-swap="outerHTML"

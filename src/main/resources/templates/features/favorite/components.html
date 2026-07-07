@@ -1,117 +1,241 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
-<header class="hero" th:fragment="hero(currentNickName)">
-    <div class="hero-title">
-        <span class="badge" th:text="${currentNickName != null ? currentNickName : '치즈냥'}">치즈냥</span>
-        <h1>호감도</h1>
-        <p>최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
+<header class="border border-secondary-subtle rounded p-4 bg-body-tertiary" th:fragment="hero(currentNickName)">
+    <div class="d-flex flex-column flex-md-row gap-3 align-items-md-end justify-content-between">
+        <div>
+            <span class="badge text-bg-success" th:text="${currentNickName != null ? currentNickName : '치즈냥'}">치즈냥</span>
+            <h1 class="display-6 fw-bold mb-1 mt-2">호감도</h1>
+            <p class="mb-0 text-secondary">최근 변경된 내역을 확인하고, 원하는 항목만 빠르게 찾아보세요.</p>
+        </div>
     </div>
 </header>
 
-<div class="admin-tabs" role="tablist" th:fragment="admin-tabs">
+<div aria-label="관리자 메뉴" class="nav nav-pills flex-nowrap overflow-auto gap-2" role="tablist" th:fragment="admin-tabs">
     <th:block th:replace="~{components/navigation :: tab-button('호감도 목록', 'favorite-tab', true)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('출석체크', 'attendance-tab', false)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('룰렛 관리', 'roulette-tab', false)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('명령어 관리', 'command-tab', false)}"></th:block>
 </div>
 
-<section class="tab-panel is-active" id="favorite-tab" role="tabpanel"
+<section aria-labelledby="favorite-tab-button" class="tab-pane fade show active" id="favorite-tab" role="tabpanel"
          th:fragment="favorite-tab(favoriteList, nickName, isAdmin, weeklyChatRanks)">
+    <section th:replace="~{features/favorite/components :: favorite-board-region(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks})}"></section>
+    <div class="mt-2" id="sync-feedback"></div>
+</section>
+
+<section class="vstack gap-3"
+         id="favorite-board-region"
+         hx-swap="outerHTML"
+         hx-target="this"
+         hx-trigger="favorite-board-refresh from:body"
+         th:fragment="favorite-board-region(favoriteList, nickName, isAdmin, weeklyChatRanks)"
+         th:hx-get="@{/favorite/list(page=${favoriteList.number},size=${favoriteList.size},nickName=${nickName})}">
     <section th:replace="~{features/favorite/components :: controls(${weeklyChatRanks}, ${nickName}, ${isAdmin})}"></section>
-    <section th:replace="~{features/favorite/components :: board(${favoriteList}, ${isAdmin})}"></section>
-    <div th:replace="~{features/favorite/components :: pagination(${favoriteList})}"></div>
+    <section th:replace="~{features/favorite/components :: board(${favoriteList}, ${isAdmin}, ${currentUserId})}"></section>
+    <div th:replace="~{features/favorite/components :: pagination(${favoriteList}, ${nickName})}"></div>
 </section>
 
-<section class="controls" th:fragment="controls(weeklyChatRanks, nickName, isAdmin)">
-    <section th:replace="~{features/favorite/components :: weekly-ranks(${weeklyChatRanks})}"></section>
-    <form th:replace="~{features/favorite/components :: search-form(${nickName}, ${isAdmin})}"></form>
-</section>
-
-<section class="ticker-shell" th:fragment="weekly-ranks(weeklyChatRanks)">
-    <div class="ticker-header">
-        <span class="ticker-title">주간 채팅 순위</span>
-        <span class="ticker-subtitle">이번 주 채팅왕</span>
+<section class="row g-3" th:fragment="controls(weeklyChatRanks, nickName, isAdmin)">
+    <div class="col-12 col-xl-5">
+        <section th:replace="~{features/favorite/components :: weekly-ranks(${weeklyChatRanks})}"></section>
     </div>
-    <div class="ticker-viewport">
-        <div class="ticker-track" th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
-            <div class="ticker-row">
-                <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
-                    <span class="rank-emoji" th:switch="${rank.rank}">
-                        <span th:case="1">🥇</span>
-                        <span th:case="2">🥈</span>
-                        <span th:case="3">🥉</span>
-                        <span th:case="*"></span>
-                    </span>
-                    <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
-                </span>
-            </div>
-            <div aria-hidden="true" class="ticker-row">
-                <span class="rank-badge" th:each="rank : ${weeklyChatRanks}">
-                    <span class="rank-emoji" th:switch="${rank.rank}">
-                        <span th:case="1">🥇</span>
-                        <span th:case="2">🥈</span>
-                        <span th:case="3">🥉</span>
-                        <span th:case="*"></span>
-                    </span>
-                    <span th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
-                </span>
-            </div>
-        </div>
-        <div class="ticker-empty" th:if="${weeklyChatRanks == null or #lists.isEmpty(weeklyChatRanks)}">
-            이번 주 채팅 기록 없음
-        </div>
+    <div class="col-12 col-xl-7" th:if="${isAdmin}">
+        <form th:replace="~{features/favorite/components :: search-form(${nickName}, ${isAdmin})}"></form>
     </div>
 </section>
 
-<form class="search-form" method="get" th:action="@{/favorite/list}" th:fragment="search-form(nickName, isAdmin)">
-    <div th:replace="~{components/forms :: text-field('nickName', 'nickName', '닉네임', ${nickName}, '닉네임 입력', null, 'search-field')}"></div>
-    <div class="d-flex flex-column flex-sm-row gap-2 search-actions">
-        <th:block th:replace="~{components/buttons :: action-button(null, '검색', 'primary', 'submit', null)}"></th:block>
-        <th:block th:if="${isAdmin}"
-                  th:replace="~{components/buttons :: action-button('sync-button', '데이터 동기화', 'ghost', 'button', 'btn-auth')}"></th:block>
+<section class="card bg-body-tertiary border-secondary-subtle h-100" th:fragment="weekly-ranks(weeklyChatRanks)">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h6 fw-bold mb-0">주간 채팅 순위</h2>
+            <span class="badge text-bg-secondary">이번 주</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2" th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
+            <span class="badge rounded-pill text-bg-secondary" th:each="rank : ${weeklyChatRanks}"
+                  th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</span>
+        </div>
+        <div class="text-secondary small" th:if="${weeklyChatRanks == null or #lists.isEmpty(weeklyChatRanks)}">이번 주 채팅 기록 없음</div>
+    </div>
+</section>
+
+<form class="card bg-body-tertiary border-secondary-subtle h-100"
+      hx-disabled-elt="find button"
+      hx-swap="outerHTML"
+      hx-target="#favorite-board-region"
+      id="favorite-search-form"
+      method="get"
+      th:action="@{/favorite/list}"
+      th:fragment="search-form(nickName, isAdmin)"
+      th:hx-get="@{/favorite/list}">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md">
+                <div th:replace="~{components/forms :: text-field('nickName', 'nickName', '닉네임', ${nickName}, '닉네임 입력', null, null)}"></div>
+            </div>
+            <div class="col-12 col-md-auto d-flex flex-column flex-sm-row gap-2">
+                <th:block th:replace="~{components/buttons :: action-button(null, '검색', 'primary', 'submit', null)}"></th:block>
+                <button class="btn btn-outline-secondary"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#sync-feedback"
+                        id="sync-button"
+                        th:hx-post="@{/google/sync}"
+                        th:if="${isAdmin}"
+                        type="button">데이터 동기화</button>
+                <button class="btn btn-outline-secondary"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#sync-feedback"
+                        id="chzzk-connect-button"
+                        th:hx-post="@{/chzzk/connect}"
+                        th:if="${isAdmin}"
+                        type="button">채팅 연결</button>
+            </div>
+        </div>
     </div>
 </form>
 
-<section class="board" th:classappend="${isAdmin} ? '' : ' board-readonly'" th:fragment="board(favoriteList, isAdmin)">
-    <div class="board-head">
-        <div>닉네임</div>
-        <div>호감도</div>
-        <div th:if="${isAdmin}">호감도 수정</div>
-    </div>
-    <div class="board-body" th:if="${favoriteList != null}">
-        <th:block th:each="favoriteEntity, iterStat : ${favoriteList.content}">
-            <div th:replace="~{features/favorite/components :: favorite-row(${favoriteEntity}, ${iterStat.index}, ${isAdmin})}"></div>
-        </th:block>
+<section class="card bg-body-tertiary border-secondary-subtle" th:fragment="board(favoriteList, isAdmin, currentUserId)">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+            <tr>
+                <th>닉네임</th>
+                <th class="text-end">호감도</th>
+                <th class="text-end">히스토리</th>
+                <th class="text-end" th:if="${isAdmin}">수정</th>
+            </tr>
+            </thead>
+            <tbody th:if="${favoriteList != null}">
+            <th:block th:each="favoriteEntity, iterStat : ${favoriteList.content}">
+                <th:block th:replace="~{features/favorite/components :: favorite-row(${favoriteEntity}, ${iterStat.index}, ${isAdmin}, ${currentUserId})}"></th:block>
+            </th:block>
+            </tbody>
+        </table>
     </div>
 </section>
 
-<div class="board-row"
-     th:data-favorite="${favoriteEntity.favorite}"
-     th:data-nick-name="${favoriteEntity.nickName}"
-     th:data-user-id="${favoriteEntity.userId}"
-     th:fragment="favorite-row(favoriteEntity, rowIndex, isAdmin)"
-     th:style="'--i:' + ${rowIndex}">
-    <div>
-        <div class="nickname-line">
-            <div class="nickname" th:data-user-id="${favoriteEntity.userId}"
-                 th:text="${favoriteEntity.nickName}">테스트
+<th:block th:fragment="favorite-row(favoriteEntity, rowIndex, isAdmin, currentUserId)"
+          th:with="canViewHistory=${isAdmin or (currentUserId != null and currentUserId == favoriteEntity.userId)}">
+    <tr>
+        <td>
+            <strong th:text="${favoriteEntity.nickName}">테스트</strong>
+            <span class="d-block small text-secondary" th:text="${favoriteEntity.userId}">user-id</span>
+        </td>
+        <td class="text-end fw-bold" th:text="${favoriteEntity.favorite}">12200</td>
+        <td class="text-end">
+            <button class="btn btn-outline-secondary btn-sm"
+                    data-bs-toggle="collapse"
+                    th:aria-controls="${'history-' + rowIndex}"
+                    th:data-bs-target="${'#history-' + rowIndex}"
+                    th:hx-get="@{/favorite/history(userId=${favoriteEntity.userId},limit=10)}"
+                    th:hx-target="${'#history-content-' + rowIndex}"
+                    th:if="${canViewHistory}"
+                    hx-swap="innerHTML"
+                    type="button">내역</button>
+            <button class="btn btn-outline-secondary btn-sm"
+                    disabled
+                    th:unless="${canViewHistory}"
+                    type="button">내역</button>
+        </td>
+        <td class="text-end" th:if="${isAdmin}">
+            <button class="btn btn-outline-secondary btn-sm"
+                    data-bs-target="#karma-modal"
+                    data-bs-toggle="modal"
+                    th:hx-get="@{/favorite/adjustments/modal(userId=${favoriteEntity.userId},nickName=${favoriteEntity.nickName},favorite=${favoriteEntity.favorite})}"
+                    hx-swap="outerHTML"
+                    hx-target="#karma-modal-content"
+                    type="button">호감도 수정</button>
+        </td>
+    </tr>
+    <tr class="collapse" th:id="${'history-' + rowIndex}">
+        <td th:colspan="${isAdmin ? 4 : 3}">
+            <div class="p-3" th:id="${'history-content-' + rowIndex}">
+                <div class="text-secondary small">불러오는 중...</div>
             </div>
-        </div>
-    </div>
-    <div>
-        <span class="score" th:text="${favoriteEntity.favorite}">12200</span>
-    </div>
-    <div th:if="${isAdmin}">
-        <th:block th:replace="~{components/buttons :: action-button(null, '호감도 수정', 'ghost', 'button', 'karma-button btn-auth')}"></th:block>
-    </div>
-    <div class="history-details">
-        <div class="history-grid"></div>
+        </td>
+    </tr>
+</th:block>
+
+<div th:fragment="history-grid(histories)" data-history-loaded="true">
+    <div class="text-secondary small" th:if="${histories == null or #lists.isEmpty(histories)}">히스토리 없음</div>
+    <div class="table-responsive" th:if="${histories != null and !#lists.isEmpty(histories)}">
+        <table class="table table-dark table-sm mb-0">
+            <tbody>
+            <tr th:each="history : ${histories}">
+                <td class="text-end" th:text="${history.favorite != null ? history.favorite : '-'}">12</td>
+                <td th:text="${history.history != null ? history.history : '-'}">출석체크(+1)</td>
+                <td class="text-end text-secondary" th:text="${history.date != null ? history.date : '-'}">2026-03-22 14:30</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
-<div th:fragment="pagination(favoriteList)" th:if="${favoriteList != null}" th:with="baseUrl=@{/favorite/list}">
-    <div th:replace="~{components/navigation :: pagination(${favoriteList}, ${baseUrl})}"></div>
+<div th:fragment="pagination(favoriteList, nickName)" th:if="${favoriteList != null}">
+    <nav th:if="${favoriteList.totalPages > 1}"
+         th:with="blockSize=${10}, start=${favoriteList.number - (favoriteList.number % blockSize)},
+          endCandidate=${start + blockSize - 1},
+          end=${endCandidate < favoriteList.totalPages ? endCandidate : favoriteList.totalPages - 1}">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${favoriteList.number == 0} ? 'disabled'">
+                <a aria-label="이전 페이지"
+                   class="page-link"
+                   hx-swap="outerHTML"
+                   hx-target="#favorite-board-region"
+                   th:href="@{/favorite/list(page=${favoriteList.number - 1},size=${favoriteList.size},nickName=${nickName})}"
+                   th:hx-get="@{/favorite/list(page=${favoriteList.number - 1},size=${favoriteList.size},nickName=${nickName})}">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+
+            <li class="page-item" th:if="${start > 0}">
+                <a class="page-link"
+                   hx-swap="outerHTML"
+                   hx-target="#favorite-board-region"
+                   th:href="@{/favorite/list(page=0,size=${favoriteList.size},nickName=${nickName})}"
+                   th:hx-get="@{/favorite/list(page=0,size=${favoriteList.size},nickName=${nickName})}">1</a>
+            </li>
+            <li class="page-item disabled" th:if="${start > 1}">
+                <span class="page-link">...</span>
+            </li>
+
+            <li class="page-item"
+                th:classappend="${i == favoriteList.number} ? 'active'"
+                th:each="i : ${#numbers.sequence(start, end)}">
+                <a class="page-link"
+                   hx-swap="outerHTML"
+                   hx-target="#favorite-board-region"
+                   th:href="@{/favorite/list(page=${i},size=${favoriteList.size},nickName=${nickName})}"
+                   th:hx-get="@{/favorite/list(page=${i},size=${favoriteList.size},nickName=${nickName})}"
+                   th:text="${i + 1}"></a>
+            </li>
+
+            <li class="page-item disabled" th:if="${end < favoriteList.totalPages - 2}">
+                <span class="page-link">...</span>
+            </li>
+            <li class="page-item" th:if="${end < favoriteList.totalPages - 1}">
+                <a class="page-link"
+                   hx-swap="outerHTML"
+                   hx-target="#favorite-board-region"
+                   th:href="@{/favorite/list(page=${favoriteList.totalPages - 1},size=${favoriteList.size},nickName=${nickName})}"
+                   th:hx-get="@{/favorite/list(page=${favoriteList.totalPages - 1},size=${favoriteList.size},nickName=${nickName})}"
+                   th:text="${favoriteList.totalPages}"></a>
+            </li>
+
+            <li class="page-item" th:classappend="${favoriteList.number == favoriteList.totalPages - 1} ? 'disabled'">
+                <a aria-label="다음 페이지"
+                   class="page-link"
+                   hx-swap="outerHTML"
+                   hx-target="#favorite-board-region"
+                   th:href="@{/favorite/list(page=${favoriteList.number + 1},size=${favoriteList.size},nickName=${nickName})}"
+                   th:hx-get="@{/favorite/list(page=${favoriteList.number + 1},size=${favoriteList.size},nickName=${nickName})}">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
 </div>
 </body>
 </html>

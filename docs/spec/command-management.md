@@ -239,7 +239,7 @@ UI 원칙:
 - `ROULETTE_DONATION`은 별도 설정값 없이 현재 활성 룰렛 테이블 1개를 사용한다.
 - `TEXT` 명령어는 `message_template`이 필요하다.
 - `TIMER` 명령어는 `message_template`, `timer_interval_minutes`가 필요하다.
-- `timer_interval_minutes`는 5 이상 1,440 이하의 정수이며 UI와 API 모두 분 단위로 받는다.
+- `timer_interval_minutes`는 5 이상 1,440 이하의 정수이며 UI form은 분 단위로 받는다.
 - `timer_min_chat_count`는 1 이상 10,000 이하의 정수만 허용한다.
 - `timer_min_chat_count`는 현재 런타임 interval 동안 수신한 `CHAT_MESSAGE` 이벤트 수를 기준으로 계산한다.
 - 매니저, 스트리머, 일반 사용자를 구분하지 않는다. 카운트 기준은 사용자 역할이 아니라 수신 이벤트 타입이다.
@@ -250,24 +250,24 @@ UI 원칙:
 - 타이머 interval이 끝나면 발송 여부와 관계없이 런타임 상태에서 다음 interval을 시작한다.
 - 룰렛 테이블 명령어도 `TRIGGER` row로 같은 테이블에 기록한다.
 
-## 13. API 후보
+## 13. 관리자 화면 route
 
 | Method | Path | 권한 | 설명 |
 | --- | --- | --- | --- |
-| GET | `/admin/commands` | 관리자 | 명령어 목록 조회 |
-| POST | `/admin/commands` | 관리자 | 명령어 생성 |
-| PATCH | `/admin/commands/{id}` | 관리자 | 명령어 수정, 활성/비활성 변경 |
-| POST | `/admin/commands/preview` | 관리자 | 템플릿 미리보기 |
-| POST | `/admin/commands/validate` | 관리자 | 저장 전 충돌/변수 검증 |
+| GET | `/admin/commands` | 관리자 | 명령어 목록 fragment |
+| GET | `/admin/commands/editor` | 관리자 | 명령어 editor fragment |
+| POST | `/admin/commands/validate` | 관리자 | 저장 전 충돌/변수 검증 fragment |
+| POST | `/admin/commands/preview` | 관리자 | 템플릿 미리보기 fragment |
+| POST | `/admin/commands` | 관리자 | 명령어 저장 후 목록/editor fragment |
+| POST | `/admin/commands/deactivate` | 관리자 | 명령어 비활성화 후 목록 fragment |
 
 보안 요구:
 
-- `POST`, `PATCH` 관리자 명령어 API는 세션 쿠키만으로 상태를 변경할 수 없게 한다.
-- 구현 시 CSRF 토큰을 활성화하거나, 동일 출처 JSON 요청 검증과 별도 관리자 API 토큰 중 하나를 적용한다.
-- 동일 출처 JSON 요청 검증 방식을 선택한 경우에만 `Origin`/`Referer`가 관리자 화면 origin과 다른 상태 변경 요청을 거부한다.
-- 미리보기와 검증 API도 관리자 권한과 같은 보안 정책을 적용한다.
+- `POST` 관리자 명령어 route는 CSRF 토큰을 포함한 htmx form submit으로 호출한다.
+- 미리보기와 검증 route도 관리자 권한과 같은 보안 정책을 적용한다.
+- 화면 route는 Thymeleaf fragment를 반환하며, 화면 조작용 JSON wrapper를 병행하지 않는다.
 
-구현 착수 시 [API 명세](api.md)에 요청/응답 DTO와 에러 코드를 반영한다.
+구현 착수 시 [HTTP 라우트 명세](api.md)에 form/view model과 fragment 계약을 반영한다.
 
 ## 14. 구현 단계 제안
 
@@ -298,10 +298,10 @@ UI 원칙:
 - 타이머 실행 상태는 P2 구현 세부사항이며 `chat_command` 정의 테이블에는 저장하지 않는다.
 - 외부 URL, SQL, shell, 임의 webhook 입력은 저장할 수 없다.
 
-### Step 5. 관리자 UI/API
+### Step 5. 관리자 UI route
 
-- 명령어 목록, 생성, 수정, 비활성화, 미리보기를 구현한다.
-- 충돌 검증은 저장 API와 미리보기/검증 API에서 같은 정책을 사용한다.
+- 명령어 목록, 생성, 수정, 비활성화, 미리보기를 htmx fragment로 구현한다.
+- 충돌 검증은 저장 action과 미리보기/검증 action에서 같은 정책을 사용한다.
 
 ## 15. 검증 기준
 
@@ -317,7 +317,7 @@ UI 원칙:
 - 도메인 기능 명령어 저장/활성화는 기존 `TEXT`, `TRIGGER`와 충돌할 수 없다.
 - 후원 룰렛은 명령어 쿨타임 때문에 무시되지 않는다.
 - 동시에 발생한 관리자 저장 요청도 DB-backed uniqueness로 하나만 성공한다.
-- 일반 사용자는 관리자 명령어 API를 호출할 수 없다.
+- 일반 사용자는 관리자 명령어 route를 호출할 수 없다.
 - 알 수 없는 템플릿 변수는 저장할 수 없다.
 - `./gradlew test`가 통과한다.
 
@@ -337,4 +337,4 @@ UI 원칙:
 | 타이머 채팅 수 | `timer_min_chat_count`는 현재 interval 안의 `CHAT_MESSAGE` 수만 집계한다. 사용자 역할을 구분하지 않으며, 1 이상 10,000 이하만 허용한다. 0은 저장할 수 없다. |
 | 유형 변경 | 생성 후 `type`은 변경할 수 없다. 다른 유형이 필요하면 기존 명령어를 비활성화하고 새로 만든다. |
 | `TRIGGER` action 변경 | 생성 후 `action_key`는 변경할 수 없다. 다른 내부 동작이 필요하면 기존 명령어를 비활성화하고 새로 만든다. |
-| 공개 목록 | 공개 명령어 목록 API와 공개 페이지 노출은 제공하지 않는다. |
+| 공개 목록 | 공개 명령어 목록 route와 공개 페이지 노출은 제공하지 않는다. |

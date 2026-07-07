@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.chzzk;
 
 import static org.assertj.core.api.BDDAssertions.then;
-import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.DisplayName;
@@ -12,7 +11,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatSocketUseCase;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ui.ExtendedModelMap;
+import org.springframework.ui.Model;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,28 +25,37 @@ class ChzzkControllerTest {
     private ChzzkController chzzkController;
 
     @Test
-    @DisplayName("치지직 채팅 수동 연결 요청 시 SUCCESS를 반환한다")
+    @DisplayName("치지직 채팅 수동 연결 요청 시 성공 피드백 fragment를 반환한다")
     void connect_ShouldReturnSuccess() throws URISyntaxException {
+        // 준비
+        Model model = new ExtendedModelMap();
+
         // 실행
-        ResponseEntity<String> result = chzzkController.connect();
+        String view = chzzkController.connect(model);
 
         // 검증
-        then(result.getStatusCode().is2xxSuccessful()).isTrue();
-        then(result.getBody()).isEqualTo("SUCCESS");
+        then(view).isEqualTo("components/feedback :: alert");
+        then(model.asMap().get("message")).isEqualTo("치지직 채팅 연결 완료");
+        then(model.asMap().get("tone")).isEqualTo("success");
         BDDMockito.then(connectChzzkChatSocketUseCase).should().connect();
     }
 
     @Test
-    @DisplayName("연결 중 예외가 발생하면 예외를 전파한다")
-    void connect_ShouldPropagateConnectionException() throws URISyntaxException {
+    @DisplayName("연결 중 예외가 발생하면 실패 피드백 fragment를 반환한다")
+    void connect_ShouldReturnFailureFeedback_WhenConnectionFails() throws URISyntaxException {
         // 준비
         BDDMockito.willThrow(new URISyntaxException("bad-url", "invalid"))
                 .given(connectChzzkChatSocketUseCase)
                 .connect();
+        Model model = new ExtendedModelMap();
 
-        // 실행 및 검증
-        thenThrownBy(() -> chzzkController.connect())
-                .isInstanceOf(URISyntaxException.class);
+        // 실행
+        String view = chzzkController.connect(model);
+
+        // 검증
+        then(view).isEqualTo("components/feedback :: alert");
+        then(model.asMap().get("message")).isEqualTo("치지직 채팅 연결 실패");
+        then(model.asMap().get("tone")).isEqualTo("danger");
     }
 
     @Test
@@ -54,7 +63,7 @@ class ChzzkControllerTest {
     void connect_ShouldNotHaveScheduledAnnotation() throws NoSuchMethodException {
         // 실행
         boolean scheduled = ChzzkController.class
-                .getMethod("connect")
+                .getMethod("connect", Model.class)
                 .isAnnotationPresent(Scheduled.class);
 
         // 검증

@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.adapter.in.web.command.request.CommandCreateRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -85,7 +84,7 @@ class GlobalExceptionHandlerTest {
         }
 
         @PostMapping("/test/validation/command")
-        String validationCommand(@Valid @RequestBody CommandCreateRequest request) {
+        String validationCommand(@Valid @RequestBody CommandValidationRequest request) {
             return request.type();
         }
     }
@@ -93,6 +92,12 @@ class GlobalExceptionHandlerTest {
     record FieldValidationRequest(
             @NotBlank(message = "userId is required")
             String userId
+    ) {
+    }
+
+    record CommandValidationRequest(
+            @NotBlank(message = "type is required")
+            String type
     ) {
     }
 }

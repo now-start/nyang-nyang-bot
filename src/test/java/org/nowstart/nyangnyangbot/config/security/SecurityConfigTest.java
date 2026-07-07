@@ -42,6 +42,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
@@ -102,8 +103,7 @@ class SecurityConfigTest {
                             ))
                             .with(csrf()))
         // 검증
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("SUCCESS"));
+                    .andExpect(status().isOk());
 
             BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
         }
@@ -139,8 +139,7 @@ class SecurityConfigTest {
         // 실행
             mockMvc.perform(post("/google/sync").with(csrf()))
         // 검증
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("SUCCESS"));
+                    .andExpect(status().isOk());
 
             BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
         }
@@ -195,15 +194,14 @@ class SecurityConfigTest {
     }
 
     @Test
-    void overlayDisplayedEndpointAllowsPostWithoutCsrfToken() throws Exception {
+    void overlayPollingEndpointAllowsGetWithoutAuthentication() throws Exception {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(post("/overlay/roulette/events/1/displayed"))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("DISPLAYED"));
+            mockMvc.perform(get("/overlay/roulette/events/next"))
+                    .andExpect(status().isNotFound());
         }
     }
 
@@ -281,6 +279,12 @@ class SecurityConfigTest {
         }
 
         @Bean
+        ViewResolver viewResolver() {
+            return (viewName, locale) -> (model, request, response) -> {
+            };
+        }
+
+        @Bean
         ClientRegistrationRepository clientRegistrationRepository() {
             return new InMemoryClientRegistrationRepository(ClientRegistration.withRegistrationId("chzzk")
                     .clientId("client-id")
@@ -320,9 +324,5 @@ class SecurityConfigTest {
             return "MUTATED";
         }
 
-        @PostMapping("/overlay/roulette/events/{displayEventId}/displayed")
-        String markDisplayed() {
-            return "DISPLAYED";
-        }
     }
 }

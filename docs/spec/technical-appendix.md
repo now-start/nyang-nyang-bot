@@ -9,62 +9,17 @@
   - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md)
   - [관리자 명령어 관리 PRD](command-management.md)
   - [클린 아키텍처](architecture.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
   - [이벤트 명세](events.md)
   - [요구사항 추적표](requirements-traceability.md)
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
   - [테스트 전략](test-strategy.md)
   - [운영/배포 Runbook](runbook.md)
 
-## 1. API 요구사항
+## 1. HTTP 라우트 요구사항
 
-상세 요청/응답, 에러 코드, 페이지네이션 규칙은 [API 명세](api.md)를 따른다.
-
-| Method | Path | 권한 | 설명 |
-| --- | --- | --- | --- |
-| GET | `/` | 인증 | 호감도 화면으로 이동 |
-| GET | `/oauth2/authorization/chzzk` | 공개 | Spring Security OAuth2 인증 시작 |
-| GET | `/login/oauth2/code/chzzk` | 공개 | CHZZK OAuth 콜백 처리 |
-| GET | `/favorite/list` | 인증 | 호감도 보드 조회 |
-| GET | `/favorite/history` | 본인 또는 관리자 | 특정 사용자의 호감도 히스토리 조회 |
-| GET | `/favorite/upbo` | 본인 또는 관리자 | 특정 사용자의 업보 반영 내역 조회 |
-| GET | `/favorite/adjustments` | 관리자 | 호감도 조정 항목 조회 |
-| POST | `/favorite/adjustments` | 관리자 | 호감도 조정 항목 생성 |
-| POST | `/favorite/adjustments/apply` | 관리자 | 호감도 조정 적용 |
-| POST | `/attendance/start` | 관리자 | 출석 수집 시작 |
-| POST | `/attendance/stop` | 관리자 | 출석 수집 종료 |
-| GET | `/attendance/users` | 관리자 | 출석 수집 대상자 조회 |
-| POST | `/attendance/apply` | 관리자 | 출석 보상 적용 |
-| POST | `/google/sync` | 관리자 | 전환 기간의 Google Sheets 포인트 마이그레이션 |
-| GET | `/chzzk/connect` | 관리자 | CHZZK 소켓 수동 연결 |
-| GET | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 조회 |
-| POST | `/admin/upbo/templates` | 관리자 | 업보 결과 템플릿 생성 |
-| PATCH | `/admin/upbo/templates/{id}` | 관리자 | 업보 결과 템플릿 수정/비활성화 |
-| POST | `/admin/upbo/apply` | 관리자 | 업보 수동 적용 |
-| POST | `/admin/upbo/corrections` | 관리자 | 업보 정정 거래 생성 |
-| GET | `/admin/roulette/tables` | 관리자 | 룰렛 확률표 목록 조회 |
-| POST | `/admin/roulette/tables` | 관리자 | 룰렛 확률표 생성 |
-| PATCH | `/admin/roulette/tables/{id}` | 관리자 | 룰렛 확률표 수정/활성화 |
-| POST | `/admin/roulette/results/{id}/complete` | 관리자 | 룰렛 결과 처리 완료 |
-| POST | `/admin/roulette/results/{id}/corrections` | 관리자 | 룰렛 결과에 연결된 보정 거래 생성 |
-| GET | `/admin/commands` | 관리자 | 명령어 목록 조회 |
-| POST | `/admin/commands` | 관리자 | 명령어 생성 |
-| PATCH | `/admin/commands/{id}` | 관리자 | 명령어 수정, 활성/비활성 변경 |
-| POST | `/admin/commands/preview` | 관리자 | 메시지 템플릿 미리보기 |
-| POST | `/admin/commands/validate` | 관리자 | 저장 전 충돌/변수 검증 |
-| GET | `/admin/overlay-tokens` | 관리자 | OBS 오버레이 토큰 목록 조회 |
-| POST | `/admin/overlay-tokens` | 관리자 | OBS 오버레이 토큰 발급 |
-| POST | `/admin/overlay-tokens/{id}/rotate` | 관리자 | 기존 OBS 오버레이 토큰을 즉시 폐기하고 새 토큰 재발급 |
-| POST | `/admin/overlay-tokens/{id}/revoke` | 관리자 | OBS 오버레이 토큰 폐기 |
-| POST | `/admin/roulette/tables/{id}/simulate` | 관리자 | 활성화 전 가상 1만 회 시뮬레이션 분포 미리보기 |
-| GET | `/favorite/me/roulette/recent` | 인증 | 본인 최근 룰렛 결과 조회 |
-| GET | `/overlay/roulette` | 공개 | OBS 브라우저 소스용 투명 룰렛 오버레이 페이지 |
-| GET | `/overlay/roulette/events` | 오버레이 토큰 | `Authorization: Bearer` 헤더로 OBS 오버레이가 표시할 서버 확정 룰렛 이벤트 조회 |
-| POST | `/roulette/results` | 시스템 | 서버에서 확정한 룰렛 결과 반영 |
-| POST | `/overlay/roulette/events/{id}/displayed` | 오버레이 토큰 | OBS 오버레이 표시 완료 상태 기록 |
-| POST | `/admin/overlay/roulette/events/{id}/replay` | 관리자 | 기존 룰렛 결과를 원장 재반영 없이 OBS 오버레이에 재송출 |
-| GET | `/actuator/**` | 공개 | 운영 상태 확인 |
-| GET | `/v3/api-docs` | 공개 | OpenAPI JSON |
+상세 route, fragment 계약, 권한, 페이지네이션 규칙은 [HTTP 라우트 명세](api.md)를 단일 기준으로 따른다.
+이 부록에는 중복 route 표를 두지 않는다.
 
 ## 2. 데이터 모델
 
@@ -213,7 +168,7 @@ Google Sheets는 최종 플랫폼 기능이 아니라 기존 포인트 데이터
 - 토큰 사용 추적은 `lastUsedAt`을 Grafana에 노출하고, 미사용 토큰은 운영자가 수동으로 정리한다.
 - 애플리케이션 로그, 프록시 로그, access log에는 오버레이 토큰 원문이 남지 않아야 한다.
 - 오버레이 이벤트 API는 same-origin 호출만 허용하고, 불필요한 CORS 허용을 두지 않는다.
-- 오버레이 페이지는 토큰 탈취 위험을 줄이기 위해 외부 스크립트 로딩을 사용하지 않는다.
+- 오버레이 페이지는 htmx/Bootstrap 런타임 외 커스텀 외부 스크립트 로딩을 사용하지 않는다.
 - 유효하지 않은 오버레이 토큰 요청은 rate limit 또는 일시 차단 대상으로 처리한다.
 
 ### 4.2 신뢰성
@@ -270,7 +225,7 @@ Loki 색인 정책 (카디널리티 관리):
 | 항목 | 현재 상태 | 리스크 | 권장 조치 |
 | --- | --- | --- | --- |
 | OAuth state | Spring Security OAuth2 Client 사용 | 세션 손실 시 로그인 재시도 필요 | 세션 기반 state 검증 유지 |
-| CSRF | 전역 비활성화 | 상태 변경 API가 세션 쿠키 기반 요청에 노출 | CSRF 활성화 또는 API 토큰/동일 출처 정책 강화 |
+| CSRF | Spring Security CSRF 활성화, H2 console만 예외 | htmx form 누락 시 상태 변경 요청 실패 | 모든 mutating form에 CSRF hidden field 유지 |
 | 관리자 권한 관리 | DB의 `admin` 플래그 의존 | 관리 도구 부재 시 운영 변경이 수동 DB 작업에 의존 | 관리자 승격/해제 운영 절차 또는 API 정의 |
 | 출석 수집 | 인메모리 Map 사용 | 재시작/다중 인스턴스에서 데이터 유실 또는 불일치 | DB 기반 영속화 또는 다른 공유 저장소 검토 |
 | 후원 룰렛 | 미구현 | 중복 반영, OBS 연결 실패, 결과 불일치 | idempotency key, 상태 머신, 재처리 정책 정의 |

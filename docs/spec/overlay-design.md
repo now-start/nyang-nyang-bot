@@ -6,7 +6,7 @@
 - 관련 문서:
   - [치지직 후원 룰렛과 OBS 오버레이](roulette-overlay.md)
   - [이벤트 명세](events.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
   - [웹 UI 명세](web-ui.md)
   - [디자인 와이어프레임](wireframes.md)
 
@@ -167,10 +167,10 @@ MVP에서는 총 4~5초 내외를 기본으로 한다.
 
 - URL은 `/overlay/roulette#token=...` 형식을 사용한다.
 - fragment token은 초기 HTTP 요청과 access log에 포함되지 않는다.
-- JavaScript가 fragment에서 토큰을 읽고 API 요청 시 `Authorization: Bearer` 헤더로 보낸다.
+- htmx 요청은 URL fragment의 토큰을 `Authorization: Bearer` 헤더로 보내며, query string에는 토큰을 싣지 않는다.
 - 토큰 오류 시 기본 방송 화면에는 아무것도 표시하지 않는다.
 - debug mode가 활성화된 경우에만 작은 상태 문구를 표시한다.
-- 외부 스크립트 로딩은 사용하지 않는다.
+- htmx/Bootstrap 런타임 외 커스텀 외부 스크립트는 사용하지 않는다.
 
 ## 10. 이벤트 수신
 
@@ -189,7 +189,7 @@ MVP 기준:
 - 헤더 인증이 가능한 long polling을 우선한다.
 - 이벤트가 없으면 투명 상태 유지.
 - 동일 이벤트를 중복 표시하지 않는다.
-- 표시 완료 후 `POST /overlay/roulette/events/{id}/displayed`를 호출한다.
+- 이벤트 fragment를 반환할 때 서버가 표시 완료 상태를 기록한다.
 
 ## 11. Missed와 Replay
 

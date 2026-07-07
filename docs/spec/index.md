@@ -20,7 +20,7 @@
 - [관리자 명령어 관리 PRD](command-management.md): 관리자 추가 명령어, 시스템 명령어 정책, 권한, 쿨타임, 변수
 - [클린 아키텍처](architecture.md): 레이어, 의존성 규칙, 포트/어댑터, 점진적 전환 기준
 - [클린 아키텍처 채택 결정](decision-clean-architecture.md): 클린 아키텍처 선택 배경, 대안, 트레이드오프
-- [API 명세](api.md): HTTP API, 권한, 요청/응답, 에러, 페이지네이션 기준
+- [HTTP 라우트 명세](api.md): 화면 route, fragment/action, 권한, 페이지네이션 기준
 - [이벤트 명세](events.md): CHZZK/룰렛/오버레이 이벤트, 상태, 중복 방지, 재처리 기준
 - [UX/UI 가이드라인](ux-ui-guidelines.md): Bootstrap, htmx, CHZZK 색상 기준, UX writing, 프론트 리팩터링 기준
 - [컴포넌트 가이드](component-guidelines.md): 신규 전환용 Bootstrap/Thymeleaf/htmx 컴포넌트 구조, 상태, 레이아웃 규칙

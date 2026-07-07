@@ -11,12 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteItemRequest;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.request.RouletteTableCreateRequest;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteEventPageResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteEventSummaryResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteItemResponse;
-import org.nowstart.nyangnyangbot.adapter.in.web.roulette.response.RouletteTableResponse;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.AdminRouletteController.RouletteItemForm;
+import org.nowstart.nyangnyangbot.adapter.in.web.roulette.AdminRouletteController.RouletteTableForm;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteItemResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
@@ -25,9 +21,10 @@ import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResu
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteEventSummaryResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ui.ConcurrentModel;
 
 @ExtendWith(MockitoExtension.class)
 class AdminRouletteControllerTest {
@@ -39,45 +36,42 @@ class AdminRouletteControllerTest {
     private QueryRouletteResultUseCase rouletteQueryService;
 
     @Test
-    @DisplayName("룰렛 테이블 생성 요청을 관리 유스케이스에 위임한다")
-    void createTable_ShouldDelegateToManageUseCase() {
+    @DisplayName("룰렛 테이블 생성 요청을 관리 유스케이스에 위임하고 설정 fragment를 반환한다")
+    void createTable_ShouldDelegateToManageUseCaseAndReturnConfigFragment() {
         // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService, rouletteQueryService);
-        RouletteTableCreateRequest request = new RouletteTableCreateRequest(
-                "기본 룰렛",
-                "!룰렛",
-                1_000L,
-                100
-        );
-        RouletteValidationResult validation =
-                new RouletteValidationResult(false, List.of("losing item is required"), 0, false);
-        RouletteTableResult table = new RouletteTableResult(
-                1L, "기본 룰렛", "!룰렛", 1_000L, false, 0, 100, validation, List.of()
-        );
+        RouletteTableForm form = new RouletteTableForm("기본 룰렛", "!룰렛", 1_000L, 100);
+        RouletteTableResult table = table(1L, "기본 룰렛", "!룰렛", 1_000L, List.of());
         given(rouletteService.createTable("기본 룰렛", "!룰렛", 1_000L, 100)).willReturn(table);
+        given(rouletteService.getTables()).willReturn(List.of(table));
+        ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        ResponseEntity<RouletteTableResponse> result = controller.createTable(request);
+        String view = controller.createTable(form, model);
 
         // 검증
-        then(result.getBody()).isEqualTo(RouletteTableResponse.from(table));
+        then(view).isEqualTo("features/roulette/components :: roulette-config-region");
+        then(model.getAttribute("selectedTableId")).isEqualTo(1L);
+        then(model.getAttribute("table")).isEqualTo(table);
+        then(model.getAttribute("rouletteTone")).isEqualTo("success");
         BDDMockito.then(rouletteService).should().createTable("기본 룰렛", "!룰렛", 1_000L, 100);
     }
 
     @Test
-    @DisplayName("룰렛 아이템 추가 요청을 관리 유스케이스에 위임한다")
-    void addItem_ShouldDelegateToManageUseCase() {
+    @DisplayName("룰렛 아이템 추가 요청을 관리 유스케이스에 위임하고 설정 fragment를 반환한다")
+    void addItem_ShouldDelegateToManageUseCaseAndReturnConfigFragment() {
         // 준비
         AdminRouletteController controller = new AdminRouletteController(rouletteService, rouletteQueryService);
-        RouletteItemRequest request = new RouletteItemRequest(
+        RouletteItemForm form = new RouletteItemForm(
+                1L,
                 "꽝",
-                1_000,
+                "10",
                 true,
                 RewardType.CUSTOM.name(),
                 ConversionMode.NONE.name(),
-                null,
-                1
+                null
         );
+        RouletteTableResult table = table(1L, "기본 룰렛", "!룰렛", 1_000L, List.of());
         RouletteItemResult item = new RouletteItemResult(
                 10L,
                 "꽝",
@@ -89,14 +83,19 @@ class AdminRouletteControllerTest {
                 true,
                 1
         );
+        given(rouletteService.getTables()).willReturn(List.of(table));
         given(rouletteService.addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1))
                 .willReturn(item);
+        ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        ResponseEntity<RouletteItemResponse> result = controller.addItem(1L, request);
+        String view = controller.addItem(form, model);
 
         // 검증
-        then(result.getBody()).isEqualTo(RouletteItemResponse.from(item));
+        then(view).isEqualTo("features/roulette/components :: roulette-config-region");
+        then(model.getAttribute("table")).isEqualTo(table);
+        then(model.getAttribute("selectedTableId")).isEqualTo(1L);
+        then(model.getAttribute("rouletteTone")).isEqualTo("success");
         BDDMockito.then(rouletteService).should().addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1);
     }
 
@@ -116,17 +115,28 @@ class AdminRouletteControllerTest {
                 "APPLIED",
                 LocalDateTime.of(2026, 6, 19, 15, 30)
         );
-        given(rouletteQueryService.getRecentEvents(pageable))
-                .willReturn(new PageImpl<>(List.of(event), pageable, 1));
+        Page<RouletteEventSummaryResult> page = new PageImpl<>(List.of(event), pageable, 1);
+        given(rouletteQueryService.getRecentEvents(pageable)).willReturn(page);
+        ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        ResponseEntity<RouletteEventPageResponse> result = controller.getEvents(0, 5);
+        String view = controller.getEvents(0, 5, model);
 
         // 검증
-        then(result.getBody()).isNotNull();
-        then(result.getBody().content()).containsExactly(RouletteEventSummaryResponse.from(event));
-        then(result.getBody().number()).isZero();
-        then(result.getBody().size()).isEqualTo(5);
+        then(view).isEqualTo("features/roulette/components :: roulette-events");
+        then(model.getAttribute("eventsPage")).isEqualTo(page);
         BDDMockito.then(rouletteQueryService).should().getRecentEvents(pageable);
+    }
+
+    private RouletteTableResult table(
+            Long id,
+            String title,
+            String command,
+            Long pricePerRound,
+            List<RouletteItemResult> items
+    ) {
+        RouletteValidationResult validation =
+                new RouletteValidationResult(false, List.of("losing item is required"), 0, false);
+        return new RouletteTableResult(id, title, command, pricePerRound, false, 0, 100, validation, items);
     }
 }

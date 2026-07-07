@@ -5,7 +5,7 @@
 - 상위 문서: [Nyang-Nyang Bot Spec](index.md)
 - 관련 문서:
   - [기술/운영 부록](technical-appendix.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
   - [이벤트 명세](events.md)
   - [테스트 전략](test-strategy.md)
 
@@ -120,7 +120,7 @@ FK가 남아 있으면:
 
 확인:
 
-- `/chzzk/connect` 관리자 수동 연결 결과.
+- `POST /chzzk/connect` 관리자 수동 연결 htmx 피드백.
 - CHZZK 세션 발급 API 응답.
 - 채팅/후원/구독 이벤트 subscribe 성공 여부.
 - WebSocket 비정상 종료 로그.

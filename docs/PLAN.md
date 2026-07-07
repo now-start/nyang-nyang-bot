@@ -251,7 +251,7 @@
 각 Phase 완료 전 다음을 확인한다.
 
 - 관련 FR ID가 [요구사항 추적표](spec/requirements-traceability.md)에 반영되어 있다.
-- 관련 API 변경은 [API 명세](spec/api.md)에 반영되어 있다.
+- 관련 route 변경은 [HTTP 라우트 명세](spec/api.md)에 반영되어 있다.
 - 이벤트 상태나 idempotency 변경은 [이벤트 명세](spec/events.md)에 반영되어 있다.
 - 화면/오버레이 변경은 [웹 UI 명세](spec/web-ui.md), [OBS 오버레이 디자인 명세](spec/overlay-design.md), [디자인 와이어프레임](spec/wireframes.md)에 반영되어 있다.
 - schema 변경은 [데이터 모델/마이그레이션 계획](spec/data-model-migration.md)에 반영되어 있다.

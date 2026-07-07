@@ -82,8 +82,9 @@ Web adapter:
 
 - 일반 사용자가 다른 사용자의 상세 히스토리를 조회하면 거부된다.
 - 관리자는 닉네임 부분 일치 검색을 수행할 수 있다.
-- request DTO 검증 실패 시 적절한 4xx 응답을 반환한다.
-- JPA entity가 response body로 직접 노출되지 않는다.
+- form binding과 서버 검증 실패는 같은 htmx target 안의 feedback fragment로 표시한다.
+- JPA entity가 Thymeleaf model로 직접 노출되지 않는다.
+- 화면 route는 기대한 page 또는 fragment 이름을 반환한다.
 
 Persistence adapter:
 

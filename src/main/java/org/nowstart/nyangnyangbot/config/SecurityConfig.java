@@ -14,7 +14,6 @@ import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -51,16 +49,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .csrf(csrf -> {
-                    csrf.ignoringRequestMatchers(PathPatternRequestMatcher.pathPattern(
-                            HttpMethod.POST,
-                            "/overlay/roulette/events/{displayEventId}/displayed"
-                    ));
                     if (h2ConsoleEnabled) {
                         csrf.ignoringRequestMatchers("/h2-console/**");
                     }
                 })
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/assets/**", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                    auth.requestMatchers("/assets/**", "/images/**", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
                             .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                             .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll();

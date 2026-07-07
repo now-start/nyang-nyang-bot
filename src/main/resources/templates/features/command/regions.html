@@ -3,8 +3,8 @@
 <body>
 <section class="vstack gap-3"
          th:fragment="command-panel"
-         th:with="listUrl=@{/admin/commands/fragments/list},
-                  editorUrl=@{/admin/commands/fragments/editor}">
+         th:with="listUrl=@{/admin/commands},
+                  editorUrl=@{/admin/commands/editor}">
     <div th:replace="~{features/command/components :: panel-header(${listUrl}, ${commandTypeOptions}, ${commandActiveOptions})}"></div>
     <div th:replace="~{features/command/components :: workspace(${listUrl}, ${editorUrl})}"></div>
 </section>
@@ -16,8 +16,8 @@
          hx-trigger="command-list-refresh from:body"
          id="command-list-region"
          th:fragment="command-list-region"
-         th:hx-get="@{/admin/commands/fragments/list}"
-         th:with="editorUrl=@{/admin/commands/fragments/editor}">
+         th:hx-get="@{/admin/commands}"
+         th:with="editorUrl=@{/admin/commands/editor}">
     <div th:replace="~{features/command/components :: list-header(${editorUrl})}"></div>
     <div th:replace="~{features/command/components :: command-table(${commands}, ${editorUrl})}"></div>
 </section>
@@ -26,10 +26,10 @@
          data-component="command-editor"
          id="command-editor-region"
          th:fragment="command-editor-region"
-         th:with="saveUrl=@{/admin/commands/fragments/save},
-                  validateUrl=@{/admin/commands/fragments/validate},
-                  previewUrl=@{/admin/commands/fragments/preview},
-                  deactivateUrl=@{/admin/commands/fragments/deactivate}">
+         th:with="saveUrl=@{/admin/commands},
+                  validateUrl=@{/admin/commands/validate},
+                  previewUrl=@{/admin/commands/preview},
+                  deactivateUrl=@{/admin/commands/deactivate}">
     <div th:replace="~{features/command/components :: editor-header(${saveMessage})}"></div>
     <div th:replace="~{features/command/components :: save-error(${saveError})}"></div>
 

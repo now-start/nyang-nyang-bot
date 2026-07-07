@@ -7,7 +7,7 @@
 - 관련 추적 문서:
   - [요구사항 추적표](requirements-traceability.md)
   - [데이터 모델/마이그레이션 계획](data-model-migration.md)
-  - [API 명세](api.md)
+  - [HTTP 라우트 명세](api.md)
   - [이벤트 명세](events.md)
   - [테스트 전략](test-strategy.md)
   - [운영/배포 Runbook](runbook.md)
@@ -42,7 +42,7 @@
 - Domain은 프레임워크 annotation과 DB schema 세부사항을 모른다.
 - Application은 JPA repository가 아니라 gateway 인터페이스를 호출한다.
 - Persistence adapter는 JPA entity와 domain model 간 변환을 담당한다.
-- Web adapter는 request/response DTO와 application command/result 간 변환만 담당한다.
+- Web adapter는 HTML form binding, Thymeleaf model 조립, application use case 호출만 담당한다.
 - CHZZK, Google Sheets, Grafana/Loki, OBS 오버레이는 모두 외부 adapter로 취급한다.
 
 ### 2.3 권장 패키지 구조
@@ -53,36 +53,25 @@
 org.nowstart.nyangnyangbot
   domain
     favorite
-    upbo
     roulette
     attendance
-    auth
-    model
+    authorization
+    overlay
     type
   application
-    favorite
-    upbo
-    roulette
-    attendance
-    auth
-    command
-    dto
-    service
-    gateway
+    port
+      in
       out
+    service
   adapter
     in
       web
-      overlay
       chat
     out
       persistence
-        entity
-        repository
       external
         chzzk
         google
-      monitoring
   config
     property
 ```
@@ -92,7 +81,7 @@ org.nowstart.nyangnyangbot
 - 사용자 액션은 use case로 표현한다. 예: `AdjustFavoriteUseCase`, `ApplyUpboUseCase`.
 - 저장소와 외부 시스템은 outbound gateway로 표현한다. 예: `LoadFavoriteAccountPort`, `SaveFavoriteLedgerPort`.
 - JPA 구현은 adapter 하위에 둔다. 예: `FavoriteAccount`, `FavoritePersistenceAdapter`.
-- Web DTO와 Application command/result는 분리한다.
+- Web form/view model과 Application command/result는 분리한다.
 - Domain 객체와 JPA 객체 모두 `Entity` 접미사를 피한다. JPA 객체는 `adapter/out/persistence/{subject}/entity` 패키지로 구분하고, 클래스명은 Hibernate 기본 물리 네이밍으로 만들 테이블명과 맞춘다.
 
 ## 3. 우선순위 요약
@@ -120,9 +109,9 @@ org.nowstart.nyangnyangbot
   - `adapter/out/persistence/repository`: Spring Data repository
   - `adapter/out/persistence/entity`: JPA persistence model
   - `adapter/out/external`: Feign client와 외부 API adapter
-  - `application/gateway/out`: 외부 저장소/시스템 호출 계약
-  - `application/dto`: 전환기 request/response/result DTO
-  - `domain/model`: 내부 비즈니스 상태 모델
+  - `application/port/out`: 외부 저장소/시스템 호출 계약
+  - `adapter/in/web`: Spring MVC + Thymeleaf + htmx 화면 adapter
+  - `domain/{feature}`: 내부 비즈니스 상태 모델
   - `domain/type`: 공통 비즈니스 enum과 정책 타입
 - 신규 기능의 기준 패키지와 기존 기능의 점진적 이동 원칙을 확정한다.
 - 문서 내 이상 항목을 정리한다.
@@ -192,7 +181,7 @@ org.nowstart.nyangnyangbot
 - 호감도 잔액 변경 application service를 단일 진입점으로 정리한다.
 - 사용자별 비관적 락으로 잔액 갱신을 직렬화한다.
 - 정정 거래 생성 규칙을 domain/application 계층에 추가한다.
-- 기존 히스토리 조회 API가 확장 필드를 안전하게 반환하도록 DTO를 정리한다.
+- 기존 히스토리 fragment가 확장 필드를 안전하게 렌더링하도록 view model을 정리한다.
 
 ### 완료 기준
 
@@ -212,7 +201,7 @@ org.nowstart.nyangnyangbot
 - `lastSeenAt` 기반 미확인 배지를 추가한다.
 - 본인 업보 내역, 누적 업보 반영 합계, 반영 전/후 호감도 표시 구조를 만든다.
 - 음수 잔액은 랭킹과 본인 화면에서 그대로 표시하고 시각적 신호를 제공한다.
-- 조회 use case와 web response DTO를 분리한다.
+- 조회 use case와 web view model을 분리한다.
 - 관리자 검색은 application use case로 제공하고, persistence adapter가 검색 구현을 담당한다.
 
 ### 완료 기준
