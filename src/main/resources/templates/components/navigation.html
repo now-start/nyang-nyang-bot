@@ -14,6 +14,21 @@
         th:text="${label}"
         type="button">탭</button>
 
+<button aria-selected="false"
+        class="nav-link d-inline-flex align-items-center gap-2"
+        data-bs-toggle="tab"
+        role="tab"
+        th:aria-controls="${target}"
+        th:aria-selected="${active}"
+        th:classappend="${active} ? ' active'"
+        th:data-bs-target="${'#' + target}"
+        th:fragment="tab-button-badge(label, badge, target, active)"
+        th:id="${target + '-button'}"
+        type="button">
+    <span th:text="${label}">탭</span>
+    <span class="badge rounded-pill bg-success-subtle text-success nav-beta-badge" th:text="${badge}">BETA</span>
+</button>
+
 <div th:fragment="pagination(page, baseUrl)" th:if="${page != null}">
 	<nav th:if="${page.totalPages > 1}"
 	         th:with="blockSize=${10}, start=${(page.number / blockSize) * blockSize},

@@ -72,7 +72,7 @@ class FavoriteControllerTest {
         weeklyChatRankViews = weeklyChatRanks.stream()
                 .map(FavoriteController.WeeklyChatRankView::from)
                 .toList();
-        lenient().when(weeklyChatRankService.getWeeklyRanks(5)).thenReturn(weeklyChatRanks);
+        lenient().when(weeklyChatRankService.getWeeklyRanks(10)).thenReturn(weeklyChatRanks);
     }
 
     @Test
@@ -90,7 +90,7 @@ class FavoriteControllerTest {
         then(result.getModel().get("landingMode")).isEqualTo(false);
         then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
         then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRankViews);
-        BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(5);
+        BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(10);
         BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
@@ -248,7 +248,7 @@ class FavoriteControllerTest {
         BDDMockito.then(favoriteService).should().getMyFavorite("user1");
         BDDMockito.then(favoriteService).should(never()).getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
-        BDDMockito.then(weeklyChatRankService).should(never()).getWeeklyRanks(5);
+        BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(10);
     }
 
     @Test
@@ -306,7 +306,7 @@ class FavoriteControllerTest {
         Page<FavoriteSummaryResult> resultPage = (Page<FavoriteSummaryResult>) result.getModel().get("favoriteList");
         then(resultPage.getContent()).containsExactly(new FavoriteSummaryResult("user1", "유저1", 100));
         then(result.getModel().get("nickName")).isEqualTo("");
-        then(result.getModel().get("weeklyChatRanks")).isEqualTo(List.of());
+        then(result.getModel().get("weeklyChatRanks")).isEqualTo(weeklyChatRankViews);
         then(result.getModel().get("isAdmin")).isEqualTo(false);
         then(result.getModel().get("currentUserId")).isEqualTo("user1");
         then(result.getModel().get("currentUserRank")).isEqualTo(7);

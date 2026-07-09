@@ -1,11 +1,6 @@
 /*
- * 냥냥봇 전역 Bootstrap theme build — "1c 소프트 엘리베이션" 톤
- * (design_handoff_nyangnyang_web_ui/README.md · docs/spec/ux-ui-guidelines.md §5.1)
- *
- * 화면별 CSS 없이 전역 한 파일로만 브랜드 색·형태를 고정한다.
- * 구성: (1) Bootstrap 5.3 CSS 변수 재정의, (2) 컴포넌트별 변수 오버라이드(.btn-*, .card 등),
- * (3) 소수의 전역 유틸리티 확장(.tabular-nums, .border-dashed, .bg-header-gradient).
- * 값은 디자인 토큰 표(design_handoff README "Design Tokens")를 그대로 따른다.
+ * 냥냥봇 전역 Bootstrap theme build.
+ * 색과 형태는 design_handoff_nyangnyang_web_ui/README.md와 docs/SPEC.md 기준으로 고정한다.
  */
 
 [data-bs-theme="dark"] {
@@ -228,6 +223,11 @@
 
 .nav-pills .nav-link.active {
     font-weight: 700;
+}
+
+.nav-pills .nav-link.active .nav-beta-badge {
+    background-color: #001b10 !important;
+    color: #ffffff !important;
 }
 
 /* 페이지네이션 — 정사각 버튼, 현재 페이지만 green fill */

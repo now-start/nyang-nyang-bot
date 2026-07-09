@@ -42,7 +42,7 @@ public class FavoriteController {
     private static final String FAVORITE_HISTORY_FRAGMENT = "features/favorite/components :: history-grid";
     private static final int MAX_HISTORY_LIMIT = 50;
     private static final int MAX_PAGE_SIZE = 50;
-    private static final int WEEKLY_CHAT_RANK_LIMIT = 5;
+    private static final int WEEKLY_CHAT_RANK_LIMIT = 10;
     private static final DateTimeFormatter HISTORY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final QueryFavoriteUseCase queryFavoriteUseCase;
@@ -102,20 +102,17 @@ public class FavoriteController {
                     PageRequest.of(0, pageSize, Sort.by("favorite").descending()),
                     1
             );
-            return new FavoriteListModel(favoriteList, PageRequest.of(0, pageSize), "", List.of(),
+            return new FavoriteListModel(favoriteList, PageRequest.of(0, pageSize), "", weeklyChatRanks(),
                     currentUserId, myFavorite.nickName(), false, myFavorite.rank(), userUpbos(currentUserId));
         }
 
         String searchNickName = isAdmin && nickName != null ? nickName : "";
         var favoriteList =
                 StringUtils.isBlank(searchNickName) ? queryFavoriteUseCase.getList(page) : queryFavoriteUseCase.getByNickName(page, searchNickName);
-        List<WeeklyChatRankView> weeklyChatRanks = queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
-                .map(WeeklyChatRankView::from)
-                .toList();
         String currentNickName = currentUserId == null
                 ? null
                 : queryFavoriteUseCase.getCurrentNickName(currentUserId).orElse(null);
-        return new FavoriteListModel(favoriteList, page, searchNickName, weeklyChatRanks,
+        return new FavoriteListModel(favoriteList, page, searchNickName, weeklyChatRanks(),
                 currentUserId, currentNickName, isAdmin, null, List.of());
     }
 
@@ -134,6 +131,12 @@ public class FavoriteController {
     private List<UserUpboView> userUpbos(String userId) {
         return queryUpboUseCase.getUserUpbos(userId, null).stream()
                 .map(UserUpboView::from)
+                .toList();
+    }
+
+    private List<WeeklyChatRankView> weeklyChatRanks() {
+        return queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
+                .map(WeeklyChatRankView::from)
                 .toList();
     }
 
