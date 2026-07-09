@@ -11,8 +11,11 @@ spring:
       enabled: false
     discovery:
       enabled: false
+  devtools:
+    restart:
+      enabled: false
   datasource:
-    url: "jdbc:h2:mem:nyangnyangbot;MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1"
+    url: "jdbc:h2:mem:nyangnyangbot;MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
     driver-class-name: org.h2.Driver
     username: sa
     password:
