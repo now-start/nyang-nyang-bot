@@ -9,7 +9,7 @@
     <div th:replace="~{features/command/components :: workspace(${listUrl}, ${editorUrl})}"></div>
 </section>
 
-<section class="border border-secondary-subtle rounded p-3"
+<section class="card p-3"
          data-component="command-list"
          hx-include="#command-filter-form"
          hx-swap="outerHTML"
@@ -22,7 +22,7 @@
     <div th:replace="~{features/command/components :: command-table(${commands}, ${editorUrl})}"></div>
 </section>
 
-<section class="border border-secondary-subtle rounded p-3"
+<section class="card p-3"
          data-component="command-editor"
          id="command-editor-region"
          th:fragment="command-editor-region"
@@ -64,9 +64,10 @@
     <th:block th:if="${previewError}">
         <div th:replace="~{components/feedback :: alert(${previewError}, 'danger')}"></div>
     </th:block>
-    <th:block th:if="${previewMessage}">
-        <div th:replace="~{components/feedback :: alert(${previewMessage}, 'success')}"></div>
-    </th:block>
+    <div class="border border-dashed rounded-3 p-3 small" th:if="${previewMessage}">
+        <span class="text-success fw-semibold">치즈냥봇</span>
+        <span th:text="${previewMessage}">미리보기 메시지</span>
+    </div>
 </section>
 </body>
 </html>

@@ -14,6 +14,7 @@ import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -54,7 +55,8 @@ public class SecurityConfig {
                     }
                 })
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/assets/**", "/images/**", "/favicon.ico").permitAll()
+                    auth.requestMatchers(HttpMethod.GET, "/").permitAll()
+                            .requestMatchers("/assets/**", "/images/**", "/css/**", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
                             .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                             .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll();

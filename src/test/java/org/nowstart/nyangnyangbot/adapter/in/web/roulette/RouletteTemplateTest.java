@@ -66,6 +66,40 @@ class RouletteTemplateTest {
         then(html).contains("https://example.com/overlay/roulette#token=raw-token");
     }
 
+    @Test
+    void rouletteTemplate_ShouldDisableActivation_WhenValidationFails() {
+        // 준비
+        WebContext context = webContext();
+        RouletteValidationResult invalidValidation = new RouletteValidationResult(
+                false,
+                List.of("probability total must be 10000"),
+                8_000,
+                false
+        );
+        RouletteItemResult item = new RouletteItemResult(
+                1L, "당첨", 2_500, false, "FAVORITE", "AUTO", 100, true, 1
+        );
+        RouletteTableResult table =
+                new RouletteTableResult(1L, "기본 룰렛", "!룰렛", 1_000L, false, 1, 100, invalidValidation, List.of(item));
+        context.setVariable("tables", List.of(table));
+        context.setVariable("selectedTableId", 1L);
+        context.setVariable("table", table);
+        context.setVariable("eventsPage", null);
+        context.setVariable("tokenUrl", null);
+
+        // 실행
+        String html = templateEngine().process("features/roulette/components", context);
+
+        // 검증 — red 배너 + 사유 + 활성화 버튼 disabled
+        then(html).contains("alert-danger");
+        then(html).contains("확률 합계가 100%가 되어야 합니다.");
+        then(html).doesNotContain("활성화 가능");
+        then(html).containsSubsequence(
+                "id=\"roulette-activate\"",
+                "disabled=\"disabled\""
+        );
+    }
+
     private RouletteTableResult table() {
         RouletteValidationResult validation = new RouletteValidationResult(true, List.of(), 10_000, true);
         RouletteItemResult item = new RouletteItemResult(

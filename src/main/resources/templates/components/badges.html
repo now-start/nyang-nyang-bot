@@ -2,10 +2,10 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <span class="badge rounded-pill"
-      th:classappend="${tone == 'brand' or tone == 'success'} ? ' text-bg-success' :
-        (${tone == 'warning'} ? ' text-bg-warning' :
-        (${tone == 'danger'} ? ' text-bg-danger' :
-        (${tone == 'dark'} ? ' text-bg-dark border border-secondary-subtle' : ' text-bg-secondary')))"
+      th:classappend="${tone == 'brand' or tone == 'success'} ? ' bg-success-subtle text-success' :
+        (${tone == 'warning'} ? ' bg-warning-subtle text-warning' :
+        (${tone == 'danger'} ? ' bg-danger-subtle text-danger' :
+        (${tone == 'dark'} ? ' text-bg-dark border border-secondary-subtle' : ' bg-secondary-subtle text-secondary')))"
       th:fragment="status(label, tone)"
       th:text="${label}">상태</span>
 </body>

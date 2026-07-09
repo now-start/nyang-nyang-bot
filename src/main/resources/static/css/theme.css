@@ -1,0 +1,319 @@
+/*
+ * 냥냥봇 전역 Bootstrap theme build — "1c 소프트 엘리베이션" 톤
+ * (design_handoff_nyangnyang_web_ui/README.md · docs/spec/ux-ui-guidelines.md §5.1)
+ *
+ * 화면별 CSS 없이 전역 한 파일로만 브랜드 색·형태를 고정한다.
+ * 구성: (1) Bootstrap 5.3 CSS 변수 재정의, (2) 컴포넌트별 변수 오버라이드(.btn-*, .card 등),
+ * (3) 소수의 전역 유틸리티 확장(.tabular-nums, .border-dashed, .bg-header-gradient).
+ * 값은 디자인 토큰 표(design_handoff README "Design Tokens")를 그대로 따른다.
+ */
+
+[data-bs-theme="dark"] {
+    /* 표면 · 텍스트 */
+    --bs-body-bg: #101312;
+    --bs-body-color: #e6e9e7;
+    --bs-emphasis-color: #ffffff;
+    --bs-emphasis-color-rgb: 255, 255, 255;
+    --bs-secondary-color: #8f9894;
+    --bs-secondary-color-rgb: 143, 152, 148;
+    --bs-secondary-bg: #202623;
+    --bs-secondary-bg-rgb: 32, 38, 35;
+    --bs-tertiary-color: #6f7773;
+    --bs-tertiary-bg: #181d1b;
+    --bs-tertiary-bg-rgb: 24, 29, 27;
+    --bs-border-color: #242b28;
+    --bs-border-color-translucent: #242b28;
+    --bs-dark-rgb: 16, 19, 18;
+
+    /* 브랜드 — CHZZK Neon Green을 success/primary 계열로 고정 */
+    --bs-primary: #00ffa3;
+    --bs-primary-rgb: 0, 255, 163;
+    --bs-success: #00ffa3;
+    --bs-success-rgb: 0, 255, 163;
+    --bs-success-bg-subtle: rgba(0, 255, 163, 0.1);
+    --bs-success-border-subtle: rgba(0, 255, 163, 0.3);
+    --bs-success-text-emphasis: #00ffa3;
+    --bs-primary-bg-subtle: rgba(0, 255, 163, 0.1);
+    --bs-primary-border-subtle: rgba(0, 255, 163, 0.3);
+    --bs-primary-text-emphasis: #00ffa3;
+
+    /* Danger — 음수·실패·폐기 전용 */
+    --bs-danger: #ff6b6b;
+    --bs-danger-rgb: 255, 107, 107;
+    --bs-danger-bg-subtle: rgba(255, 107, 107, 0.08);
+    --bs-danger-border-subtle: rgba(255, 107, 107, 0.35);
+    --bs-danger-text-emphasis: #ff6b6b;
+
+    /* 중립 subtle — 칩/서브 표면 */
+    --bs-secondary-bg-subtle: #202623;
+    --bs-secondary-border-subtle: #2c3330;
+    --bs-secondary-text-emphasis: #8f9894;
+
+    /* 링크 */
+    --bs-link-color: #00c37e;
+    --bs-link-color-rgb: 0, 195, 126;
+    --bs-link-hover-color: #00ffa3;
+    --bs-link-hover-color-rgb: 0, 255, 163;
+
+    /* 타이포그래피 · 형태 */
+    --bs-body-font-family: "Archivo", "Space Grotesk", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --bs-border-radius: 0.75rem;      /* 입력·버튼 12px */
+    --bs-border-radius-sm: 0.5625rem; /* 작은 버튼 9px */
+    --bs-border-radius-lg: 1rem;      /* 카드·패널 16px */
+    --bs-border-radius-xl: 1rem;
+    --bs-border-radius-pill: 999px;
+    --bs-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    --bs-box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --bs-box-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- 컴포넌트 변수 재정의 ---------- */
+
+.btn {
+    --bs-btn-border-radius: 0.75rem;
+    font-weight: 500;
+}
+
+.btn-sm {
+    --bs-btn-border-radius: 0.5625rem;
+}
+
+/* Primary 액션 — Neon Green 필, 텍스트 #001b10, glow */
+.btn-success {
+    --bs-btn-bg: #00ffa3;
+    --bs-btn-border-color: #00ffa3;
+    --bs-btn-color: #001b10;
+    --bs-btn-hover-bg: #33ffb5;
+    --bs-btn-hover-border-color: #33ffb5;
+    --bs-btn-hover-color: #001b10;
+    --bs-btn-active-bg: #00e694;
+    --bs-btn-active-border-color: #00e694;
+    --bs-btn-active-color: #001b10;
+    --bs-btn-disabled-bg: rgba(0, 255, 163, 0.35);
+    --bs-btn-disabled-border-color: transparent;
+    --bs-btn-disabled-color: #001b10;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0, 255, 163, 0.2);
+}
+
+.btn-outline-success {
+    --bs-btn-color: #00ffa3;
+    --bs-btn-border-color: rgba(0, 255, 163, 0.4);
+    --bs-btn-hover-bg: rgba(0, 255, 163, 0.1);
+    --bs-btn-hover-border-color: #00ffa3;
+    --bs-btn-hover-color: #00ffa3;
+    --bs-btn-active-bg: #00ffa3;
+    --bs-btn-active-border-color: #00ffa3;
+    --bs-btn-active-color: #001b10;
+}
+
+/* Secondary — 표면 버튼 */
+.btn-secondary {
+    --bs-btn-bg: #1a1f1d;
+    --bs-btn-border-color: #2c3330;
+    --bs-btn-color: #cdd3d0;
+    --bs-btn-hover-bg: #1a1f1d;
+    --bs-btn-hover-border-color: #3c4541;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-active-bg: #202623;
+    --bs-btn-active-border-color: #3c4541;
+    --bs-btn-active-color: #ffffff;
+}
+
+/* Ghost/outline — hover 시 보더·텍스트 green 전환 */
+.btn-outline-secondary {
+    --bs-btn-color: #cdd3d0;
+    --bs-btn-border-color: #2c3330;
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-border-color: #00ffa3;
+    --bs-btn-hover-color: #00ffa3;
+    --bs-btn-active-bg: rgba(0, 255, 163, 0.1);
+    --bs-btn-active-border-color: #00ffa3;
+    --bs-btn-active-color: #00ffa3;
+    --bs-btn-disabled-color: #6f7773;
+    --bs-btn-disabled-border-color: #242b28;
+}
+
+/* Danger outline — 위험 동작 전용 */
+.btn-outline-danger {
+    --bs-btn-color: #ff6b6b;
+    --bs-btn-border-color: rgba(255, 107, 107, 0.35);
+    --bs-btn-hover-bg: rgba(255, 107, 107, 0.08);
+    --bs-btn-hover-border-color: rgba(255, 107, 107, 0.5);
+    --bs-btn-hover-color: #ff6b6b;
+    --bs-btn-active-bg: rgba(255, 107, 107, 0.14);
+    --bs-btn-active-border-color: #ff6b6b;
+    --bs-btn-active-color: #ff6b6b;
+}
+
+/* 입력 */
+.form-control,
+.form-select {
+    background-color: #161a19;
+    border-color: #2c3330;
+    color: #e6e9e7;
+}
+
+.form-control::placeholder {
+    color: #6f7773;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #161a19;
+    border-color: #00ffa3;
+    color: #e6e9e7;
+    box-shadow: 0 0 0 0.125rem rgba(0, 255, 163, 0.15);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+    background-color: #131716;
+    color: #8f9894;
+}
+
+.form-check-input {
+    background-color: #161a19;
+    border-color: #3c4541;
+}
+
+.form-check-input:checked {
+    background-color: #00ffa3;
+    border-color: #00ffa3;
+}
+
+.form-check-input:focus {
+    border-color: #00ffa3;
+    box-shadow: 0 0 0 0.125rem rgba(0, 255, 163, 0.15);
+}
+
+.form-switch .form-check-input:checked {
+    --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23001b10'/%3e%3c/svg%3e");
+}
+
+/* 카드 — 소프트 엘리베이션 */
+.card {
+    --bs-card-bg: #181d1b;
+    --bs-card-border-color: #242b28;
+    --bs-card-border-radius: 1rem;
+    --bs-card-inner-border-radius: calc(1rem - 1px);
+    --bs-card-cap-bg: #1a1f1d;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 테이블 */
+.table-dark {
+    --bs-table-bg: #181d1b;
+    --bs-table-color: #e6e9e7;
+    --bs-table-border-color: #202623;
+    --bs-table-striped-bg: #1a1f1d;
+    --bs-table-hover-bg: #1a1f1d;
+    --bs-table-hover-color: #ffffff;
+}
+
+.table-dark thead {
+    color: #8f9894;
+    font-size: 0.72rem;
+    background-color: #1a1f1d;
+}
+
+/* 탭(nav-pills) — 활성만 green fill */
+.nav-pills {
+    --bs-nav-pills-border-radius: 999px;
+    --bs-nav-pills-link-active-bg: #00ffa3;
+    --bs-nav-pills-link-active-color: #001b10;
+    --bs-nav-link-color: #8f9894;
+    --bs-nav-link-hover-color: #e6e9e7;
+}
+
+.nav-pills .nav-link.active {
+    font-weight: 700;
+}
+
+/* 페이지네이션 — 정사각 버튼, 현재 페이지만 green fill */
+.pagination {
+    --bs-pagination-bg: transparent;
+    --bs-pagination-border-color: #2c3330;
+    --bs-pagination-color: #8f9894;
+    --bs-pagination-border-radius: 0.625rem;
+    --bs-pagination-hover-bg: transparent;
+    --bs-pagination-hover-border-color: #3c4541;
+    --bs-pagination-hover-color: #e6e9e7;
+    --bs-pagination-focus-bg: transparent;
+    --bs-pagination-focus-color: #00ffa3;
+    --bs-pagination-focus-box-shadow: 0 0 0 0.125rem rgba(0, 255, 163, 0.15);
+    --bs-pagination-active-bg: #00ffa3;
+    --bs-pagination-active-border-color: #00ffa3;
+    --bs-pagination-active-color: #001b10;
+    --bs-pagination-disabled-bg: transparent;
+    --bs-pagination-disabled-border-color: #242b28;
+    --bs-pagination-disabled-color: #3c4541;
+    gap: 6px;
+}
+
+.pagination .page-link {
+    min-width: 34px;
+    text-align: center;
+    border-radius: 0.625rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pagination .page-item.active .page-link {
+    font-weight: 700;
+}
+
+/* 모달 */
+.modal {
+    --bs-modal-bg: #181d1b;
+    --bs-modal-border-color: #2c3330;
+    --bs-modal-border-radius: 1rem;
+    --bs-modal-box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    --bs-modal-header-border-color: #242b28;
+    --bs-modal-footer-border-color: #242b28;
+    --bs-modal-footer-bg: #1a1f1d;
+}
+
+.modal-footer {
+    background-color: #1a1f1d;
+}
+
+/* 배지 — solid success는 브랜드 필 + 다크 텍스트 */
+.badge.text-bg-success {
+    color: #001b10 !important;
+    background-color: #00ffa3 !important;
+}
+
+.badge.text-bg-secondary {
+    color: #8f9894 !important;
+    background-color: #202623 !important;
+}
+
+/* ---------- 전역 유틸리티 확장 (theme build 수준) ---------- */
+
+/* 숫자 열 정렬 — README: 숫자는 전부 tabular-nums */
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 3a 관리자 메모 · 2e 미리보기 박스 등 dashed 구분.
+   브라우저 기본 border-width(medium)가 노출되지 않도록 폭 기본값을 0으로 두고,
+   .border/.border-top 등 Bootstrap 유틸리티가 지정한 면만 그린다. */
+.border-dashed {
+    border-style: dashed !important;
+}
+
+:where(.border-dashed) {
+    border-width: 0;
+}
+
+/* 헤더 그라데이션 — linear-gradient(180deg,#151918,#101312) */
+.bg-header-gradient {
+    background: linear-gradient(180deg, #151918 0%, #101312 100%);
+}
+
+/* 2a 랜딩 — 배경 상단 radial green glow 한 번만 */
+.bg-landing-glow {
+    background:
+        radial-gradient(80% 55% at 50% -10%, rgba(0, 255, 163, 0.06), transparent 70%),
+        #101312;
+}

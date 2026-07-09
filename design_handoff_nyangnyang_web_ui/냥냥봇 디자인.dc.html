@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9;font-family:"Archivo","Space Grotesk","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+a{color:#00c37e;text-decoration:none}a:hover{color:#00FFA3}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t3" data-screen-label="턴3 관리자 처리 모달 + 토큰 관리">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">PC 흐름 마무리 — 관리자 호감도/업보 처리 모달 + OBS 오버레이 토큰 관리 (<a class="dv-oid" href="#1c">1c</a> 톤)</span></div>
+<div class="dv-opts">
+
+<!-- ============ 3a 관리자 호감도/업보 처리 모달 ============ -->
+<div class="dv-opt" id="3a">
+<div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>관리자 처리 모달 — 대상 → 유형 → 입력 → 적용 전/후 미리보기 한 흐름 (720px)</div>
+<div class="dv-card" style="width:880px;background:#141816;padding:36px;display:flex;align-items:center;justify-content:center">
+  <div style="width:720px;background:#181d1b;border:1px solid #2c3330;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);overflow:hidden;color:#e6e9e7">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 26px;border-bottom:1px solid #242b28">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:16px;font-weight:700;color:#ffffff">관리자 처리</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 11px;border-radius:999px;background:#202623;color:#8f9894;letter-spacing:0.04em">ADMIN 전용</span>
+      </div>
+      <button style="width:30px;height:30px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:14px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7">✕</button>
+    </div>
+    <div style="padding:18px 26px;border-bottom:1px solid #242b28;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:8px">
+        <input placeholder="닉네임 또는 채널 ID" value="감자탕수육" style="flex:1;height:40px;padding:0 14px;border-radius:11px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:14px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3">
+        <button style="height:40px;padding:0 18px;border-radius:11px;border:1px solid #2c3330;background:#1a1f1d;color:#e6e9e7;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">검색</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;background:#161a19;border:1px solid #242b28">
+        <span style="width:34px;height:34px;border-radius:11px;background:#202623;color:#8f9894;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none">감</span>
+        <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+          <span style="font-size:14px;font-weight:600;color:#ffffff">감자탕수육</span>
+          <span style="font-size:11.5px;color:#6f7773">channelId: ch_9f3a…c21</span>
+        </div>
+        <span style="margin-left:auto;font-size:13px;color:#8f9894">현재 호감도 <strong style="color:#00FFA3;font-size:16px;font-variant-numeric:tabular-nums">875</strong></span>
+      </div>
+    </div>
+    <div style="padding:18px 26px;display:flex;flex-direction:column;gap:14px;border-bottom:1px solid #242b28">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:11.5px;color:#8f9894">처리 유형</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button style="height:32px;padding:0 14px;border-radius:999px;border:none;background:#00FFA3;color:#001b10;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">호감도 지급/차감</button>
+          <button style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">업보 지급</button>
+          <button style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">쿠폰 구매</button>
+          <button style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">사용 처리</button>
+          <button style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">정정</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">템플릿</label>
+          <div style="height:38px;padding:0 14px;border-radius:11px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" style-hover="border-color:#3c4541">호감도 +10 (룰렛 보정)<span style="color:#6f7773;font-size:11px">▾</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">증감값</label><input value="+10" style="height:38px;padding:0 14px;border-radius:11px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-size:15px;font-weight:700;font-family:inherit;outline:none;font-variant-numeric:tabular-nums;text-align:right" style-focus="border-color:#00FFA3"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">공개 설명 <span style="color:#6f7773">· 사용자에게 표시됨</span></label><input value="룰렛 결과 보정" style="height:38px;padding:0 14px;border-radius:11px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894;display:flex;align-items:center;gap:6px">관리자 메모 <span style="font-size:10.5px;padding:1px 8px;border-radius:999px;background:#202623;color:#6f7773;font-weight:700">비공개</span></label><input value="방송 중 확인, 원장 #482" style="height:38px;padding:0 14px;border-radius:11px;border:1px dashed #2c3330;background:#131716;color:#8f9894;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 26px;background:#1a1f1d">
+      <div style="display:flex;align-items:center;gap:12px;font-size:14px;font-variant-numeric:tabular-nums">
+        <span style="color:#8f9894">현재 <strong style="color:#e6e9e7">875</strong></span>
+        <span style="color:#6f7773">+</span>
+        <span style="color:#00FFA3;font-weight:700">+10</span>
+        <span style="color:#6f7773">=</span>
+        <span style="padding:5px 14px;border-radius:10px;background:rgba(0,255,163,0.1);border:1px solid rgba(0,255,163,0.3);color:#00FFA3;font-weight:800;font-size:15px">적용 후 885</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="height:38px;padding:0 16px;border-radius:11px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:13px;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">취소</button>
+        <button style="height:38px;padding:0 20px;border-radius:11px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(0,255,163,0.2)" style-hover="background:#33ffb5">적용</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 3b 오버레이 토큰 관리 ============ -->
+<div class="dv-opt" id="3b">
+<div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>OBS 토큰 관리 — 발급 직후 1회성 노출 경고 + 재송출을 같은 화면에</div>
+<div class="dv-card" style="width:1080px;background:#101312;color:#e6e9e7">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 32px 0">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:12.5px;color:#8f9894">관리자 · OBS</span>
+      <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">오버레이 토큰 관리</span>
+    </div>
+    <button style="height:38px;padding:0 18px;border-radius:12px;border:none;background:#00FFA3;color:#001b10;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">새 토큰 발급</button>
+  </div>
+  <div style="margin:18px 32px 0;padding:16px 20px;border-radius:14px;background:rgba(0,255,163,0.06);border:1px solid rgba(0,255,163,0.3);display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#ffffff"><span style="width:6px;height:6px;border-radius:50%;background:#00FFA3"></span>새 토큰이 발급되었습니다 — 이 값은 다시 볼 수 없습니다</div>
+    <div style="display:flex;gap:8px">
+      <code style="flex:1;padding:10px 14px;border-radius:10px;background:#0b0e0d;border:1px solid #242b28;font-size:12.5px;color:#00FFA3;font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">/overlay/roulette#token=ovl_kx82m4nq7wp1zr9c5vt3hj6b8dfy0a2e</code>
+      <button style="height:40px;padding:0 16px;border-radius:10px;border:1px solid #2c3330;background:#1a1f1d;color:#e6e9e7;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex:none" style-hover="border-color:#00FFA3;color:#00FFA3">URL 복사</button>
+      <button style="height:40px;padding:0 16px;border-radius:10px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex:none" style-hover="background:#33ffb5">확인했습니다</button>
+    </div>
+  </div>
+  <div style="margin:16px 32px 0;background:#181d1b;border:1px solid #242b28;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 100px 170px 260px;gap:14px;padding:10px 18px;font-size:11.5px;color:#8f9894;border-bottom:1px solid #242b28;background:#1a1f1d">
+      <span>이름</span><span>상태</span><span>마지막 사용</span><span style="text-align:right">액션</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 100px 170px 260px;gap:14px;align-items:center;padding:12px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#ffffff;font-weight:600">메인 OBS</span>
+      <span><span style="font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">ACTIVE</span></span>
+      <span style="color:#8f9894;font-variant-numeric:tabular-nums;font-size:12.5px">07-08 21:30</span>
+      <span style="display:flex;gap:6px;justify-content:flex-end">
+        <button style="height:30px;padding:0 12px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">URL 복사</button>
+        <button style="height:30px;padding:0 12px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">재발급</button>
+        <button style="height:30px;padding:0 12px;border-radius:9px;border:1px solid rgba(255,107,107,0.35);background:transparent;color:#ff6b6b;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,107,107,0.08)">폐기</button>
+      </span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 100px 170px 260px;gap:14px;align-items:center;padding:12px 18px;font-size:13.5px;opacity:0.6">
+      <span style="color:#8f9894;font-weight:500">테스트 OBS</span>
+      <span><span style="font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:700">REVOKED</span></span>
+      <span style="color:#8f9894;font-variant-numeric:tabular-nums;font-size:12.5px">07-01 19:10</span>
+      <span style="text-align:right;color:#6f7773;font-size:12.5px">—</span>
+    </div>
+  </div>
+  <div style="margin:16px 32px 26px;background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:600;color:#ffffff">최근 오버레이 이벤트 · 재송출</span>
+      <span style="font-size:11.5px;color:#6f7773">재송출은 원장에 재반영되지 않습니다</span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 110px 110px;gap:14px;align-items:center;padding:9px 4px;font-size:13px;border-bottom:1px solid #202623;font-variant-numeric:tabular-nums">
+      <span style="color:#8f9894">07-08 21:30</span><span style="color:#e6e9e7">츄르도둑 · !룰렛 11회 (호감도 +10 외)</span><span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">표시 완료</span></span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">재송출</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 110px 110px;gap:14px;align-items:center;padding:9px 4px;font-size:13px;font-variant-numeric:tabular-nums">
+      <span style="color:#8f9894">07-08 20:44</span><span style="color:#e6e9e7">밤톨이 · !룰렛 3회 (꽝 ×2, 호감도 +1)</span><span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:700">표시 실패</span></span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:none;background:#00FFA3;color:#001b10;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">재송출</button></span>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">다음 요청 예: "<a class="dv-oid" href="#3a">3a</a>를 업보 지급 상태로도 보여줘" · "모바일 360px 버전 진행" · "빈 상태/에러 상태 화면도 추가해줘"</p>
+</section>
+
+<section class="dv-turn" id="t2" data-screen-label="턴2 1c 톤 전체 화면 전개">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname"><a class="dv-oid" href="#1c">1c</a> 소프트 엘리베이션 톤 — 전체 화면 전개 (데스크톱)</span></div>
+<div class="dv-opts">
+
+<!-- ============ 2a 로그인/랜딩 ============ -->
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>로그인/랜딩 — 유일하게 hero가 허용되는 화면, 로그인 동선 최우선</div>
+<div class="dv-card" style="width:720px;background:#101312;color:#e6e9e7">
+  <div style="min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:56px 40px;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,255,163,0.06),transparent),#101312">
+    <div style="width:64px;height:64px;border-radius:20px;background:#00FFA3;display:flex;align-items:center;justify-content:center;color:#001b10;font-weight:700;font-size:24px;box-shadow:0 8px 28px rgba(0,255,163,0.25)">냥</div>
+    <h1 style="margin:24px 0 0;font-size:32px;font-weight:700;letter-spacing:-0.01em;color:#ffffff">치즈냥 호감도</h1>
+    <p style="margin:10px 0 0;font-size:15px;color:#8f9894;text-align:center;line-height:1.6;max-width:400px">스트리머냥 채널의 호감도 랭킹과 내 히스토리,<br>업보·쿠폰 보유 내역을 한 곳에서 확인하세요.</p>
+    <button style="margin-top:32px;height:48px;padding:0 28px;border-radius:14px;border:none;background:#00FFA3;color:#001b10;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:10px;box-shadow:0 4px 18px rgba(0,255,163,0.25)" style-hover="background:#33ffb5"><span style="width:18px;height:18px;border-radius:5px;background:#001b10;color:#00FFA3;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">C</span>치지직 계정으로 로그인</button>
+    <p style="margin:16px 0 0;font-size:12px;color:#6f7773">CHZZK OAuth로 안전하게 로그인합니다. 채널 ID 외 정보는 저장하지 않습니다.</p>
+    <div style="margin-top:40px;display:flex;gap:24px;font-size:12.5px;color:#8f9894">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:5px;height:5px;border-radius:50%;background:#00FFA3"></span>호감도 랭킹</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:5px;height:5px;border-radius:50%;background:#00FFA3"></span>내 히스토리</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:5px;height:5px;border-radius:50%;background:#00FFA3"></span>룰렛 결과</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2b 마이페이지 ============ -->
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>마이페이지 — 현재 상태 → 보유 목록 → 전체 히스토리 우선순위</div>
+<div class="dv-card" style="width:1080px;background:#101312;color:#e6e9e7">
+  <div style="padding:26px 32px 22px;background:linear-gradient(180deg,#151918 0%,#101312 100%);border-bottom:1px solid #222826">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:12.5px;color:#8f9894">치즈냥 호감도 · 감자탕수육</span>
+        <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">내 호감도</span>
+      </div>
+      <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3"><span style="width:6px;height:6px;border-radius:50%;background:#00FFA3"></span>새 항목 3건</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px">
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">현재 호감도</div>
+        <div style="font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;color:#00FFA3">875</div>
+      </div>
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">누적 업보 반영</div>
+        <div style="font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;color:#ffffff">+42</div>
+      </div>
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">최근 룰렛 결과</div>
+        <div style="font-size:17px;font-weight:600;color:#ffffff;padding-top:6px">호감도 +10 <span style="font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">07-08</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:22px 32px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+      <span style="font-size:15px;font-weight:600;color:#ffffff">보유 업보 · 쿠폰 · 리워드</span>
+      <div style="display:flex;gap:6px">
+        <button style="height:30px;padding:0 14px;border-radius:999px;border:none;background:#00FFA3;color:#001b10;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">OWNED</button>
+        <button style="height:30px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">USED</button>
+        <button style="height:30px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">CONVERTED</button>
+        <button style="height:30px;padding:0 14px;border-radius:999px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7;border-color:#3c4541">CORRECTED</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 110px 200px;gap:14px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:13.5px">
+        <span style="color:#8f9894;font-variant-numeric:tabular-nums;font-size:12.5px">07-08 21:30</span>
+        <span style="color:#ffffff;font-weight:600;display:flex;align-items:center;gap:10px">손인사쿠폰 <span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">NEW</span></span>
+        <span><span style="font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">OWNED</span></span>
+        <span style="text-align:right;color:#6f7773;font-size:12.5px">호감도 환산 없음</span>
+      </div>
+      <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 110px 200px;gap:14px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:13.5px">
+        <span style="color:#8f9894;font-variant-numeric:tabular-nums;font-size:12.5px">07-08 21:30</span>
+        <span style="color:#e6e9e7;font-weight:500">호감도 +10</span>
+        <span><span style="font-size:11px;padding:3px 10px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">CONVERTED</span></span>
+        <span style="text-align:right;color:#6f7773;font-size:12.5px">원장 <a href="#2b" style="color:#00c37e">#512</a> 반영</span>
+      </div>
+      <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 110px 200px;gap:14px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:13.5px">
+        <span style="color:#8f9894;font-variant-numeric:tabular-nums;font-size:12.5px">07-02 20:15</span>
+        <span style="color:#e6e9e7;font-weight:500;display:flex;align-items:center;gap:10px">업보 · 설거지 미루기 <span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:700">-5 반영</span></span>
+        <span><span style="font-size:11px;padding:3px 10px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">CONVERTED</span></span>
+        <span style="text-align:right;color:#6f7773;font-size:12.5px">원장 <a href="#2b" style="color:#00c37e">#498</a> 반영</span>
+      </div>
+    </div>
+  </div>
+  <div style="padding:24px 32px 26px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:15px;font-weight:600;color:#ffffff">전체 히스토리</span>
+      <span style="font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">최신순 · 50건 단위</span>
+    </div>
+    <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+      <div style="display:grid;grid-template-columns:110px 90px 70px 90px minmax(0,1fr);gap:14px;padding:10px 18px;font-size:11.5px;color:#8f9894;border-bottom:1px solid #242b28;background:#1a1f1d">
+        <span>일시</span><span>분류</span><span style="text-align:right">증감</span><span style="text-align:right">반영 후</span><span>설명</span>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 90px 70px 90px minmax(0,1fr);gap:14px;align-items:center;padding:11px 18px;font-size:13px;border-bottom:1px solid #202623;font-variant-numeric:tabular-nums" style-hover="background:#1a1f1d">
+        <span style="color:#8f9894">07-08 21:30</span><span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:600">룰렛</span></span><span style="text-align:right;color:#00FFA3;font-weight:700">+10</span><span style="text-align:right;color:#e6e9e7">875</span><span style="color:#8f9894">호감도 +10 당첨</span>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 90px 70px 90px minmax(0,1fr);gap:14px;align-items:center;padding:11px 18px;font-size:13px;border-bottom:1px solid #202623;font-variant-numeric:tabular-nums" style-hover="background:#1a1f1d">
+        <span style="color:#8f9894">07-08 20:12</span><span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:#202623;color:#8f9894;font-weight:600">출석</span></span><span style="text-align:right;color:#00FFA3;font-weight:700">+1</span><span style="text-align:right;color:#e6e9e7">865</span><span style="color:#8f9894">7월 2주차 출석체크</span>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 90px 70px 90px minmax(0,1fr);gap:14px;align-items:center;padding:11px 18px;font-size:13px;font-variant-numeric:tabular-nums" style-hover="background:#1a1f1d">
+        <span style="color:#8f9894">07-05 22:40</span><span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600">정정</span></span><span style="text-align:right;color:#ff6b6b;font-weight:700">-10</span><span style="text-align:right;color:#e6e9e7">864</span><span style="color:#8f9894">룰렛 결과 보정 · 원본 <a href="#2b" style="color:#00c37e">#482</a> 참조</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2c 출석체크 모달 ============ -->
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>출석체크 모달 — header → 설정 → 대상자 → 액션, 사이클당 1회 지급</div>
+<div class="dv-card" style="width:720px;background:#14181688;background:#141816;padding:36px;display:flex;align-items:center;justify-content:center">
+  <div style="width:560px;background:#181d1b;border:1px solid #2c3330;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);overflow:hidden;color:#e6e9e7">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #242b28">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:16px;font-weight:700;color:#ffffff">출석체크</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3"><span style="width:6px;height:6px;border-radius:50%;background:#00FFA3"></span>수집 중</span>
+      </div>
+      <button style="width:30px;height:30px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:14px;font-family:inherit;cursor:pointer" style-hover="color:#e6e9e7">✕</button>
+    </div>
+    <div style="padding:18px 24px;display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid #242b28">
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+        <label style="font-size:12px;color:#8f9894">지급 호감도 <span style="color:#6f7773">(정수, 부호 포함 표시)</span></label>
+        <input value="+1" style="height:40px;padding:0 14px;border-radius:11px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-size:15px;font-weight:700;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <span style="font-size:12px;color:#8f9894">대상자 <strong style="color:#ffffff;font-variant-numeric:tabular-nums">24명</strong> · 선택 <strong style="color:#00FFA3;font-variant-numeric:tabular-nums">22명</strong></span>
+        <button style="height:40px;padding:0 16px;border-radius:11px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">새로고침</button>
+      </div>
+    </div>
+    <div style="max-height:230px;overflow:auto;padding:10px 24px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;font-size:13.5px;cursor:pointer" style-hover="background:#1e2422"><span style="width:18px;height:18px;border-radius:6px;background:#00FFA3;display:inline-flex;align-items:center;justify-content:center;color:#001b10;font-size:11px;font-weight:800;flex:none">✓</span><span style="color:#e6e9e7">츄르도둑</span><span style="margin-left:auto;font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">채팅 41회</span></label>
+        <label style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;font-size:13.5px;cursor:pointer" style-hover="background:#1e2422"><span style="width:18px;height:18px;border-radius:6px;background:#00FFA3;display:inline-flex;align-items:center;justify-content:center;color:#001b10;font-size:11px;font-weight:800;flex:none">✓</span><span style="color:#e6e9e7">우주고양이</span><span style="margin-left:auto;font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">채팅 33회</span></label>
+        <label style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;font-size:13.5px;cursor:pointer" style-hover="background:#1e2422"><span style="width:18px;height:18px;border-radius:6px;border:1.5px solid #3c4541;flex:none"></span><span style="color:#8f9894">밤톨이 <span style="font-size:11px;color:#6f7773">— 이번 사이클 지급 완료</span></span><span style="margin-left:auto;font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">채팅 28회</span></label>
+        <label style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;font-size:13.5px;cursor:pointer" style-hover="background:#1e2422"><span style="width:18px;height:18px;border-radius:6px;background:#00FFA3;display:inline-flex;align-items:center;justify-content:center;color:#001b10;font-size:11px;font-weight:800;flex:none">✓</span><span style="color:#e6e9e7">시금치파스타</span><span style="margin-left:auto;font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">채팅 17회</span></label>
+        <label style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;font-size:13.5px;cursor:pointer" style-hover="background:#1e2422"><span style="width:18px;height:18px;border-radius:6px;background:#00FFA3;display:inline-flex;align-items:center;justify-content:center;color:#001b10;font-size:11px;font-weight:800;flex:none">✓</span><span style="color:#e6e9e7">붕어싸만코</span><span style="margin-left:auto;font-size:12px;color:#6f7773;font-variant-numeric:tabular-nums">채팅 9회</span></label>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-top:1px solid #242b28;background:#1a1f1d">
+      <span style="font-size:12px;color:#6f7773">적용 시 사용자당 1회만 지급됩니다</span>
+      <div style="display:flex;gap:8px">
+        <button style="height:38px;padding:0 16px;border-radius:11px;border:1px solid rgba(255,107,107,0.35);background:transparent;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,107,107,0.08)">취소하고 종료</button>
+        <button style="height:38px;padding:0 18px;border-radius:11px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(0,255,163,0.2)" style-hover="background:#33ffb5">선택 22명에게 +1 적용</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2d 룰렛 관리 ============ -->
+<div class="dv-opt" id="2d">
+<div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>룰렛 테이블 관리 — 확률 합계·활성화 가능 여부 상시 노출, 시뮬레이션 검증</div>
+<div class="dv-card" style="width:1080px;background:#101312;color:#e6e9e7">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 32px 0">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:12.5px;color:#8f9894">관리자 · 룰렛</span>
+      <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">룰렛 테이블 관리</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button style="height:38px;padding:0 16px;border-radius:12px;border:1px solid #2c3330;background:#1a1f1d;color:#cdd3d0;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">1만 회 시뮬레이션</button>
+      <button style="height:38px;padding:0 18px;border-radius:12px;border:none;background:#00FFA3;color:#001b10;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">새 룰렛</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 150px;gap:12px;margin:18px 32px 0;background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">이름</label><input value="기본 룰렛" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">후원 명령어</label><input value="!룰렛" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-weight:600;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">1회 금액 (치즈)</label><input value="1,000" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">최대 순차 애니메이션</label><input value="5" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:#8f9894">공개</span><span style="width:36px;height:20px;border-radius:999px;background:#00FFA3;position:relative;flex:none"><span style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#001b10"></span></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:#8f9894">활성</span><span style="width:36px;height:20px;border-radius:999px;background:#2c3330;position:relative;flex:none"><span style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#6f7773"></span></span></div>
+    </div>
+  </div>
+  <div style="margin:16px 32px 0;background:#181d1b;border:1px solid #242b28;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;padding:10px 18px;font-size:11.5px;color:#8f9894;border-bottom:1px solid #242b28;background:#1a1f1d">
+      <span>항목</span><span style="text-align:right">확률 (%)</span><span>결과 타입</span><span style="text-align:right">액션</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#ffffff;font-weight:600;display:flex;align-items:center;gap:10px">꽝 <span style="font-size:10.5px;padding:2px 8px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">필수</span></span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">30.0000</span><span style="font-size:12px;color:#8f9894">NONE</span><span style="text-align:right;font-size:12.5px;color:#6f7773">고정</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#e6e9e7">호감도 +1</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">28.8000</span><span style="font-size:12px;color:#8f9894">FAVORITE_DELTA</span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#e6e9e7">호감도 +5</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">21.0000</span><span style="font-size:12px;color:#8f9894">FAVORITE_DELTA</span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#e6e9e7">호감도 +10</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">12.0000</span><span style="font-size:12px;color:#8f9894">FAVORITE_DELTA</span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px;border-bottom:1px solid #202623" style-hover="background:#1a1f1d">
+      <span style="color:#e6e9e7">손인사쿠폰</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">2.0000</span><span style="font-size:12px;color:#8f9894">COUPON</span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 170px 120px;gap:14px;align-items:center;padding:11px 18px;font-size:13.5px" style-hover="background:#1a1f1d">
+      <span style="color:#e6e9e7">업보 차감권</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:#e6e9e7">6.2000</span><span style="font-size:12px;color:#8f9894">COUPON</span><span style="text-align:right"><button style="height:28px;padding:0 12px;border-radius:8px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin:14px 32px 0;padding:14px 18px;border-radius:14px;background:rgba(0,255,163,0.06);border:1px solid rgba(0,255,163,0.25)">
+    <div style="display:flex;gap:20px;font-size:13px">
+      <span style="color:#e6e9e7">확률 합계 <strong style="color:#00FFA3;font-variant-numeric:tabular-nums">100.0000%</strong></span>
+      <span style="color:#e6e9e7;display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#00FFA3"></span>꽝 포함 OK</span>
+      <span style="color:#8f9894;font-variant-numeric:tabular-nums">항목 6개</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button style="height:38px;padding:0 16px;border-radius:11px;border:1px solid #2c3330;background:#1a1f1d;color:#cdd3d0;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">저장</button>
+      <button style="height:38px;padding:0 18px;border-radius:11px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(0,255,163,0.2)" style-hover="background:#33ffb5">활성화</button>
+    </div>
+  </div>
+  <div style="margin:16px 32px 26px;background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+    <div style="font-size:13px;font-weight:600;color:#ffffff;margin-bottom:10px">1만 회 시뮬레이션 <span style="font-size:11.5px;font-weight:500;color:#6f7773">· 방금 실행됨</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 120px 90px;gap:14px;font-size:12.5px;color:#8f9894;padding-bottom:8px;border-bottom:1px solid #242b28">
+      <span>항목</span><span style="text-align:right">기대 확률</span><span style="text-align:right">시뮬레이션</span><span style="text-align:right">차이</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 120px 90px;gap:14px;font-size:13px;padding:8px 0 2px;font-variant-numeric:tabular-nums">
+      <span style="color:#e6e9e7">꽝</span><span style="text-align:right;color:#8f9894">30.0000%</span><span style="text-align:right;color:#e6e9e7">29.8400%</span><span style="text-align:right;color:#ff6b6b">-0.1600</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px 120px 90px;gap:14px;font-size:13px;padding:6px 0 0;font-variant-numeric:tabular-nums">
+      <span style="color:#e6e9e7">호감도 +1</span><span style="text-align:right;color:#8f9894">28.8000%</span><span style="text-align:right;color:#e6e9e7">28.9100%</span><span style="text-align:right;color:#00FFA3">+0.1100</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2e 명령어 관리 ============ -->
+<div class="dv-opt" id="2e">
+<div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>명령어 관리 — 좌: 목록/상태, 우: 편집 + 충돌 검증 + 미리보기 한 흐름</div>
+<div class="dv-card" style="width:1080px;background:#101312;color:#e6e9e7">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 32px 0">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:12.5px;color:#8f9894">관리자 · 채팅</span>
+      <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">명령어 관리</span>
+    </div>
+    <button style="height:38px;padding:0 18px;border-radius:12px;border:none;background:#00FFA3;color:#001b10;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">명령어 추가</button>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:18px 32px 26px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;padding:4px 18px 6px;font-size:11.5px;color:#8f9894">
+        <span>트리거</span><span>유형</span><span>응답 / action</span><span style="text-align:right">상태</span>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+        <span style="color:#00FFA3;font-weight:700">!호감도</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TRIGGER</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">favorite.query · 쿨타임 30초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+        <span style="color:#00FFA3;font-weight:700">!룰렛결과</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TRIGGER</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">roulette.recent · 쿨타임 60초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+      </div>
+      <div style="background:#181d1b;border:1px solid #00FFA3;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 12px rgba(0,255,163,0.1)">
+        <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center">
+          <span style="color:#00FFA3;font-weight:700">!규칙</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">TEXT</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">매너 채팅, 스포 금지…</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+        </div>
+        <div style="margin-top:8px;font-size:11.5px;color:#6f7773">편집 중 · 마지막 수정 07-06 스트리머냥</div>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2);opacity:0.65" style-hover="border-color:#3c4541">
+        <span style="color:#8f9894;font-weight:700">!디스코드</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TEXT</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">디스코드 링크 안내</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">비활성</span></span>
+      </div>
+    </div>
+    <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:14px;font-weight:700;color:#ffffff">!규칙 편집</span>
+        <span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">TEXT</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">트리거</label><input value="!규칙" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-weight:600;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">쿨타임 (초)</label><input value="60" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:11.5px;color:#8f9894">메시지 템플릿 <span style="color:#6f7773">· 허용 변수: {nickname} {favorite}</span></label>
+        <div style="min-height:72px;padding:10px 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13px;line-height:1.6">{nickname}님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:9px 12px;border-radius:10px;background:rgba(0,255,163,0.06);border:1px solid rgba(0,255,163,0.25);color:#e6e9e7">
+        <span style="width:6px;height:6px;border-radius:50%;background:#00FFA3;flex:none"></span>충돌 없음 — 기존 명령어·룰렛 후원 트리거와 중복되지 않습니다
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:11.5px;color:#8f9894">미리보기</label>
+        <div style="padding:10px 12px;border-radius:10px;background:#101312;border:1px dashed #2c3330;font-size:13px;line-height:1.6"><span style="color:#00FFA3;font-weight:600">치즈냥봇</span> <span style="color:#e6e9e7">감자탕수육님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:2px">
+        <button style="height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,107,107,0.35);background:transparent;color:#ff6b6b;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,107,107,0.08)">비활성화</button>
+        <div style="display:flex;gap:8px">
+          <button style="height:36px;padding:0 14px;border-radius:10px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">취소</button>
+          <button style="height:36px;padding:0 16px;border-radius:10px;border:none;background:#00FFA3;color:#001b10;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2f OBS 오버레이 ============ -->
+<div class="dv-opt" id="2f">
+<div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>OBS 룰렛 오버레이 — DISPLAYING + SUMMARY 상태 (1920×1080의 50% 스케일, idle은 완전 투명)</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="dv-card" style="width:960px;height:540px;position:relative;background:repeating-linear-gradient(45deg,#181a19,#181a19 14px,#141615 14px,#141615 28px);overflow:hidden">
+  <span style="position:absolute;top:12px;left:14px;font:11px ui-monospace,Menlo,monospace;color:#6f7773">방송 화면 — 게임/캠 (오버레이 배경은 투명)</span>
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:380px;background:rgba(0,0,0,0.82);border:1px solid rgba(0,255,163,0.35);border-radius:20px;padding:26px 30px;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:19px;font-weight:700;color:#ffffff">츄르도둑님의 룰렛</span>
+      <span style="font-size:12px;font-weight:700;padding:3px 11px;border-radius:999px;background:rgba(0,255,163,0.15);color:#00FFA3;font-variant-numeric:tabular-nums">3 / 11회</span>
+    </div>
+    <div style="position:relative;width:190px;height:190px">
+      <div style="width:190px;height:190px;border-radius:50%;background:conic-gradient(#00FFA3 0 108deg,#1d2422 108deg 212deg,#00c37e 212deg 287deg,#2a3330 287deg 330deg,#00FFA3 330deg 360deg);border:5px solid rgba(255,255,255,0.12)"></div>
+      <div style="position:absolute;inset:52px;border-radius:50%;background:#000000;display:flex;align-items:center;justify-content:center;color:#00FFA3;font-weight:800;font-size:15px">냥</div>
+      <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:14px solid #ffffff"></div>
+    </div>
+    <div style="font-size:26px;font-weight:800;color:#00FFA3;text-shadow:0 2px 18px rgba(0,255,163,0.4)">호감도 +10</div>
+  </div>
+</div>
+<div class="dv-card" style="width:960px;height:300px;position:relative;background:repeating-linear-gradient(45deg,#181a19,#181a19 14px,#141615 14px,#141615 28px);overflow:hidden">
+  <span style="position:absolute;top:12px;left:14px;font:11px ui-monospace,Menlo,monospace;color:#6f7773">SUMMARY 상태 — 초과 회차 요약 (maxAnimatedRounds=5 초과분)</span>
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;background:rgba(0,0,0,0.82);border:1px solid rgba(0,255,163,0.35);border-radius:20px;padding:22px 28px;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
+    <div style="font-size:17px;font-weight:700;color:#ffffff;margin-bottom:14px">추가 6회 결과</div>
+    <div style="display:flex;flex-direction:column;gap:9px;font-size:15px;font-variant-numeric:tabular-nums">
+      <div style="display:flex;justify-content:space-between"><span style="color:#00FFA3;font-weight:700">호감도 +1</span><span style="color:#ffffff;font-weight:700">×3</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#8f9894;font-weight:600">꽝</span><span style="color:#8f9894;font-weight:700">×2</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#00FFA3;font-weight:700">손인사쿠폰</span><span style="color:#ffffff;font-weight:700">×1</span></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">다음 요청 예: "모바일 360px 버전 보여줘" · "<a class="dv-oid" href="#2e">2e</a> 편집 폼을 모달로" · "호감도 수정 모달도 추가해줘"</p>
+</section>
+
+<section class="dv-turn" id="t1" data-screen-label="턴1 호감도 보드 톤 3안">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">호감도 보드 — 비주얼 톤 3안 (데스크톱 1080px, CHZZK Black + Neon Green)</span></div>
+<div class="dv-opts">
+
+<!-- ============ 1a 스펙 리터럴 ============ -->
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>스펙 리터럴 — 순수 블랙, 플랫 패널, Neon Green 필드 버튼 (Bootstrap dark 톤에 가장 근접)</div>
+<div class="dv-card" style="width:1080px;background:#000000;color:#e8eae9">
+  <div style="padding:28px 32px 0">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;color:#9aa39f">치즈냥</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border:1px solid #2a2d2b;border-radius:999px;color:#c8cdcb"><span style="width:6px;height:6px;border-radius:50%;background:#00FFA3"></span>관리자 · 스트리머냥</span>
+        </div>
+        <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.01em;color:#ffffff">호감도</h1>
+        <p style="margin:0;font-size:14px;color:#9aa39f">최근 변경된 내역을 확인하고 원하는 항목을 빠르게 찾아보세요.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex:none;padding-top:4px">
+        <button style="height:38px;padding:0 16px;border-radius:12px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#4a4f4c;color:#ffffff">데이터 동기화</button>
+        <button style="height:38px;padding:0 18px;border-radius:12px;border:none;background:#00FFA3;color:#001b10;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:#33ffb5">출석체크</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;padding:24px 32px 0">
+    <div style="background:#121412;border:1px solid #232624;border-radius:12px;padding:16px 18px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.06em;color:#9aa39f;margin-bottom:12px">주간 채팅 순위</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#e8eae9"><span style="color:#00FFA3;font-weight:600">1위</span> 츄르도둑</span><span style="color:#9aa39f;font-variant-numeric:tabular-nums">412회</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#e8eae9"><span style="color:#6b716e;font-weight:600">2위</span> 감자탕수육</span><span style="color:#9aa39f;font-variant-numeric:tabular-nums">388회</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#e8eae9"><span style="color:#6b716e;font-weight:600">3위</span> 밤톨이</span><span style="color:#9aa39f;font-variant-numeric:tabular-nums">291회</span></div>
+      </div>
+    </div>
+    <div style="background:#121412;border:1px solid #232624;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:10px">
+      <label style="font-size:12px;font-weight:600;letter-spacing:0.06em;color:#9aa39f">닉네임 검색</label>
+      <div style="display:flex;gap:8px">
+        <input placeholder="닉네임 또는 채널 ID를 입력하세요" style="flex:1;height:38px;padding:0 14px;border-radius:12px;border:1px solid #2a2d2b;background:#0a0b0a;color:#e8eae9;font-size:14px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3">
+        <button style="height:38px;padding:0 18px;border-radius:12px;border:1px solid #2a2d2b;background:#1a1d1b;color:#e8eae9;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#4a4f4c">검색</button>
+      </div>
+    </div>
+  </div>
+  <div style="margin:20px 32px 0;border:1px solid #232624;border-radius:12px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:10px 18px;background:#121412;font-size:12px;font-weight:600;letter-spacing:0.06em;color:#9aa39f;border-bottom:1px solid #232624">
+      <span>순위</span><span>닉네임</span><span style="text-align:right">호감도</span><span style="text-align:right">관리</span>
+    </div>
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px;border-bottom:1px solid #1a1d1b" style-hover="background:#0e100f">
+      <span style="color:#00FFA3;font-weight:600;font-variant-numeric:tabular-nums">1</span><span style="color:#ffffff;font-weight:500">츄르도둑</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#ffffff">1,240</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px;border-bottom:1px solid #1a1d1b" style-hover="background:#0e100f">
+      <span style="color:#9aa39f;font-variant-numeric:tabular-nums">2</span><span style="color:#e8eae9;font-weight:500">우주고양이</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#e8eae9">986</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="background:#0e100f;border-bottom:1px solid #1a1d1b">
+      <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px">
+        <span style="color:#9aa39f;font-variant-numeric:tabular-nums">3</span><span style="color:#e8eae9;font-weight:500;display:flex;align-items:center;gap:8px">감자탕수육 <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3">히스토리 열림</span></span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#e8eae9">875</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer">수정</button></span>
+      </div>
+      <div style="margin:0 18px 14px 68px;border-left:2px solid #232624;padding-left:16px;display:flex;flex-direction:column;gap:7px;font-size:13px">
+        <div style="display:flex;gap:14px;color:#9aa39f"><span style="font-variant-numeric:tabular-nums;flex:none">07-08 21:30</span><span style="flex:none;width:48px">룰렛</span><span style="color:#00FFA3;font-weight:600;width:44px;text-align:right;font-variant-numeric:tabular-nums">+10</span><span style="font-variant-numeric:tabular-nums;width:64px;text-align:right;color:#c8cdcb">875</span><span style="color:#6b716e">호감도 +10 당첨</span></div>
+        <div style="display:flex;gap:14px;color:#9aa39f"><span style="font-variant-numeric:tabular-nums;flex:none">07-08 20:12</span><span style="flex:none;width:48px">출석</span><span style="color:#00FFA3;font-weight:600;width:44px;text-align:right;font-variant-numeric:tabular-nums">+1</span><span style="font-variant-numeric:tabular-nums;width:64px;text-align:right;color:#c8cdcb">865</span><span style="color:#6b716e">7월 2주차 출석체크</span></div>
+        <div style="display:flex;gap:14px;color:#9aa39f"><span style="font-variant-numeric:tabular-nums;flex:none">07-05 22:40</span><span style="flex:none;width:48px">정정</span><span style="color:#ff6b6b;font-weight:600;width:44px;text-align:right;font-variant-numeric:tabular-nums">-10</span><span style="font-variant-numeric:tabular-nums;width:64px;text-align:right;color:#c8cdcb">864</span><span style="color:#6b716e">룰렛 결과 보정 · 원장 #482 참조</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px;border-bottom:1px solid #1a1d1b" style-hover="background:#0e100f">
+      <span style="color:#9aa39f;font-variant-numeric:tabular-nums">4</span><span style="color:#e8eae9;font-weight:500">밤톨이</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#e8eae9">642</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px;border-bottom:1px solid #1a1d1b" style-hover="background:#0e100f">
+      <span style="color:#9aa39f;font-variant-numeric:tabular-nums">5</span><span style="color:#e8eae9;font-weight:500">시금치파스타</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#e8eae9">431</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 140px 120px;gap:12px;align-items:center;padding:12px 18px;font-size:14px" style-hover="background:#0e100f">
+      <span style="color:#9aa39f;font-variant-numeric:tabular-nums">6</span><span style="color:#e8eae9;font-weight:500;display:flex;align-items:center;gap:8px">이불밖은위험해 <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,107,107,0.14);color:#ff6b6b;font-weight:600">음수 잔액</span></span><span style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#ff6b6b">-12</span><span style="text-align:right"><button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#c8cdcb;font-size:12px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:6px;padding:20px 0 28px">
+    <button style="width:32px;height:32px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#9aa39f;font-size:13px;font-family:inherit;cursor:pointer">«</button>
+    <button style="width:32px;height:32px;border-radius:8px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">1</button>
+    <button style="width:32px;height:32px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#9aa39f;font-size:13px;font-family:inherit;cursor:pointer" style-hover="border-color:#4a4f4c;color:#e8eae9">2</button>
+    <button style="width:32px;height:32px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#9aa39f;font-size:13px;font-family:inherit;cursor:pointer" style-hover="border-color:#4a4f4c;color:#e8eae9">3</button>
+    <button style="width:32px;height:32px;border-radius:8px;border:1px solid #2a2d2b;background:transparent;color:#9aa39f;font-size:13px;font-family:inherit;cursor:pointer">»</button>
+  </div>
+</div>
+</div>
+
+<!-- ============ 1b 콘솔 밀도 ============ -->
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>운영 콘솔 — 카드 없이 헤어라인 구분, 최고 밀도, 그린은 텍스트/언더라인 액센트만</div>
+<div class="dv-card" style="width:1080px;background:#0b0d0c;color:#dfe3e1;font-family:'Space Grotesk','Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px;border-bottom:1px solid #1e2220">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <span style="font-size:16px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">치즈냥 <span style="color:#00FFA3">호감도</span></span>
+      <span style="font-size:11px;letter-spacing:0.1em;color:#7c847f;text-transform:uppercase">FAVORITE LEDGER</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-size:12px;color:#7c847f">스트리머냥 <span style="color:#00FFA3;font-weight:600">ADMIN</span></span>
+      <div style="display:flex;gap:1px;background:#1e2220;border:1px solid #1e2220;border-radius:6px;overflow:hidden">
+        <button style="height:32px;padding:0 14px;border:none;background:#111413;color:#c3c9c6;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="color:#00FFA3">동기화</button>
+        <button style="height:32px;padding:0 14px;border:none;background:#111413;color:#00FFA3;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:#16201b">출석체크</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:24px;padding:14px 28px;border-bottom:1px solid #1e2220;font-size:12.5px">
+    <span style="color:#7c847f;letter-spacing:0.08em;font-size:11px">주간 채팅</span>
+    <span style="color:#dfe3e1"><span style="color:#00FFA3;font-weight:600">1</span> 츄르도둑 <span style="color:#7c847f;font-variant-numeric:tabular-nums">412</span></span>
+    <span style="color:#dfe3e1"><span style="color:#7c847f;font-weight:600">2</span> 감자탕수육 <span style="color:#7c847f;font-variant-numeric:tabular-nums">388</span></span>
+    <span style="color:#dfe3e1"><span style="color:#7c847f;font-weight:600">3</span> 밤톨이 <span style="color:#7c847f;font-variant-numeric:tabular-nums">291</span></span>
+    <div style="flex:1"></div>
+    <input placeholder="닉네임 검색" style="width:220px;height:30px;padding:0 12px;border-radius:6px;border:1px solid #1e2220;background:#060707;color:#dfe3e1;font-size:12.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3">
+    <button style="height:30px;padding:0 14px;border-radius:6px;border:1px solid #2c332f;background:transparent;color:#c3c9c6;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">검색</button>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:9px 28px;font-size:10.5px;letter-spacing:0.12em;color:#7c847f;border-bottom:1px solid #1e2220;text-transform:uppercase">
+    <span>RANK</span><span>닉네임</span><span style="text-align:right">호감도</span><span style="text-align:right">관리</span>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;border-bottom:1px solid #141715" style-hover="background:#0f1210">
+    <span style="color:#00FFA3;font-weight:600;font-variant-numeric:tabular-nums">01</span><span style="color:#ffffff">츄르도둑</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#00FFA3">1,240</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#7c847f;border-bottom:1px solid #2c332f;padding-bottom:1px" style-hover="color:#00FFA3;border-color:#00FFA3">수정</a></span>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;border-bottom:1px solid #141715" style-hover="background:#0f1210">
+    <span style="color:#7c847f;font-variant-numeric:tabular-nums">02</span><span style="color:#dfe3e1">우주고양이</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">986</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#7c847f;border-bottom:1px solid #2c332f;padding-bottom:1px" style-hover="color:#00FFA3;border-color:#00FFA3">수정</a></span>
+  </div>
+  <div style="border-bottom:1px solid #141715;background:#0f1210">
+    <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;box-shadow:inset 2px 0 0 #00FFA3">
+      <span style="color:#7c847f;font-variant-numeric:tabular-nums">03</span><span style="color:#dfe3e1">감자탕수육</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">875</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#00FFA3;border-bottom:1px solid #00FFA3;padding-bottom:1px">닫기</a></span>
+    </div>
+    <div style="padding:2px 28px 12px 60px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-variant-numeric:tabular-nums">
+      <div style="display:flex;gap:16px;color:#7c847f"><span>07-08 21:30</span><span style="width:40px">룰렛</span><span style="color:#00FFA3;width:40px;text-align:right">+10</span><span style="width:56px;text-align:right;color:#c3c9c6">875</span><span style="color:#565d59">호감도 +10 당첨</span></div>
+      <div style="display:flex;gap:16px;color:#7c847f"><span>07-08 20:12</span><span style="width:40px">출석</span><span style="color:#00FFA3;width:40px;text-align:right">+1</span><span style="width:56px;text-align:right;color:#c3c9c6">865</span><span style="color:#565d59">7월 2주차 출석체크</span></div>
+      <div style="display:flex;gap:16px;color:#7c847f"><span>07-05 22:40</span><span style="width:40px">정정</span><span style="color:#ff6b6b;width:40px;text-align:right">-10</span><span style="width:56px;text-align:right;color:#c3c9c6">864</span><span style="color:#565d59">룰렛 결과 보정 · #482</span></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;border-bottom:1px solid #141715" style-hover="background:#0f1210">
+    <span style="color:#7c847f;font-variant-numeric:tabular-nums">04</span><span style="color:#dfe3e1">밤톨이</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">642</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#7c847f;border-bottom:1px solid #2c332f;padding-bottom:1px" style-hover="color:#00FFA3;border-color:#00FFA3">수정</a></span>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;border-bottom:1px solid #141715" style-hover="background:#0f1210">
+    <span style="color:#7c847f;font-variant-numeric:tabular-nums">05</span><span style="color:#dfe3e1">시금치파스타</span><span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">431</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#7c847f;border-bottom:1px solid #2c332f;padding-bottom:1px" style-hover="color:#00FFA3;border-color:#00FFA3">수정</a></span>
+  </div>
+  <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 130px 90px;gap:12px;align-items:center;padding:10px 28px;font-size:13.5px;border-bottom:1px solid #141715" style-hover="background:#0f1210">
+    <span style="color:#7c847f;font-variant-numeric:tabular-nums">06</span><span style="color:#dfe3e1;display:flex;align-items:center;gap:10px">이불밖은위험해 <span style="font-size:10.5px;letter-spacing:0.08em;color:#ff6b6b;border:1px solid rgba(255,107,107,0.4);border-radius:999px;padding:1px 8px">음수</span></span><span style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#ff6b6b">-12</span><span style="text-align:right"><a href="#1b" style="font-size:12px;color:#7c847f;border-bottom:1px solid #2c332f;padding-bottom:1px" style-hover="color:#00FFA3;border-color:#00FFA3">수정</a></span>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 28px 18px;font-size:12px;color:#7c847f">
+    <span style="font-variant-numeric:tabular-nums">총 148명 · 1–6 표시</span>
+    <div style="display:flex;gap:14px;font-variant-numeric:tabular-nums">
+      <a href="#1b" style="color:#565d59">«</a>
+      <a href="#1b" style="color:#00FFA3;font-weight:600;border-bottom:1px solid #00FFA3">1</a>
+      <a href="#1b" style="color:#7c847f" style-hover="color:#00FFA3">2</a>
+      <a href="#1b" style="color:#7c847f" style-hover="color:#00FFA3">3</a>
+      <a href="#1b" style="color:#7c847f" style-hover="color:#00FFA3">»</a>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 1c 소프트 엘리베이션 ============ -->
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>소프트 엘리베이션 — 그린 틴트 다크 그레이, 섀도 카드, 요약 스탯 헤더 (커뮤니티 친화 톤)</div>
+<div class="dv-card" style="width:1080px;background:#101312;color:#e6e9e7">
+  <div style="padding:26px 32px 22px;background:linear-gradient(180deg,#151918 0%,#101312 100%);border-bottom:1px solid #222826">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:44px;border-radius:14px;background:#00FFA3;display:flex;align-items:center;justify-content:center;color:#001b10;font-weight:700;font-size:15px;flex:none">냥</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.01em">치즈냥 호감도</span>
+          <span style="font-size:12.5px;color:#8f9894">스트리머냥 채널 · <span style="color:#00FFA3;font-weight:600">관리자</span></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="height:40px;padding:0 16px;border-radius:12px;border:1px solid #2c3330;background:#1a1f1d;color:#cdd3d0;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541">데이터 동기화</button>
+        <button style="height:40px;padding:0 18px;border-radius:12px;border:none;background:#00FFA3;color:#001b10;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(0,255,163,0.22)" style-hover="background:#33ffb5">출석체크 시작</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px">
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">등록 사용자</div>
+        <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:#ffffff">148<span style="font-size:13px;font-weight:500;color:#8f9894"> 명</span></div>
+      </div>
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">이번 주 지급 호감도</div>
+        <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:#00FFA3">+312</div>
+      </div>
+      <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
+        <div style="font-size:11.5px;color:#8f9894;margin-bottom:4px">주간 채팅 1위</div>
+        <div style="font-size:16px;font-weight:600;color:#ffffff;padding-top:4px">츄르도둑 <span style="font-size:13px;color:#8f9894;font-variant-numeric:tabular-nums">412회</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;padding:18px 32px 0">
+    <input placeholder="닉네임 또는 채널 ID 검색" style="flex:1;height:42px;padding:0 16px;border-radius:12px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:14px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3">
+    <button style="height:42px;padding:0 20px;border-radius:12px;border:1px solid #2c3330;background:#1a1f1d;color:#e6e9e7;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">검색</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;padding:16px 32px 0">
+    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 130px 110px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+      <span style="width:28px;height:28px;border-radius:9px;background:rgba(0,255,163,0.14);color:#00FFA3;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums">1</span>
+      <span style="font-size:14.5px;font-weight:600;color:#ffffff">츄르도둑</span>
+      <span style="text-align:right;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:#00FFA3">1,240</span>
+      <span style="text-align:right"><button style="height:32px;padding:0 14px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 130px 110px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+      <span style="width:28px;height:28px;border-radius:9px;background:#202623;color:#8f9894;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">2</span>
+      <span style="font-size:14.5px;font-weight:500;color:#e6e9e7">우주고양이</span>
+      <span style="text-align:right;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:#e6e9e7">986</span>
+      <span style="text-align:right"><button style="height:32px;padding:0 14px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="background:#181d1b;border:1px solid #00FFA3;border-radius:14px;padding:13px 18px;box-shadow:0 2px 12px rgba(0,255,163,0.1)">
+      <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 130px 110px;gap:12px;align-items:center">
+        <span style="width:28px;height:28px;border-radius:9px;background:#202623;color:#8f9894;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">3</span>
+        <span style="font-size:14.5px;font-weight:500;color:#e6e9e7">감자탕수육</span>
+        <span style="text-align:right;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:#e6e9e7">875</span>
+        <span style="text-align:right"><button style="height:32px;padding:0 14px;border-radius:9px;border:1px solid #00FFA3;background:rgba(0,255,163,0.1);color:#00FFA3;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer">닫기</button></span>
+      </div>
+      <div style="margin:12px 0 2px 56px;padding-top:12px;border-top:1px dashed #2c3330;display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+        <div style="display:flex;gap:14px;align-items:center;color:#8f9894;font-variant-numeric:tabular-nums"><span>07-08 21:30</span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:600">룰렛</span><span style="color:#00FFA3;font-weight:700;width:40px;text-align:right">+10</span><span style="width:56px;text-align:right;color:#cdd3d0">875</span><span style="color:#6f7773">호감도 +10 당첨</span></div>
+        <div style="display:flex;gap:14px;align-items:center;color:#8f9894;font-variant-numeric:tabular-nums"><span>07-08 20:12</span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:#202623;color:#8f9894;font-weight:600">출석</span><span style="color:#00FFA3;font-weight:700;width:40px;text-align:right">+1</span><span style="width:56px;text-align:right;color:#cdd3d0">865</span><span style="color:#6f7773">7월 2주차 출석체크</span></div>
+        <div style="display:flex;gap:14px;align-items:center;color:#8f9894;font-variant-numeric:tabular-nums"><span>07-05 22:40</span><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(255,107,107,0.12);color:#ff6b6b;font-weight:600">정정</span><span style="color:#ff6b6b;font-weight:700;width:40px;text-align:right">-10</span><span style="width:56px;text-align:right;color:#cdd3d0">864</span><span style="color:#6f7773">룰렛 결과 보정 · 원장 #482 참조</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 130px 110px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+      <span style="width:28px;height:28px;border-radius:9px;background:#202623;color:#8f9894;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">4</span>
+      <span style="font-size:14.5px;font-weight:500;color:#e6e9e7">밤톨이</span>
+      <span style="text-align:right;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:#e6e9e7">642</span>
+      <span style="text-align:right"><button style="height:32px;padding:0 14px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 130px 110px;gap:12px;align-items:center;background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.3);border-radius:14px;padding:13px 18px">
+      <span style="width:28px;height:28px;border-radius:9px;background:rgba(255,107,107,0.14);color:#ff6b6b;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">5</span>
+      <span style="font-size:14.5px;font-weight:500;color:#e6e9e7;display:flex;align-items:center;gap:10px">이불밖은위험해 <span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(255,107,107,0.14);color:#ff6b6b;font-weight:700">음수 잔액</span></span>
+      <span style="text-align:right;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:#ff6b6b">-12</span>
+      <span style="text-align:right"><button style="height:32px;padding:0 14px;border-radius:9px;border:1px solid #2c3330;background:transparent;color:#cdd3d0;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="border-color:#00FFA3;color:#00FFA3">수정</button></span>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:6px;padding:20px 0 26px">
+    <button style="width:34px;height:34px;border-radius:10px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:13px;font-family:inherit;cursor:pointer">«</button>
+    <button style="width:34px;height:34px;border-radius:10px;border:none;background:#00FFA3;color:#001b10;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">1</button>
+    <button style="width:34px;height:34px;border-radius:10px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:13px;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541;color:#e6e9e7">2</button>
+    <button style="width:34px;height:34px;border-radius:10px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:13px;font-family:inherit;cursor:pointer" style-hover="border-color:#3c4541;color:#e6e9e7">3</button>
+    <button style="width:34px;height:34px;border-radius:10px;border:1px solid #2c3330;background:transparent;color:#8f9894;font-size:13px;font-family:inherit;cursor:pointer">»</button>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">다음 요청 예: "<a class="dv-oid" href="#1b">1b</a> 밀도로 가되 <a class="dv-oid" href="#1a">1a</a>의 버튼 스타일로" · "<a class="dv-oid" href="#1c">1c</a> 톤으로 나머지 화면 전개해줘" · "모바일 버전도 보여줘"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

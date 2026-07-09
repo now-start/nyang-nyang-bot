@@ -15,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
+import org.nowstart.nyangnyangbot.adapter.in.web.root.RootController;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
 import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AccessTokenResponseClient;
@@ -43,6 +44,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
@@ -76,15 +78,40 @@ class SecurityConfigTest {
     }
 
     @Test
-    void unauthenticatedRootRedirectsToChzzkOAuth2AuthorizationEndpoint() throws Exception {
+    void unauthenticatedProtectedPathRedirectsToChzzkOAuth2AuthorizationEndpoint() throws Exception {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(get("/"))
+            mockMvc.perform(get("/favorite/list"))
                     .andExpect(status().isFound())
                     .andExpect(header().string("Location", "/oauth2/authorization/chzzk"));
+        }
+    }
+
+    @Test
+    void unauthenticatedRootRendersLandingWithoutRedirect() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증 — "/"는 익명 접근 허용, 랜딩 뷰 렌더
+            mockMvc.perform(get("/"))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void authenticatedRootRedirectsToFavoriteList() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext()) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(get("/").session(session("user", Collections.emptyList())))
+                    .andExpect(status().isFound())
+                    .andExpect(header().string("Location", "/favorite/list"));
         }
     }
 
@@ -279,8 +306,18 @@ class SecurityConfigTest {
         }
 
         @Bean
+        RootController rootController() {
+            return new RootController();
+        }
+
+        @Bean
         ViewResolver viewResolver() {
-            return (viewName, locale) -> (model, request, response) -> {
+            return (viewName, locale) -> {
+                if (viewName.startsWith("redirect:")) {
+                    return new RedirectView(viewName.substring("redirect:".length()));
+                }
+                return (model, request, response) -> {
+                };
             };
         }
 

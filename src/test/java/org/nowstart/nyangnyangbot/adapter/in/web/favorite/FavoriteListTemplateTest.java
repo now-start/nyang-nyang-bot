@@ -106,6 +106,112 @@ class FavoriteListTemplateTest {
     }
 
     @Test
+    void indexTemplate_ShouldHidePrivilegedControls_WhenNotAdmin() {
+        // 준비
+        SpringTemplateEngine templateEngine = templateEngine();
+        WebContext context = webContext();
+        context.setVariable("landingMode", false);
+        context.setVariable("isAdmin", false);
+        context.setVariable("currentUserId", "user1");
+        context.setVariable("currentNickName", "유저1");
+        context.setVariable("nickName", "");
+        context.setVariable("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
+        setCommandOptions(context);
+        context.setVariable("weeklyChatRanks", List.of(new FavoriteController.WeeklyChatRankView(1, "치즈냥", 10L)));
+        context.setVariable("favoriteList", new PageImpl<>(
+                List.of(
+                        new FavoriteSummaryResult("user1", "유저1", 100),
+                        new FavoriteSummaryResult("user2", "유저2", 80)
+                ),
+                PageRequest.of(0, 10),
+                2
+        ));
+
+        // 실행
+        String html = templateEngine.process("index", context);
+
+        // 검증
+        then(html).contains("id=\"favorite-board-region\"");
+        then(html).contains("hx-get=\"/favorite/history?userId=user1");
+        then(html).doesNotContain("hx-get=\"/favorite/history?userId=user2");
+        then(html).doesNotContain("관리자 메뉴");
+        then(html).doesNotContain("id=\"favorite-search-form\"");
+        then(html).doesNotContain("id=\"sync-button\"");
+        then(html).doesNotContain("id=\"chzzk-connect-button\"");
+        then(html).doesNotContain("id=\"attendance-tab\"");
+        then(html).doesNotContain("id=\"roulette-tab\"");
+        then(html).doesNotContain("id=\"command-tab\"");
+        then(html).doesNotContain("id=\"karma-modal\"");
+        then(html).doesNotContain("호감도 수정");
+        then(html).doesNotContain("hx-get=\"/favorite/adjustments/modal");
+        then(html).doesNotContain("hx-post=\"/favorite/adjustments/apply");
+        then(html).doesNotContain("hx-post=\"/google/sync");
+        then(html).doesNotContain("hx-post=\"/chzzk/connect");
+        then(html).doesNotContain("hx-post=\"/attendance/");
+        then(html).doesNotContain("hx-get=\"/admin/");
+        then(html).doesNotContain("hx-post=\"/admin/");
+        then(html).doesNotContain("data-is-admin");
+        then(html).doesNotContain("data-current-user-id");
+    }
+
+    @Test
+    void indexTemplate_ShouldRenderNegativeBalanceWithTripleIndicator() {
+        // 준비
+        SpringTemplateEngine templateEngine = templateEngine();
+        WebContext context = webContext();
+        context.setVariable("landingMode", false);
+        context.setVariable("isAdmin", false);
+        context.setVariable("currentUserId", "user1");
+        context.setVariable("currentNickName", "유저1");
+        context.setVariable("nickName", "");
+        context.setVariable("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
+        setCommandOptions(context);
+        context.setVariable("weeklyChatRanks", List.of(new FavoriteController.WeeklyChatRankView(1, "치즈냥", 10L)));
+        context.setVariable("favoriteList", new PageImpl<>(
+                List.of(
+                        new FavoriteSummaryResult("user1", "유저1", -12),
+                        new FavoriteSummaryResult("user2", "유저2", null)
+                ),
+                PageRequest.of(0, 10),
+                2
+        ));
+
+        // 실행
+        String html = templateEngine.process("index", context);
+
+        // 검증 — 음수 잔액은 색 + 배지 + 숫자 3중 표시
+        then(html).contains("bg-danger-subtle");
+        then(html).contains("음수 잔액");
+        then(html).contains("text-danger");
+        then(html).contains("-12");
+        // null favorite는 0으로 정규화되어 렌더링된다
+        then(html).contains("유저2");
+    }
+
+    @Test
+    void indexTemplate_ShouldRenderLandingHero_WhenLandingMode() {
+        // 준비
+        SpringTemplateEngine templateEngine = templateEngine();
+        WebContext context = webContext();
+        context.setVariable("landingMode", true);
+
+        // 실행
+        String html = templateEngine.process("index", context);
+
+        // 검증 — 2a 랜딩: 로고 + h1 + 설명 + 로그인 버튼 + 보안 각주 + 기능 도트 리스트
+        then(html).contains("bg-landing-glow");
+        then(html).contains("치즈냥 호감도");
+        then(html).contains("치지직 계정으로 로그인");
+        then(html).contains("href=\"/oauth2/authorization/chzzk\"");
+        then(html).contains("CHZZK OAuth로 안전하게 로그인합니다");
+        then(html).contains("호감도 랭킹");
+        then(html).contains("/css/theme.css");
+        then(html).doesNotContain("http-equiv=\"refresh\"");
+        then(html).doesNotContain("id=\"favorite-board-region\"");
+        then(html).doesNotContain("관리자 메뉴");
+    }
+
+    @Test
     void karmaModalContentTemplate_ShouldRenderApplyForm() {
         // 준비
         SpringTemplateEngine templateEngine = templateEngine();

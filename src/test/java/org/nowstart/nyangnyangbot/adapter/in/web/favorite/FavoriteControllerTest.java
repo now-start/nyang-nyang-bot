@@ -278,6 +278,30 @@ class FavoriteControllerTest {
                 .isEqualTo("/nyang-nyang-bot/favorite/list?page=0&size=10&nickName=%EC%9C%A0%EC%A0%801");
     }
 
+    @Test
+    @DisplayName("관리자가 아닌 htmx 호감도 목록 요청도 검색 조건과 관리자 UI 모델을 제거한다")
+    void favoriteList_ShouldReturnNonAdminBoardModel_WhenHtmxRequestIsNotAdmin() {
+        // 준비
+        Page<FavoriteSummaryResult> expectedPage = new PageImpl<>(favoriteEntities, pageable, favoriteEntities.size());
+        given(favoriteService.getList(any(Pageable.class))).willReturn(expectedPage);
+        MockHttpServletRequest request = htmxRequest();
+        request.setContextPath("/nyang-nyang-bot");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // 실행
+        ModelAndView result = favoriteController.favoriteList(pageable, "유저1", request, response, userAuthentication());
+
+        // 검증
+        then(result.getViewName()).isEqualTo("features/favorite/components :: favorite-board-region");
+        then(result.getModel().get("favoriteList")).isEqualTo(expectedPage);
+        then(result.getModel().get("nickName")).isEqualTo("");
+        then(result.getModel().get("isAdmin")).isEqualTo(false);
+        then(result.getModel().get("currentUserId")).isEqualTo("user1");
+        then(response.getHeader("HX-Push-Url")).isEqualTo("/nyang-nyang-bot/favorite/list?page=0&size=10");
+        BDDMockito.then(favoriteService).should().getList(any(Pageable.class));
+        BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
+    }
+
     private MockHttpServletRequest request() {
         return new MockHttpServletRequest();
     }

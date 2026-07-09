@@ -12,7 +12,8 @@
          hx-target="#attendance-feedback"
          hx-trigger="hidden.bs.tab from:#attendance-tab-button"
          th:hx-post="@{/attendance/stop}"></div>
-    <form hx-disabled-elt="find button"
+    <form class="card"
+          hx-disabled-elt="find button"
           hx-post="/attendance/apply"
           hx-swap="innerHTML"
           hx-target="#attendance-feedback"
@@ -20,31 +21,40 @@
           method="post"
           th:hx-post="@{/attendance/apply}">
         <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
-        <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-4">
-                <label class="form-label" for="attendance-amount">호감도 증가</label>
-                <input class="form-control"
-                       id="attendance-amount"
-                       min="1"
-                       name="amount"
-                       required
-                       type="number"
-                       value="1">
-            </div>
+        <div class="card-header d-flex align-items-center gap-3 py-3">
+            <h2 class="h6 fw-bold text-white mb-0">출석체크</h2>
+            <span class="badge rounded-pill bg-success-subtle text-success d-inline-flex align-items-center gap-2">
+                <span class="bg-success rounded-circle d-inline-block" style="width:6px;height:6px;"></span>수집 중
+            </span>
         </div>
-        <div class="vstack gap-2"
-             hx-swap="outerHTML"
-             hx-trigger="attendance-users-refresh from:body"
-             id="attendance-list"
-             th:hx-post="@{/attendance/users}">
-            <div class="d-flex flex-wrap gap-2">
-                <span class="badge text-bg-secondary">0명 선택</span>
-                <span class="badge text-bg-secondary">0명 현재</span>
+        <div class="card-body vstack gap-3 border-bottom">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small text-secondary" for="attendance-amount">지급 호감도</label>
+                    <input class="form-control fw-bold text-success tabular-nums"
+                           id="attendance-amount"
+                           min="1"
+                           name="amount"
+                           required
+                           type="number"
+                           value="1">
+                </div>
             </div>
-            <div class="text-secondary small">탭을 열면 현재 채팅 참여자를 불러옵니다.</div>
+            <div class="vstack gap-2"
+                 hx-swap="outerHTML"
+                 hx-trigger="attendance-users-refresh from:body"
+                 id="attendance-list"
+                 th:hx-post="@{/attendance/users}">
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
+                </div>
+                <div class="text-secondary small">탭을 열면 현재 채팅 참여자를 불러옵니다.</div>
+            </div>
+            <div class="mt-2" id="attendance-feedback"></div>
         </div>
-        <div class="mt-2" id="attendance-feedback"></div>
-        <div class="d-flex justify-content-end">
+        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+            <span class="small text-secondary">적용 시 사용자당 1회만 지급됩니다</span>
             <th:block th:replace="~{components/buttons :: action-button('attendance-apply', '선택 대상 반영', 'primary', 'submit', null)}"></th:block>
         </div>
     </form>
@@ -60,11 +70,14 @@
      th:fragment="attendance-list(users)"
      th:hx-post="@{/attendance/users}">
     <div class="d-flex flex-wrap gap-2">
-        <span class="badge text-bg-secondary" th:text="${selectedCount == null ? 0 : selectedCount} + '명 선택'">0명 선택</span>
-        <span class="badge text-bg-secondary" th:text="${totalCount == null ? 0 : totalCount} + '명 현재'">0명 현재</span>
+        <span class="badge rounded-pill bg-success-subtle text-success tabular-nums"
+              th:text="${selectedCount == null ? 0 : selectedCount} + '명 선택'">0명 선택</span>
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
+              th:text="${totalCount == null ? 0 : totalCount} + '명 현재'">0명 현재</span>
     </div>
     <div class="text-secondary small" th:if="${users == null or #lists.isEmpty(users)}">현재 채팅 참여자가 없습니다.</div>
     <div class="d-flex flex-wrap gap-2 overflow-auto py-2"
+         style="max-height:230px;"
          th:if="${users != null and !#lists.isEmpty(users)}">
         <th:block th:each="user, iterStat : ${users}"
                   th:with="selected=${selectedUserIds == null or selectedUserIds.contains(user.userId) or !knownUserIds.contains(user.userId)},
@@ -77,7 +90,7 @@
                    th:checked="${selected}"
                    th:value="${user.userId}"
                    type="checkbox">
-            <label class="btn btn-outline-secondary btn-sm"
+            <label class="btn btn-outline-success btn-sm rounded-pill"
                    th:for="${controlId}"
                    th:text="${user.nickName != null and !#strings.isEmpty(user.nickName) ? user.nickName : user.userId}">치즈냥</label>
         </th:block>
@@ -94,8 +107,8 @@
          th:hx-post="@{/attendance/users}"
          th:if="${resetAttendanceList}">
         <div class="d-flex flex-wrap gap-2">
-            <span class="badge text-bg-secondary">0명 선택</span>
-            <span class="badge text-bg-secondary">0명 현재</span>
+            <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
         </div>
         <div class="text-secondary small">탭을 열면 현재 채팅 참여자를 불러옵니다.</div>
     </div>
