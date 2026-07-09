@@ -25,6 +25,8 @@ public interface FavoriteQueryPort {
 
     long countHistoryAfter(String userId, LocalDateTime createDate);
 
+    long countByFavoriteGreaterThan(Integer favorite);
+
     record SummaryResult(
             String userId,
             String nickName,

@@ -43,6 +43,7 @@ class ManageRouletteServiceTest {
     void createTable_ShouldTrimInputAndUseDefaultThreshold() {
         // 준비
         ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
         given(commandPort.findByTrigger("!룰렛")).willReturn(Optional.empty());
         given(roulettePort.createTable("기본", "!룰렛", 1_000L, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD))
                 .willReturn(table(1L, true, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD));
@@ -67,6 +68,7 @@ class ManageRouletteServiceTest {
     void createTable_ShouldRejectWhenCommandConflictsWithManagedCommand() {
         // 준비
         ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
         given(commandPort.findByTrigger("!호감도"))
                 .willReturn(Optional.of(command(10L, "!호감도", CommandActionKey.FAVORITE_STATUS)));
 
@@ -74,6 +76,20 @@ class ManageRouletteServiceTest {
         thenThrownBy(() -> service.createTable("기본", "!호감도", 1_000L, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("roulette command conflicts with existing command");
+        BDDMockito.then(roulettePort).should(never()).createTable(any(), any(), any(), any());
+    }
+
+    @Test
+    void createTable_ShouldRejectWhenTableAlreadyExists() {
+        // 준비
+        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of(table(1L, true, 10)));
+
+        // 실행 및 검증
+        thenThrownBy(() -> service.createTable("기본", "!룰렛", 1_000L, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("roulette table already exists");
+        BDDMockito.then(commandPort).shouldHaveNoInteractions();
         BDDMockito.then(roulettePort).should(never()).createTable(any(), any(), any(), any());
     }
 

@@ -64,6 +64,7 @@ class FavoriteListTemplateTest {
         then(html).contains("hx-get=\"/favorite/history?userId=user1");
         then(html).contains("id=\"attendance-tab\"");
         then(html).contains("id=\"roulette-tab\"");
+        then(html).contains("id=\"overlay-token-tab\"");
         then(html).contains("id=\"command-tab\"");
         then(html).contains("data-bs-toggle=\"tab\"");
         then(html).contains("data-bs-target=\"#favorite-tab\"");
@@ -114,10 +115,22 @@ class FavoriteListTemplateTest {
         context.setVariable("isAdmin", false);
         context.setVariable("currentUserId", "user1");
         context.setVariable("currentNickName", "유저1");
+        context.setVariable("currentUserRank", 7);
         context.setVariable("nickName", "");
         context.setVariable("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
         setCommandOptions(context);
         context.setVariable("weeklyChatRanks", List.of(new FavoriteController.WeeklyChatRankView(1, "치즈냥", 10L)));
+        context.setVariable("userUpbos", List.of(new FavoriteController.UserUpboView(
+                1L,
+                "업보 차감권",
+                "OWNED",
+                null,
+                "COUPON",
+                "MANUAL",
+                null,
+                "업보 차감권 보유",
+                "2026-07-09 19:30"
+        )));
         context.setVariable("favoriteList", new PageImpl<>(
                 List.of(new FavoriteSummaryResult("user1", "유저1", 100)),
                 PageRequest.of(0, 10),
@@ -129,7 +142,11 @@ class FavoriteListTemplateTest {
 
         // 검증
         then(html).contains("id=\"favorite-board-region\"");
-        then(html).contains("내 계정의 호감도와 내역만 표시합니다.");
+        then(html).contains("내 계정의 호감도, 실제 순위, 보유 업보만 표시합니다.");
+        then(html).contains("전체 순위");
+        then(html).contains("7위");
+        then(html).contains("보유 업보 · 쿠폰 · 리워드");
+        then(html).contains("업보 차감권");
         then(html).contains("유저1");
         then(html).doesNotContain("유저2");
         then(html).doesNotContain("주간 채팅 순위");
@@ -141,6 +158,7 @@ class FavoriteListTemplateTest {
         then(html).doesNotContain("id=\"chzzk-connect-button\"");
         then(html).doesNotContain("id=\"attendance-tab\"");
         then(html).doesNotContain("id=\"roulette-tab\"");
+        then(html).doesNotContain("id=\"overlay-token-tab\"");
         then(html).doesNotContain("id=\"command-tab\"");
         then(html).doesNotContain("id=\"karma-modal\"");
         then(html).doesNotContain("호감도 수정");

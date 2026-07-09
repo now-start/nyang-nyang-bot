@@ -34,6 +34,9 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     @Transactional
     public RouletteTableResult createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
         roulettePolicy.validateTableInput(title, command, pricePerRound);
+        if (!roulettePort.findTablesOrderByIdDesc().isEmpty()) {
+            throw new IllegalStateException("roulette table already exists");
+        }
         String normalizedCommand = CommandService.normalizeTrigger(command);
         validateRouletteCommandConflict(normalizedCommand);
         TableResult saved = roulettePort.createTable(

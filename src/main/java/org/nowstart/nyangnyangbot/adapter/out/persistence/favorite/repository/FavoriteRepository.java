@@ -16,6 +16,8 @@ public interface FavoriteRepository extends JpaRepository<FavoriteAccount, Strin
 
     Page<FavoriteAccount> findByNickNameContains(Pageable pageable, String nickName);
 
+    long countByFavoriteGreaterThan(Integer favorite);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select favorite from FavoriteAccount favorite where favorite.userId = :userId")
     Optional<FavoriteAccount> findByIdForUpdate(@Param("userId") String userId);

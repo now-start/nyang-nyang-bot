@@ -145,6 +145,11 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
         return favoriteHistoryRepository.countByFavoriteAccountUserIdAndCreateDateAfter(userId, createDate);
     }
 
+    @Override
+    public long countByFavoriteGreaterThan(Integer favorite) {
+        return favoriteRepository.countByFavoriteGreaterThan(favorite == null ? 0 : favorite);
+    }
+
     private FavoriteAccount favoriteAccount(
             org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
     ) {

@@ -166,6 +166,7 @@ class FavoriteServiceTest {
         given(authorizationPort.findById("user1")).willReturn(Optional.of(authorization));
         given(favoriteQueryPort.findById("user1")).willReturn(Optional.of(favorite));
         given(favoriteQueryPort.countHistory("user1")).willReturn(1L);
+        given(favoriteQueryPort.countByFavoriteGreaterThan(42)).willReturn(3L);
         given(favoriteQueryPort.findHistory("user1", 50)).willReturn(List.of(history));
 
         // 실행
@@ -175,6 +176,7 @@ class FavoriteServiceTest {
         then(result.userId()).isEqualTo("user1");
         then(result.nickName()).isEqualTo("치즈냥");
         then(result.favorite()).isEqualTo(42);
+        then(result.rank()).isEqualTo(4);
         then(result.unseenCount()).isEqualTo(1L);
         then(result.histories()).hasSize(1);
         BDDMockito.then(authorizationPort).should().markFavoriteHistorySeen(BDDMockito.eq("user1"), BDDMockito.any(LocalDateTime.class));

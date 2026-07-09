@@ -43,12 +43,13 @@
     <th:block th:replace="~{components/navigation :: tab-button('호감도 목록', 'favorite-tab', true)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('출석체크', 'attendance-tab', false)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('룰렛 관리', 'roulette-tab', false)}"></th:block>
+    <th:block th:replace="~{components/navigation :: tab-button('오버레이 토큰', 'overlay-token-tab', false)}"></th:block>
     <th:block th:replace="~{components/navigation :: tab-button('명령어 관리', 'command-tab', false)}"></th:block>
 </div>
 
 <section aria-labelledby="favorite-tab-button" class="tab-pane fade show active" id="favorite-tab" role="tabpanel"
-         th:fragment="favorite-tab(favoriteList, nickName, isAdmin, weeklyChatRanks)">
-    <section th:replace="~{features/favorite/components :: favorite-board-region(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks})}"></section>
+         th:fragment="favorite-tab(favoriteList, nickName, isAdmin, weeklyChatRanks, currentUserRank, userUpbos)">
+    <section th:replace="~{features/favorite/components :: favorite-board-region(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks}, ${currentUserRank}, ${userUpbos})}"></section>
     <div class="mt-2" id="sync-feedback"></div>
 </section>
 
@@ -57,18 +58,25 @@
          hx-swap="outerHTML"
          hx-target="this"
          hx-trigger="favorite-board-refresh from:body"
-         th:fragment="favorite-board-region(favoriteList, nickName, isAdmin, weeklyChatRanks)"
+         th:fragment="favorite-board-region(favoriteList, nickName, isAdmin, weeklyChatRanks, currentUserRank, userUpbos)"
          th:hx-get="@{/favorite/list(page=${favoriteList.number},size=${favoriteList.size},nickName=${nickName})}">
-    <section th:replace="~{features/favorite/components :: controls(${weeklyChatRanks}, ${nickName}, ${isAdmin})}"></section>
-    <section th:replace="~{features/favorite/components :: board(${favoriteList}, ${isAdmin}, ${currentUserId})}"></section>
+    <section th:replace="~{features/favorite/components :: controls(${weeklyChatRanks}, ${nickName}, ${isAdmin}, ${currentUserRank})}"></section>
+    <section th:replace="~{features/favorite/components :: upbo-list(${userUpbos}, ${isAdmin})}"></section>
+    <section th:replace="~{features/favorite/components :: board(${favoriteList}, ${isAdmin}, ${currentUserId}, ${currentUserRank})}"></section>
     <div th:replace="~{features/favorite/components :: pagination(${favoriteList}, ${nickName})}"></div>
 </section>
 
-<section class="vstack gap-3" th:fragment="controls(weeklyChatRanks, nickName, isAdmin)">
+<section class="vstack gap-3" th:fragment="controls(weeklyChatRanks, nickName, isAdmin, currentUserRank)">
     <section aria-labelledby="my-favorite-heading" class="card" th:if="${isAdmin == false}">
-        <div class="card-body py-3">
-            <h2 class="small text-secondary fw-normal mb-1" id="my-favorite-heading">내 호감도</h2>
-            <p class="mb-0 text-secondary">내 계정의 호감도와 내역만 표시합니다.</p>
+        <div class="card-body d-flex flex-column flex-sm-row gap-3 align-items-sm-center justify-content-between py-3">
+            <div>
+                <h2 class="small text-secondary fw-normal mb-1" id="my-favorite-heading">내 호감도</h2>
+                <p class="mb-0 text-secondary">내 계정의 호감도, 실제 순위, 보유 업보만 표시합니다.</p>
+            </div>
+            <div class="text-sm-end" th:if="${currentUserRank != null}">
+                <span class="d-block small text-secondary">전체 순위</span>
+                <strong class="fs-5 text-success tabular-nums" th:text="${currentUserRank + '위'}">1위</strong>
+            </div>
         </div>
     </section>
     <section aria-labelledby="weekly-rank-heading" class="card" th:if="${isAdmin}">
@@ -86,6 +94,48 @@
         </div>
     </section>
     <form th:replace="~{features/favorite/components :: search-form(${nickName}, ${isAdmin})}"></form>
+</section>
+
+<section aria-labelledby="upbo-list-heading"
+         class="card"
+         th:fragment="upbo-list(userUpbos, isAdmin)"
+         th:if="${isAdmin == false}">
+    <div class="card-body vstack gap-3">
+        <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center justify-content-between">
+            <div>
+                <h2 class="h6 fw-bold text-white mb-1" id="upbo-list-heading">보유 업보 · 쿠폰 · 리워드</h2>
+                <p class="small text-secondary mb-0">내 계정에 남아 있는 운영 보상과 처리 상태입니다.</p>
+            </div>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
+                  th:text="${userUpbos == null ? '0개' : #lists.size(userUpbos) + '개'}">0개</span>
+        </div>
+        <div class="text-secondary small"
+             th:if="${userUpbos == null or #lists.isEmpty(userUpbos)}">보유 업보·쿠폰·리워드가 없습니다.</div>
+        <div class="vstack gap-2" th:if="${userUpbos != null and !#lists.isEmpty(userUpbos)}">
+            <div class="border rounded-3 p-3"
+                 th:each="upbo : ${userUpbos}">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small text-secondary tabular-nums"
+                          th:text="${upbo.date != null ? upbo.date : '-'}">2026-07-09 19:30</span>
+                    <strong class="text-white" th:text="${upbo.label}">업보 차감권</strong>
+                    <span class="badge rounded-pill"
+                          th:classappend="${upbo.status == 'OWNED'} ? ' bg-success-subtle text-success' :
+                            (${upbo.status == 'CONVERTED'} ? ' bg-secondary-subtle text-secondary' :
+                            (${upbo.status == 'USED'} ? ' bg-secondary-subtle text-secondary' : ' bg-danger-subtle text-danger'))"
+                          th:text="${upbo.status == 'OWNED' ? '보유' :
+                            (upbo.status == 'CONVERTED' ? '호감도 반영' :
+                            (upbo.status == 'USED' ? '사용 완료' : '정정'))}">보유</span>
+                    <span class="ms-sm-auto small text-secondary tabular-nums"
+                          th:text="${upbo.exchangeFavoriteValue != null ? '호감도 ' + (upbo.exchangeFavoriteValue > 0 ? '+' + upbo.exchangeFavoriteValue : upbo.exchangeFavoriteValue) : upbo.rewardType}">COUPON</span>
+                </div>
+                <div class="small text-secondary mt-1" th:text="${upbo.publicDescription != null ? upbo.publicDescription : upbo.conversionMode}">운영 메모</div>
+                <a class="small text-success text-decoration-none"
+                   th:href="${'#ledger-' + upbo.ledgerId}"
+                   th:if="${upbo.ledgerId != null}"
+                   th:text="${'원장 #' + upbo.ledgerId}">원장 #1</a>
+            </div>
+        </div>
+    </div>
 </section>
 
 <form class="d-flex flex-wrap align-items-center gap-2"
@@ -108,20 +158,20 @@
     <th:block th:replace="~{components/buttons :: action-button(null, '검색', 'ghost', 'submit', null)}"></th:block>
 </form>
 
-<section class="vstack gap-2" th:fragment="board(favoriteList, isAdmin, currentUserId)">
+<section class="vstack gap-2" th:fragment="board(favoriteList, isAdmin, currentUserId, currentUserRank)">
     <div class="alert alert-secondary mb-0"
          th:if="${favoriteList == null or #lists.isEmpty(favoriteList.content)}">표시할 사용자가 없습니다. 검색어를 확인해 주세요.</div>
     <th:block th:if="${favoriteList != null}">
         <th:block th:each="favoriteEntity, iterStat : ${favoriteList.content}">
-            <th:block th:replace="~{features/favorite/components :: favorite-row(${favoriteEntity}, ${iterStat.index}, ${isAdmin}, ${currentUserId})}"></th:block>
+            <th:block th:replace="~{features/favorite/components :: favorite-row(${favoriteEntity}, ${iterStat.index}, ${isAdmin}, ${currentUserId}, ${currentUserRank})}"></th:block>
         </th:block>
     </th:block>
 </section>
 
-<div th:fragment="favorite-row(favoriteEntity, rowIndex, isAdmin, currentUserId)"
+<div th:fragment="favorite-row(favoriteEntity, rowIndex, isAdmin, currentUserId, currentUserRank)"
      class="card"
      th:with="canViewHistory=${isAdmin or (currentUserId != null and currentUserId == favoriteEntity.userId)},
-              rank=${favoriteList != null ? favoriteList.number * favoriteList.size + rowIndex + 1 : rowIndex + 1},
+              rank=${currentUserRank != null ? currentUserRank : (favoriteList != null ? favoriteList.number * favoriteList.size + rowIndex + 1 : rowIndex + 1)},
               favoriteValue=${favoriteEntity.favorite == null ? 0 : favoriteEntity.favorite}"
      th:classappend="${favoriteValue < 0} ? ' bg-danger-subtle border-danger-subtle'">
     <div class="card-body py-3">

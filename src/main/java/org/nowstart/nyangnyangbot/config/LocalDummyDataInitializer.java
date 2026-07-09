@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
@@ -23,7 +25,9 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
@@ -31,6 +35,7 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -85,12 +90,14 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
     private final AuthorizationRepository authorizationRepository;
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
     private final WeeklyChatRankRepository weeklyChatRankRepository;
     private final RouletteTableRepository rouletteTableRepository;
     private final RouletteItemRepository rouletteItemRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
     private final UpboTemplateRepository upboTemplateRepository;
+    private final UserUpboRepository userUpboRepository;
 
     @Override
     @Transactional
@@ -102,6 +109,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         RouletteTable rouletteTable = seedRouletteTable();
         seedRouletteEvents(rouletteTable);
         seedUpboTemplates();
+        seedUserUpbos();
+        seedFavoriteAdjustments();
         log.info("Local dummy data is ready");
     }
 
@@ -238,6 +247,42 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 upboTemplate("참여 우선권", "이벤트 참여 우선권 테스트", null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, 4),
                 upboTemplate("쿠폰 수동 지급", "쿠폰 지급 플로우 확인용", null, RewardType.COUPON, ConversionMode.MANUAL, 5),
                 upboTemplate("꽝 표시", "반영 없는 결과 표시 확인용", 0, RewardType.CUSTOM, ConversionMode.NONE, 6)
+        ));
+    }
+
+    private void seedUserUpbos() {
+        if (userUpboRepository.count() > 0) {
+            return;
+        }
+        userUpboRepository.saveAll(List.of(
+                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "업보 차감권", UpboStatus.OWNED,
+                        null, RewardType.COUPON, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
+                        "업보 차감권 보유", "local owned coupon"),
+                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "호감도 +100", UpboStatus.CONVERTED,
+                        100, RewardType.FAVORITE, ConversionMode.AUTO, FavoriteSourceType.UPBO_ROULETTE, 101L,
+                        "룰렛 보상 호감도 반영", "local converted reward"),
+                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "미션 패스권", UpboStatus.OWNED,
+                        null, RewardType.MISSION, ConversionMode.MANUAL, FavoriteSourceType.UPBO_ROULETTE, null,
+                        "방송 미션 패스권", "local mission reward"),
+                userUpbo("user-001", "치즈냥", "참여 우선권", UpboStatus.USED,
+                        null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
+                        "이벤트 참여 우선권 사용 완료", "local used reward"),
+                userUpbo(LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", "매너 채팅 업보", UpboStatus.OWNED,
+                        -5, RewardType.CUSTOM, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
+                        "매너 채팅 주의 업보", "local negative upbo")
+        ));
+    }
+
+    private void seedFavoriteAdjustments() {
+        if (favoriteAdjustmentRepository.count() > 0) {
+            return;
+        }
+        favoriteAdjustmentRepository.saveAll(List.of(
+                favoriteAdjustment(100, "호감도 보너스"),
+                favoriteAdjustment(10, "소소한 보너스"),
+                favoriteAdjustment(-5, "업보 차감"),
+                favoriteAdjustment(-50, "경고 차감"),
+                favoriteAdjustment(1, "정정 +1")
         ));
     }
 
@@ -399,6 +444,42 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .exchangeFavoriteValue(exchangeFavoriteValue)
                 .rewardType(rewardType)
                 .conversionMode(conversionMode)
+                .build();
+    }
+
+    private UserUpbo userUpbo(
+            String userId,
+            String nickName,
+            String label,
+            UpboStatus status,
+            Integer exchangeFavoriteValue,
+            RewardType rewardType,
+            ConversionMode conversionMode,
+            FavoriteSourceType sourceType,
+            Long ledgerId,
+            String publicDescription,
+            String privateMemo
+    ) {
+        return UserUpbo.builder()
+                .userId(userId)
+                .nickNameSnapshot(nickName)
+                .label(label)
+                .status(status)
+                .exchangeFavoriteValue(exchangeFavoriteValue)
+                .rewardType(rewardType)
+                .conversionMode(conversionMode)
+                .sourceType(sourceType)
+                .ledgerId(ledgerId)
+                .publicDescription(publicDescription)
+                .privateMemo(privateMemo)
+                .actorId(LocalTestAccounts.ADMIN_USER_ID)
+                .build();
+    }
+
+    private FavoriteAdjustment favoriteAdjustment(Integer amount, String label) {
+        return FavoriteAdjustment.builder()
+                .amount(amount)
+                .label(label)
                 .build();
     }
 

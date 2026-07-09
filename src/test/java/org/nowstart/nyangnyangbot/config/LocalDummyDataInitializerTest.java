@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
@@ -24,6 +25,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +39,9 @@ class LocalDummyDataInitializerTest {
 
     @Mock
     private FavoriteHistoryRepository favoriteHistoryRepository;
+
+    @Mock
+    private FavoriteAdjustmentRepository favoriteAdjustmentRepository;
 
     @Mock
     private WeeklyChatRankRepository weeklyChatRankRepository;
@@ -55,6 +60,9 @@ class LocalDummyDataInitializerTest {
 
     @Mock
     private UpboTemplateRepository upboTemplateRepository;
+
+    @Mock
+    private UserUpboRepository userUpboRepository;
 
     @Test
     void run_ShouldSeedAllLocalDummyDataWhenRepositoriesAreEmpty() {
@@ -87,6 +95,8 @@ class LocalDummyDataInitializerTest {
         BDDMockito.then(rouletteEventRepository).should(times(3)).save(any());
         BDDMockito.then(rouletteRoundResultRepository).should(times(3)).saveAll(any());
         BDDMockito.then(upboTemplateRepository).should().saveAll(any());
+        BDDMockito.then(userUpboRepository).should().saveAll(any());
+        BDDMockito.then(favoriteAdjustmentRepository).should().saveAll(any());
     }
 
     @Test
@@ -101,6 +111,8 @@ class LocalDummyDataInitializerTest {
         given(weeklyChatRankRepository.count()).willReturn(1L);
         given(rouletteTableRepository.count()).willReturn(1L);
         given(upboTemplateRepository.count()).willReturn(1L);
+        given(userUpboRepository.count()).willReturn(1L);
+        given(favoriteAdjustmentRepository.count()).willReturn(1L);
 
         // 실행
         initializer.run(null);
@@ -113,6 +125,8 @@ class LocalDummyDataInitializerTest {
         BDDMockito.then(rouletteEventRepository).shouldHaveNoInteractions();
         BDDMockito.then(rouletteRoundResultRepository).shouldHaveNoInteractions();
         BDDMockito.then(upboTemplateRepository).should(never()).saveAll(any());
+        BDDMockito.then(userUpboRepository).should(never()).saveAll(any());
+        BDDMockito.then(favoriteAdjustmentRepository).should(never()).saveAll(any());
         then(favorites).hasSize(1);
     }
 
@@ -121,12 +135,14 @@ class LocalDummyDataInitializerTest {
                 authorizationRepository,
                 favoriteRepository,
                 favoriteHistoryRepository,
+                favoriteAdjustmentRepository,
                 weeklyChatRankRepository,
                 rouletteTableRepository,
                 rouletteItemRepository,
                 rouletteEventRepository,
                 rouletteRoundResultRepository,
-                upboTemplateRepository
+                upboTemplateRepository,
+                userUpboRepository
         );
     }
 

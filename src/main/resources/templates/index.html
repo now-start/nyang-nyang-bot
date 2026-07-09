@@ -83,7 +83,7 @@
     <div th:if="${isAdmin}" th:replace="~{features/favorite/components :: admin-tabs}"></div>
 
     <div class="tab-content">
-        <section th:replace="~{features/favorite/components :: favorite-tab(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks})}"></section>
+        <section th:replace="~{features/favorite/components :: favorite-tab(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks}, ${currentUserRank}, ${userUpbos})}"></section>
 
         <section aria-labelledby="attendance-tab-button" class="tab-pane fade" id="attendance-tab" role="tabpanel" th:if="${isAdmin}">
             <div th:replace="~{features/attendance/components :: attendance-panel}"></div>
@@ -91,6 +91,10 @@
 
         <section aria-labelledby="roulette-tab-button" class="tab-pane fade" id="roulette-tab" role="tabpanel" th:if="${isAdmin}">
             <div th:replace="~{features/roulette/components :: roulette-panel}"></div>
+        </section>
+
+        <section aria-labelledby="overlay-token-tab-button" class="tab-pane fade" id="overlay-token-tab" role="tabpanel" th:if="${isAdmin}">
+            <div th:replace="~{features/roulette/components :: roulette-overlay-panel}"></div>
         </section>
 
         <section aria-labelledby="command-tab-button" class="tab-pane fade" id="command-tab" role="tabpanel" th:if="${isAdmin}">

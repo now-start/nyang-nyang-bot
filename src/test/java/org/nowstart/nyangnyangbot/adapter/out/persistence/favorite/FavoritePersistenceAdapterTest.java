@@ -141,6 +141,7 @@ class FavoritePersistenceAdapterTest {
         given(favoriteRepository.findAll(pageable)).willReturn(new PageImpl<>(List.of(favorite)));
         given(favoriteRepository.findByNickNameContains(pageable, "치즈")).willReturn(new PageImpl<>(List.of(favorite)));
         given(favoriteRepository.findById("user-1")).willReturn(Optional.of(favorite));
+        given(favoriteRepository.countByFavoriteGreaterThan(30)).willReturn(2L);
 
         // 실행
         boolean blankExists = adapter.existsByIdempotencyKey(" ");
@@ -148,6 +149,7 @@ class FavoritePersistenceAdapterTest {
         Page<SummaryResult> all = adapter.findAll(pageable);
         Page<SummaryResult> searched = adapter.findByNickNameContains(pageable, "치즈");
         Optional<SummaryResult> found = adapter.findById("user-1");
+        long higherRankedUsers = adapter.countByFavoriteGreaterThan(30);
 
         // 검증
         then(blankExists).isFalse();
@@ -155,6 +157,7 @@ class FavoritePersistenceAdapterTest {
         then(all.getContent().getFirst().favorite()).isEqualTo(30);
         then(searched.getContent().getFirst().nickName()).isEqualTo("치즈냥");
         then(found).isPresent();
+        then(higherRankedUsers).isEqualTo(2L);
     }
 
     @Test

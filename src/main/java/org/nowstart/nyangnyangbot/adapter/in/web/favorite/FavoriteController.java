@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.QueryUpboUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +46,7 @@ public class FavoriteController {
     private static final DateTimeFormatter HISTORY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final QueryFavoriteUseCase queryFavoriteUseCase;
+    private final QueryUpboUseCase queryUpboUseCase;
     private final QueryWeeklyChatRankUseCase queryWeeklyChatRankUseCase;
     @Value("${nyang.local-auth.login-page-enabled:false}")
     private boolean localTestLoginEnabled;
@@ -100,7 +103,7 @@ public class FavoriteController {
                     1
             );
             return new FavoriteListModel(favoriteList, PageRequest.of(0, pageSize), "", List.of(),
-                    currentUserId, myFavorite.nickName(), false);
+                    currentUserId, myFavorite.nickName(), false, myFavorite.rank(), userUpbos(currentUserId));
         }
 
         String searchNickName = isAdmin && nickName != null ? nickName : "";
@@ -112,7 +115,8 @@ public class FavoriteController {
         String currentNickName = currentUserId == null
                 ? null
                 : queryFavoriteUseCase.getCurrentNickName(currentUserId).orElse(null);
-        return new FavoriteListModel(favoriteList, page, searchNickName, weeklyChatRanks, currentUserId, currentNickName, isAdmin);
+        return new FavoriteListModel(favoriteList, page, searchNickName, weeklyChatRanks,
+                currentUserId, currentNickName, isAdmin, null, List.of());
     }
 
     private void addFavoriteListModel(ModelAndView modelAndView, FavoriteListModel favoriteListModel) {
@@ -122,7 +126,15 @@ public class FavoriteController {
         modelAndView.addObject("currentUserId", favoriteListModel.currentUserId());
         modelAndView.addObject("currentNickName", favoriteListModel.currentNickName());
         modelAndView.addObject("isAdmin", favoriteListModel.isAdmin());
+        modelAndView.addObject("currentUserRank", favoriteListModel.currentUserRank());
+        modelAndView.addObject("userUpbos", favoriteListModel.userUpbos());
         modelAndView.addObject("localTestLoginEnabled", localTestLoginEnabled);
+    }
+
+    private List<UserUpboView> userUpbos(String userId) {
+        return queryUpboUseCase.getUserUpbos(userId, null).stream()
+                .map(UserUpboView::from)
+                .toList();
     }
 
     private List<FavoriteHistoryView> favoriteHistories(String userId, int limit) {
@@ -167,7 +179,9 @@ public class FavoriteController {
             List<WeeklyChatRankView> weeklyChatRanks,
             String currentUserId,
             String currentNickName,
-            boolean isAdmin
+            boolean isAdmin,
+            Integer currentUserRank,
+            List<UserUpboView> userUpbos
     ) {
     }
 
@@ -211,6 +225,34 @@ public class FavoriteController {
                     result.correction(),
                     result.favorite(),
                     result.history(),
+                    formattedDate
+            );
+        }
+    }
+
+    public record UserUpboView(
+            Long id,
+            String label,
+            String status,
+            Integer exchangeFavoriteValue,
+            String rewardType,
+            String conversionMode,
+            Long ledgerId,
+            String publicDescription,
+            String date
+    ) {
+
+        static UserUpboView from(UserUpboResult result) {
+            String formattedDate = result.createdAt() == null ? null : result.createdAt().format(HISTORY_DATE_FORMATTER);
+            return new UserUpboView(
+                    result.id(),
+                    result.label(),
+                    result.status(),
+                    result.exchangeFavoriteValue(),
+                    result.rewardType(),
+                    result.conversionMode(),
+                    result.ledgerId(),
+                    result.publicDescription(),
                     formattedDate
             );
         }

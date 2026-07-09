@@ -3,7 +3,9 @@
 <body>
 <div class="vstack gap-3" th:fragment="roulette-panel">
     <div th:replace="~{features/roulette/components :: roulette-config-loader}"></div>
+</div>
 
+<div class="vstack gap-3" th:fragment="roulette-overlay-panel">
     <div th:replace="~{features/roulette/components :: roulette-overlay-section}"></div>
     <div th:replace="~{features/roulette/components :: roulette-events-loader}"></div>
 </div>
@@ -33,8 +35,8 @@
             <div class="card-body d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
                 <div>
                     <span class="small text-secondary">관리자 · 룰렛</span>
-                    <h3 class="h5 fw-bold text-white mb-1">룰렛 테이블 관리</h3>
-                    <p class="text-secondary mb-0">확률 합계, 꽝 항목, 활성 조건을 한 화면에서 확인합니다.</p>
+                    <h3 class="h5 fw-bold text-white mb-1">룰렛 관리</h3>
+                    <p class="text-secondary mb-0">채널에서 사용할 단일 룰렛의 확률, 항목, 활성 상태를 관리합니다.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2"
                      th:with="validation=${table == null ? null : table.validation},
@@ -63,15 +65,16 @@
     <section class="card h-100">
         <div class="card-body vstack gap-3">
     <div class="d-flex align-items-center justify-content-between">
-        <h3 class="h6 fw-bold text-white mb-0">테이블 설정</h3>
-        <span class="small text-secondary">생성 · 선택</span>
+        <h3 class="h6 fw-bold text-white mb-0">단일 룰렛 설정</h3>
+        <span class="small text-secondary">하나만 생성 · 사용</span>
     </div>
     <form class="vstack gap-2"
           hx-disabled-elt="find button"
           hx-swap="outerHTML"
           hx-target="#roulette-config-region"
           id="roulette-table-form"
-          th:hx-post="@{/admin/roulette/tables}">
+          th:hx-post="@{/admin/roulette/tables}"
+          th:if="${tables == null or #lists.isEmpty(tables)}">
         <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
         <div class="mb-0" id="roulette-title-field">
             <label class="form-label small text-secondary" for="roulette-title">테이블 이름</label>
@@ -105,8 +108,12 @@
                    value="1000">
         </div>
         <input name="highRoundThreshold" type="hidden" value="100">
-        <th:block th:replace="~{components/buttons :: action-button('roulette-create', '새 룰렛 생성', 'primary', 'submit', null)}"></th:block>
+        <th:block th:replace="~{components/buttons :: action-button('roulette-create', '룰렛 생성', 'primary', 'submit', null)}"></th:block>
     </form>
+    <div class="border rounded-3 p-3 text-secondary small"
+         th:if="${tables != null and !#lists.isEmpty(tables)}">
+        등록된 룰렛 하나를 계속 사용합니다. 명령어와 금액은 현재 룰렛 기준으로 운영됩니다.
+    </div>
     <div th:replace="~{features/roulette/components :: roulette-table-list}"></div>
         </div>
     </section>

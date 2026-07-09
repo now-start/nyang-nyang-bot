@@ -52,6 +52,8 @@ public class FavoriteService implements QueryFavoriteUseCase {
         long unseenCount = lastSeenAt == null
                 ? favoriteQueryPort.countHistory(userId)
                 : favoriteQueryPort.countHistoryAfter(userId, lastSeenAt);
+        int favoriteValue = favorite.favorite() == null ? 0 : favorite.favorite();
+        int rank = Math.toIntExact(favoriteQueryPort.countByFavoriteGreaterThan(favoriteValue) + 1);
         List<FavoriteHistoryResult> histories = getHistory(userId, 50);
 
         authorizationPort.markFavoriteHistorySeen(userId, LocalDateTime.now());
@@ -59,6 +61,7 @@ public class FavoriteService implements QueryFavoriteUseCase {
                 userId,
                 favorite.nickName(),
                 favorite.favorite(),
+                rank,
                 unseenCount,
                 histories
         );

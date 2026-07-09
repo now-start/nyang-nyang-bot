@@ -45,6 +45,7 @@ public interface QueryFavoriteUseCase {
             String userId,
             String nickName,
             Integer favorite,
+            Integer rank,
             Long unseenCount,
             List<FavoriteHistoryResult> histories
     ) {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
+import org.nowstart.nyangnyangbot.application.port.in.upbo.QueryUpboUseCase;
 import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
@@ -24,13 +25,16 @@ class FavoriteControllerHistoryTest {
     private FavoriteService favoriteService;
 
     @Mock
+    private QueryUpboUseCase queryUpboUseCase;
+
+    @Mock
     private WeeklyChatRankService weeklyChatRankService;
 
     private FavoriteController favoriteController;
 
     @BeforeEach
     void setUp() {
-        favoriteController = new FavoriteController(favoriteService, weeklyChatRankService);
+        favoriteController = new FavoriteController(favoriteService, queryUpboUseCase, weeklyChatRankService);
     }
 
     @Test
