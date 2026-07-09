@@ -119,12 +119,9 @@ class FavoriteListTemplateTest {
         setCommandOptions(context);
         context.setVariable("weeklyChatRanks", List.of(new FavoriteController.WeeklyChatRankView(1, "치즈냥", 10L)));
         context.setVariable("favoriteList", new PageImpl<>(
-                List.of(
-                        new FavoriteSummaryResult("user1", "유저1", 100),
-                        new FavoriteSummaryResult("user2", "유저2", 80)
-                ),
+                List.of(new FavoriteSummaryResult("user1", "유저1", 100)),
                 PageRequest.of(0, 10),
-                2
+                1
         ));
 
         // 실행
@@ -132,6 +129,10 @@ class FavoriteListTemplateTest {
 
         // 검증
         then(html).contains("id=\"favorite-board-region\"");
+        then(html).contains("내 계정의 호감도와 내역만 표시합니다.");
+        then(html).contains("유저1");
+        then(html).doesNotContain("유저2");
+        then(html).doesNotContain("주간 채팅 순위");
         then(html).contains("hx-get=\"/favorite/history?userId=user1");
         then(html).doesNotContain("hx-get=\"/favorite/history?userId=user2");
         then(html).doesNotContain("관리자 메뉴");

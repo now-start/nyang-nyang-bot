@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
@@ -13,9 +14,13 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.Favori
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
@@ -24,6 +29,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.Week
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,7 +45,42 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(prefix = "nyang.local-dummy-data", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class LocalDummyDataInitializer implements ApplicationRunner {
 
-    private static final String LOCAL_CHANNEL_ID = "local-channel";
+    private static final List<FavoriteSeed> FAVORITE_SEEDS = List.of(
+            new FavoriteSeed(LocalTestAccounts.ADMIN_USER_ID, "로컬 관리자", 9999),
+            new FavoriteSeed(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", 875),
+            new FavoriteSeed("user-001", "치즈냥", 8720),
+            new FavoriteSeed("user-002", "새벽라떼", 7430),
+            new FavoriteSeed("user-003", "민트초코", 6180),
+            new FavoriteSeed("user-004", "고구마", 5050),
+            new FavoriteSeed("user-005", "달토끼", 3920),
+            new FavoriteSeed(LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", -12),
+            new FavoriteSeed("user-007", "파란별", 1410),
+            new FavoriteSeed("user-008", "츄르도둑", 1240),
+            new FavoriteSeed("user-009", "우주고양이", 986),
+            new FavoriteSeed("user-010", "밤톨이", 642),
+            new FavoriteSeed("user-011", "시금치파스타", 431),
+            new FavoriteSeed("user-012", "감자탕수육", 333),
+            new FavoriteSeed("user-013", "솜사탕", 310),
+            new FavoriteSeed("user-014", "유자차", 286),
+            new FavoriteSeed("user-015", "별사탕", 255),
+            new FavoriteSeed("user-016", "모찌", 220),
+            new FavoriteSeed("user-017", "초코칩", 197),
+            new FavoriteSeed("user-018", "귤냥이", 166),
+            new FavoriteSeed("user-019", "보리차", 144),
+            new FavoriteSeed("user-020", "라임소다", 121),
+            new FavoriteSeed("user-021", "홍차라떼", 108),
+            new FavoriteSeed("user-022", "아침햇살", 96),
+            new FavoriteSeed("user-023", "캣닢", 84),
+            new FavoriteSeed("user-024", "바닐라", 72),
+            new FavoriteSeed("user-025", "복숭아", 61),
+            new FavoriteSeed("user-026", "구름빵", 48),
+            new FavoriteSeed("user-027", "레몬밤", 37),
+            new FavoriteSeed("user-028", "콩떡", 29),
+            new FavoriteSeed("user-029", "밤하늘", 22),
+            new FavoriteSeed("user-030", "민들레", 17),
+            new FavoriteSeed("user-031", "새싹", 9),
+            new FavoriteSeed("user-032", "먼지", 0)
+    );
 
     private final AuthorizationRepository authorizationRepository;
     private final FavoriteRepository favoriteRepository;
@@ -46,6 +88,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
     private final WeeklyChatRankRepository weeklyChatRankRepository;
     private final RouletteTableRepository rouletteTableRepository;
     private final RouletteItemRepository rouletteItemRepository;
+    private final RouletteEventRepository rouletteEventRepository;
+    private final RouletteRoundResultRepository rouletteRoundResultRepository;
     private final UpboTemplateRepository upboTemplateRepository;
 
     @Override
@@ -55,22 +99,16 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         seedLocalAuthorization();
         seedFavoriteHistories(favorites);
         seedWeeklyChatRanks();
-        seedRouletteTable();
+        RouletteTable rouletteTable = seedRouletteTable();
+        seedRouletteEvents(rouletteTable);
         seedUpboTemplates();
         log.info("Local dummy data is ready");
     }
 
     private List<FavoriteAccount> seedFavorites() {
-        List<FavoriteAccount> favorites = List.of(
-                favorite(LOCAL_CHANNEL_ID, "로컬 관리자", 9999),
-                favorite("user-001", "치즈냥", 8720),
-                favorite("user-002", "새벽라떼", 7430),
-                favorite("user-003", "민트초코", 6180),
-                favorite("user-004", "고구마", 5050),
-                favorite("user-005", "달토끼", 3920),
-                favorite("user-006", "감자전", 2770),
-                favorite("user-007", "파란별", 1410)
-        );
+        List<FavoriteAccount> favorites = FAVORITE_SEEDS.stream()
+                .map(seed -> favorite(seed.userId(), seed.nickName(), seed.favorite()))
+                .toList();
         favorites.stream()
                 .filter(favorite -> !favoriteRepository.existsById(favorite.getUserId()))
                 .forEach(favoriteRepository::save);
@@ -80,20 +118,10 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
     }
 
     private void seedLocalAuthorization() {
-        if (authorizationRepository.existsById(LOCAL_CHANNEL_ID)) {
-            return;
-        }
-        authorizationRepository.save(AuthorizationAccount.builder()
-                .channelId(LOCAL_CHANNEL_ID)
-                .channelName("로컬 관리자")
-                .accessToken("local-access-token")
-                .refreshToken("local-refresh-token")
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .scope("local")
-                .favoriteHistoryLastSeenAt(LocalDateTime.now().minusDays(1))
-                .admin(true)
-                .build());
+        LocalTestAccounts.accounts().stream()
+                .filter(account -> !authorizationRepository.existsById(account.userId()))
+                .map(account -> authorizationAccount(account.userId(), account.nickName(), account.admin()))
+                .forEach(authorizationRepository::save);
     }
 
     private void seedFavoriteHistories(List<FavoriteAccount> favorites) {
@@ -101,10 +129,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
             return;
         }
         favoriteHistoryRepository.saveAll(favorites.stream()
-                .flatMap(favorite -> List.of(
-                        history(favorite, FavoriteSourceType.ATTENDANCE, 100, "출석 보너스", "local-attendance"),
-                        history(favorite, FavoriteSourceType.ADMIN_ADJUSTMENT, 250, "운영자 지급", "local-admin-adjustment")
-                ).stream())
+                .flatMap(favorite -> favoriteHistories(favorite).stream())
                 .toList());
     }
 
@@ -118,13 +143,20 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 weeklyRank(weekStartDate, "user-002", "새벽라떼", 387),
                 weeklyRank(weekStartDate, "user-003", "민트초코", 244),
                 weeklyRank(weekStartDate, "user-004", "고구마", 199),
-                weeklyRank(weekStartDate, "user-005", "달토끼", 153)
+                weeklyRank(weekStartDate, "user-005", "달토끼", 153),
+                weeklyRank(weekStartDate, LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", 128),
+                weeklyRank(weekStartDate, "user-008", "츄르도둑", 114),
+                weeklyRank(weekStartDate, "user-009", "우주고양이", 96),
+                weeklyRank(weekStartDate, "user-010", "밤톨이", 83),
+                weeklyRank(weekStartDate, "user-011", "시금치파스타", 75),
+                weeklyRank(weekStartDate, LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", 48),
+                weeklyRank(weekStartDate, "user-012", "감자탕수육", 31)
         ));
     }
 
-    private void seedRouletteTable() {
+    private RouletteTable seedRouletteTable() {
         if (rouletteTableRepository.count() > 0) {
-            return;
+            return rouletteTableRepository.findAll().stream().findFirst().orElse(null);
         }
         RouletteTable table = rouletteTableRepository.save(RouletteTable.builder()
                 .title("로컬 테스트 룰렛")
@@ -135,12 +167,64 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .highRoundThreshold(50)
                 .build());
         rouletteItemRepository.saveAll(List.of(
-                rouletteItem(table, "호감도 +300", 500, false, RewardType.FAVORITE, ConversionMode.AUTO, 300, 1),
-                rouletteItem(table, "호감도 +100", 1500, false, RewardType.FAVORITE, ConversionMode.AUTO, 100, 2),
-                rouletteItem(table, "호감도 +30", 2500, false, RewardType.FAVORITE, ConversionMode.AUTO, 30, 3),
-                rouletteItem(table, "미션권", 1000, false, RewardType.MISSION, ConversionMode.MANUAL, null, 4),
-                rouletteItem(table, "다음 기회에", 4500, true, RewardType.CUSTOM, ConversionMode.NONE, 0, 5)
+                rouletteItem(table, "호감도 +500", 300, false, RewardType.FAVORITE, ConversionMode.AUTO, 500, 1),
+                rouletteItem(table, "호감도 +300", 700, false, RewardType.FAVORITE, ConversionMode.AUTO, 300, 2),
+                rouletteItem(table, "호감도 +100", 1800, false, RewardType.FAVORITE, ConversionMode.AUTO, 100, 3),
+                rouletteItem(table, "호감도 +30", 2600, false, RewardType.FAVORITE, ConversionMode.AUTO, 30, 4),
+                rouletteItem(table, "미션권", 900, false, RewardType.MISSION, ConversionMode.MANUAL, null, 5),
+                rouletteItem(table, "쿠폰", 700, false, RewardType.COUPON, ConversionMode.MANUAL, null, 6),
+                rouletteItem(table, "다음 기회에", 3000, true, RewardType.CUSTOM, ConversionMode.NONE, 0, 7)
         ));
+        return table;
+    }
+
+    private void seedRouletteEvents(RouletteTable table) {
+        if (table == null || rouletteEventRepository.count() > 0) {
+            return;
+        }
+        RouletteEvent applied = rouletteEventRepository.save(rouletteEvent(
+                table,
+                "local-donation-001",
+                "user-001",
+                "치즈냥",
+                11_000L,
+                "!룰렛 11회",
+                11,
+                RouletteEventStatus.APPLIED
+        ));
+        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 11)
+                .mapToObj(roundNo -> rouletteRound(applied, roundNo, roundNo % 4 == 0 ? "다음 기회에" : "호감도 +100",
+                        roundNo % 4 == 0, RouletteRoundStatus.APPLIED))
+                .toList());
+
+        RouletteEvent failed = rouletteEventRepository.save(rouletteEvent(
+                table,
+                "local-donation-002",
+                "user-010",
+                "밤톨이",
+                3_000L,
+                "!룰렛 테스트 실패 케이스",
+                3,
+                RouletteEventStatus.FAILED
+        ));
+        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 3)
+                .mapToObj(roundNo -> rouletteRound(failed, roundNo, "미션권", false, RouletteRoundStatus.FAILED))
+                .toList());
+
+        RouletteEvent partial = rouletteEventRepository.save(rouletteEvent(
+                table,
+                "local-donation-003",
+                "user-012",
+                "감자탕수육",
+                5_000L,
+                "!룰렛 부분 반영 케이스",
+                5,
+                RouletteEventStatus.PARTIALLY_APPLIED
+        ));
+        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 5)
+                .mapToObj(roundNo -> rouletteRound(partial, roundNo, roundNo == 5 ? "쿠폰" : "호감도 +30",
+                        false, roundNo == 5 ? RouletteRoundStatus.CONFIRMED : RouletteRoundStatus.APPLIED))
+                .toList());
     }
 
     private void seedUpboTemplates() {
@@ -149,9 +233,26 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         }
         upboTemplateRepository.saveAll(List.of(
                 upboTemplate("호감도 +100", "즉시 호감도 100 지급", 100, RewardType.FAVORITE, ConversionMode.AUTO, 1),
-                upboTemplate("미션 패스권", "미션 보상 테스트용 업보권", null, RewardType.MISSION, ConversionMode.MANUAL, 2),
-                upboTemplate("참여 우선권", "이벤트 참여 우선권 테스트", null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, 3)
+                upboTemplate("호감도 +300", "고액 룰렛 보상 테스트", 300, RewardType.FAVORITE, ConversionMode.AUTO, 2),
+                upboTemplate("미션 패스권", "미션 보상 테스트용 업보권", null, RewardType.MISSION, ConversionMode.MANUAL, 3),
+                upboTemplate("참여 우선권", "이벤트 참여 우선권 테스트", null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, 4),
+                upboTemplate("쿠폰 수동 지급", "쿠폰 지급 플로우 확인용", null, RewardType.COUPON, ConversionMode.MANUAL, 5),
+                upboTemplate("꽝 표시", "반영 없는 결과 표시 확인용", 0, RewardType.CUSTOM, ConversionMode.NONE, 6)
         ));
+    }
+
+    private AuthorizationAccount authorizationAccount(String userId, String nickName, boolean admin) {
+        return AuthorizationAccount.builder()
+                .channelId(userId)
+                .channelName(nickName)
+                .accessToken("local-access-token-" + userId)
+                .refreshToken("local-refresh-token-" + userId)
+                .tokenType("Bearer")
+                .expiresIn(3600)
+                .scope("local")
+                .favoriteHistoryLastSeenAt(LocalDateTime.now().minusDays(1))
+                .admin(admin)
+                .build();
     }
 
     private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {
@@ -162,14 +263,28 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build();
     }
 
+    private List<FavoriteHistory> favoriteHistories(FavoriteAccount favorite) {
+        int current = favorite.getFavorite() == null ? 0 : favorite.getFavorite();
+        int adminDelta = LocalTestAccounts.NEGATIVE_USER_ID.equals(favorite.getUserId()) ? -300 : 250;
+        return List.of(
+                history(favorite, FavoriteSourceType.ADMIN_ADJUSTMENT, adminDelta, current,
+                        "운영자 조정", "local-admin-adjustment", "ADMIN"),
+                history(favorite, FavoriteSourceType.ATTENDANCE, 100, current - adminDelta,
+                        "출석 보너스", "local-attendance", "ATTENDANCE"),
+                history(favorite, FavoriteSourceType.UPBO_ROULETTE, 30, current - adminDelta - 100,
+                        "룰렛 보상", "local-roulette", "ROULETTE")
+        );
+    }
+
     private FavoriteHistory history(
             FavoriteAccount favorite,
             FavoriteSourceType sourceType,
             Integer delta,
+            Integer balanceAfter,
             String description,
-            String sourceId
+            String sourceId,
+            String displayCategory
     ) {
-        int balanceAfter = favorite.getFavorite();
         return FavoriteHistory.builder()
                 .favoriteAccount(favorite)
                 .history(description)
@@ -178,10 +293,10 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .balanceAfter(balanceAfter)
                 .sourceType(sourceType)
                 .sourceId(sourceId)
-                .displayCategory("로컬 테스트")
+                .displayCategory(displayCategory)
                 .publicDescription(description)
                 .privateMemo("local dummy data")
-                .actorId(LOCAL_CHANNEL_ID)
+                .actorId(LocalTestAccounts.ADMIN_USER_ID)
                 .idempotencyKey("local-dummy-" + favorite.getUserId() + "-" + sourceId)
                 .nickNameSnapshot(favorite.getNickName())
                 .build();
@@ -219,6 +334,55 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .build();
     }
 
+    private RouletteEvent rouletteEvent(
+            RouletteTable table,
+            String donationEventId,
+            String userId,
+            String nickName,
+            Long donationAmount,
+            String donationText,
+            Integer roundCount,
+            RouletteEventStatus status
+    ) {
+        return RouletteEvent.builder()
+                .donationEventId(donationEventId)
+                .idempotencyKey("local-" + donationEventId)
+                .userId(userId)
+                .nickNameSnapshot(nickName)
+                .donationAmount(donationAmount)
+                .donationText(donationText)
+                .rouletteTableId(table.getId())
+                .rouletteTableVersion(table.getVersion())
+                .command(table.getCommand())
+                .pricePerRound(table.getPricePerRound())
+                .roundCount(roundCount)
+                .itemsSnapshotJson("[]")
+                .status(status)
+                .build();
+    }
+
+    private RouletteRoundResult rouletteRound(
+            RouletteEvent event,
+            int roundNo,
+            String itemLabel,
+            boolean losingItem,
+            RouletteRoundStatus status
+    ) {
+        return RouletteRoundResult.builder()
+                .rouletteEvent(event)
+                .roundNo(roundNo)
+                .itemLabel(itemLabel)
+                .probabilityBasisPoints(losingItem ? 3000 : 1800)
+                .losingItem(losingItem)
+                .rewardType(losingItem ? RewardType.CUSTOM : RewardType.FAVORITE)
+                .conversionMode(losingItem ? ConversionMode.NONE : ConversionMode.AUTO)
+                .exchangeFavoriteValue(losingItem ? 0 : 100)
+                .status(status)
+                .failureReason(status == RouletteRoundStatus.FAILED ? "로컬 실패 케이스" : null)
+                .ticket(roundNo)
+                .build();
+    }
+
     private UpboTemplate upboTemplate(
             String label,
             String description,
@@ -236,5 +400,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .rewardType(rewardType)
                 .conversionMode(conversionMode)
                 .build();
+    }
+
+    private record FavoriteSeed(String userId, String nickName, Integer favorite) {
     }
 }

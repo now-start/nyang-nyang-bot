@@ -28,6 +28,32 @@
            (${rouletteTone == 'danger'} ? ' alert-danger' : ' alert-secondary')"
          th:if="${rouletteMessage}"
          th:text="${rouletteMessage}">상태 메시지</div>
+    <div class="col-12">
+        <section class="card">
+            <div class="card-body d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
+                <div>
+                    <span class="small text-secondary">관리자 · 룰렛</span>
+                    <h3 class="h5 fw-bold text-white mb-1">룰렛 테이블 관리</h3>
+                    <p class="text-secondary mb-0">확률 합계, 꽝 항목, 활성 조건을 한 화면에서 확인합니다.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2"
+                     th:with="validation=${table == null ? null : table.validation},
+                              probabilityTotal=${validation == null or validation.probabilityTotal == null ? 0 : validation.probabilityTotal}">
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
+                          th:text="${'확률 ' + #numbers.formatDecimal(probabilityTotal / 100.0, 1, 2) + '%'}">확률 100%</span>
+                    <span class="badge rounded-pill"
+                          th:classappend="${validation != null and validation.hasLosingItem == true} ? ' bg-success-subtle text-success' : ' bg-danger-subtle text-danger'"
+                          th:text="${validation != null and validation.hasLosingItem == true ? '꽝 포함' : '꽝 없음'}">꽝 포함</span>
+                    <span class="badge rounded-pill"
+                          th:classappend="${validation != null and validation.activatable == true} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
+                          th:text="${validation != null and validation.activatable == true ? '활성화 가능' : '검증 필요'}">활성화 가능</span>
+                    <span class="badge rounded-pill"
+                          th:classappend="${table != null and table.active == true} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
+                          th:text="${table != null and table.active == true ? '활성 상태' : '비활성 상태'}">활성 상태</span>
+                </div>
+            </div>
+        </section>
+    </div>
     <div th:replace="~{features/roulette/components :: roulette-table-section}"></div>
     <div th:replace="~{features/roulette/components :: roulette-item-form-section}"></div>
     <div th:replace="~{features/roulette/components :: roulette-detail-section}"></div>
@@ -37,8 +63,8 @@
     <section class="card h-100">
         <div class="card-body vstack gap-3">
     <div class="d-flex align-items-center justify-content-between">
-        <h3 class="h6 fw-bold text-white mb-0">룰렛 테이블</h3>
-        <span class="small text-secondary">관리자 · 룰렛</span>
+        <h3 class="h6 fw-bold text-white mb-0">테이블 설정</h3>
+        <span class="small text-secondary">생성 · 선택</span>
     </div>
     <form class="vstack gap-2"
           hx-disabled-elt="find button"
@@ -273,11 +299,12 @@
 
 <section class="card" th:fragment="roulette-overlay-section">
     <div class="card-body vstack gap-3">
-    <div class="d-flex align-items-center justify-content-between">
-        <h3 class="h6 fw-bold text-white mb-0">OBS 오버레이 토큰</h3>
-        <span class="small text-secondary">관리자 · OBS</span>
-    </div>
-    <div class="vstack gap-2">
+    <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
+        <div>
+            <span class="small text-secondary">관리자 · OBS</span>
+            <h3 class="h5 fw-bold text-white mb-1">오버레이 토큰 관리</h3>
+            <p class="text-secondary mb-0">발급된 URL은 OBS 브라우저 소스에 등록하고, 최근 룰렛 이벤트를 재송출할 수 있습니다.</p>
+        </div>
         <button class="btn btn-success align-self-start"
                 hx-disabled-elt="this"
                 hx-post="/admin/overlay/roulette/token"
@@ -286,7 +313,20 @@
                 id="overlay-token-issue"
                 th:hx-post="@{/admin/overlay/roulette/token}"
                 type="button">새 토큰 발급</button>
-        <div th:replace="~{features/roulette/components :: overlay-token-url-field(${tokenUrl})}"></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-12 col-xl-7">
+            <div th:replace="~{features/roulette/components :: overlay-token-url-field(${tokenUrl})}"></div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="border rounded-3 p-3 h-100 vstack gap-2">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <strong class="text-white">토큰 운영 메모</strong>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary">local</span>
+                </div>
+                <p class="small text-secondary mb-0">현재 구현은 발급 직후 URL만 노출합니다. 저장된 토큰 목록, 재발급, 폐기는 토큰 저장소 조회 API가 붙으면 같은 영역에 확장합니다.</p>
+            </div>
+        </div>
     </div>
     <form class="row g-2 align-items-end"
           hx-disabled-elt="find button"
@@ -317,6 +357,12 @@
 </section>
 
 <div class="mb-0" id="overlay-token-url-field" th:fragment="overlay-token-url-field(tokenUrl)">
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-3"
+         th:if="${tokenUrl != null and !#strings.isEmpty(tokenUrl)}">
+        <span aria-hidden="true" class="rounded-circle bg-success" style="width:6px;height:6px;"></span>
+        <strong>새 토큰이 발급되었습니다.</strong>
+        <span>이 값은 다시 볼 수 없습니다.</span>
+    </div>
     <label class="form-label small text-secondary" for="overlay-token-url">OBS 오버레이 URL</label>
     <input class="form-control font-monospace text-success"
            id="overlay-token-url"

@@ -1,9 +1,16 @@
 chzzk:
   chat:
     auto-connect-enabled: false
-  client-id: ${CHZZK_CLIENT_ID}
-  client-secret: ${CHZZK_CLIENT_SECRET}
+  client-id: ${CHZZK_CLIENT_ID:local-client}
+  client-secret: ${CHZZK_CLIENT_SECRET:local-secret}
   redirect-uri: http://localhost:8080/login/oauth2/code/chzzk
+
+nyang:
+  local-auth:
+    enabled: true
+    login-page-enabled: true
+    user-id: local-channel
+    admin: true
 
 spring:
   cloud:

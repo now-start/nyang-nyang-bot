@@ -13,21 +13,26 @@
                 </p>
             </div>
         </div>
-        <div class="d-flex flex-wrap gap-2" th:if="${isAdmin}">
-            <button class="btn btn-secondary"
-                    hx-disabled-elt="this"
-                    hx-swap="innerHTML"
-                    hx-target="#sync-feedback"
-                    id="sync-button"
-                    th:hx-post="@{/google/sync}"
-                    type="button">데이터 동기화</button>
-            <button class="btn btn-success"
-                    hx-disabled-elt="this"
-                    hx-swap="innerHTML"
-                    hx-target="#sync-feedback"
-                    id="chzzk-connect-button"
-                    th:hx-post="@{/chzzk/connect}"
-                    type="button">채팅 연결</button>
+        <div class="d-flex flex-wrap gap-2" th:if="${isAdmin or localTestLoginEnabled == true}">
+            <a class="btn btn-outline-secondary"
+               th:href="@{/local/test-login(redirect='/favorite/list')}"
+               th:if="${localTestLoginEnabled == true}">테스트 계정 전환</a>
+            <th:block th:if="${isAdmin}">
+                <button class="btn btn-secondary"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#sync-feedback"
+                        id="sync-button"
+                        th:hx-post="@{/google/sync}"
+                        type="button">데이터 동기화</button>
+                <button class="btn btn-success"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#sync-feedback"
+                        id="chzzk-connect-button"
+                        th:hx-post="@{/chzzk/connect}"
+                        type="button">채팅 연결</button>
+            </th:block>
         </div>
     </div>
 </header>
@@ -60,7 +65,13 @@
 </section>
 
 <section class="vstack gap-3" th:fragment="controls(weeklyChatRanks, nickName, isAdmin)">
-    <section aria-labelledby="weekly-rank-heading" class="card">
+    <section aria-labelledby="my-favorite-heading" class="card" th:if="${isAdmin == false}">
+        <div class="card-body py-3">
+            <h2 class="small text-secondary fw-normal mb-1" id="my-favorite-heading">내 호감도</h2>
+            <p class="mb-0 text-secondary">내 계정의 호감도와 내역만 표시합니다.</p>
+        </div>
+    </section>
+    <section aria-labelledby="weekly-rank-heading" class="card" th:if="${isAdmin}">
         <div class="card-body py-3">
             <h2 class="small text-secondary fw-normal mb-2" id="weekly-rank-heading">주간 채팅 순위</h2>
             <ol class="list-unstyled d-flex flex-wrap gap-2 mb-0"

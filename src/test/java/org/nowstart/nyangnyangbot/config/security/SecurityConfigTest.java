@@ -17,6 +17,7 @@ import org.mockito.BDDMockito;
 import org.nowstart.nyangnyangbot.adapter.in.web.google.GoogleController;
 import org.nowstart.nyangnyangbot.adapter.in.web.root.RootController;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
+import org.nowstart.nyangnyangbot.config.LocalTestAccounts;
 import org.nowstart.nyangnyangbot.config.SecurityConfig;
 import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AccessTokenResponseClient;
 import org.nowstart.nyangnyangbot.config.oauth.ChzzkOAuth2AuthorizationRequestResolver;
@@ -173,6 +174,60 @@ class SecurityConfigTest {
     }
 
     @Test
+    void localAuthLoginPageRedirectsProtectedPathUntilAccountSelected() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "nyang.local-auth.enabled=true",
+                "nyang.local-auth.login-page-enabled=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(get("/favorite/list"))
+                    .andExpect(status().isFound())
+                    .andExpect(header().string("Location", "/local/test-login?redirect=%2Ffavorite%2Flist"));
+        }
+    }
+
+    @Test
+    void localAuthLoginPageUsesSelectedViewerSessionWithoutAdminRole() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "nyang.local-auth.enabled=true",
+                "nyang.local-auth.login-page-enabled=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+
+        // 실행 및 검증
+            mockMvc.perform(post("/google/sync")
+                            .session(localAuthSession(LocalTestAccounts.VIEWER_USER_ID, false))
+                            .with(csrf()))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void localAuthLoginPageUsesSelectedAdminSessionWithAdminRole() throws Exception {
+        // 준비
+        try (AnnotationConfigWebApplicationContext context = createWebContext(
+                "nyang.local-auth.enabled=true",
+                "nyang.local-auth.login-page-enabled=true"
+        )) {
+            MockMvc mockMvc = createMockMvc(context);
+            SyncGoogleSheetUseCase syncGoogleSheetUseCase = context.getBean(SyncGoogleSheetUseCase.class);
+
+        // 실행
+            mockMvc.perform(post("/google/sync")
+                            .session(localAuthSession(LocalTestAccounts.ADMIN_USER_ID, true))
+                            .with(csrf()))
+        // 검증
+                    .andExpect(status().isOk());
+
+            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+        }
+    }
+
+    @Test
     void h2ConsoleAllowsSameOriginFrameWhenEnabled() throws Exception {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext(
@@ -281,6 +336,13 @@ class SecurityConfigTest {
 
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        return session;
+    }
+
+    private MockHttpSession localAuthSession(String userId, boolean admin) {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(LocalTestAccounts.SESSION_USER_ID, userId);
+        session.setAttribute(LocalTestAccounts.SESSION_ADMIN, admin);
         return session;
     }
 

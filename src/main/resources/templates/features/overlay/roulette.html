@@ -37,10 +37,17 @@
                   th:text="${(event.nickName == null ? '후원자' : event.nickName) + '님의 룰렛'}">후원자님의 룰렛</span>
             <span class="overlay-round-pill" th:text="${'총 ' + event.roundCount + '회'}">총 1회</span>
         </div>
-        <div class="row g-3 justify-content-center">
-            <div class="col-12 col-md-6 col-xl-4" th:each="round : ${event.rounds}">
-                <div class="border border-secondary rounded-4 p-3 h-100">
-                    <div class="small text-secondary mb-2 overlay-round-no"
+        <div class="overlay-stage">
+            <div class="overlay-wheel-wrap">
+                <div class="overlay-wheel"></div>
+                <div class="overlay-wheel-core">
+                    <span>RESULT</span>
+                    <strong th:text="${event.roundCount + '회'}">1회</strong>
+                </div>
+            </div>
+            <div class="overlay-summary">
+                <div class="overlay-round-card" th:each="round : ${event.rounds}">
+                    <div class="small text-secondary overlay-round-no"
                          th:text="${round.roundNo + ' / ' + event.roundCount}">1 / 1</div>
                     <div class="overlay-result"
                          th:classappend="${round.losingItem} ? ' overlay-result-losing'"

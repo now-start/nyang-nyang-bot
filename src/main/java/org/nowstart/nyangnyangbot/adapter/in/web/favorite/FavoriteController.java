@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -43,6 +45,8 @@ public class FavoriteController {
 
     private final QueryFavoriteUseCase queryFavoriteUseCase;
     private final QueryWeeklyChatRankUseCase queryWeeklyChatRankUseCase;
+    @Value("${nyang.local-auth.login-page-enabled:false}")
+    private boolean localTestLoginEnabled;
 
     @Operation(
             summary = "즐겨찾기 리스트 조회",
@@ -81,15 +85,30 @@ public class FavoriteController {
 
     private FavoriteListModel favoriteListModel(Pageable pageable, String nickName, Authentication authentication) {
         boolean isAdmin = isAdmin(authentication);
-        String searchNickName = isAdmin && nickName != null ? nickName : "";
+        String currentUserId = currentUserId(authentication);
         int pageSize = Math.min(Math.max(pageable.getPageSize(), 1), MAX_PAGE_SIZE);
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("favorite").descending());
+        if (!isAdmin && currentUserId != null) {
+            var myFavorite = queryFavoriteUseCase.getMyFavorite(currentUserId);
+            var favoriteList = new PageImpl<>(
+                    List.of(new QueryFavoriteUseCase.FavoriteSummaryResult(
+                            myFavorite.userId(),
+                            myFavorite.nickName(),
+                            myFavorite.favorite()
+                    )),
+                    PageRequest.of(0, pageSize, Sort.by("favorite").descending()),
+                    1
+            );
+            return new FavoriteListModel(favoriteList, PageRequest.of(0, pageSize), "", List.of(),
+                    currentUserId, myFavorite.nickName(), false);
+        }
+
+        String searchNickName = isAdmin && nickName != null ? nickName : "";
         var favoriteList =
                 StringUtils.isBlank(searchNickName) ? queryFavoriteUseCase.getList(page) : queryFavoriteUseCase.getByNickName(page, searchNickName);
         List<WeeklyChatRankView> weeklyChatRanks = queryWeeklyChatRankUseCase.getWeeklyRanks(WEEKLY_CHAT_RANK_LIMIT).stream()
                 .map(WeeklyChatRankView::from)
                 .toList();
-        String currentUserId = currentUserId(authentication);
         String currentNickName = currentUserId == null
                 ? null
                 : queryFavoriteUseCase.getCurrentNickName(currentUserId).orElse(null);
@@ -103,6 +122,7 @@ public class FavoriteController {
         modelAndView.addObject("currentUserId", favoriteListModel.currentUserId());
         modelAndView.addObject("currentNickName", favoriteListModel.currentNickName());
         modelAndView.addObject("isAdmin", favoriteListModel.isAdmin());
+        modelAndView.addObject("localTestLoginEnabled", localTestLoginEnabled);
     }
 
     private List<FavoriteHistoryView> favoriteHistories(String userId, int limit) {
