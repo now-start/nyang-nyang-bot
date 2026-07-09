@@ -230,6 +230,75 @@
     color: #ffffff !important;
 }
 
+/* 주간 채팅 순위 — 랭킹 칩만 흐르는 티커 */
+.weekly-rank-ticker {
+    position: relative;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+
+.weekly-rank-ticker:focus-visible {
+    outline: 1px solid #00ffa3;
+    outline-offset: 4px;
+    border-radius: 0.75rem;
+}
+
+.weekly-rank-track {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    animation: weekly-rank-scroll 34s linear infinite;
+    will-change: transform;
+}
+
+.weekly-rank-ticker:hover .weekly-rank-track,
+.weekly-rank-ticker:focus-within .weekly-rank-track {
+    animation-play-state: paused;
+}
+
+.weekly-rank-list {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0 0.5rem 0 0;
+    margin: 0;
+    list-style: none;
+}
+
+.weekly-rank-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    white-space: nowrap;
+}
+
+@keyframes weekly-rank-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .weekly-rank-ticker {
+        overflow-x: auto;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .weekly-rank-track {
+        animation: none;
+    }
+
+    .weekly-rank-list-clone {
+        display: none;
+    }
+}
+
 /* 페이지네이션 — 정사각 버튼, 현재 페이지만 green fill */
 .pagination {
     --bs-pagination-bg: transparent;

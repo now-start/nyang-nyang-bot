@@ -48,6 +48,10 @@ class FavoriteListTemplateTest {
         then(html).containsSubsequence("호감도 목록", "출석 체크", "명령어 관리", "룰렛 관리", "오버레이 토큰");
         then(html).contains("BETA");
         then(html).contains("nav-beta-badge");
+        then(html).contains("weekly-rank-ticker");
+        then(html).contains("weekly-rank-track");
+        then(html).contains("weekly-rank-list-clone");
+        then(html).contains("aria-hidden=\"true\"");
         then(html).contains("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css");
         then(html).contains("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js");
         then(html).contains("https://unpkg.com/htmx.org@2.0.4");
@@ -153,6 +157,7 @@ class FavoriteListTemplateTest {
         then(html).contains("유저1");
         then(html).doesNotContain("유저2");
         then(html).contains("주간 채팅 순위 TOP 10");
+        then(html).contains("weekly-rank-ticker");
         then(html).contains("hx-get=\"/favorite/history?userId=user1");
         then(html).doesNotContain("hx-get=\"/favorite/history?userId=user2");
         then(html).doesNotContain("관리자 메뉴");

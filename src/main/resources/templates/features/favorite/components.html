@@ -82,13 +82,26 @@
     <section aria-labelledby="weekly-rank-heading" class="card">
         <div class="card-body py-3">
             <h2 class="small text-secondary fw-normal mb-2" id="weekly-rank-heading">주간 채팅 순위 TOP 10</h2>
-            <ol class="list-unstyled d-flex flex-wrap gap-2 mb-0"
-                th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
-                <li class="badge rounded-pill tabular-nums"
-                    th:classappend="${rank.rank == 1} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
-                    th:each="rank : ${weeklyChatRanks}"
-                    th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</li>
-            </ol>
+            <div aria-label="주간 채팅 순위 티커"
+                 class="weekly-rank-ticker"
+                 role="group"
+                 tabindex="0"
+                 th:if="${weeklyChatRanks != null and !#lists.isEmpty(weeklyChatRanks)}">
+                <div class="weekly-rank-track">
+                    <ol class="weekly-rank-list">
+                        <li class="weekly-rank-chip badge rounded-pill tabular-nums"
+                            th:classappend="${rank.rank == 1 or (currentNickName != null and rank.nickname == currentNickName)} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
+                            th:each="rank : ${weeklyChatRanks}"
+                            th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</li>
+                    </ol>
+                    <ol aria-hidden="true" class="weekly-rank-list weekly-rank-list-clone">
+                        <li class="weekly-rank-chip badge rounded-pill tabular-nums"
+                            th:classappend="${rank.rank == 1 or (currentNickName != null and rank.nickname == currentNickName)} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
+                            th:each="rank : ${weeklyChatRanks}"
+                            th:text="${rank.rank + '위 ' + rank.nickname + ' · ' + rank.chatCount + '회'}">1위 치즈냥 · 10회</li>
+                    </ol>
+                </div>
+            </div>
             <div class="fs-6 text-secondary"
                  th:if="${weeklyChatRanks == null or #lists.isEmpty(weeklyChatRanks)}">이번 주 채팅 기록 없음</div>
         </div>
