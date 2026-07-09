@@ -160,6 +160,36 @@ class ChatServiceTest {
         BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("치즈냥 hello 123"));
     }
 
+    @Test
+    void call_ShouldRenderTextCommandWithSenderIdWhenProfileMissing() throws Exception {
+        // 준비
+        given(commandPort.findActiveByTrigger("!점수"))
+                .willReturn(Optional.of(command(
+                        20L,
+                        CommandType.TEXT,
+                        "!점수",
+                        null,
+                        "{nickname} {favorite}",
+                        0
+                )));
+        given(favoriteQueryPort.getOrCreate("user-1", "user-1"))
+                .willReturn(new SummaryResult("user-1", "user-1", 123));
+        ChatEventPayload chatDto = new ChatEventPayload(
+                "channel-1",
+                "user-1",
+                null,
+                "!점수",
+                null,
+                1711111111L
+        );
+
+        // 실행
+        chatService.call(objectMapper.writeValueAsString(chatDto));
+
+        // 검증
+        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("user-1 123"));
+    }
+
     private CommandRecord command(
             Long id,
             CommandType type,

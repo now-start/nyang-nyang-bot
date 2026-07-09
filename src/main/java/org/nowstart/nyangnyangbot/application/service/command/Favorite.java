@@ -8,6 +8,7 @@ import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.Cha
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
+import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +28,16 @@ public class Favorite implements CommandHandler {
 
     @Override
     public void run(ChatEventPayload chat) {
-        SummaryResult favorite = favoriteQueryPort.getOrCreate(chat.senderChannelId(), chat.profile().nickname());
+        if (!ChatEventSupport.hasSenderChannelId(chat)) {
+            return;
+        }
+        String userId = ChatEventSupport.senderChannelId(chat);
+        String displayName = ChatEventSupport.displayName(chat);
+        SummaryResult favorite = favoriteQueryPort.getOrCreate(userId, displayName);
 
         log.info("[FAVORITE] : {}, {}", favorite.favorite(), chat);
         chzzkClientPort.sendMessage(new MessageCommand(
-                chat.profile().nickname() + "님의 호감도는 " + favorite.favorite() + " 입니다.💛"
+                displayName + "님의 호감도는 " + favorite.favorite() + " 입니다.💛"
         ));
     }
 }

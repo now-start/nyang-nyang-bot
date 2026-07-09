@@ -15,10 +15,11 @@ import org.springframework.stereotype.Component;
 public class AuthorizationPersistenceAdapter implements AuthorizationPort {
 
     private final AuthorizationRepository authorizationRepository;
+    private final AuthorizationPersistenceMapper mapper;
 
     @Override
     public Optional<AuthorizationAccountResult> findById(String channelId) {
-        return authorizationRepository.findById(channelId).map(this::toModel);
+        return authorizationRepository.findById(channelId).map(mapper::accountResult);
     }
 
     @Override
@@ -35,14 +36,14 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                         .scope(authorization.scope())
                         .admin(false)
                         .build()));
-        return toModel(saved);
+        return mapper.accountResult(saved);
     }
 
     @Override
     public AuthorizationAccountResult updateToken(String channelId, UserResult user, AuthorizationToken authorization) {
         AuthorizationAccount entity = authorizationRepository.findById(channelId).orElseThrow();
         update(entity, user, authorization);
-        return toModel(entity);
+        return mapper.accountResult(entity);
     }
 
     @Override
@@ -61,18 +62,4 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
         return entity;
     }
 
-    private AuthorizationAccountResult toModel(AuthorizationAccount entity) {
-        return new AuthorizationAccountResult(
-                entity.getChannelId(),
-                entity.getChannelName(),
-                entity.getAccessToken(),
-                entity.getRefreshToken(),
-                entity.getTokenType(),
-                entity.getExpiresIn(),
-                entity.getScope(),
-                entity.isAdmin(),
-                entity.getModifyDate(),
-                entity.getFavoriteHistoryLastSeenAt()
-        );
-    }
 }

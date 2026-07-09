@@ -50,6 +50,7 @@ class ArchitectureBoundaryTest {
                         "org.nowstart.nyangnyangbot.application.",
                         "org.nowstart.nyangnyangbot.adapter.",
                         "jakarta.persistence",
+                        "org.mapstruct.",
                         "org.springframework.",
                         "org.springframework.web"
                 ))
@@ -65,6 +66,7 @@ class ArchitectureBoundaryTest {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.adapter.",
+                        "org.mapstruct.",
                         "org.springframework.web.bind.annotation"
                 ))
                 .toList();
@@ -392,13 +394,16 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void mapperAndConverterClasses_ShouldNotExist() throws IOException {
+    void mapperClasses_ShouldOnlyLiveInOutboundAdapters() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT)
                 .filter(path -> {
                     String fileName = path.getFileName().toString();
-                    return fileName.endsWith("Mapper.java")
-                            || fileName.endsWith("Converter.java")
+                    if (fileName.endsWith("Mapper.java")) {
+                        return !path.toString().contains("adapter\\out\\")
+                                && !path.toString().contains("adapter/out/");
+                    }
+                    return fileName.endsWith("Converter.java")
                             || fileName.endsWith("Assembler.java")
                             || fileName.endsWith("Translator.java");
                 })

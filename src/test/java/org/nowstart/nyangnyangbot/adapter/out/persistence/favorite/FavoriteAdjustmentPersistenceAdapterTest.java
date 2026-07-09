@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,7 +24,10 @@ class FavoriteAdjustmentPersistenceAdapterTest {
     @Test
     void findAndSave_ShouldMapAdjustmentOptions() {
         // 준비
-        FavoriteAdjustmentPersistenceAdapter adapter = new FavoriteAdjustmentPersistenceAdapter(favoriteAdjustmentRepository);
+        FavoriteAdjustmentPersistenceAdapter adapter = new FavoriteAdjustmentPersistenceAdapter(
+                favoriteAdjustmentRepository,
+                Mappers.getMapper(FavoriteAdjustmentPersistenceMapper.class)
+        );
         FavoriteAdjustment option = option(1L, 10, "보너스");
         given(favoriteAdjustmentRepository.findAll()).willReturn(List.of(option));
         given(favoriteAdjustmentRepository.save(any(FavoriteAdjustment.class))).willReturn(option);

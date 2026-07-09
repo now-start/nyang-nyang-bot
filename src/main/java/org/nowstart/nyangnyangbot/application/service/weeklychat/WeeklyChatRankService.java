@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.application.service.weeklychat;
 
-import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -13,6 +12,7 @@ import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyCha
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
+import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,18 +24,19 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
 
     @Override
     public synchronized void recordChat(ChatEventPayload chat) {
-        if (chat == null || StringUtils.isBlank(chat.senderChannelId())) {
+        if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
         }
 
-        String nickName = resolveNickname(chat);
+        String userId = ChatEventSupport.senderChannelId(chat);
+        String nickName = ChatEventSupport.displayName(chat);
         LocalDate weekStartDate = currentWeekStartDate();
-        WeeklyChatRankRecordResult existing = weeklyChatRankPort.findByWeekStartDateAndUserId(weekStartDate, chat.senderChannelId())
-                .orElse(new WeeklyChatRankRecordResult(null, weekStartDate, chat.senderChannelId(), nickName, 0L));
+        WeeklyChatRankRecordResult existing = weeklyChatRankPort.findByWeekStartDateAndUserId(weekStartDate, userId)
+                .orElse(new WeeklyChatRankRecordResult(null, weekStartDate, userId, nickName, 0L));
         weeklyChatRankPort.save(new WeeklyChatRankRecordResult(
                 existing.id(),
                 weekStartDate,
-                chat.senderChannelId(),
+                userId,
                 nickName,
                 Objects.requireNonNullElse(existing.chatCount(), 0L) + 1L
         ));
@@ -54,10 +55,4 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
         return currentDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
-    private String resolveNickname(ChatEventPayload chat) {
-        if (chat.profile() != null && !StringUtils.isBlank(chat.profile().nickname())) {
-            return chat.profile().nickname();
-        }
-        return chat.senderChannelId();
-    }
 }

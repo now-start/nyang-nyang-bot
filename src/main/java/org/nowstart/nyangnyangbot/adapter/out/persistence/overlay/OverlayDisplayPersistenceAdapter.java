@@ -22,6 +22,8 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
     private final OverlayDisplayEventRepository overlayDisplayEventRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final OverlayDisplayPersistenceMapper mapper;
+    private final org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceMapper rouletteMapper;
 
     @Override
     public void enqueueRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
@@ -81,38 +83,8 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
         RouletteEvent event = displayEvent.getRouletteEvent();
         List<RoundResult> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
                 .stream()
-                .map(this::toRound)
+                .map(rouletteMapper::roundResult)
                 .toList();
-        return new DisplayEventResult(
-                displayEvent.getId(),
-                event.getId(),
-                event.getNickNameSnapshot(),
-                event.getRoundCount(),
-                displayEvent.getExpiresAt(),
-                rounds
-        );
-    }
-
-    private RoundResult toRound(RouletteRoundResult entity) {
-        RouletteEvent event = entity.getRouletteEvent();
-        return new RoundResult(
-                entity.getId(),
-                event == null ? null : event.getId(),
-                event == null ? null : event.getDonationEventId(),
-                event == null ? null : event.getUserId(),
-                event == null ? null : event.getNickNameSnapshot(),
-                entity.getRoundNo(),
-                entity.getItemLabel(),
-                entity.getProbabilityBasisPoints(),
-                entity.isLosingItem(),
-                entity.getRewardType(),
-                entity.getConversionMode(),
-                entity.getExchangeFavoriteValue(),
-                entity.getStatus(),
-                entity.getLedgerId(),
-                entity.getUserUpboId(),
-                entity.getFailureReason(),
-                entity.getTicket()
-        );
+        return mapper.displayEventResult(displayEvent, rounds);
     }
 }

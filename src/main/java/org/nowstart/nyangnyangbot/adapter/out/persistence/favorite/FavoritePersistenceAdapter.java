@@ -26,10 +26,11 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
+    private final FavoritePersistenceMapper mapper;
 
     @Override
     public Optional<FavoriteAccount> loadForUpdate(String userId) {
-        return favoriteRepository.findByIdForUpdate(userId).map(this::favoriteAccount);
+        return favoriteRepository.findByIdForUpdate(userId).map(mapper::favoriteAccount);
     }
 
     @Override
@@ -91,17 +92,17 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public Page<SummaryResult> findAll(org.springframework.data.domain.Pageable pageable) {
-        return favoriteRepository.findAll(pageable).map(this::toSummary);
+        return favoriteRepository.findAll(pageable).map(mapper::summaryResult);
     }
 
     @Override
     public Page<SummaryResult> findByNickNameContains(org.springframework.data.domain.Pageable pageable, String nickName) {
-        return favoriteRepository.findByNickNameContains(pageable, nickName).map(this::toSummary);
+        return favoriteRepository.findByNickNameContains(pageable, nickName).map(mapper::summaryResult);
     }
 
     @Override
     public Optional<SummaryResult> findById(String userId) {
-        return favoriteRepository.findById(userId).map(this::toSummary);
+        return favoriteRepository.findById(userId).map(mapper::summaryResult);
     }
 
     @Override
@@ -114,7 +115,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                                 .favorite(0)
                                 .build()
                 ));
-        return toSummary(entity);
+        return mapper.summaryResult(entity);
     }
 
     @Override
@@ -131,7 +132,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 )
                 .getContent()
                 .stream()
-                .map(this::toHistoryView)
+                .map(mapper::historyResult)
                 .toList();
     }
 
@@ -148,38 +149,6 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
     @Override
     public long countByFavoriteGreaterThan(Integer favorite) {
         return favoriteRepository.countByFavoriteGreaterThan(favorite == null ? 0 : favorite);
-    }
-
-    private FavoriteAccount favoriteAccount(
-            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
-    ) {
-        return FavoriteAccount.of(entity.getUserId(), entity.getNickName(), entity.getFavorite());
-    }
-
-    private SummaryResult toSummary(
-            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
-    ) {
-        return new SummaryResult(entity.getUserId(), entity.getNickName(), entity.getFavorite());
-    }
-
-    private HistoryResult toHistoryView(FavoriteHistory entity) {
-        Integer balanceAfter = entity.getBalanceAfter() == null ? entity.getFavorite() : entity.getBalanceAfter();
-        String publicDescription = entity.getPublicDescription() == null ? entity.getHistory() : entity.getPublicDescription();
-        String channelId = entity.getFavoriteAccount() == null ? null : entity.getFavoriteAccount().getUserId();
-        return new HistoryResult(
-                entity.getId(),
-                channelId,
-                entity.getNickNameSnapshot(),
-                entity.getDelta(),
-                balanceAfter,
-                entity.getSourceType(),
-                entity.getDisplayCategory(),
-                publicDescription,
-                entity.getCorrectionOfLedgerId() != null,
-                entity.getFavorite(),
-                entity.getHistory(),
-                entity.getCreateDate()
-        );
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {

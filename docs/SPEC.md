@@ -119,6 +119,8 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 - Service는 유스케이스 규칙을 적용한다.
 - Repository/JPA 세부사항은 adapter 밖으로 새지 않는다.
 - 도메인 정책은 테스트 가능한 작은 클래스로 둔다.
+- Bean Validation은 유스케이스 command의 공통 입력 검증에 사용하고, 타입별 도메인 규칙은 service/domain 정책에 둔다.
+- MapStruct mapper는 adapter/out 매핑에만 둔다. domain/application 레이어는 MapStruct에 의존하지 않는다.
 
 ## Local Data
 

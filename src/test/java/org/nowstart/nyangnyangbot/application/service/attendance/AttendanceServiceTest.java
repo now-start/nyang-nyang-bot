@@ -37,15 +37,16 @@ class AttendanceServiceTest {
         attendanceService.recordChatUser(new ChatEventPayload("channel", " ", profile("공백"), "hi", null, 1L));
         attendanceService.recordChatUser(chat("user-1", "치즈냥"));
         attendanceService.recordChatUser(chat("user-2", "후발냥"));
+        attendanceService.recordChatUser(new ChatEventPayload("channel", "user-3", null, "hi", null, 1L));
 
         // 실행
         List<AttendanceUserSnapshot> result = attendanceService.getActiveUsers();
 
         // 검증
         then(result).extracting(AttendanceUserSnapshot::userId)
-                .containsExactlyInAnyOrder("user-2", "user-1");
+                .containsExactlyInAnyOrder("user-3", "user-2", "user-1");
         then(result).extracting(AttendanceUserSnapshot::nickName)
-                .containsExactlyInAnyOrder("후발냥", "치즈냥");
+                .containsExactlyInAnyOrder("user-3", "후발냥", "치즈냥");
     }
 
     @Test

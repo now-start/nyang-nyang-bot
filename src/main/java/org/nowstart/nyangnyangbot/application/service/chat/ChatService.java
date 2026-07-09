@@ -73,6 +73,9 @@ public class ChatService implements Emitter.Listener {
         log.info("[ChzzkChat] socket received: {}", chat);
         recordAttendanceChatUseCase.recordChatUser(chat);
         recordWeeklyChatUseCase.recordChat(chat);
+        if (!ChatEventSupport.hasSenderChannelId(chat)) {
+            return;
+        }
         String commandToken = firstToken(chat.content());
         if (commandToken == null || !commandToken.startsWith("!")) {
             return;
@@ -85,7 +88,8 @@ public class ChatService implements Emitter.Listener {
         if (command.requiredRole() != null && !"USER".equals(command.requiredRole())) {
             return;
         }
-        if (isInCooldown(chat.senderChannelId(), String.valueOf(command.id()), command.userCooldownSeconds())) {
+        String userId = ChatEventSupport.senderChannelId(chat);
+        if (isInCooldown(userId, String.valueOf(command.id()), command.userCooldownSeconds())) {
             return;
         }
         if (command.type() == CommandType.TEXT) {
@@ -115,13 +119,15 @@ public class ChatService implements Emitter.Listener {
 
     private void sendTextCommand(CommandRecord command, ChatEventPayload chat, String commandToken) {
         String[] tokens = tokens(chat.content());
+        String userId = ChatEventSupport.senderChannelId(chat);
+        String displayName = ChatEventSupport.displayName(chat);
         SummaryResult favorite = templateRenderer.usesVariable(command.messageTemplate(), "favorite")
-                ? favoriteQueryPort.getOrCreate(chat.senderChannelId(), chat.profile().nickname())
+                ? favoriteQueryPort.getOrCreate(userId, displayName)
                 : null;
         String message = templateRenderer.render(
                 command.messageTemplate(),
                 new TemplateContext(
-                        chat.profile().nickname(),
+                        displayName,
                         commandToken,
                         args(tokens),
                         tokens.length > 1 ? tokens[1] : "",

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,7 +26,7 @@ class AuthorizationPersistenceAdapterTest {
     @Test
     void findById_ShouldMapAuthorization() {
         // 준비
-        AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
+        AuthorizationPersistenceAdapter adapter = adapter();
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(entity("channel-1")));
 
         // 실행
@@ -40,7 +41,7 @@ class AuthorizationPersistenceAdapterTest {
     @Test
     void saveOrUpdate_ShouldCreateNewAuthorizationWhenMissing() {
         // 준비
-        AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
+        AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount saved = entity("channel-1");
         AuthorizationToken token = token("access", "refresh");
         UserResult user = new UserResult("channel-1", "치즈냥", "ACTIVE");
@@ -58,7 +59,7 @@ class AuthorizationPersistenceAdapterTest {
     @Test
     void saveOrUpdateAndUpdateToken_ShouldMutateExistingEntity() {
         // 준비
-        AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
+        AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount existing = entity("channel-1");
         AuthorizationToken updatedToken = token("new-access", "new-refresh");
         UserResult user = new UserResult("channel-1", "변경", "ACTIVE");
@@ -79,7 +80,7 @@ class AuthorizationPersistenceAdapterTest {
     @Test
     void markFavoriteHistorySeen_ShouldUpdateOnlyWhenEntityExists() {
         // 준비
-        AuthorizationPersistenceAdapter adapter = new AuthorizationPersistenceAdapter(authorizationRepository);
+        AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount existing = entity("channel-1");
         LocalDateTime seenAt = LocalDateTime.of(2026, 5, 16, 23, 40);
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
@@ -105,6 +106,13 @@ class AuthorizationPersistenceAdapterTest {
                 .admin(true)
                 .favoriteHistoryLastSeenAt(null)
                 .build();
+    }
+
+    private AuthorizationPersistenceAdapter adapter() {
+        return new AuthorizationPersistenceAdapter(
+                authorizationRepository,
+                Mappers.getMapper(AuthorizationPersistenceMapper.class)
+        );
     }
 
     private AuthorizationToken token(String accessToken, String refreshToken) {

@@ -13,6 +13,7 @@ import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanc
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.attendance.AttendanceUserState;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
@@ -48,11 +49,11 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
         if (!collecting) {
             return;
         }
-        String userId = chat.senderChannelId();
-        if (StringUtils.isBlank(userId)) {
+        if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
         }
-        String nickName = chat.profile().nickname();
+        String userId = ChatEventSupport.senderChannelId(chat);
+        String nickName = ChatEventSupport.displayName(chat);
         long now = System.currentTimeMillis();
         presence.compute(userId, (key, existing) -> {
             if (existing == null) {

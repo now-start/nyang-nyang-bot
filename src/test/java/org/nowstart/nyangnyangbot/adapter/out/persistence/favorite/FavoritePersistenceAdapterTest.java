@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
@@ -212,7 +213,11 @@ class FavoritePersistenceAdapterTest {
     }
 
     private FavoritePersistenceAdapter adapter() {
-        return new FavoritePersistenceAdapter(favoriteRepository, favoriteHistoryRepository);
+        return new FavoritePersistenceAdapter(
+                favoriteRepository,
+                favoriteHistoryRepository,
+                Mappers.getMapper(FavoritePersistenceMapper.class)
+        );
     }
 
     private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {

@@ -119,6 +119,32 @@ class WeeklyChatRankServiceTest {
     }
 
     @Test
+    void recordChat_ShouldUseUserId_WhenProfileMissing() {
+        // 준비
+        LocalDate now = LocalDate.of(2026, 3, 26);
+        ChatEventPayload chatDto = new ChatEventPayload(
+                "channel-1",
+                "user-43",
+                null,
+                "네번째",
+                null,
+                0L
+        );
+        given(weeklyChatRankService.currentDate()).willReturn(now);
+        given(weeklyChatRankPort.findByWeekStartDateAndUserId(LocalDate.of(2026, 3, 23), "user-43"))
+                .willReturn(Optional.empty());
+
+        // 실행
+        weeklyChatRankService.recordChat(chatDto);
+
+        // 검증
+        BDDMockito.then(weeklyChatRankPort).should().save(argThat(entity ->
+                "user-43".equals(entity.nickName())
+                        && Long.valueOf(1L).equals(entity.chatCount())
+        ));
+    }
+
+    @Test
     void getWeeklyRanks_ShouldMapRepositoryResultsToRankedDtos() {
         // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);

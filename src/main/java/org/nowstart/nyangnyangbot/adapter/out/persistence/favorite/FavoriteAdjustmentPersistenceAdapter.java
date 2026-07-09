@@ -15,12 +15,13 @@ import org.springframework.stereotype.Component;
 public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentPort {
 
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
+    private final FavoriteAdjustmentPersistenceMapper mapper;
 
     @Override
     @Cacheable(cacheNames = CacheNames.FAVORITE_ADJUSTMENTS)
     public List<OptionResult> findAll() {
         return favoriteAdjustmentRepository.findAll().stream()
-                .map(this::toModel)
+                .map(mapper::optionResult)
                 .toList();
     }
 
@@ -31,10 +32,6 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
                 .amount(amount)
                 .label(label)
                 .build());
-        return toModel(saved);
-    }
-
-    private OptionResult toModel(FavoriteAdjustment entity) {
-        return new OptionResult(entity.getId(), entity.getAmount(), entity.getLabel());
+        return mapper.optionResult(saved);
     }
 }

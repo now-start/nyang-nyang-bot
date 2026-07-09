@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.Cha
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +28,15 @@ public class RouletteResult implements CommandHandler {
 
     @Override
     public void run(ChatEventPayload chat) {
-        List<RoundResult> rounds = roulettePort.findTopRoundsByUserId(chat.senderChannelId(), 5);
+        if (!ChatEventSupport.hasSenderChannelId(chat)) {
+            return;
+        }
+        String userId = ChatEventSupport.senderChannelId(chat);
+        String displayName = ChatEventSupport.displayName(chat);
+        List<RoundResult> rounds = roulettePort.findTopRoundsByUserId(userId, 5);
         if (rounds.isEmpty()) {
             chzzkClientPort.sendMessage(new MessageCommand(
-                    chat.profile().nickname() + "님의 최근 룰렛 결과가 없습니다."
+                    displayName + "님의 최근 룰렛 결과가 없습니다."
             ));
             return;
         }
@@ -38,7 +44,7 @@ public class RouletteResult implements CommandHandler {
                 .map(round -> round.roundNo() + "회차 " + round.itemLabel())
                 .collect(Collectors.joining(", "));
         chzzkClientPort.sendMessage(new MessageCommand(
-                chat.profile().nickname() + "님의 최근 룰렛 결과: " + result
+                displayName + "님의 최근 룰렛 결과: " + result
         ));
     }
 }

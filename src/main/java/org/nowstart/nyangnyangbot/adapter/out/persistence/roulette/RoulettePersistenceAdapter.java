@@ -31,6 +31,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     private final RouletteItemRepository rouletteItemRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final RoulettePersistenceMapper mapper;
 
     @Override
     @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true)
@@ -43,7 +44,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .version(0)
                 .highRoundThreshold(highRoundThreshold)
                 .build());
-        return toModel(saved);
+        return mapper.tableResult(saved);
     }
 
     @Override
@@ -74,28 +75,28 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .active(true)
                 .displayOrder(displayOrder)
                 .build());
-        return toModel(saved);
+        return mapper.itemResult(saved);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_TABLES)
     public List<TableResult> findTablesOrderByIdDesc() {
         return rouletteTableRepository.findAllByOrderByIdDesc().stream()
-                .map(this::toModel)
+                .map(mapper::tableResult)
                 .toList();
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, key = "#tableId", unless = "#result == null")
     public Optional<TableResult> findTableById(Long tableId) {
-        return rouletteTableRepository.findById(tableId).map(this::toModel);
+        return rouletteTableRepository.findById(tableId).map(mapper::tableResult);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(tableId).stream()
-                .map(this::toModel)
+                .map(mapper::itemResult)
                 .toList();
     }
 
@@ -103,14 +104,14 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     @Cacheable(cacheNames = CacheNames.ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findActiveItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(tableId).stream()
-                .map(this::toModel)
+                .map(mapper::itemResult)
                 .toList();
     }
 
     @Override
     public List<TableResult> findActiveTables() {
         return rouletteTableRepository.findByActiveTrue().stream()
-                .map(this::toModel)
+                .map(mapper::tableResult)
                 .toList();
     }
 
@@ -128,9 +129,9 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .findAny()
                 .ifPresent(activeTable -> {
                     throw new IllegalStateException("another roulette table is already active");
-                });
+        });
         table.activate();
-        return toModel(rouletteTableRepository.save(table));
+        return mapper.tableResult(rouletteTableRepository.save(table));
     }
 
     @Override
@@ -143,13 +144,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         RouletteTable table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         table.deactivate();
-        return toModel(table);
+        return mapper.tableResult(table);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_LATEST_ACTIVE_TABLE, unless = "#result == null")
     public Optional<TableResult> findLatestActiveTable() {
-        return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(this::toModel);
+        return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(mapper::tableResult);
     }
 
     @Override
@@ -174,7 +175,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .itemsSnapshotJson(command.itemsSnapshotJson())
                 .status(command.status())
                 .build());
-        return toModel(saved);
+        return mapper.eventResult(saved);
     }
 
     @Override
@@ -195,34 +196,34 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                         .build())
                 .toList();
         return rouletteRoundResultRepository.saveAll(rounds).stream()
-                .map(this::toModel)
+                .map(mapper::roundResult)
                 .toList();
     }
 
     @Override
     public List<EventResult> findEventsByUserId(String userId) {
         return rouletteEventRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
-                .map(this::toModel)
+                .map(mapper::eventResult)
                 .toList();
     }
 
     @Override
     public Page<EventResult> findRecentEvents(Pageable pageable) {
         return rouletteEventRepository.findAllByOrderByCreateDateDesc(pageable)
-                .map(this::toModel);
+                .map(mapper::eventResult);
     }
 
     @Override
     public List<RoundResult> findRoundsByEventId(Long rouletteEventId) {
         return rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(rouletteEventId).stream()
-                .map(this::toModel)
+                .map(mapper::roundResult)
                 .toList();
     }
 
     @Override
     public List<RoundResult> findRoundsByUserId(String userId) {
         return rouletteRoundResultRepository.findByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
-                .map(this::toModel)
+                .map(mapper::roundResult)
                 .toList();
     }
 
@@ -230,13 +231,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     public List<RoundResult> findTopRoundsByUserId(String userId, int limit) {
         return rouletteRoundResultRepository.findTop5ByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
                 .limit(limit)
-                .map(this::toModel)
+                .map(mapper::roundResult)
                 .toList();
     }
 
     @Override
     public Optional<EventResult> findEventById(Long eventId) {
-        return rouletteEventRepository.findById(eventId).map(this::toModel);
+        return rouletteEventRepository.findById(eventId).map(mapper::eventResult);
     }
 
     @Override
@@ -249,7 +250,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
 
     @Override
     public Optional<RoundResult> findRoundById(Long roundId) {
-        return rouletteRoundResultRepository.findById(roundId).map(this::toModel);
+        return rouletteRoundResultRepository.findById(roundId).map(mapper::roundResult);
     }
 
     @Override
@@ -266,73 +267,4 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         round.markFailed(failureReason);
     }
 
-    private TableResult toModel(RouletteTable entity) {
-        return new TableResult(
-                entity.getId(),
-                entity.getTitle(),
-                entity.getCommand(),
-                entity.getPricePerRound(),
-                entity.isActive(),
-                entity.getVersion(),
-                entity.getHighRoundThreshold()
-        );
-    }
-
-    private ItemResult toModel(RouletteItem entity) {
-        Long tableId = entity.getRouletteTable() == null ? null : entity.getRouletteTable().getId();
-        return new ItemResult(
-                entity.getId(),
-                tableId,
-                entity.getLabel(),
-                entity.getProbabilityBasisPoints(),
-                entity.isLosingItem(),
-                entity.getRewardType(),
-                entity.getConversionMode(),
-                entity.getExchangeFavoriteValue(),
-                entity.isActive(),
-                entity.getDisplayOrder()
-        );
-    }
-
-    private EventResult toModel(RouletteEvent entity) {
-        return new EventResult(
-                entity.getId(),
-                entity.getDonationEventId(),
-                entity.getUserId(),
-                entity.getNickNameSnapshot(),
-                entity.getDonationAmount(),
-                entity.getDonationText(),
-                entity.getRouletteTableId(),
-                entity.getRouletteTableVersion(),
-                entity.getCommand(),
-                entity.getPricePerRound(),
-                entity.getRoundCount(),
-                entity.getItemsSnapshotJson(),
-                entity.getStatus(),
-                entity.getCreateDate()
-        );
-    }
-
-    private RoundResult toModel(RouletteRoundResult entity) {
-        RouletteEvent event = entity.getRouletteEvent();
-        return new RoundResult(
-                entity.getId(),
-                event == null ? null : event.getId(),
-                event == null ? null : event.getDonationEventId(),
-                event == null ? null : event.getUserId(),
-                event == null ? null : event.getNickNameSnapshot(),
-                entity.getRoundNo(),
-                entity.getItemLabel(),
-                entity.getProbabilityBasisPoints(),
-                entity.isLosingItem(),
-                entity.getRewardType(),
-                entity.getConversionMode(),
-                entity.getExchangeFavoriteValue(),
-                entity.getStatus(),
-                entity.getLedgerId(),
-                entity.getUserUpboId(),
-                entity.getFailureReason(),
-                entity.getTicket()
-        );
-    }
 }

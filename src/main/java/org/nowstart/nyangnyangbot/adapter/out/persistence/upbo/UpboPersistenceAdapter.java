@@ -22,12 +22,13 @@ public class UpboPersistenceAdapter implements UpboPort {
 
     private final UpboTemplateRepository upboTemplateRepository;
     private final UserUpboRepository userUpboRepository;
+    private final UpboPersistenceMapper mapper;
 
     @Override
     @Cacheable(cacheNames = CacheNames.UPBO_ACTIVE_TEMPLATES)
     public List<TemplateResult> findActiveTemplates() {
         return upboTemplateRepository.findByActiveTrueOrderByDisplayOrderAscIdAsc().stream()
-                .map(this::toModel)
+                .map(mapper::templateResult)
                 .toList();
     }
 
@@ -50,13 +51,13 @@ public class UpboPersistenceAdapter implements UpboPort {
                 .rewardType(rewardType)
                 .conversionMode(conversionMode)
                 .build());
-        return toModel(saved);
+        return mapper.templateResult(saved);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.UPBO_TEMPLATE_BY_ID, key = "#templateId", unless = "#result == null")
     public Optional<TemplateResult> findTemplateById(Long templateId) {
-        return upboTemplateRepository.findById(templateId).map(this::toModel);
+        return upboTemplateRepository.findById(templateId).map(mapper::templateResult);
     }
 
     @Override
@@ -79,54 +80,20 @@ public class UpboPersistenceAdapter implements UpboPort {
                 .privateMemo(command.privateMemo())
                 .actorId(command.actorId())
                 .build());
-        return toModel(saved);
+        return mapper.userResult(saved);
     }
 
     @Override
     public List<UserResult> findUserUpbos(String userId) {
         return userUpboRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
-                .map(this::toModel)
+                .map(mapper::userResult)
                 .toList();
     }
 
     @Override
     public List<UserResult> findUserUpbosByStatus(String userId, UpboStatus status) {
         return userUpboRepository.findByUserIdAndStatusOrderByCreateDateDesc(userId, status).stream()
-                .map(this::toModel)
+                .map(mapper::userResult)
                 .toList();
-    }
-
-    private TemplateResult toModel(UpboTemplate entity) {
-        return new TemplateResult(
-                entity.getId(),
-                entity.getLabel(),
-                entity.getDescription(),
-                entity.isActive(),
-                entity.getDisplayOrder(),
-                entity.getExchangeFavoriteValue(),
-                entity.getRewardType(),
-                entity.getConversionMode()
-        );
-    }
-
-    private UserResult toModel(UserUpbo entity) {
-        Long templateId = entity.getUpboTemplate() == null ? null : entity.getUpboTemplate().getId();
-        return new UserResult(
-                entity.getId(),
-                entity.getUserId(),
-                templateId,
-                entity.getNickNameSnapshot(),
-                entity.getLabel(),
-                entity.getStatus(),
-                entity.getExchangeFavoriteValue(),
-                entity.getRewardType(),
-                entity.getConversionMode(),
-                entity.getSourceType(),
-                entity.getLedgerId(),
-                entity.getPublicDescription(),
-                entity.getPrivateMemo(),
-                entity.getActorId(),
-                entity.getCreateDate()
-        );
     }
 }

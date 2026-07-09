@@ -10,11 +10,13 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
@@ -152,7 +154,9 @@ class OverlayDisplayPersistenceAdapterTest {
         return new OverlayDisplayPersistenceAdapter(
                 overlayDisplayEventRepository,
                 rouletteEventRepository,
-                rouletteRoundResultRepository
+                rouletteRoundResultRepository,
+                Mappers.getMapper(OverlayDisplayPersistenceMapper.class),
+                Mappers.getMapper(RoulettePersistenceMapper.class)
         );
     }
 

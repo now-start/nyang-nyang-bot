@@ -155,7 +155,9 @@ public class CommandService implements ManageCommandUseCase {
                 request.timerMinChatCount(),
                 request.requiredRole(),
                 request.userCooldownSeconds()
-        ).errors();
+        )
+                .withAdditionalErrors(useCaseValidator.errors(request))
+                .errors();
         return new ValidationResult(errors.isEmpty(), errors);
     }
 
@@ -173,7 +175,8 @@ public class CommandService implements ManageCommandUseCase {
                 request.timerMinChatCount(),
                 request.requiredRole(),
                 request.userCooldownSeconds()
-        );
+        )
+                .withAdditionalErrors(useCaseValidator.errors(request));
     }
 
     private ValidationState validationForUpdate(CommandRecord current, UpdateCommand request) {
@@ -223,7 +226,8 @@ public class CommandService implements ManageCommandUseCase {
                 merged.requiredRole(),
                 merged.userCooldownSeconds(),
                 errors
-        );
+        )
+                .withAdditionalErrors(useCaseValidator.errors(request));
     }
 
     private ValidationState validationForRequest(
@@ -494,6 +498,39 @@ public class CommandService implements ManageCommandUseCase {
             Integer userCooldownSeconds,
             List<String> errors
     ) {
+
+        private ValidationState withAdditionalErrors(List<String> additionalErrors) {
+            if (additionalErrors == null || additionalErrors.isEmpty()) {
+                return new ValidationState(
+                        type,
+                        trigger,
+                        actionKey,
+                        messageTemplate,
+                        timerIntervalMinutes,
+                        timerMinChatCount,
+                        requiredRole,
+                        userCooldownSeconds,
+                        distinct(errors)
+                );
+            }
+            List<String> merged = new ArrayList<>(additionalErrors);
+            merged.addAll(errors);
+            return new ValidationState(
+                    type,
+                    trigger,
+                    actionKey,
+                    messageTemplate,
+                    timerIntervalMinutes,
+                    timerMinChatCount,
+                    requiredRole,
+                    userCooldownSeconds,
+                    distinct(merged)
+            );
+        }
+
+        private static List<String> distinct(List<String> values) {
+            return values.stream().distinct().toList();
+        }
     }
 
     private record PreviewDefinition(

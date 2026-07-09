@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -130,7 +131,11 @@ class UpboPersistenceAdapterTest {
     }
 
     private UpboPersistenceAdapter adapter() {
-        return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository);
+        return new UpboPersistenceAdapter(
+                upboTemplateRepository,
+                userUpboRepository,
+                Mappers.getMapper(UpboPersistenceMapper.class)
+        );
     }
 
     private UpboTemplate template(Long id) {

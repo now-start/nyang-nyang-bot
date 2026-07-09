@@ -17,11 +17,12 @@ import org.springframework.stereotype.Component;
 public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
 
     private final WeeklyChatRankRepository weeklyChatRankRepository;
+    private final WeeklyChatRankPersistenceMapper mapper;
 
     @Override
     public Optional<WeeklyChatRankRecordResult> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId) {
         return weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, userId)
-                .map(this::toModel);
+                .map(mapper::recordResult);
     }
 
     @Override
@@ -33,7 +34,7 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
         entity.setUserId(record.userId());
         entity.setNickName(record.nickName());
         entity.setChatCount(record.chatCount());
-        return toModel(weeklyChatRankRepository.save(entity));
+        return mapper.recordResult(weeklyChatRankRepository.save(entity));
     }
 
     @Override
@@ -49,13 +50,4 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
         return ranks;
     }
 
-    private WeeklyChatRankRecordResult toModel(WeeklyChatRank entity) {
-        return new WeeklyChatRankRecordResult(
-                entity.getId(),
-                entity.getWeekStartDate(),
-                entity.getUserId(),
-                entity.getNickName(),
-                entity.getChatCount()
-        );
-    }
 }

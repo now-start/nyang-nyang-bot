@@ -18,39 +18,40 @@ import org.springframework.stereotype.Component;
 public class CommandPersistenceAdapter implements CommandPort {
 
     private final CommandRepository commandRepository;
+    private final CommandPersistenceMapper mapper;
 
     @Override
     public List<CommandRecord> findAllOrderByIdDesc() {
         return commandRepository.findAllByOrderByIdDesc().stream()
-                .map(this::commandRecord)
+                .map(mapper::commandRecord)
                 .toList();
     }
 
     @Override
     public Optional<CommandRecord> findById(Long commandId) {
-        return commandRepository.findById(commandId).map(this::commandRecord);
+        return commandRepository.findById(commandId).map(mapper::commandRecord);
     }
 
     @Override
     public Optional<CommandRecord> findByTrigger(String trigger) {
-        return commandRepository.findByTriggerToken(trigger).map(this::commandRecord);
+        return commandRepository.findByTriggerToken(trigger).map(mapper::commandRecord);
     }
 
     @Override
     public Optional<CommandRecord> findByActionKey(CommandActionKey actionKey) {
-        return commandRepository.findByActionKey(actionKey).map(this::commandRecord);
+        return commandRepository.findByActionKey(actionKey).map(mapper::commandRecord);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, key = "#trigger", unless = "#result == null")
     public Optional<CommandRecord> findActiveByTrigger(String trigger) {
-        return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(this::commandRecord);
+        return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(mapper::commandRecord);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, key = "#actionKey", unless = "#result == null")
     public Optional<CommandRecord> findActiveByActionKey(CommandActionKey actionKey) {
-        return commandRepository.findByActionKeyAndActiveTrue(actionKey).map(this::commandRecord);
+        return commandRepository.findByActionKeyAndActiveTrue(actionKey).map(mapper::commandRecord);
     }
 
     @Override
@@ -72,7 +73,7 @@ public class CommandPersistenceAdapter implements CommandPort {
                 .createdBy(data.createdBy())
                 .updatedBy(data.updatedBy())
                 .build());
-        return commandRecord(saved);
+        return mapper.commandRecord(saved);
     }
 
     @Override
@@ -93,25 +94,6 @@ public class CommandPersistenceAdapter implements CommandPort {
                 data.userCooldownSeconds(),
                 data.updatedBy()
         );
-        return commandRecord(command);
-    }
-
-    private CommandRecord commandRecord(Command entity) {
-        return new CommandRecord(
-                entity.getId(),
-                entity.getType(),
-                entity.getTriggerToken(),
-                entity.getActionKey(),
-                entity.getMessageTemplate(),
-                entity.getTimerIntervalMinutes(),
-                entity.getTimerMinChatCount(),
-                entity.isActive(),
-                entity.getRequiredRole(),
-                entity.getUserCooldownSeconds(),
-                entity.getCreatedBy(),
-                entity.getUpdatedBy(),
-                entity.getCreateDate(),
-                entity.getModifyDate()
-        );
+        return mapper.commandRecord(command);
     }
 }

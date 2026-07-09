@@ -10,14 +10,18 @@ import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
@@ -25,6 +29,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
@@ -327,21 +332,31 @@ class LocalCacheBehaviorTest {
     static class TestConfig {
 
         @Bean
-        CommandPort commandPort(CommandRepository commandRepository) {
-            return new CommandPersistenceAdapter(commandRepository);
+        CommandPort commandPort(
+                CommandRepository commandRepository,
+                CommandPersistenceMapper commandPersistenceMapper
+        ) {
+            return new CommandPersistenceAdapter(commandRepository, commandPersistenceMapper);
         }
 
         @Bean
-        FavoriteAdjustmentPort favoriteAdjustmentPort(FavoriteAdjustmentRepository favoriteAdjustmentRepository) {
-            return new FavoriteAdjustmentPersistenceAdapter(favoriteAdjustmentRepository);
+        FavoriteAdjustmentPort favoriteAdjustmentPort(
+                FavoriteAdjustmentRepository favoriteAdjustmentRepository,
+                FavoriteAdjustmentPersistenceMapper favoriteAdjustmentPersistenceMapper
+        ) {
+            return new FavoriteAdjustmentPersistenceAdapter(
+                    favoriteAdjustmentRepository,
+                    favoriteAdjustmentPersistenceMapper
+            );
         }
 
         @Bean
         UpboPort upboPort(
                 UpboTemplateRepository upboTemplateRepository,
-                UserUpboRepository userUpboRepository
+                UserUpboRepository userUpboRepository,
+                UpboPersistenceMapper upboPersistenceMapper
         ) {
-            return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository);
+            return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository, upboPersistenceMapper);
         }
 
         @Bean
@@ -349,14 +364,36 @@ class LocalCacheBehaviorTest {
                 RouletteTableRepository rouletteTableRepository,
                 RouletteItemRepository rouletteItemRepository,
                 RouletteEventRepository rouletteEventRepository,
-                RouletteRoundResultRepository rouletteRoundResultRepository
+                RouletteRoundResultRepository rouletteRoundResultRepository,
+                RoulettePersistenceMapper roulettePersistenceMapper
         ) {
             return new RoulettePersistenceAdapter(
                     rouletteTableRepository,
                     rouletteItemRepository,
                     rouletteEventRepository,
-                    rouletteRoundResultRepository
+                    rouletteRoundResultRepository,
+                    roulettePersistenceMapper
             );
+        }
+
+        @Bean
+        CommandPersistenceMapper commandPersistenceMapper() {
+            return Mappers.getMapper(CommandPersistenceMapper.class);
+        }
+
+        @Bean
+        FavoriteAdjustmentPersistenceMapper favoriteAdjustmentPersistenceMapper() {
+            return Mappers.getMapper(FavoriteAdjustmentPersistenceMapper.class);
+        }
+
+        @Bean
+        UpboPersistenceMapper upboPersistenceMapper() {
+            return Mappers.getMapper(UpboPersistenceMapper.class);
+        }
+
+        @Bean
+        RoulettePersistenceMapper roulettePersistenceMapper() {
+            return Mappers.getMapper(RoulettePersistenceMapper.class);
         }
 
         @Bean

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,7 +28,7 @@ class WeeklyChatRankPersistenceAdapterTest {
     @Test
     void findAndSave_ShouldMapWeeklyRankRecord() {
         // 준비
-        WeeklyChatRankPersistenceAdapter adapter = new WeeklyChatRankPersistenceAdapter(weeklyChatRankRepository);
+        WeeklyChatRankPersistenceAdapter adapter = adapter();
         LocalDate weekStartDate = LocalDate.of(2026, 5, 11);
         WeeklyChatRank entity = rank(1L, weekStartDate, "user-1", "치즈냥", 3L);
         given(weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, "user-1"))
@@ -54,7 +55,7 @@ class WeeklyChatRankPersistenceAdapterTest {
     @Test
     void save_ShouldCreateEntityWhenRecordHasNoIdOrExistingEntityIsMissing() {
         // 준비
-        WeeklyChatRankPersistenceAdapter adapter = new WeeklyChatRankPersistenceAdapter(weeklyChatRankRepository);
+        WeeklyChatRankPersistenceAdapter adapter = adapter();
         LocalDate weekStartDate = LocalDate.of(2026, 5, 11);
         WeeklyChatRank saved = rank(2L, weekStartDate, "user-2", "새냥", 7L);
         given(weeklyChatRankRepository.findById(404L)).willReturn(Optional.empty());
@@ -84,7 +85,7 @@ class WeeklyChatRankPersistenceAdapterTest {
     @Test
     void findWeeklyRanks_ShouldAssignRankAndFallbackNullChatCount() {
         // 준비
-        WeeklyChatRankPersistenceAdapter adapter = new WeeklyChatRankPersistenceAdapter(weeklyChatRankRepository);
+        WeeklyChatRankPersistenceAdapter adapter = adapter();
         LocalDate weekStartDate = LocalDate.of(2026, 5, 11);
         given(weeklyChatRankRepository.findWeeklyRanks(weekStartDate, PageRequest.of(0, 2)))
                 .willReturn(List.of(
@@ -117,6 +118,13 @@ class WeeklyChatRankPersistenceAdapterTest {
                 .nickName(nickName)
                 .chatCount(chatCount)
                 .build();
+    }
+
+    private WeeklyChatRankPersistenceAdapter adapter() {
+        return new WeeklyChatRankPersistenceAdapter(
+                weeklyChatRankRepository,
+                Mappers.getMapper(WeeklyChatRankPersistenceMapper.class)
+        );
     }
 
     private WeeklyChatRankRepository.WeeklyChatRankProjection projection(String nickname, Long chatCount) {
