@@ -3,6 +3,11 @@ package org.nowstart.nyangnyangbot.adapter.in.web.favorite;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +18,7 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdj
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,10 +60,13 @@ public class FavoriteAdjustmentController {
     @Operation(summary = "호감도 조정 항목 추가")
     @PostMapping
     public String createAdjustment(
-            @ModelAttribute FavoriteAdjustmentCreateForm form,
+            @Valid @ModelAttribute FavoriteAdjustmentCreateForm form,
+            BindingResult bindingResult,
             Model model
     ) {
-        manageFavoriteAdjustmentUseCase.createAdjustment(form.toCreateAdjustmentCommand());
+        if (!bindingResult.hasErrors()) {
+            manageFavoriteAdjustmentUseCase.createAdjustment(form.toCreateAdjustmentCommand());
+        }
         addAdjustments(model);
         return ADJUSTMENT_LIST_FRAGMENT;
     }
@@ -65,10 +74,16 @@ public class FavoriteAdjustmentController {
     @Operation(summary = "호감도 조정 적용")
     @PostMapping("/apply")
     public String applyAdjustments(
-            @ModelAttribute FavoriteAdjustmentApplyForm form,
+            @Valid @ModelAttribute FavoriteAdjustmentApplyForm form,
+            BindingResult bindingResult,
             HttpServletResponse response,
             Model model
     ) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("message", "업보 적용 실패");
+            model.addAttribute("tone", "danger");
+            return FEEDBACK_FRAGMENT;
+        }
         try {
             manageFavoriteAdjustmentUseCase.applyAdjustments(form.toApplyAdjustmentCommand());
             model.addAttribute("message", "업보 적용 완료");
@@ -97,7 +112,10 @@ public class FavoriteAdjustmentController {
     }
 
     public record FavoriteAdjustmentCreateForm(
+            @NotNull(message = "amount is required")
             Integer amount,
+            @NotBlank(message = "label is required")
+            @Size(max = 255, message = "label length must be 255 or less")
             String label
     ) {
 
@@ -107,9 +125,11 @@ public class FavoriteAdjustmentController {
     }
 
     public record FavoriteAdjustmentApplyForm(
+            @NotBlank(message = "userId is required")
             String userId,
-            List<Long> adjustmentIds,
+            List<@Positive(message = "adjustmentIds must be positive") Long> adjustmentIds,
             Integer manualAmount,
+            @Size(max = 255, message = "manualHistory length must be 255 or less")
             String manualHistory
     ) {
 

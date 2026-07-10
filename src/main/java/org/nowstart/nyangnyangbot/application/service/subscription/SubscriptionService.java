@@ -1,29 +1,33 @@
 package org.nowstart.nyangnyangbot.application.service.subscription;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.socket.emitter.Emitter;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SubscriptionEventPayload;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SubscriptionReceived;
 import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort;
+import org.nowstart.nyangnyangbot.application.port.out.subscription.SubscriptionPort.SaveSubscriptionCommand;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class SubscriptionService implements Emitter.Listener {
+public class SubscriptionService {
 
-    private final ObjectMapper objectMapper;
     private final SubscriptionPort subscriptionPort;
 
-    @Override
-    @SneakyThrows
-    public void call(Object... objects) {
-        SubscriptionEventPayload subscription = objectMapper.readValue((String) objects[0], SubscriptionEventPayload.class);
+    public void handle(SubscriptionReceived subscription) {
+        if (subscription == null) {
+            return;
+        }
         log.info("[ChzzkSubscription] socket received: {}", subscription);
-        subscriptionPort.save(subscription);
+        subscriptionPort.save(new SaveSubscriptionCommand(
+                subscription.channelId(),
+                subscription.subscriberChannelId(),
+                subscription.subscriberNickname(),
+                subscription.tierNo(),
+                subscription.tierName(),
+                subscription.month()
+        ));
     }
 }

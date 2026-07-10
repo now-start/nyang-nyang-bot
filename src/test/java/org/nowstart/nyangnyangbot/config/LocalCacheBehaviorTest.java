@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -372,7 +373,8 @@ class LocalCacheBehaviorTest {
                     rouletteItemRepository,
                     rouletteEventRepository,
                     rouletteRoundResultRepository,
-                    roulettePersistenceMapper
+                    roulettePersistenceMapper,
+                    new ObjectMapper()
             );
         }
 

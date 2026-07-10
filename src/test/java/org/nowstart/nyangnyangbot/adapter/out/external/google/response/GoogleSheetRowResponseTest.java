@@ -13,29 +13,29 @@ class GoogleSheetRowResponseTest {
     @DisplayName("즐겨찾기 값이 숫자인 경우 정상적으로 DTO를 반환한다")
     void fromRow_ShouldReturnDto_WhenFavoriteIsNumeric() {
         // 실행
-        GoogleSheetRow dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", 12)).toGoogleSheetRow();
+        var dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", 12)).toGoogleSheetRow();
 
         // 검증
-        then(dto).isEqualTo(new GoogleSheetRow("닉네임", "user-1", 12));
+        then(dto).contains(new GoogleSheetRow("닉네임", "user-1", 12));
     }
 
     @Test
-    @DisplayName("즐겨찾기 값이 공백인 경우 null을 반환한다")
-    void fromRow_ShouldReturnNull_WhenFavoriteIsBlank() {
+    @DisplayName("즐겨찾기 값이 공백인 경우 빈 결과를 반환한다")
+    void fromRow_ShouldReturnEmpty_WhenFavoriteIsBlank() {
         // 실행
-        GoogleSheetRow dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", " ")).toGoogleSheetRow();
+        var dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", " ")).toGoogleSheetRow();
 
         // 검증
-        then(dto).isNull();
+        then(dto).isEmpty();
     }
 
     @Test
-    @DisplayName("즐겨찾기 값이 숫자가 아닌 경우 null을 반환한다")
-    void fromRow_ShouldReturnNull_WhenFavoriteIsNotNumeric() {
+    @DisplayName("즐겨찾기 값이 숫자가 아닌 경우 빈 결과를 반환한다")
+    void fromRow_ShouldReturnEmpty_WhenFavoriteIsNotNumeric() {
         // 실행
-        GoogleSheetRow dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", "abc")).toGoogleSheetRow();
+        var dto = new GoogleSheetRowResponse(List.of("닉네임", "user-1", "abc")).toGoogleSheetRow();
 
         // 검증
-        then(dto).isNull();
+        then(dto).isEmpty();
     }
 }

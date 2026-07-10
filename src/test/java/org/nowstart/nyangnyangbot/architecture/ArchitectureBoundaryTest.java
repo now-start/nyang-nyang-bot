@@ -20,6 +20,7 @@ class ArchitectureBoundaryTest {
             "domain"
     );
     private static final List<String> ALLOWED_DOMAIN_RECORDS = List.of(
+            "AttendanceUserState.java",
             "FavoriteBalanceChange.java",
             "FavoriteLedgerEntry.java",
             "RouletteActivationValidation.java",
@@ -61,12 +62,13 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void applicationLayer_ShouldNotDependOnAdapters() throws IOException {
+    void applicationLayer_ShouldNotDependOnAdaptersOrConfiguration() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.adapter.",
                         "org.mapstruct.",
+                        "org.nowstart.nyangnyangbot.config.",
                         "org.springframework.web.bind.annotation"
                 ))
                 .toList();
@@ -80,8 +82,10 @@ class ArchitectureBoundaryTest {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
                 .filter(path -> containsAny(path,
+                        "com.fasterxml.jackson.",
                         "com.google.api.",
                         "com.google.auth.",
+                        "io.socket.",
                         "org.springframework.cloud.openfeign"
                 ))
                 .toList();

@@ -2,10 +2,21 @@ package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteItemCommand;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteTableCommand;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,30 +84,30 @@ public class AdminRouletteController {
     @Operation(summary = "룰렛 테이블 생성")
     @PostMapping("/tables")
     public String createTable(
-            @ModelAttribute RouletteTableForm form,
+            @Valid @ModelAttribute RouletteTableForm form,
+            BindingResult bindingResult,
             Model model
     ) {
         Long selectedTableId = null;
-        try {
-            validateTableForm(form);
-            RouletteTableResult table = manageRouletteUseCase.createTable(
-                    form.title(),
-                    form.command(),
-                    form.pricePerRound(),
-                    form.highRoundThresholdOrDefault()
-            );
-            selectedTableId = table.id();
-            model.addAttribute("rouletteMessage", "룰렛 생성 완료");
-            model.addAttribute("rouletteTone", "success");
-        } catch (RuntimeException e) {
-            log.warn(
-                    "Failed to create roulette table. title={}, command={}",
-                    form == null ? null : form.title(),
-                    form == null ? null : form.command(),
-                    e
-            );
+        if (bindingResult.hasErrors()) {
             model.addAttribute("rouletteMessage", "룰렛 생성에 실패했습니다.");
             model.addAttribute("rouletteTone", "danger");
+        } else {
+            try {
+                RouletteTableResult table = manageRouletteUseCase.createTable(new CreateRouletteTableCommand(
+                        form.title(),
+                        form.command(),
+                        form.pricePerRound(),
+                        form.highRoundThresholdOrDefault()
+                ));
+                selectedTableId = table.id();
+                model.addAttribute("rouletteMessage", "룰렛 생성 완료");
+                model.addAttribute("rouletteTone", "success");
+            } catch (RuntimeException e) {
+                log.warn("Failed to create roulette table. title={}, command={}", form.title(), form.command(), e);
+                model.addAttribute("rouletteMessage", "룰렛 생성에 실패했습니다.");
+                model.addAttribute("rouletteTone", "danger");
+            }
         }
         addRouletteConfig(model, selectedTableId);
         return CONFIG_FRAGMENT;
@@ -104,29 +116,34 @@ public class AdminRouletteController {
     @Operation(summary = "룰렛 항목 추가")
     @PostMapping("/items")
     public String addItem(
-            @ModelAttribute RouletteItemForm form,
+            @Valid @ModelAttribute RouletteItemForm form,
+            BindingResult bindingResult,
             Model model
     ) {
         Long selectedTableId = form.tableId();
-        try {
-            RouletteTableResult table = requireTable(selectedTableId);
-            validateItemForm(form);
-            manageRouletteUseCase.addItem(
-                    selectedTableId,
-                    form.label(),
-                    form.probabilityBasisPoints(),
-                    form.losingItemOrDefault(),
-                    form.rewardTypeOrDefault(),
-                    form.conversionModeOrDefault(),
-                    form.exchangeFavoriteValue(),
-                    table.items().size() + 1
-            );
-            model.addAttribute("rouletteMessage", "룰렛 항목 추가 완료");
-            model.addAttribute("rouletteTone", "success");
-        } catch (RuntimeException e) {
-            log.warn("Failed to add roulette item. tableId={}, label={}", selectedTableId, form == null ? null : form.label(), e);
+        if (bindingResult.hasErrors()) {
             model.addAttribute("rouletteMessage", "룰렛 항목 추가에 실패했습니다.");
             model.addAttribute("rouletteTone", "danger");
+        } else {
+            try {
+                RouletteTableResult table = requireTable(selectedTableId);
+                manageRouletteUseCase.addItem(new AddRouletteItemCommand(
+                        selectedTableId,
+                        form.label(),
+                        form.probabilityBasisPoints(),
+                        form.losingItemOrDefault(),
+                        form.rewardTypeOrDefault(),
+                        form.conversionModeOrDefault(),
+                        form.exchangeFavoriteValue(),
+                        table.items().size() + 1
+                ));
+                model.addAttribute("rouletteMessage", "룰렛 항목 추가 완료");
+                model.addAttribute("rouletteTone", "success");
+            } catch (RuntimeException e) {
+                log.warn("Failed to add roulette item. tableId={}, label={}", selectedTableId, form.label(), e);
+                model.addAttribute("rouletteMessage", "룰렛 항목 추가에 실패했습니다.");
+                model.addAttribute("rouletteTone", "danger");
+            }
         }
         addRouletteConfig(model, selectedTableId);
         return CONFIG_FRAGMENT;
@@ -189,27 +206,6 @@ public class AdminRouletteController {
         model.addAttribute("table", findTable(tables, effectiveSelectedTableId));
     }
 
-    private void validateTableForm(RouletteTableForm form) {
-        if (form == null
-                || form.title() == null || form.title().isBlank()
-                || form.command() == null || form.command().isBlank()
-                || form.pricePerRound() == null || form.pricePerRound() <= 0) {
-            throw new IllegalArgumentException("roulette table form is invalid");
-        }
-    }
-
-    private void validateItemForm(RouletteItemForm form) {
-        Integer probabilityBasisPoints = form.probabilityBasisPoints();
-        if (form.label() == null || form.label().isBlank() || probabilityBasisPoints == null) {
-            throw new IllegalArgumentException("roulette item form is invalid");
-        }
-        if (!form.losingItemOrDefault()
-                && "AUTO".equals(form.conversionModeOrDefault())
-                && (form.exchangeFavoriteValue() == null || form.exchangeFavoriteValue() == 0)) {
-            throw new IllegalArgumentException("exchangeFavoriteValue is required");
-        }
-    }
-
     private RouletteTableResult requireTable(Long tableId) {
         RouletteTableResult table = findTable(tableId);
         if (table == null) {
@@ -249,9 +245,16 @@ public class AdminRouletteController {
     }
 
     public record RouletteTableForm(
+            @NotBlank(message = "title is required")
+            @Size(max = 255, message = "title length must be 255 or less")
             String title,
+            @NotBlank(message = "command is required")
+            @Size(max = 255, message = "command length must be 255 or less")
             String command,
+            @NotNull(message = "pricePerRound is required")
+            @Positive(message = "pricePerRound must be positive")
             Long pricePerRound,
+            @Positive(message = "highRoundThreshold must be positive")
             Integer highRoundThreshold
     ) {
 
@@ -261,9 +264,16 @@ public class AdminRouletteController {
     }
 
     public record RouletteItemForm(
+            @NotNull(message = "tableId is required")
+            @Positive(message = "tableId must be positive")
             Long tableId,
+            @NotBlank(message = "label is required")
+            @Size(max = 255, message = "label length must be 255 or less")
             String label,
-            String probabilityPercent,
+            @NotNull(message = "probabilityPercent is required")
+            @DecimalMin(value = "0", message = "probabilityPercent must be between 0 and 100")
+            @DecimalMax(value = "100", message = "probabilityPercent must be between 0 and 100")
+            BigDecimal probabilityPercent,
             Boolean losingItem,
             String rewardType,
             String conversionMode,
@@ -271,14 +281,12 @@ public class AdminRouletteController {
     ) {
 
         Integer probabilityBasisPoints() {
-            if (probabilityPercent == null || probabilityPercent.isBlank()) {
+            if (probabilityPercent == null) {
                 return null;
             }
-            double percent = Double.parseDouble(probabilityPercent);
-            if (!Double.isFinite(percent) || percent < 0 || percent > 100) {
-                throw new IllegalArgumentException("probabilityPercent must be between 0 and 100");
-            }
-            return (int) Math.round(percent * 100);
+            return probabilityPercent.movePointRight(2)
+                    .setScale(0, RoundingMode.HALF_UP)
+                    .intValueExact();
         }
 
         Boolean losingItemOrDefault() {

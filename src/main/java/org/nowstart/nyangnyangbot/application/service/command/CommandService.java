@@ -1,8 +1,5 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +12,7 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer.TemplateContext;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
@@ -26,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommandService implements ManageCommandUseCase {
 
     public static final int DEFAULT_USER_COOLDOWN_SECONDS = 30;
-    private static final int MAX_TRIGGER_LENGTH = 20;
     private static final int MAX_TEMPLATE_LENGTH = 300;
     private static final int MIN_USER_COOLDOWN_SECONDS = 5;
     private static final int MAX_USER_COOLDOWN_SECONDS = 3_600;
@@ -50,13 +47,6 @@ public class CommandService implements ManageCommandUseCase {
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
     private final UseCaseValidator useCaseValidator;
-
-    public static String normalizeTrigger(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return Normalizer.normalize(value.trim(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -123,7 +113,7 @@ public class CommandService implements ManageCommandUseCase {
         if (request == null) {
             throw new IllegalArgumentException("preview is required");
         }
-        useCaseValidator.validate(new PreviewDefinition(request.messageTemplate()), "preview is required");
+        useCaseValidator.validate(request, "preview is required");
         String message = templateRenderer.render(
                 cleanTemplate(request.messageTemplate()),
                 new TemplateContext(
@@ -243,7 +233,7 @@ public class CommandService implements ManageCommandUseCase {
     ) {
         List<String> errors = new ArrayList<>();
         CommandType type = parseType(typeValue, errors);
-        String trigger = normalizeTrigger(triggerValue);
+        String trigger = CommandTrigger.normalize(triggerValue);
         CommandActionKey actionKey = parseActionKey(type, actionKeyValue, errors);
         String role = role(requiredRoleValue, errors);
         Integer cooldown = cooldown(actionKey, userCooldownSecondsValue, errors);
@@ -348,18 +338,7 @@ public class CommandService implements ManageCommandUseCase {
         if (trigger == null) {
             return;
         }
-        if (!trigger.startsWith("!")) {
-            errors.add("trigger must start with !");
-        }
-        if (trigger.length() < 2 || trigger.length() > MAX_TRIGGER_LENGTH) {
-            errors.add("trigger length must be between 2 and " + MAX_TRIGGER_LENGTH);
-        }
-        if (trigger.chars().anyMatch(Character::isISOControl)) {
-            errors.add("trigger must not contain control characters");
-        }
-        if (trigger.matches(".*\\s+.*")) {
-            errors.add("trigger must be a single token");
-        }
+        errors.addAll(CommandTrigger.validationErrors(trigger));
     }
 
     private void validateTemplate(CommandType type, String template, List<String> errors) {
@@ -533,10 +512,4 @@ public class CommandService implements ManageCommandUseCase {
         }
     }
 
-    private record PreviewDefinition(
-            @NotBlank(message = "messageTemplate is required")
-            @Size(max = 300, message = "messageTemplate length must be 300 or less")
-            String messageTemplate
-    ) {
-    }
 }

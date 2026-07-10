@@ -2,17 +2,18 @@ package org.nowstart.nyangnyangbot.application.service.attendance;
 
 import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.attendance.AttendanceUserState;
@@ -26,27 +27,32 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
 
     private final GrantFavoriteUseCase grantFavoriteUseCase;
     private final UseCaseValidator useCaseValidator;
-    private final Map<String, AttendanceUserState> presence = new ConcurrentHashMap<>();
-    private volatile boolean collecting = false;
+    private final ReentrantLock cycleLock = new ReentrantLock();
+    private AttendanceCycle cycle = AttendanceCycle.inactive();
 
     @Override
     public void startCapture() {
-        collecting = true;
-        presence.clear();
+        cycleLock.lock();
+        try {
+            cycle = AttendanceCycle.start();
+        } finally {
+            cycleLock.unlock();
+        }
     }
 
     @Override
     public void stopCapture() {
-        collecting = false;
-        presence.clear();
+        cycleLock.lock();
+        try {
+            cycle = AttendanceCycle.inactive();
+        } finally {
+            cycleLock.unlock();
+        }
     }
 
     @Override
-    public void recordChatUser(ChatEventPayload chat) {
+    public void recordChatUser(ChatReceived chat) {
         if (chat == null) {
-            return;
-        }
-        if (!collecting) {
             return;
         }
         if (!ChatEventSupport.hasSenderChannelId(chat)) {
@@ -55,48 +61,43 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
         String userId = ChatEventSupport.senderChannelId(chat);
         String nickName = ChatEventSupport.displayName(chat);
         long now = System.currentTimeMillis();
-        presence.compute(userId, (key, existing) -> {
-            if (existing == null) {
-                return AttendanceUserState.builder()
-                        .userId(userId)
-                        .nickName(nickName)
-                        .lastMessageTime(now)
-                        .build();
+        cycleLock.lock();
+        try {
+            if (!cycle.active()) {
+                return;
             }
-            existing.setLastMessageTime(now);
-            if (!StringUtils.isBlank(nickName)) {
-                existing.setNickName(nickName);
-            }
-            return existing;
-        });
+            cycle.users().compute(userId, (key, existing) -> new AttendanceUserState(
+                    userId,
+                    StringUtils.isBlank(nickName) && existing != null ? existing.nickName() : nickName,
+                    now
+            ));
+        } finally {
+            cycleLock.unlock();
+        }
     }
 
     @Override
     public List<AttendanceUserSnapshot> getActiveUsers() {
-        return presence.values().stream()
-                .sorted(Comparator.comparingLong(AttendanceUserState::getLastMessageTime).reversed())
-                .map(user -> new AttendanceUserSnapshot(user.getUserId(), user.getNickName(), user.getLastMessageTime()))
+        List<AttendanceUserState> users;
+        cycleLock.lock();
+        try {
+            users = List.copyOf(cycle.users().values());
+        } finally {
+            cycleLock.unlock();
+        }
+        return users.stream()
+                .sorted(Comparator.comparingLong(AttendanceUserState::lastMessageTime).reversed())
+                .map(user -> new AttendanceUserSnapshot(user.userId(), user.nickName(), user.lastMessageTime()))
                 .toList();
     }
 
     @Override
     public AttendanceApplyResult applyAttendance(AttendanceApplyCommand command) {
-        if (command != null) {
-            useCaseValidator.validate(command, "command is required");
-        }
-        if (!collecting) {
-            throw new IllegalStateException("attendance cycle is not active");
-        }
-        List<AttendanceUserSnapshot> targets = resolveTargets(command);
-        if (targets.isEmpty()) {
-            throw new IllegalArgumentException("attendance targets are required");
-        }
-        int amount = resolveAmount(command);
-        if (amount <= 0) {
-            throw new IllegalArgumentException("amount must be positive");
-        }
+        useCaseValidator.validate(command, "command is required");
+        List<AttendanceUserState> targets = closeCycle(command.userIds());
+        int amount = command.amount();
 
-        for (AttendanceUserSnapshot target : targets) {
+        for (AttendanceUserState target : targets) {
             grantFavoriteUseCase.grant(AdjustFavoriteCommand.builder()
                     .userId(target.userId())
                     .nickName(safeNickname(target))
@@ -109,29 +110,48 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
                     .build());
         }
 
-        collecting = false;
-        presence.clear();
         return new AttendanceApplyResult(amount, targets.size());
     }
 
-    private List<AttendanceUserSnapshot> resolveTargets(AttendanceApplyCommand command) {
-        if (command != null && command.users() != null && !command.users().isEmpty()) {
-            return command.users();
+    private List<AttendanceUserState> closeCycle(List<String> userIds) {
+        cycleLock.lock();
+        try {
+            if (!cycle.active()) {
+                throw new IllegalStateException("attendance cycle is not active");
+            }
+            List<AttendanceUserState> targets = userIds.stream()
+                    .distinct()
+                    .map(cycle.users()::get)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            if (targets.isEmpty()) {
+                throw new IllegalArgumentException("attendance targets are required");
+            }
+            cycle = AttendanceCycle.inactive();
+            return targets;
+        } finally {
+            cycleLock.unlock();
         }
-        return getActiveUsers();
     }
 
-    private int resolveAmount(AttendanceApplyCommand command) {
-        if (command == null || command.amount() == null) {
-            return 1;
-        }
-        return command.amount();
-    }
-
-    private String safeNickname(AttendanceUserSnapshot user) {
-        if (user == null || StringUtils.isBlank(user.nickName())) {
+    private String safeNickname(AttendanceUserState user) {
+        if (StringUtils.isBlank(user.nickName())) {
             return "";
         }
         return user.nickName();
+    }
+
+    private record AttendanceCycle(
+            boolean active,
+            Map<String, AttendanceUserState> users
+    ) {
+
+        static AttendanceCycle start() {
+            return new AttendanceCycle(true, new HashMap<>());
+        }
+
+        static AttendanceCycle inactive() {
+            return new AttendanceCycle(false, Map.of());
+        }
     }
 }

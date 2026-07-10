@@ -9,7 +9,7 @@ import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDispla
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayRoundResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,7 +70,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
         );
     }
 
-    private RouletteRoundResult rouletteRoundResult(RoundResult round) {
+    private RouletteRoundResult rouletteRoundResult(DisplayRoundResult round) {
         return new RouletteRoundResult(
                 round.id(),
                 round.roundNo(),

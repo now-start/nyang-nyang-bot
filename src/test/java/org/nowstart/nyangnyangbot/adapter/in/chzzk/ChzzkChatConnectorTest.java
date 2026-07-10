@@ -2,11 +2,13 @@ package org.nowstart.nyangnyangbot.adapter.in.chzzk;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.doReturn;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import java.net.URISyntaxException;
@@ -14,9 +16,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase;
 
 @ExtendWith(MockitoExtension.class)
 class ChzzkChatConnectorTest {
@@ -25,19 +29,17 @@ class ChzzkChatConnectorTest {
     private ConnectChzzkChatUseCase connectChzzkChatUseCase;
 
     @Mock
-    private Emitter.Listener systemListener;
-
-    @Mock
-    private Emitter.Listener chatListener;
-
-    @Mock
-    private Emitter.Listener donationListener;
+    private HandleChzzkEventUseCase handleChzzkEventUseCase;
 
     @Mock
     private Socket socket;
 
     private ChzzkChatConnector createConnector() throws URISyntaxException {
-        ChzzkChatConnector connector = BDDMockito.spy(new ChzzkChatConnector(connectChzzkChatUseCase));
+        ChzzkChatConnector connector = BDDMockito.spy(new ChzzkChatConnector(
+                connectChzzkChatUseCase,
+                handleChzzkEventUseCase,
+                new ObjectMapper()
+        ));
         doReturn(socket).when(connector).createSocket(anyString(), any());
         return connector;
     }
@@ -49,9 +51,6 @@ class ChzzkChatConnectorTest {
         ChzzkChatConnector connector = createConnector();
         given(connectChzzkChatUseCase.isConnected()).willReturn(false);
         given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
-        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
-        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
-        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // 실행
         connector.connect();
@@ -66,7 +65,11 @@ class ChzzkChatConnectorTest {
     @DisplayName("이미 연결된 상태에서는 재연결하지 않는다")
     void connect_ShouldNotReconnect_WhenAlreadyConnected() throws URISyntaxException {
         // 준비
-        ChzzkChatConnector connector = new ChzzkChatConnector(connectChzzkChatUseCase);
+        ChzzkChatConnector connector = new ChzzkChatConnector(
+                connectChzzkChatUseCase,
+                handleChzzkEventUseCase,
+                new ObjectMapper()
+        );
         given(connectChzzkChatUseCase.isConnected()).willReturn(true);
 
         // 실행
@@ -87,9 +90,6 @@ class ChzzkChatConnectorTest {
                 .willReturn(false)
                 .willReturn(true);
         given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
-        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
-        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
-        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // 실행
         connector.connect();
@@ -107,9 +107,6 @@ class ChzzkChatConnectorTest {
         ChzzkChatConnector connector = createConnector();
         given(connectChzzkChatUseCase.isConnected()).willReturn(false);
         given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
-        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
-        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
-        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // 실행
         connector.connect();
@@ -121,22 +118,68 @@ class ChzzkChatConnectorTest {
     }
 
     @Test
-    @DisplayName("소켓 연결 시 시스템, 채팅, 후원 이벤트를 구독한다")
+    @DisplayName("소켓 연결 시 활성화된 시스템과 채팅 이벤트를 구독한다")
     void connect_ShouldSubscribeSocketEvents_WhenSocketConnects() throws URISyntaxException {
         // 준비
         ChzzkChatConnector connector = createConnector();
         given(connectChzzkChatUseCase.isConnected()).willReturn(false);
         given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
-        given(connectChzzkChatUseCase.systemListener()).willReturn(systemListener);
-        given(connectChzzkChatUseCase.chatListener()).willReturn(chatListener);
-        given(connectChzzkChatUseCase.donationListener()).willReturn(donationListener);
 
         // 실행
         connector.connect();
 
         // 검증
-        BDDMockito.then(socket).should().on(ConnectChzzkChatUseCase.SYSTEM_EVENT_NAME, systemListener);
-        BDDMockito.then(socket).should().on(ConnectChzzkChatUseCase.CHAT_EVENT_NAME, chatListener);
-        BDDMockito.then(socket).should().on(ConnectChzzkChatUseCase.DONATION_EVENT_NAME, donationListener);
+        BDDMockito.then(socket).should().on(eq("SYSTEM"), any(Emitter.Listener.class));
+        BDDMockito.then(socket).should().on(eq("CHAT"), any(Emitter.Listener.class));
+        BDDMockito.then(socket).should(never()).on(eq("DONATION"), any(Emitter.Listener.class));
+    }
+
+    @Test
+    @DisplayName("채팅 소켓 JSON을 애플리케이션 이벤트로 변환한다")
+    void connect_ShouldDispatchChatPayload() throws URISyntaxException {
+        // 준비
+        ChzzkChatConnector connector = createConnector();
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        connector.connect();
+        ArgumentCaptor<Emitter.Listener> listenerCaptor = ArgumentCaptor.forClass(Emitter.Listener.class);
+        BDDMockito.then(socket).should().on(eq("CHAT"), listenerCaptor.capture());
+
+        // 실행
+        listenerCaptor.getValue().call("""
+                {
+                  "channelId": "channel-1",
+                  "senderChannelId": "user-1",
+                  "profile": {"nickname": "치즈냥", "badges": [], "verifiedMark": true},
+                  "content": "안녕",
+                  "emojis": {},
+                  "messageTime": 1711111111
+                }
+                """);
+
+        // 검증
+        BDDMockito.then(handleChzzkEventUseCase).should().handleChatEvent(BDDMockito.argThat(event ->
+                event.senderChannelId().equals("user-1")
+                        && event.profile().nickname().equals("치즈냥")
+                        && event.content().equals("안녕")
+        ));
+    }
+
+    @Test
+    @DisplayName("잘못된 소켓 payload는 애플리케이션으로 전달하지 않는다")
+    void connect_ShouldIgnoreMalformedPayload() throws URISyntaxException {
+        // 준비
+        ChzzkChatConnector connector = createConnector();
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        connector.connect();
+        ArgumentCaptor<Emitter.Listener> listenerCaptor = ArgumentCaptor.forClass(Emitter.Listener.class);
+        BDDMockito.then(socket).should().on(eq("CHAT"), listenerCaptor.capture());
+
+        // 실행
+        listenerCaptor.getValue().call("not-json");
+
+        // 검증
+        BDDMockito.then(handleChzzkEventUseCase).shouldHaveNoInteractions();
     }
 }

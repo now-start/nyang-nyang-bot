@@ -9,7 +9,7 @@ import org.mockito.BDDMockito;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -24,10 +24,12 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Tab
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteEventCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteRoundCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
+import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
@@ -39,8 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 class RouletteApplicationServiceTest {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private RoulettePort roulettePort;
@@ -88,7 +88,7 @@ class RouletteApplicationServiceTest {
         ProcessRouletteDonationService rouletteService = createProcessService();
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 " ",
                 "CHAT",
                 "channel-1",
@@ -112,7 +112,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.findLatestActiveTable()).willReturn(Optional.empty());
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -136,7 +136,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.findLatestActiveTable()).willReturn(Optional.of(table(true)));
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -161,7 +161,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(true);
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -185,7 +185,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.existsEventByDonationEventId("donation-1")).willReturn(false);
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -212,7 +212,7 @@ class RouletteApplicationServiceTest {
                 .willReturn(List.of(item("호감도 +10", 1_000, false, 10)));
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -249,7 +249,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.findRoundsByEventId(20L)).willReturn(savedRounds);
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -268,7 +268,9 @@ class RouletteApplicationServiceTest {
         BDDMockito.then(overlayDisplayService).should().enqueueRouletteEvent(20L);
         ArgumentCaptor<CreateRouletteEventCommand> eventCaptor = ArgumentCaptor.forClass(CreateRouletteEventCommand.class);
         BDDMockito.then(roulettePort).should().createEvent(eventCaptor.capture());
-        then(eventCaptor.getValue().itemsSnapshotJson()).contains("호감도 +10", "꽝");
+        then(eventCaptor.getValue().itemSnapshots())
+                .extracting(RouletteItemSnapshot::label)
+                .contains("호감도 +10", "꽝");
         ArgumentCaptor<List<CreateRouletteRoundCommand>> roundsCaptor = ArgumentCaptor.forClass(List.class);
         BDDMockito.then(roulettePort).should().saveRounds(any(), roundsCaptor.capture());
         then(roundsCaptor.getValue()).hasSize(2);
@@ -295,7 +297,7 @@ class RouletteApplicationServiceTest {
                 .applyRound(30L);
 
         // 실행 및 검증
-        thenThrownBy(() -> rouletteService.processDonation(new DonationEventPayload(
+        thenThrownBy(() -> rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -330,7 +332,7 @@ class RouletteApplicationServiceTest {
         given(roulettePort.findRoundsByEventId(21L)).willReturn(savedRounds);
 
         // 실행
-        RouletteRunResult result = rouletteService.processDonation(new DonationEventPayload(
+        RouletteRunResult result = rouletteService.processDonation(new DonationReceived(
                 "donation-1",
                 "CHAT",
                 "channel-1",
@@ -351,7 +353,7 @@ class RouletteApplicationServiceTest {
     void processDonation_ShouldRunWithinTransaction() throws NoSuchMethodException {
         // 실행
         Transactional transactional = ProcessRouletteDonationService.class
-                .getMethod("processDonation", DonationEventPayload.class)
+                .getMethod("processDonation", DonationReceived.class)
                 .getAnnotation(Transactional.class);
 
         // 검증
@@ -371,14 +373,17 @@ class RouletteApplicationServiceTest {
     }
 
     private ManageRouletteService createManageService() {
-        return new ManageRouletteService(roulettePort, commandPort);
+        return new ManageRouletteService(
+                roulettePort,
+                commandPort,
+                new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator())
+        );
     }
 
     private ProcessRouletteDonationService createProcessService() {
         lenient().when(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION))
                 .thenReturn(Optional.of(rouletteDonationCommand()));
         return new ProcessRouletteDonationService(
-                objectMapper,
                 commandPort,
                 roulettePort,
                 rouletteRoundApplyService,

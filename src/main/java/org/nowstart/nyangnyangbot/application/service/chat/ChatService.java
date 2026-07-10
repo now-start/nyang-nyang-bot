@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.socket.emitter.Emitter;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -9,22 +7,21 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
 import org.nowstart.nyangnyangbot.application.service.command.CommandHandler;
-import org.nowstart.nyangnyangbot.application.service.command.CommandService;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer.TemplateContext;
 import org.nowstart.nyangnyangbot.domain.chat.CommandCooldown;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
@@ -32,11 +29,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @Transactional
-public class ChatService implements Emitter.Listener {
+public class ChatService {
 
     private static final long DEFAULT_COMMAND_COOLDOWN_MILLIS = 30_000L;
 
-    private final ObjectMapper objectMapper;
     private final Map<CommandActionKey, CommandHandler> commandHandlers;
     private final RecordAttendanceChatUseCase recordAttendanceChatUseCase;
     private final RecordWeeklyChatUseCase recordWeeklyChatUseCase;
@@ -47,7 +43,6 @@ public class ChatService implements Emitter.Listener {
     private final CommandCooldown commandCooldown = new CommandCooldown(DEFAULT_COMMAND_COOLDOWN_MILLIS);
 
     public ChatService(
-            ObjectMapper objectMapper,
             List<CommandHandler> commandHandlers,
             RecordAttendanceChatUseCase recordAttendanceChatUseCase,
             RecordWeeklyChatUseCase recordWeeklyChatUseCase,
@@ -56,7 +51,6 @@ public class ChatService implements Emitter.Listener {
             FavoriteQueryPort favoriteQueryPort,
             CommandTemplateRenderer templateRenderer
     ) {
-        this.objectMapper = objectMapper;
         this.commandHandlers = commandHandlers(commandHandlers);
         this.recordAttendanceChatUseCase = recordAttendanceChatUseCase;
         this.recordWeeklyChatUseCase = recordWeeklyChatUseCase;
@@ -66,10 +60,10 @@ public class ChatService implements Emitter.Listener {
         this.templateRenderer = templateRenderer;
     }
 
-    @Override
-    @SneakyThrows
-    public void call(Object... objects) {
-        ChatEventPayload chat = objectMapper.readValue((String) objects[0], ChatEventPayload.class);
+    public void handle(ChatReceived chat) {
+        if (chat == null) {
+            return;
+        }
         log.info("[ChzzkChat] socket received: {}", chat);
         recordAttendanceChatUseCase.recordChatUser(chat);
         recordWeeklyChatUseCase.recordChat(chat);
@@ -80,11 +74,11 @@ public class ChatService implements Emitter.Listener {
         if (commandToken == null || !commandToken.startsWith("!")) {
             return;
         }
-        commandPort.findActiveByTrigger(CommandService.normalizeTrigger(commandToken))
+        commandPort.findActiveByTrigger(CommandTrigger.normalize(commandToken))
                 .ifPresent(command -> runCommand(command, chat, commandToken));
     }
 
-    private void runCommand(CommandRecord command, ChatEventPayload chat, String commandToken) {
+    private void runCommand(CommandRecord command, ChatReceived chat, String commandToken) {
         if (command.requiredRole() != null && !"USER".equals(command.requiredRole())) {
             return;
         }
@@ -117,7 +111,7 @@ public class ChatService implements Emitter.Listener {
         return Map.copyOf(result);
     }
 
-    private void sendTextCommand(CommandRecord command, ChatEventPayload chat, String commandToken) {
+    private void sendTextCommand(CommandRecord command, ChatReceived chat, String commandToken) {
         String[] tokens = tokens(chat.content());
         String userId = ChatEventSupport.senderChannelId(chat);
         String displayName = ChatEventSupport.displayName(chat);

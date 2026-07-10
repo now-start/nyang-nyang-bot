@@ -1,12 +1,12 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
 import java.util.List;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 
 public interface ProcessRouletteDonationUseCase {
 
-    RouletteRunResult processDonation(DonationEventPayload donation);
+    RouletteRunResult processDonation(DonationReceived donation);
 
     record RouletteRunResult(
             Status status,

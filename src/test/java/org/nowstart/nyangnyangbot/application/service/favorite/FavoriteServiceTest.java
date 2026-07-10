@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.application.service.favorite;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -152,7 +153,7 @@ class FavoriteServiceTest {
     }
 
     @Test
-    void getMyFavorite_ShouldReturnSummaryAndMarkSeen() {
+    void getMyFavorite_ShouldReturnSummaryWithoutMarkingSeen() {
         // 준비
         AuthorizationAccountResult authorization = new AuthorizationAccountResult(
                 "user1", "치즈냥", null, null, null, null, null, false, null, null
@@ -179,6 +180,17 @@ class FavoriteServiceTest {
         then(result.rank()).isEqualTo(4);
         then(result.unseenCount()).isEqualTo(1L);
         then(result.histories()).hasSize(1);
-        BDDMockito.then(authorizationPort).should().markFavoriteHistorySeen(BDDMockito.eq("user1"), BDDMockito.any(LocalDateTime.class));
+        BDDMockito.then(authorizationPort).should(never())
+                .markFavoriteHistorySeen(BDDMockito.anyString(), BDDMockito.any(LocalDateTime.class));
+    }
+
+    @Test
+    void acknowledgeHistory_ShouldMarkFavoriteHistorySeen() {
+        // 실행
+        favoriteService.acknowledgeHistory("user1");
+
+        // 검증
+        BDDMockito.then(authorizationPort).should()
+                .markFavoriteHistorySeen(BDDMockito.eq("user1"), BDDMockito.any(LocalDateTime.class));
     }
 }

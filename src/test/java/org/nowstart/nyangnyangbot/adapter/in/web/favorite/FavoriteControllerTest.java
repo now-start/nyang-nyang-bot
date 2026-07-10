@@ -19,11 +19,12 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.nowstart.nyangnyangbot.application.port.in.upbo.QueryUpboUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -41,7 +42,10 @@ import org.springframework.web.servlet.ModelAndView;
 class FavoriteControllerTest {
 
     @Mock
-    private FavoriteService favoriteService;
+    private QueryFavoriteUseCase favoriteService;
+
+    @Mock
+    private AcknowledgeFavoriteHistoryUseCase acknowledgeFavoriteHistoryUseCase;
 
     @Mock
     private QueryUpboUseCase queryUpboUseCase;
@@ -246,6 +250,7 @@ class FavoriteControllerTest {
         then(resultPage.getContent()).containsExactly(new FavoriteSummaryResult("user1", "유저1", 100));
         then(resultPage.getTotalElements()).isEqualTo(1);
         BDDMockito.then(favoriteService).should().getMyFavorite("user1");
+        BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should(never()).acknowledgeHistory(anyString());
         BDDMockito.then(favoriteService).should(never()).getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(10);
@@ -312,6 +317,7 @@ class FavoriteControllerTest {
         then(result.getModel().get("currentUserRank")).isEqualTo(7);
         then(response.getHeader("HX-Push-Url")).isEqualTo("/nyang-nyang-bot/favorite/list?page=0&size=10");
         BDDMockito.then(favoriteService).should().getMyFavorite("user1");
+        BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should(never()).acknowledgeHistory(anyString());
         BDDMockito.then(favoriteService).should(never()).getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }

@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,26 +21,26 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
     }
 
     @Override
-    public AuthorizationAccountResult saveOrUpdate(UserResult user, AuthorizationToken authorization) {
-        AuthorizationAccount saved = authorizationRepository.findById(user.channelId())
-                .map(existing -> authorizationRepository.save(update(existing, user, authorization)))
+    public AuthorizationAccountResult saveOrUpdate(SaveAuthorizationCommand command) {
+        AuthorizationAccount saved = authorizationRepository.findById(command.channelId())
+                .map(existing -> authorizationRepository.save(update(existing, command)))
                 .orElseGet(() -> authorizationRepository.save(AuthorizationAccount.builder()
-                        .channelId(user.channelId())
-                        .channelName(user.channelName())
-                        .accessToken(authorization.accessToken())
-                        .refreshToken(authorization.refreshToken())
-                        .tokenType(authorization.tokenType())
-                        .expiresIn(authorization.expiresIn())
-                        .scope(authorization.scope())
+                        .channelId(command.channelId())
+                        .channelName(command.channelName())
+                        .accessToken(command.accessToken())
+                        .refreshToken(command.refreshToken())
+                        .tokenType(command.tokenType())
+                        .expiresIn(command.expiresIn())
+                        .scope(command.scope())
                         .admin(false)
                         .build()));
         return mapper.accountResult(saved);
     }
 
     @Override
-    public AuthorizationAccountResult updateToken(String channelId, UserResult user, AuthorizationToken authorization) {
+    public AuthorizationAccountResult updateToken(String channelId, SaveAuthorizationCommand command) {
         AuthorizationAccount entity = authorizationRepository.findById(channelId).orElseThrow();
-        update(entity, user, authorization);
+        update(entity, command);
         return mapper.accountResult(entity);
     }
 
@@ -52,13 +50,13 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                 .ifPresent(entity -> entity.setFavoriteHistoryLastSeenAt(seenAt));
     }
 
-    private AuthorizationAccount update(AuthorizationAccount entity, UserResult user, AuthorizationToken authorization) {
-        entity.setChannelName(user.channelName());
-        entity.setAccessToken(authorization.accessToken());
-        entity.setRefreshToken(authorization.refreshToken());
-        entity.setTokenType(authorization.tokenType());
-        entity.setExpiresIn(authorization.expiresIn());
-        entity.setScope(authorization.scope());
+    private AuthorizationAccount update(AuthorizationAccount entity, SaveAuthorizationCommand command) {
+        entity.setChannelName(command.channelName());
+        entity.setAccessToken(command.accessToken());
+        entity.setRefreshToken(command.refreshToken());
+        entity.setTokenType(command.tokenType());
+        entity.setExpiresIn(command.expiresIn());
+        entity.setScope(command.scope());
         return entity;
     }
 

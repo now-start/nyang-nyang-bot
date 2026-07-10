@@ -68,7 +68,7 @@ class FavoriteListTemplateTest {
         then(html).contains("hx-target=\"#sync-feedback\"");
         then(html).contains("id=\"chzzk-connect-button\"");
         then(html).contains("hx-post=\"/chzzk/connect\"");
-        then(html).contains("hx-get=\"/favorite/history?userId=user1");
+        then(html).contains("hx-post=\"/favorite/history/acknowledge?userId=user1");
         then(html).contains("id=\"attendance-tab\"");
         then(html).contains("id=\"roulette-tab\"");
         then(html).contains("id=\"overlay-token-tab\"");
@@ -89,8 +89,10 @@ class FavoriteListTemplateTest {
         then(html).contains("id=\"command-filter-active\"");
         then(html).contains("id=\"attendance-amount\"");
         then(html).contains("hx-post=\"/attendance/apply\"");
-        then(html).contains("hx-trigger=\"shown.bs.tab from:#attendance-tab-button\"");
-        then(html).contains("hx-trigger=\"hidden.bs.tab from:#attendance-tab-button\"");
+        then(html).contains("hx-post=\"/attendance/start\"");
+        then(html).contains("hx-post=\"/attendance/stop\"");
+        then(html).doesNotContain("shown.bs.tab from:#attendance-tab-button");
+        then(html).doesNotContain("hidden.bs.tab from:#attendance-tab-button");
         then(html).contains("id=\"attendance-list\"");
         then(html).contains("attendance-users-refresh from:body");
         then(html).contains("id=\"roulette-config-region\"");
@@ -158,8 +160,8 @@ class FavoriteListTemplateTest {
         then(html).doesNotContain("유저2");
         then(html).contains("주간 채팅 순위 TOP 10");
         then(html).contains("weekly-rank-ticker");
-        then(html).contains("hx-get=\"/favorite/history?userId=user1");
-        then(html).doesNotContain("hx-get=\"/favorite/history?userId=user2");
+        then(html).contains("hx-post=\"/favorite/history/acknowledge?userId=user1");
+        then(html).doesNotContain("hx-post=\"/favorite/history/acknowledge?userId=user2");
         then(html).doesNotContain("관리자 메뉴");
         then(html).doesNotContain("id=\"favorite-search-form\"");
         then(html).doesNotContain("id=\"sync-button\"");

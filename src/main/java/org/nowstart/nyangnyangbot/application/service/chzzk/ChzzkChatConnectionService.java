@@ -1,8 +1,12 @@
 package org.nowstart.nyangnyangbot.application.service.chzzk;
 
-import io.socket.emitter.Emitter;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SubscriptionReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatService;
 import org.nowstart.nyangnyangbot.application.service.donation.DonationService;
 import org.nowstart.nyangnyangbot.application.service.subscription.SubscriptionService;
@@ -10,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ChzzkChatConnectionService implements ConnectChzzkChatUseCase {
+public class ChzzkChatConnectionService implements ConnectChzzkChatUseCase, HandleChzzkEventUseCase {
 
     private final SystemService systemService;
     private final ChatService chatService;
@@ -28,22 +32,22 @@ public class ChzzkChatConnectionService implements ConnectChzzkChatUseCase {
     }
 
     @Override
-    public Emitter.Listener systemListener() {
-        return systemService;
+    public void handleSystemEvent(SystemReceived event) {
+        systemService.handle(event);
     }
 
     @Override
-    public Emitter.Listener chatListener() {
-        return chatService;
+    public void handleChatEvent(ChatReceived event) {
+        chatService.handle(event);
     }
 
     @Override
-    public Emitter.Listener donationListener() {
-        return donationService;
+    public void handleDonationEvent(DonationReceived event) {
+        donationService.handle(event);
     }
 
     @Override
-    public Emitter.Listener subscriptionListener() {
-        return subscriptionService;
+    public void handleSubscriptionEvent(SubscriptionReceived event) {
+        subscriptionService.handle(event);
     }
 }

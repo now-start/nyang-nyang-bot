@@ -1,29 +1,29 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
 import io.micrometer.common.util.StringUtils;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 
 public final class ChatEventSupport {
 
     private ChatEventSupport() {
     }
 
-    public static boolean hasSenderChannelId(ChatEventPayload chat) {
+    public static boolean hasSenderChannelId(ChatReceived chat) {
         return !StringUtils.isBlank(senderChannelId(chat));
     }
 
-    public static String senderChannelId(ChatEventPayload chat) {
+    public static String senderChannelId(ChatReceived chat) {
         return chat == null ? null : chat.senderChannelId();
     }
 
-    public static String nickname(ChatEventPayload chat) {
+    public static String nickname(ChatReceived chat) {
         if (chat == null || chat.profile() == null || StringUtils.isBlank(chat.profile().nickname())) {
             return "";
         }
         return chat.profile().nickname();
     }
 
-    public static String displayName(ChatEventPayload chat) {
+    public static String displayName(ChatReceived chat) {
         String nickname = nickname(chat);
         if (!StringUtils.isBlank(nickname)) {
             return nickname;

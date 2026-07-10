@@ -1,42 +1,40 @@
 package org.nowstart.nyangnyangbot.application.service.donation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.socket.emitter.Emitter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DonationService implements Emitter.Listener {
+public class DonationService {
 
-    private final ObjectMapper objectMapper;
     private final DonationPort donationPort;
     private final ProcessRouletteDonationUseCase processRouletteDonationUseCase;
 
-    @Override
-    @SneakyThrows
-    public void call(Object... objects) {
-        DonationEventPayload donation = objectMapper.readValue((String) objects[0], DonationEventPayload.class);
+    public void handle(DonationReceived donation) {
+        if (donation == null) {
+            return;
+        }
         log.info("[ChzzkDonation] socket received: {}", donation);
         if (isBlank(donation.donationEventId())
                 || !donationPort.existsByDonationEventId(donation.donationEventId())) {
-            donationPort.save(donation, parseAmount(donation.payAmount()), toJson(donation.emojis()));
+            donationPort.save(new SaveDonationCommand(
+                    donation.donationEventId(),
+                    donation.donationType(),
+                    donation.channelId(),
+                    donation.donatorChannelId(),
+                    donation.donatorNickname(),
+                    parseAmount(donation.payAmount()),
+                    donation.donationText(),
+                    donation.emojis()
+            ));
         }
         processRouletteDonationUseCase.processDonation(donation);
-    }
-
-    @SneakyThrows
-    private String toJson(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return objectMapper.writeValueAsString(value);
     }
 
     private Long parseAmount(String amount) {

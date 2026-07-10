@@ -14,8 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationPersistenceAdapterTest {
@@ -43,13 +42,12 @@ class AuthorizationPersistenceAdapterTest {
         // 준비
         AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount saved = entity("channel-1");
-        AuthorizationToken token = token("access", "refresh");
-        UserResult user = new UserResult("channel-1", "치즈냥", "ACTIVE");
+        SaveAuthorizationCommand command = command("access", "refresh", "치즈냥");
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.empty());
         given(authorizationRepository.save(org.mockito.ArgumentMatchers.any(AuthorizationAccount.class))).willReturn(saved);
 
         // 실행
-        AuthorizationAccountResult result = adapter.saveOrUpdate(user, token);
+        AuthorizationAccountResult result = adapter.saveOrUpdate(command);
 
         // 검증
         then(result.channelId()).isEqualTo("channel-1");
@@ -61,14 +59,13 @@ class AuthorizationPersistenceAdapterTest {
         // 준비
         AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount existing = entity("channel-1");
-        AuthorizationToken updatedToken = token("new-access", "new-refresh");
-        UserResult user = new UserResult("channel-1", "변경", "ACTIVE");
+        SaveAuthorizationCommand command = command("new-access", "new-refresh", "변경");
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
         given(authorizationRepository.save(existing)).willReturn(existing);
 
         // 실행
-        AuthorizationAccountResult saved = adapter.saveOrUpdate(user, updatedToken);
-        AuthorizationAccountResult updated = adapter.updateToken("channel-1", user, updatedToken);
+        AuthorizationAccountResult saved = adapter.saveOrUpdate(command);
+        AuthorizationAccountResult updated = adapter.updateToken("channel-1", command);
 
         // 검증
         then(saved.accessToken()).isEqualTo("new-access");
@@ -115,7 +112,9 @@ class AuthorizationPersistenceAdapterTest {
         );
     }
 
-    private AuthorizationToken token(String accessToken, String refreshToken) {
-        return new AuthorizationToken(accessToken, refreshToken, "Bearer", 3600, "chat");
+    private SaveAuthorizationCommand command(String accessToken, String refreshToken, String channelName) {
+        return new SaveAuthorizationCommand(
+                "channel-1", channelName, accessToken, refreshToken, "Bearer", 3600, "chat"
+        );
     }
 }

@@ -6,17 +6,18 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
-import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.adapter.out.external.google.response.GoogleSheetRowResponse;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
 import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class GoogleSheetClientAdapter implements GoogleSheetPort {
@@ -28,8 +29,7 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
     @Override
     @SneakyThrows
     public List<GoogleSheetRow> readFavoriteRows() {
-        GoogleCredentials credentials =
-                GoogleCredentials.fromStream(new FileInputStream(googleProperty.key())).createScoped(SheetsScopes.SPREADSHEETS);
+        GoogleCredentials credentials = loadCredentials();
         Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
                 .setApplicationName("google-sheet-project")
                 .build();
@@ -39,11 +39,22 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
                 .get(googleProperty.id(), RANGE)
                 .execute().getValues();
 
+        return toRows(values);
+    }
+
+    private GoogleCredentials loadCredentials() throws IOException {
+        try (InputStream keyStream = Files.newInputStream(Path.of(googleProperty.key()))) {
+            return GoogleCredentials.fromStream(keyStream).createScoped(SheetsScopes.SPREADSHEETS);
+        }
+    }
+
+    List<GoogleSheetRow> toRows(List<List<Object>> values) {
+        if (values == null) {
+            return List.of();
+        }
         return values.stream()
-                .map(value -> {
-                    log.info("[GoogleSheet] Row value: {}", value);
-                    return new GoogleSheetRowResponse(value).toGoogleSheetRow();
-                })
+                .map(GoogleSheetRowResponse::new)
+                .flatMap(response -> response.toGoogleSheetRow().stream())
                 .toList();
     }
 }

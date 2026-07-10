@@ -17,6 +17,8 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdj
 import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentOptionResult;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ExtendedModelMap;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 @ExtendWith(MockitoExtension.class)
 class FavoriteAdjustmentControllerTest {
@@ -71,7 +73,7 @@ class FavoriteAdjustmentControllerTest {
                 new FavoriteAdjustmentController.FavoriteAdjustmentApplyForm("user1", List.of(1L), null, null);
 
         // 실행
-        String view = controller.applyAdjustments(form, response, model);
+        String view = controller.applyAdjustments(form, bindingResult(form), response, model);
 
         // 검증
         then(view).isEqualTo("components/feedback :: alert");
@@ -94,8 +96,11 @@ class FavoriteAdjustmentControllerTest {
         ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
+        FavoriteAdjustmentController.FavoriteAdjustmentApplyForm form =
+                new FavoriteAdjustmentController.FavoriteAdjustmentApplyForm("user1", List.of(), 0, null);
         String view = controller.applyAdjustments(
-                new FavoriteAdjustmentController.FavoriteAdjustmentApplyForm("user1", List.of(), 0, null),
+                form,
+                bindingResult(form),
                 response,
                 model
         );
@@ -105,5 +110,9 @@ class FavoriteAdjustmentControllerTest {
         then(model.get("message")).isEqualTo("업보 적용 실패");
         then(model.get("tone")).isEqualTo("danger");
         then(response.getHeader("HX-Trigger")).isNull();
+    }
+
+    private BindingResult bindingResult(Object form) {
+        return new BeanPropertyBindingResult(form, "form");
     }
 }

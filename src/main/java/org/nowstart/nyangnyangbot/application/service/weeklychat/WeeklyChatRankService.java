@@ -9,7 +9,7 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
@@ -23,7 +23,7 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
     private final WeeklyChatRankPort weeklyChatRankPort;
 
     @Override
-    public synchronized void recordChat(ChatEventPayload chat) {
+    public synchronized void recordChat(ChatReceived chat) {
         if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
         }
@@ -54,5 +54,4 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
     private LocalDate currentWeekStartDate() {
         return currentDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
-
 }

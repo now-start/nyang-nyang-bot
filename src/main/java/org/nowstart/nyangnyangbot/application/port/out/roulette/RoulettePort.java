@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.application.port.out.roulette;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
@@ -144,7 +145,7 @@ public interface RoulettePort {
             String command,
             Long pricePerRound,
             Integer roundCount,
-            String itemsSnapshotJson,
+            List<RouletteItemSnapshot> itemSnapshots,
             RouletteEventStatus status
     ) {
     }

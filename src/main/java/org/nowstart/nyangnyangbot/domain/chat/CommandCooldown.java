@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.domain.chat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CommandCooldown {
 
@@ -28,12 +29,15 @@ public class CommandCooldown {
             return false;
         }
         String key = userId + ":" + commandName;
-        Long previous = lastCommandTimes.get(key);
-        if (previous != null && currentTimeMillis - previous < cooldownMillis) {
-            return true;
-        }
-        lastCommandTimes.put(key, currentTimeMillis);
-        return false;
+        AtomicBoolean inCooldown = new AtomicBoolean(false);
+        lastCommandTimes.compute(key, (ignored, previous) -> {
+            if (previous != null && currentTimeMillis - previous < cooldownMillis) {
+                inCooldown.set(true);
+                return previous;
+            }
+            return currentTimeMillis;
+        });
+        return inCooldown.get();
     }
 
     public Map<String, Long> snapshot() {

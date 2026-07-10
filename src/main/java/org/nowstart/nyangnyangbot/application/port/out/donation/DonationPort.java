@@ -1,10 +1,22 @@
 package org.nowstart.nyangnyangbot.application.port.out.donation;
 
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
+import java.util.Map;
 
 public interface DonationPort {
 
     boolean existsByDonationEventId(String donationEventId);
 
-    void save(DonationEventPayload donation, Long payAmount, String emojisJson);
+    void save(SaveDonationCommand command);
+
+    record SaveDonationCommand(
+            String donationEventId,
+            String donationType,
+            String channelId,
+            String donatorChannelId,
+            String donatorNickname,
+            Long payAmount,
+            String donationText,
+            Map<String, String> emojis
+    ) {
+    }
 }

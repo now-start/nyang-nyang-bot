@@ -16,18 +16,18 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkConfigurationPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ApiResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
-import org.nowstart.nyangnyangbot.config.property.ChzzkProperty;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationServiceTest {
 
     @Mock
-    private ChzzkProperty chzzkProperty;
+    private ChzzkConfigurationPort chzzkProperty;
 
     @Mock
     private ChzzkClientPort chzzkClientPort;
@@ -62,9 +62,12 @@ class AuthorizationServiceTest {
                 null,
                 null,
                 "refresh"
-        ))).willReturn(new ApiResult<>(200, "OK", refreshedAuthorization));
-        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResult<>(200, "OK", refreshedUser));
-        given(authorizationPort.updateToken("channel-1", refreshedUser, refreshedAuthorization)).willReturn(refreshed);
+        ))).willReturn(refreshedAuthorization);
+        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(refreshedUser);
+        given(authorizationPort.updateToken(
+                "channel-1",
+                saveCommand(refreshedUser, refreshedAuthorization)
+        )).willReturn(refreshed);
 
         // 실행
         AuthorizationAccountResult result = authorizationService.getAccessToken();
@@ -100,7 +103,7 @@ class AuthorizationServiceTest {
         // 검증
         then(result).isSameAs(account);
         BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
-        BDDMockito.then(authorizationPort).should(never()).updateToken(any(), any(), any());
+        BDDMockito.then(authorizationPort).should(never()).updateToken(any(), any());
     }
 
     @Test
@@ -126,9 +129,12 @@ class AuthorizationServiceTest {
                 null,
                 null,
                 "refresh"
-        ))).willReturn(new ApiResult<>(200, "OK", refreshedAuthorization));
-        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResult<>(200, "OK", refreshedUser));
-        given(authorizationPort.updateToken("channel-1", refreshedUser, refreshedAuthorization)).willReturn(refreshed);
+        ))).willReturn(refreshedAuthorization);
+        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(refreshedUser);
+        given(authorizationPort.updateToken(
+                "channel-1",
+                saveCommand(refreshedUser, refreshedAuthorization)
+        )).willReturn(refreshed);
 
         // 실행
         AuthorizationAccountResult result = authorizationService.getAccessToken();
@@ -169,14 +175,29 @@ class AuthorizationServiceTest {
                 null,
                 null,
                 "refresh"
-        ))).willReturn(new ApiResult<>(200, "OK", refreshedAuthorization));
-        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(new ApiResult<>(200, "OK", refreshedUser));
-        given(authorizationPort.updateToken("channel-1", refreshedUser, refreshedAuthorization)).willReturn(refreshed);
+        ))).willReturn(refreshedAuthorization);
+        given(chzzkClientPort.getUser("Bearer new-access")).willReturn(refreshedUser);
+        given(authorizationPort.updateToken(
+                "channel-1",
+                saveCommand(refreshedUser, refreshedAuthorization)
+        )).willReturn(refreshed);
 
         // 실행
         AuthorizationAccountResult result = authorizationService.getAccessToken();
 
         // 검증
         then(result.accessToken()).isEqualTo("new-access");
+    }
+
+    private SaveAuthorizationCommand saveCommand(UserResult user, AuthorizationToken token) {
+        return new SaveAuthorizationCommand(
+                user.channelId(),
+                user.channelName(),
+                token.accessToken(),
+                token.refreshToken(),
+                token.tokenType(),
+                token.expiresIn(),
+                token.scope()
+        );
     }
 }

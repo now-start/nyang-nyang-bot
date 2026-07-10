@@ -1,8 +1,16 @@
 package org.nowstart.nyangnyangbot.application.port.out.subscription;
 
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SubscriptionEventPayload;
-
 public interface SubscriptionPort {
 
-    void save(SubscriptionEventPayload subscription);
+    void save(SaveSubscriptionCommand command);
+
+    record SaveSubscriptionCommand(
+            String channelId,
+            String subscriberChannelId,
+            String subscriberNickname,
+            Integer tierNo,
+            String tierName,
+            Integer month
+    ) {
+    }
 }

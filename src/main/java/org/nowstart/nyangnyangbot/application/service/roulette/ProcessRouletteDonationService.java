@@ -1,15 +1,13 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
@@ -34,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProcessRouletteDonationService implements ProcessRouletteDonationUseCase {
 
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
-    private final ObjectMapper objectMapper;
     private final CommandPort commandPort;
     private final RoulettePort roulettePort;
     private final RouletteRoundApplyService rouletteRoundApplyService;
@@ -43,7 +40,7 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
 
     @Override
     @Transactional
-    public RouletteRunResult processDonation(DonationEventPayload donation) {
+    public RouletteRunResult processDonation(DonationReceived donation) {
         if (donation == null) {
             return RouletteRunResult.ignored("donation is required");
         }
@@ -95,7 +92,7 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
                 rouletteCommand.trigger(),
                 table.pricePerRound(),
                 roundCount,
-                toJson(items.stream().map(this::itemSnapshot).toList()),
+                items.stream().map(this::itemSnapshot).toList(),
                 RouletteEventStatus.CONFIRMED
         ));
         List<RoundResult> rounds = roulettePort.saveRounds(event.id(), confirmRounds(event, items));
@@ -159,14 +156,6 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
                 round.userUpboId(),
                 round.failureReason()
         );
-    }
-
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("failed to serialize roulette snapshot", ex);
-        }
     }
 
     private String trimToEmpty(String value) {

@@ -6,12 +6,15 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteItemCommand;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteTableCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
-import org.nowstart.nyangnyangbot.application.service.command.CommandService;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
@@ -29,59 +32,54 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
     private final RoulettePort roulettePort;
     private final CommandPort commandPort;
+    private final UseCaseValidator useCaseValidator;
 
     @Override
     @Transactional
-    public RouletteTableResult createTable(String title, String command, Long pricePerRound, Integer highRoundThreshold) {
-        roulettePolicy.validateTableInput(title, command, pricePerRound);
+    public RouletteTableResult createTable(CreateRouletteTableCommand request) {
+        useCaseValidator.validate(request, "request is required");
+        roulettePolicy.validateTableInput(request.title(), request.command(), request.pricePerRound());
         if (!roulettePort.findTablesOrderByIdDesc().isEmpty()) {
             throw new IllegalStateException("roulette table already exists");
         }
-        String normalizedCommand = CommandService.normalizeTrigger(command);
+        String normalizedCommand = CommandTrigger.normalize(request.command());
+        CommandTrigger.validate(normalizedCommand);
         validateRouletteCommandConflict(normalizedCommand);
         TableResult saved = roulettePort.createTable(
-                title.trim(),
+                request.title().trim(),
                 normalizedCommand,
-                pricePerRound,
-                highRoundThreshold == null
+                request.pricePerRound(),
+                request.highRoundThreshold() == null
                         ? RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD
-                        : highRoundThreshold
+                        : request.highRoundThreshold()
         );
         return tableResult(saved);
     }
 
     @Override
     @Transactional
-    public RouletteItemResult addItem(
-            Long tableId,
-            String label,
-            Integer probabilityBasisPoints,
-            Boolean losingItem,
-            String rewardType,
-            String conversionMode,
-            Integer exchangeFavoriteValue,
-            Integer displayOrder
-    ) {
-        roulettePort.findTableById(tableId)
+    public RouletteItemResult addItem(AddRouletteItemCommand request) {
+        useCaseValidator.validate(request, "request is required");
+        roulettePort.findTableById(request.tableId())
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        RewardType parsedRewardType = parseRewardType(rewardType);
-        ConversionMode parsedConversionMode = parseConversionMode(conversionMode);
+        RewardType parsedRewardType = parseRewardType(request.rewardType());
+        ConversionMode parsedConversionMode = parseConversionMode(request.conversionMode());
         roulettePolicy.validateItemInput(
-                label,
-                probabilityBasisPoints,
+                request.label(),
+                request.probabilityBasisPoints(),
                 parsedRewardType,
                 parsedConversionMode,
-                exchangeFavoriteValue
+                request.exchangeFavoriteValue()
         );
         ItemResult item = roulettePort.addItem(
-                tableId,
-                label.trim(),
-                probabilityBasisPoints,
-                Boolean.TRUE.equals(losingItem),
+                request.tableId(),
+                request.label().trim(),
+                request.probabilityBasisPoints(),
+                Boolean.TRUE.equals(request.losingItem()),
                 parsedRewardType,
                 parsedConversionMode,
-                exchangeFavoriteValue,
-                displayOrder == null ? 0 : displayOrder
+                request.exchangeFavoriteValue(),
+                request.displayOrder() == null ? 0 : request.displayOrder()
         );
         return itemResult(item);
     }
@@ -219,7 +217,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     }
 
     private void syncRouletteDonationCommand(String command) {
-        String normalizedCommand = CommandService.normalizeTrigger(command);
+        String normalizedCommand = CommandTrigger.normalize(command);
         validateRouletteCommandConflict(normalizedCommand);
         CommandRecord current = commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION)
                 .orElse(null);
@@ -253,7 +251,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     }
 
     private void deactivateRouletteDonationCommand(String command) {
-        String normalizedCommand = CommandService.normalizeTrigger(command);
+        String normalizedCommand = CommandTrigger.normalize(command);
         CommandRecord current = commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION)
                 .orElse(null);
         if (current == null || normalizedCommand == null || !normalizedCommand.equals(current.trigger())) {

@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 
+import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,8 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteItemResult;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteItemCommand;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteTableCommand;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteSimulationResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
@@ -24,6 +27,7 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.Comma
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
@@ -42,7 +46,7 @@ class ManageRouletteServiceTest {
     @Test
     void createTable_ShouldTrimInputAndUseDefaultThreshold() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
         given(commandPort.findByTrigger("!룰렛")).willReturn(Optional.empty());
         given(roulettePort.createTable("기본", "!룰렛", 1_000L, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD))
@@ -52,7 +56,9 @@ class ManageRouletteServiceTest {
         ));
 
         // 실행
-        RouletteTableResult result = service.createTable(" 기본 ", " !룰렛 ", 1_000L, null);
+        RouletteTableResult result = service.createTable(
+                new CreateRouletteTableCommand(" 기본 ", " !룰렛 ", 1_000L, null)
+        );
 
         // 검증
         then(result.id()).isEqualTo(1L);
@@ -67,13 +73,13 @@ class ManageRouletteServiceTest {
     @Test
     void createTable_ShouldRejectWhenCommandConflictsWithManagedCommand() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
         given(commandPort.findByTrigger("!호감도"))
                 .willReturn(Optional.of(command(10L, "!호감도", CommandActionKey.FAVORITE_STATUS)));
 
         // 실행 및 검증
-        thenThrownBy(() -> service.createTable("기본", "!호감도", 1_000L, null))
+        thenThrownBy(() -> service.createTable(new CreateRouletteTableCommand("기본", "!호감도", 1_000L, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("roulette command conflicts with existing command");
         BDDMockito.then(roulettePort).should(never()).createTable(any(), any(), any(), any());
@@ -82,11 +88,11 @@ class ManageRouletteServiceTest {
     @Test
     void createTable_ShouldRejectWhenTableAlreadyExists() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of(table(1L, true, 10)));
 
         // 실행 및 검증
-        thenThrownBy(() -> service.createTable("기본", "!룰렛", 1_000L, null))
+        thenThrownBy(() -> service.createTable(new CreateRouletteTableCommand("기본", "!룰렛", 1_000L, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("roulette table already exists");
         BDDMockito.then(commandPort).shouldHaveNoInteractions();
@@ -96,13 +102,15 @@ class ManageRouletteServiceTest {
     @Test
     void addItem_ShouldValidateTableAndParsedEnums() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
         given(roulettePort.addItem(1L, "호감도", 5_000, false, RewardType.FAVORITE, ConversionMode.AUTO, 10, 0))
                 .willReturn(item(2L, "호감도", 5_000, false, RewardType.FAVORITE, ConversionMode.AUTO, 10, true));
 
         // 실행
-        RouletteItemResult result = service.addItem(1L, " 호감도 ", 5_000, false, " FAVORITE ", " AUTO ", 10, null);
+        RouletteItemResult result = service.addItem(
+                new AddRouletteItemCommand(1L, " 호감도 ", 5_000, false, " FAVORITE ", " AUTO ", 10, null)
+        );
 
         // 검증
         then(result.id()).isEqualTo(2L);
@@ -115,11 +123,13 @@ class ManageRouletteServiceTest {
     @Test
     void addItem_ShouldRejectMissingTable() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTableById(404L)).willReturn(Optional.empty());
 
         // 실행 및 검증
-        thenThrownBy(() -> service.addItem(404L, "꽝", 10_000, true, "CUSTOM", "NONE", null, 1))
+        thenThrownBy(() -> service.addItem(
+                new AddRouletteItemCommand(404L, "꽝", 10_000, true, "CUSTOM", "NONE", null, 1)
+        ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("roulette table not found");
     }
@@ -127,7 +137,7 @@ class ManageRouletteServiceTest {
     @Test
     void getTables_ShouldReturnValidationFromActiveItemsOnly() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of(table(1L, false, 10)));
         given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
                 item(1L, "활성 꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true),
@@ -147,7 +157,7 @@ class ManageRouletteServiceTest {
     @Test
     void validateTable_ShouldRejectMissingTableAndReturnReasonsForInvalidTable() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
         given(roulettePort.findActiveItemsByTableId(1L)).willReturn(List.of(
                 item(1L, "호감도", 5_000, false, RewardType.FAVORITE, ConversionMode.MANUAL, 10, true)
@@ -168,7 +178,7 @@ class ManageRouletteServiceTest {
     @Test
     void activateAndDeactivate_ShouldReturnMappedTableResult() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         List<ItemResult> activeItems = List.of(
                 item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
         );
@@ -202,7 +212,7 @@ class ManageRouletteServiceTest {
     @Test
     void deactivateTable_ShouldDeactivateMatchingRouletteDonationCommand() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, true, 10)));
         given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
         given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
@@ -226,7 +236,7 @@ class ManageRouletteServiceTest {
     @Test
     void deactivateTable_ShouldNotDeactivateCommandWhenTableWasAlreadyInactive() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
         given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
         given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
@@ -245,7 +255,7 @@ class ManageRouletteServiceTest {
     @Test
     void activateTable_ShouldRejectWhenAnotherTableIsActive() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         List<ItemResult> activeItems = List.of(
                 item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
         );
@@ -263,7 +273,7 @@ class ManageRouletteServiceTest {
     @Test
     void simulate_ShouldClampIterationsAndCountSelectedItems() {
         // 준비
-        ManageRouletteService service = new ManageRouletteService(roulettePort, commandPort);
+        ManageRouletteService service = service();
         given(roulettePort.findActiveItemsByTableId(1L)).willReturn(List.of(
                 item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
         ));
@@ -281,6 +291,14 @@ class ManageRouletteServiceTest {
 
     private TableResult table(Long id, boolean active, Integer highRoundThreshold) {
         return new TableResult(id, "기본", "!룰렛", 1_000L, active, 1, highRoundThreshold);
+    }
+
+    private ManageRouletteService service() {
+        return new ManageRouletteService(
+                roulettePort,
+                commandPort,
+                new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator())
+        );
     }
 
     private CommandRecord command(Long id, String trigger, CommandActionKey actionKey) {

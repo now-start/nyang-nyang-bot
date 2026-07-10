@@ -1,11 +1,10 @@
 package org.nowstart.nyangnyangbot.domain.roulette;
 
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
@@ -74,9 +73,9 @@ public class RoulettePolicy {
         if (isBlank(donationText) || isBlank(command)) {
             return false;
         }
-        String normalizedCommand = normalizeCommand(command);
+        String normalizedCommand = CommandTrigger.normalize(command);
         return Arrays.stream(donationText.trim().split("\\s+"))
-                .map(this::normalizeCommand)
+                .map(CommandTrigger::normalize)
                 .anyMatch(normalizedCommand::equals);
     }
 
@@ -178,10 +177,6 @@ public class RoulettePolicy {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
-    }
-
-    private String normalizeCommand(String value) {
-        return Normalizer.normalize(value.trim(), Normalizer.Form.NFC).toLowerCase(Locale.ROOT);
     }
 
     public interface TableCandidate {

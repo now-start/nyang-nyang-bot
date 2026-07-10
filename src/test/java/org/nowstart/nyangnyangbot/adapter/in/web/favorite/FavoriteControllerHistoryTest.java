@@ -11,18 +11,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 import org.nowstart.nyangnyangbot.application.port.in.upbo.QueryUpboUseCase;
-import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteService;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.ui.ExtendedModelMap;
 
 @ExtendWith(MockitoExtension.class)
 class FavoriteControllerHistoryTest {
 
     @Mock
-    private FavoriteService favoriteService;
+    private QueryFavoriteUseCase favoriteService;
+
+    @Mock
+    private AcknowledgeFavoriteHistoryUseCase acknowledgeFavoriteHistoryUseCase;
 
     @Mock
     private QueryUpboUseCase queryUpboUseCase;
@@ -34,7 +39,12 @@ class FavoriteControllerHistoryTest {
 
     @BeforeEach
     void setUp() {
-        favoriteController = new FavoriteController(favoriteService, queryUpboUseCase, weeklyChatRankService);
+        favoriteController = new FavoriteController(
+                favoriteService,
+                acknowledgeFavoriteHistoryUseCase,
+                queryUpboUseCase,
+                weeklyChatRankService
+        );
     }
 
     @Test
@@ -67,6 +77,46 @@ class FavoriteControllerHistoryTest {
         then(response.favorite()).isEqualTo(12);
         then(response.history()).isEqualTo("출석체크(+1)");
         then(response.date()).isEqualTo("2026-03-22 14:30");
+    }
+
+    @Test
+    @DisplayName("본인 히스토리 확인 요청은 조회 후 읽음 처리한다")
+    void acknowledgeFavoriteHistory_ShouldMarkOwnHistorySeen() {
+        // 준비
+        given(favoriteService.getHistory("user1", 10)).willReturn(List.of());
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        // 실행
+        String view = favoriteController.acknowledgeFavoriteHistory(
+                "user1",
+                10,
+                new UsernamePasswordAuthenticationToken("user1", "N/A"),
+                model
+        );
+
+        // 검증
+        then(view).isEqualTo("features/favorite/components :: history-grid");
+        org.mockito.BDDMockito.then(favoriteService).should().getHistory("user1", 10);
+        org.mockito.BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should().acknowledgeHistory("user1");
+    }
+
+    @Test
+    @DisplayName("관리자가 다른 사용자 히스토리를 조회해도 해당 사용자를 읽음 처리하지 않는다")
+    void acknowledgeFavoriteHistory_ShouldNotMarkAnotherUserSeen() {
+        // 준비
+        given(favoriteService.getHistory("user1", 10)).willReturn(List.of());
+
+        // 실행
+        favoriteController.acknowledgeFavoriteHistory(
+                "user1",
+                10,
+                new UsernamePasswordAuthenticationToken("admin", "N/A"),
+                new ExtendedModelMap()
+        );
+
+        // 검증
+        org.mockito.BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should(org.mockito.Mockito.never())
+                .acknowledgeHistory(org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test

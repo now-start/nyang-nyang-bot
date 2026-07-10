@@ -11,8 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ApiResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.UserResult;
@@ -53,9 +53,10 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
                 "code-1",
                 "state-1",
                 null
-        ))).willReturn(new ApiResult<>(200, "OK", token));
-        given(chzzkClientPort.getUser("Bearer access")).willReturn(new ApiResult<>(200, "OK", user));
-        given(authorizationPort.saveOrUpdate(user, token)).willReturn(saved);
+        ))).willReturn(token);
+        given(chzzkClientPort.getUser("Bearer access")).willReturn(user);
+        SaveAuthorizationCommand saveCommand = saveCommand(user, token);
+        given(authorizationPort.saveOrUpdate(saveCommand)).willReturn(saved);
 
         // 실행
         var response = client.getTokenResponse(grantRequest());
@@ -69,7 +70,7 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
                 "channel_name", "tester",
                 "admin", true
         ));
-        BDDMockito.then(authorizationPort).should().saveOrUpdate(user, token);
+        BDDMockito.then(authorizationPort).should().saveOrUpdate(saveCommand);
     }
 
     @Test
@@ -91,9 +92,9 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
                 "code-1",
                 "state-1",
                 null
-        ))).willReturn(new ApiResult<>(200, "OK", token));
-        given(chzzkClientPort.getUser("Bearer access")).willReturn(new ApiResult<>(200, "OK", user));
-        given(authorizationPort.saveOrUpdate(user, token)).willReturn(saved);
+        ))).willReturn(token);
+        given(chzzkClientPort.getUser("Bearer access")).willReturn(user);
+        given(authorizationPort.saveOrUpdate(saveCommand(user, token))).willReturn(saved);
 
         // 실행
         var response = client.getTokenResponse(grantRequest());
@@ -116,6 +117,18 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
         return new OAuth2AuthorizationCodeGrantRequest(
                 ChzzkOAuth2ClientRegistrationTestFixtures.clientRegistration(),
                 new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse)
+        );
+    }
+
+    private SaveAuthorizationCommand saveCommand(UserResult user, AuthorizationToken token) {
+        return new SaveAuthorizationCommand(
+                user.channelId(),
+                user.channelName(),
+                token.accessToken(),
+                token.refreshToken(),
+                token.tokenType(),
+                token.expiresIn(),
+                token.scope()
         );
     }
 }

@@ -1,10 +1,12 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.DonationEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class DonationPersistenceAdapter implements DonationPort {
 
     private final DonationRepository donationRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean existsByDonationEventId(String donationEventId) {
@@ -19,17 +22,28 @@ public class DonationPersistenceAdapter implements DonationPort {
     }
 
     @Override
-    public void save(DonationEventPayload donation, Long payAmount, String emojisJson) {
+    public void save(SaveDonationCommand command) {
         donationRepository.save(Donation.builder()
-                .donationEventId(normalizeDonationEventId(donation.donationEventId()))
-                .donationType(donation.donationType())
-                .channelId(donation.channelId())
-                .donatorChannelId(donation.donatorChannelId())
-                .donatorNickname(donation.donatorNickname())
-                .payAmount(payAmount)
-                .donationText(donation.donationText())
-                .emojisJson(emojisJson)
+                .donationEventId(normalizeDonationEventId(command.donationEventId()))
+                .donationType(command.donationType())
+                .channelId(command.channelId())
+                .donatorChannelId(command.donatorChannelId())
+                .donatorNickname(command.donatorNickname())
+                .payAmount(command.payAmount())
+                .donationText(command.donationText())
+                .emojisJson(toJson(command.emojis()))
                 .build());
+    }
+
+    private String toJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("failed to serialize donation emojis", ex);
+        }
     }
 
     private String normalizeDonationEventId(String donationEventId) {

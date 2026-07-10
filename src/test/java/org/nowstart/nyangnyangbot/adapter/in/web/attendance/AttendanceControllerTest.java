@@ -18,6 +18,8 @@ import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanc
 import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ExtendedModelMap;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceControllerTest {
@@ -87,17 +89,14 @@ class AttendanceControllerTest {
     @Test
     void applyAttendance_ShouldUseSelectedActiveUsersAndReturnRefreshTrigger() {
         // 준비
-        given(manageAttendanceUseCase.getActiveUsers()).willReturn(List.of(
-                new AttendanceUserSnapshot("user1", "치즈냥", 1L),
-                new AttendanceUserSnapshot("user2", "후발냥", 2L)
-        ));
         given(manageAttendanceUseCase.applyAttendance(any(AttendanceApplyCommand.class)))
                 .willReturn(new AttendanceApplyResult(5, 1));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
-        String view = controller.applyAttendance(new AttendanceApplyForm(5, List.of("user2")), response, model);
+        AttendanceApplyForm form = new AttendanceApplyForm(5, List.of("user2"));
+        String view = controller.applyAttendance(form, bindingResult(form), response, model);
 
         // 검증
         then(view).isEqualTo("features/attendance/components :: attendance-feedback-response");
@@ -108,24 +107,29 @@ class AttendanceControllerTest {
         ArgumentCaptor<AttendanceApplyCommand> captor = ArgumentCaptor.forClass(AttendanceApplyCommand.class);
         org.mockito.BDDMockito.then(manageAttendanceUseCase).should().applyAttendance(captor.capture());
         then(captor.getValue().amount()).isEqualTo(5);
-        then(captor.getValue().users()).extracting(AttendanceUserSnapshot::userId).containsExactly("user2");
+        then(captor.getValue().userIds()).containsExactly("user2");
     }
 
     @Test
     void applyAttendance_ShouldRejectEmptySelectionWithoutFallingBackToAllUsers() {
         // 준비
-        given(manageAttendanceUseCase.getActiveUsers())
-                .willReturn(List.of(new AttendanceUserSnapshot("user1", "치즈냥", 1L)));
+        given(manageAttendanceUseCase.applyAttendance(any(AttendanceApplyCommand.class)))
+                .willThrow(new IllegalArgumentException("attendance targets are required"));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
 
         // 실행
-        String view = controller.applyAttendance(new AttendanceApplyForm(5, List.of("missing")), response, model);
+        AttendanceApplyForm form = new AttendanceApplyForm(5, List.of("missing"));
+        String view = controller.applyAttendance(form, bindingResult(form), response, model);
 
         // 검증
         then(view).isEqualTo("features/attendance/components :: attendance-feedback-response");
         then(model.get("tone")).isEqualTo("danger");
         then(model.get("resetAttendanceList")).isEqualTo(false);
-        org.mockito.BDDMockito.then(manageAttendanceUseCase).should(org.mockito.Mockito.never()).applyAttendance(any());
+        org.mockito.BDDMockito.then(manageAttendanceUseCase).should().applyAttendance(any());
+    }
+
+    private BindingResult bindingResult(AttendanceApplyForm form) {
+        return new BeanPropertyBindingResult(form, "attendanceApplyForm");
     }
 }

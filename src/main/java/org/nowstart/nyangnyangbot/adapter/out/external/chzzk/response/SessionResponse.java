@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response;
 
 import java.util.List;
+import java.util.Objects;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionResult;
 
 public record SessionResponse(
@@ -19,7 +20,10 @@ public record SessionResponse(
                 totalPages,
                 data == null
                         ? List.of()
-                        : data.stream().map(SessionData::toSessionDataResult).toList()
+                        : data.stream()
+                        .filter(Objects::nonNull)
+                        .map(SessionData::toSessionDataResult)
+                        .toList()
         );
     }
 
@@ -38,6 +42,7 @@ public record SessionResponse(
                     subscribedEvents == null
                             ? List.of()
                             : subscribedEvents.stream()
+                            .filter(Objects::nonNull)
                             .map(SubscribedEvents::toSubscribedEventsResult)
                             .toList()
             );

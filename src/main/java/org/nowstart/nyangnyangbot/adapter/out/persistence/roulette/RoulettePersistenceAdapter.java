@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
     private final RoulettePersistenceMapper mapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true)
@@ -172,10 +175,18 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .command(command.command())
                 .pricePerRound(command.pricePerRound())
                 .roundCount(command.roundCount())
-                .itemsSnapshotJson(command.itemsSnapshotJson())
+                .itemsSnapshotJson(toJson(command.itemSnapshots()))
                 .status(command.status())
                 .build());
         return mapper.eventResult(saved);
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("failed to serialize roulette snapshot", ex);
+        }
     }
 
     @Override

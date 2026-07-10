@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Eve
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
@@ -212,7 +214,17 @@ class RoulettePersistenceAdapterTest {
                 "!룰렛",
                 1_000L,
                 1,
-                "[]",
+                List.of(new RouletteItemSnapshot(
+                        1L,
+                        "당첨",
+                        10_000,
+                        false,
+                        RewardType.FAVORITE,
+                        ConversionMode.AUTO,
+                        100,
+                        true,
+                        1
+                )),
                 RouletteEventStatus.CONFIRMED
         ));
         List<RoundResult> rounds = adapter.saveRounds(3L, List.of(new CreateRouletteRoundCommand(
@@ -297,7 +309,8 @@ class RoulettePersistenceAdapterTest {
                 rouletteItemRepository,
                 rouletteEventRepository,
                 rouletteRoundResultRepository,
-                Mappers.getMapper(RoulettePersistenceMapper.class)
+                Mappers.getMapper(RoulettePersistenceMapper.class),
+                new ObjectMapper()
         );
     }
 

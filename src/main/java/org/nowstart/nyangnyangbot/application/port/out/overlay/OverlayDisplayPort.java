@@ -3,7 +3,9 @@ package org.nowstart.nyangnyangbot.application.port.out.overlay;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
+import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 public interface OverlayDisplayPort {
 
@@ -23,7 +25,22 @@ public interface OverlayDisplayPort {
             String nickName,
             Integer roundCount,
             LocalDateTime expiresAt,
-            List<RoundResult> rounds
+            List<DisplayRoundResult> rounds
+    ) {
+    }
+
+    record DisplayRoundResult(
+            Long id,
+            Integer roundNo,
+            String itemLabel,
+            boolean losingItem,
+            RewardType rewardType,
+            ConversionMode conversionMode,
+            Integer exchangeFavoriteValue,
+            RouletteRoundStatus status,
+            Long ledgerId,
+            Long userUpboId,
+            String failureReason
     ) {
     }
 }

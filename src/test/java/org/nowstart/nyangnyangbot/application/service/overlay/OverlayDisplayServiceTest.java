@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
+import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayRoundResult;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -154,16 +154,11 @@ class OverlayDisplayServiceTest {
         return new DisplayEventResult(id, 20L, "치즈냥", 1, expiresAt, List.of(round()));
     }
 
-    private RoundResult round() {
-        return new RoundResult(
+    private DisplayRoundResult round() {
+        return new DisplayRoundResult(
                 30L,
-                20L,
-                "donation-1",
-                "user-1",
-                "치즈냥",
                 1,
                 "호감도 +10",
-                10_000,
                 false,
                 RewardType.FAVORITE,
                 ConversionMode.AUTO,
@@ -171,8 +166,7 @@ class OverlayDisplayServiceTest {
                 RouletteRoundStatus.APPLIED,
                 null,
                 null,
-                null,
-                1
+                null
         );
     }
 }

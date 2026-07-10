@@ -3,9 +3,11 @@ package org.nowstart.nyangnyangbot.adapter.in.web.attendance;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase;
@@ -14,11 +16,12 @@ import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanc
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -31,8 +34,7 @@ public class AttendanceController {
     private static final String ATTENDANCE_LIST_FRAGMENT = "features/attendance/components :: attendance-list";
     private static final String FEEDBACK_FRAGMENT = "features/attendance/components :: attendance-feedback-response";
     private static final String USERS_REFRESH_TRIGGER = "attendance-users-refresh";
-    private static final String APPLY_SUCCESS_TRIGGER =
-            "{\"favorite-board-refresh\":{}}";
+    private static final String APPLY_SUCCESS_TRIGGER = "{\"favorite-board-refresh\":{}}";
 
     private final ManageAttendanceUseCase manageAttendanceUseCase;
 
@@ -72,16 +74,19 @@ public class AttendanceController {
     @Operation(summary = "출석체크 적용")
     @PostMapping("/apply")
     public String applyAttendance(
-            @ModelAttribute AttendanceApplyForm form,
+            @Valid @ModelAttribute AttendanceApplyForm form,
+            BindingResult bindingResult,
             HttpServletResponse response,
             Model model
     ) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("message", "출석체크 실패");
+            model.addAttribute("tone", "danger");
+            model.addAttribute("resetAttendanceList", false);
+            return FEEDBACK_FRAGMENT;
+        }
         try {
-            if (form.amount() == null || form.amount() <= 0) {
-                throw new IllegalArgumentException("amount must be positive");
-            }
-            List<AttendanceUserSnapshot> users = selectedUsers(form.userIds());
-            manageAttendanceUseCase.applyAttendance(new AttendanceApplyCommand(users, form.amount()));
+            manageAttendanceUseCase.applyAttendance(new AttendanceApplyCommand(form.userIds(), form.amount()));
             model.addAttribute("message", "출석체크 완료");
             model.addAttribute("tone", "success");
             model.addAttribute("resetAttendanceList", true);
@@ -113,8 +118,8 @@ public class AttendanceController {
         long selectedCount = selectedIds == null
                 ? users.size()
                 : users.stream()
-                        .filter(user -> selectedIds.contains(user.userId()) || !knownIds.contains(user.userId()))
-                        .count();
+                .filter(user -> selectedIds.contains(user.userId()) || !knownIds.contains(user.userId()))
+                .count();
         model.addAttribute("users", users);
         model.addAttribute("selectedUserIds", selectedIds);
         model.addAttribute("knownUserIds", knownIds);
@@ -122,22 +127,12 @@ public class AttendanceController {
         model.addAttribute("totalCount", users.size());
     }
 
-    private List<AttendanceUserSnapshot> selectedUsers(List<String> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            throw new IllegalArgumentException("attendance targets are required");
-        }
-        List<AttendanceUserSnapshot> users = manageAttendanceUseCase.getActiveUsers().stream()
-                .filter(user -> userIds.contains(user.userId()))
-                .toList();
-        if (users.isEmpty()) {
-            throw new IllegalArgumentException("attendance targets are required");
-        }
-        return users;
-    }
-
     public record AttendanceApplyForm(
+            @NotNull(message = "amount is required")
+            @Positive(message = "amount must be positive")
             Integer amount,
-            List<String> userIds
+            @NotEmpty(message = "attendance targets are required")
+            List<@NotBlank(message = "userId is required") String> userIds
     ) {
     }
 

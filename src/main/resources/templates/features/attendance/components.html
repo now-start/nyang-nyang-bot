@@ -2,16 +2,6 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <div class="vstack gap-3" th:fragment="attendance-panel">
-    <div class="visually-hidden"
-         hx-swap="innerHTML"
-         hx-target="#attendance-feedback"
-         hx-trigger="shown.bs.tab from:#attendance-tab-button"
-         th:hx-post="@{/attendance/start}"></div>
-    <div class="visually-hidden"
-         hx-swap="innerHTML"
-         hx-target="#attendance-feedback"
-         hx-trigger="hidden.bs.tab from:#attendance-tab-button"
-         th:hx-post="@{/attendance/stop}"></div>
     <form class="card"
           hx-disabled-elt="find button"
           hx-post="/attendance/apply"
@@ -21,11 +11,25 @@
           method="post"
           th:hx-post="@{/attendance/apply}">
         <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
-        <div class="card-header d-flex align-items-center gap-3 py-3">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2 py-3">
             <h2 class="h6 fw-bold text-white mb-0">출석체크</h2>
-            <span class="badge rounded-pill bg-success-subtle text-success d-inline-flex align-items-center gap-2">
-                <span class="bg-success rounded-circle d-inline-block" style="width:6px;height:6px;"></span>수집 중
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-2">
+                수동 제어
             </span>
+            <div class="d-flex gap-2 ms-auto">
+                <button class="btn btn-outline-success btn-sm"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#attendance-feedback"
+                        th:hx-post="@{/attendance/start}"
+                        type="button">수집 시작</button>
+                <button class="btn btn-outline-secondary btn-sm"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#attendance-feedback"
+                        th:hx-post="@{/attendance/stop}"
+                        type="button">수집 중지</button>
+            </div>
         </div>
         <div class="card-body vstack gap-3 border-bottom">
             <div class="row g-3 align-items-end">
@@ -49,7 +53,7 @@
                     <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
                     <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
                 </div>
-                <div class="text-secondary small">탭을 열면 현재 채팅 참여자를 불러옵니다.</div>
+                <div class="text-secondary small">수집 시작 후 현재 채팅 참여자를 불러옵니다.</div>
             </div>
             <div class="mt-2" id="attendance-feedback"></div>
         </div>
@@ -110,7 +114,7 @@
             <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
             <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
         </div>
-        <div class="text-secondary small">탭을 열면 현재 채팅 참여자를 불러옵니다.</div>
+        <div class="text-secondary small">수집 시작 후 현재 채팅 참여자를 불러옵니다.</div>
     </div>
 </div>
 </body>

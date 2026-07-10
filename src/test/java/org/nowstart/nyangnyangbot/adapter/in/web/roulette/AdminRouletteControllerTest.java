@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.AdminRouletteController.RouletteItemForm;
 import org.nowstart.nyangnyangbot.adapter.in.web.roulette.AdminRouletteController.RouletteTableForm;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteItemCommand;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteTableCommand;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteItemResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
@@ -25,6 +28,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.ui.ConcurrentModel;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 @ExtendWith(MockitoExtension.class)
 class AdminRouletteControllerTest {
@@ -42,19 +47,20 @@ class AdminRouletteControllerTest {
         AdminRouletteController controller = new AdminRouletteController(rouletteService, rouletteQueryService);
         RouletteTableForm form = new RouletteTableForm("기본 룰렛", "!룰렛", 1_000L, 100);
         RouletteTableResult table = table(1L, "기본 룰렛", "!룰렛", 1_000L, List.of());
-        given(rouletteService.createTable("기본 룰렛", "!룰렛", 1_000L, 100)).willReturn(table);
+        CreateRouletteTableCommand command = new CreateRouletteTableCommand("기본 룰렛", "!룰렛", 1_000L, 100);
+        given(rouletteService.createTable(command)).willReturn(table);
         given(rouletteService.getTables()).willReturn(List.of(table));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.createTable(form, model);
+        String view = controller.createTable(form, bindingResult(form), model);
 
         // 검증
         then(view).isEqualTo("features/roulette/components :: roulette-config-region");
         then(model.getAttribute("selectedTableId")).isEqualTo(1L);
         then(model.getAttribute("table")).isEqualTo(table);
         then(model.getAttribute("rouletteTone")).isEqualTo("success");
-        BDDMockito.then(rouletteService).should().createTable("기본 룰렛", "!룰렛", 1_000L, 100);
+        BDDMockito.then(rouletteService).should().createTable(command);
     }
 
     @Test
@@ -65,7 +71,7 @@ class AdminRouletteControllerTest {
         RouletteItemForm form = new RouletteItemForm(
                 1L,
                 "꽝",
-                "10",
+                new BigDecimal("10"),
                 true,
                 RewardType.CUSTOM.name(),
                 ConversionMode.NONE.name(),
@@ -84,19 +90,22 @@ class AdminRouletteControllerTest {
                 1
         );
         given(rouletteService.getTables()).willReturn(List.of(table));
-        given(rouletteService.addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1))
+        AddRouletteItemCommand command = new AddRouletteItemCommand(
+                1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1
+        );
+        given(rouletteService.addItem(command))
                 .willReturn(item);
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.addItem(form, model);
+        String view = controller.addItem(form, bindingResult(form), model);
 
         // 검증
         then(view).isEqualTo("features/roulette/components :: roulette-config-region");
         then(model.getAttribute("table")).isEqualTo(table);
         then(model.getAttribute("selectedTableId")).isEqualTo(1L);
         then(model.getAttribute("rouletteTone")).isEqualTo("success");
-        BDDMockito.then(rouletteService).should().addItem(1L, "꽝", 1_000, true, RewardType.CUSTOM.name(), ConversionMode.NONE.name(), null, 1);
+        BDDMockito.then(rouletteService).should().addItem(command);
     }
 
     @Test
@@ -138,5 +147,9 @@ class AdminRouletteControllerTest {
         RouletteValidationResult validation =
                 new RouletteValidationResult(false, List.of("losing item is required"), 0, false);
         return new RouletteTableResult(id, title, command, pricePerRound, false, 0, 100, validation, items);
+    }
+
+    private BindingResult bindingResult(Object form) {
+        return new BeanPropertyBindingResult(form, "form");
     }
 }

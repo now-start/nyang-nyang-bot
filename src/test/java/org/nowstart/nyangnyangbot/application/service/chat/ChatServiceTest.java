@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.doReturn;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -14,10 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
@@ -31,7 +30,6 @@ import org.nowstart.nyangnyangbot.domain.type.CommandType;
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final CommandTemplateRenderer templateRenderer = new CommandTemplateRenderer();
 
     @Mock
@@ -57,7 +55,6 @@ class ChatServiceTest {
     @BeforeEach
     void setUp() {
         chatService = new ChatService(
-                objectMapper,
                 List.of(),
                 attendanceService,
                 weeklyChatRankService,
@@ -69,31 +66,30 @@ class ChatServiceTest {
     }
 
     @Test
-    void call_ShouldRecordAttendanceAndWeeklyChatRank() throws Exception {
+    void handle_ShouldRecordAttendanceAndWeeklyChatRank() {
         // 준비
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatEventPayload.Profile("치즈냥", null, true),
+                new ChatReceived.Profile("치즈냥", null, true),
                 "안녕",
                 null,
                 1711111111L
         );
 
         // 실행
-        chatService.call(objectMapper.writeValueAsString(chatDto));
+        chatService.handle(chatDto);
 
         // 검증
-        BDDMockito.then(attendanceService).should().recordChatUser(any(ChatEventPayload.class));
-        BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatEventPayload.class));
+        BDDMockito.then(attendanceService).should().recordChatUser(any(ChatReceived.class));
+        BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatReceived.class));
     }
 
     @Test
-    void call_ShouldSuppressSameUserCommandWithinCooldown() throws Exception {
+    void handle_ShouldSuppressSameUserCommandWithinCooldown() {
         // 준비
         given(favoriteCommand.actionKey()).willReturn(CommandActionKey.FAVORITE_STATUS);
         chatService = BDDMockito.spy(new ChatService(
-                objectMapper,
                 List.of(favoriteCommand),
                 attendanceService,
                 weeklyChatRankService,
@@ -112,26 +108,26 @@ class ChatServiceTest {
                         null,
                         30
                 )));
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatEventPayload.Profile("치즈냥", null, true),
+                new ChatReceived.Profile("치즈냥", null, true),
                 "!호감도",
                 null,
                 1711111111L
         );
 
         // 실행
-        chatService.call(objectMapper.writeValueAsString(chatDto));
-        chatService.call(objectMapper.writeValueAsString(chatDto));
-        chatService.call(objectMapper.writeValueAsString(chatDto));
+        chatService.handle(chatDto);
+        chatService.handle(chatDto);
+        chatService.handle(chatDto);
 
         // 검증
-        BDDMockito.then(favoriteCommand).should(BDDMockito.times(2)).run(any(ChatEventPayload.class));
+        BDDMockito.then(favoriteCommand).should(BDDMockito.times(2)).run(any(ChatReceived.class));
     }
 
     @Test
-    void call_ShouldRenderTextCommandWithFavoriteVariable() throws Exception {
+    void handle_ShouldRenderTextCommandWithFavoriteVariable() {
         // 준비
         given(commandPort.findActiveByTrigger("!점수"))
                 .willReturn(Optional.of(command(
@@ -144,24 +140,24 @@ class ChatServiceTest {
                 )));
         given(favoriteQueryPort.getOrCreate("user-1", "치즈냥"))
                 .willReturn(new SummaryResult("user-1", "치즈냥", 123));
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatEventPayload.Profile("치즈냥", null, true),
+                new ChatReceived.Profile("치즈냥", null, true),
                 "!점수 hello",
                 null,
                 1711111111L
         );
 
         // 실행
-        chatService.call(objectMapper.writeValueAsString(chatDto));
+        chatService.handle(chatDto);
 
         // 검증
         BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("치즈냥 hello 123"));
     }
 
     @Test
-    void call_ShouldRenderTextCommandWithSenderIdWhenProfileMissing() throws Exception {
+    void handle_ShouldRenderTextCommandWithSenderIdWhenProfileMissing() {
         // 준비
         given(commandPort.findActiveByTrigger("!점수"))
                 .willReturn(Optional.of(command(
@@ -174,7 +170,7 @@ class ChatServiceTest {
                 )));
         given(favoriteQueryPort.getOrCreate("user-1", "user-1"))
                 .willReturn(new SummaryResult("user-1", "user-1", 123));
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
                 null,
@@ -184,7 +180,7 @@ class ChatServiceTest {
         );
 
         // 실행
-        chatService.call(objectMapper.writeValueAsString(chatDto));
+        chatService.handle(chatDto);
 
         // 검증
         BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("user-1 123"));

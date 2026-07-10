@@ -5,6 +5,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
+import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
@@ -42,9 +43,9 @@ public class ChzzkOAuth2AccessTokenResponseClient
                 code,
                 state,
                 null
-        )).content();
-        UserResult user = chzzkClientPort.getUser(token.tokenType() + " " + token.accessToken()).content();
-        AuthorizationAccountResult saved = authorizationPort.saveOrUpdate(user, token);
+        ));
+        UserResult user = chzzkClientPort.getUser(token.tokenType() + " " + token.accessToken());
+        AuthorizationAccountResult saved = authorizationPort.saveOrUpdate(saveCommand(user, token));
 
         OAuth2AccessTokenResponse.Builder response = OAuth2AccessTokenResponse.withToken(token.accessToken())
                 .tokenType(OAuth2AccessToken.TokenType.BEARER)
@@ -54,6 +55,18 @@ public class ChzzkOAuth2AccessTokenResponseClient
             response.expiresIn(token.expiresIn());
         }
         return response.build();
+    }
+
+    private SaveAuthorizationCommand saveCommand(UserResult user, AuthorizationToken token) {
+        return new SaveAuthorizationCommand(
+                user.channelId(),
+                user.channelName(),
+                token.accessToken(),
+                token.refreshToken(),
+                token.tokenType(),
+                token.expiresIn(),
+                token.scope()
+        );
     }
 
     private Map<String, Object> additionalParameters(AuthorizationAccountResult saved) {

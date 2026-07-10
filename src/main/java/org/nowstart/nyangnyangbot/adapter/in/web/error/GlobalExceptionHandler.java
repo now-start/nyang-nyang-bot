@@ -9,15 +9,16 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 컨트롤러 전 영역에 공통으로 적용되는 예외 처리. 처리되지 않은 예외가 스택트레이스와 함께
- * 5xx로 노출되는 것을 막고, 도메인 검증 실패와 데이터 무결성 충돌을 의미 있는 상태 코드로 매핑한다.
+ * REST 컨트롤러에 적용되는 예외 처리. 처리되지 않은 예외가 스택트레이스와 함께
+ * 5xx로 노출되는 것을 막고, 입력 검증 실패와 데이터 무결성 충돌을 의미 있는 상태 코드로 매핑한다.
  * 인증/인가(401/403) 예외는 Spring Security 필터 체인이 처리하므로 여기서 다루지 않는다.
  */
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(annotations = RestController.class)
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)

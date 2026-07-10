@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class FavoriteService implements QueryFavoriteUseCase {
+public class FavoriteService implements QueryFavoriteUseCase, AcknowledgeFavoriteHistoryUseCase {
 
     private final FavoriteQueryPort favoriteQueryPort;
     private final AuthorizationPort authorizationPort;
@@ -56,7 +57,6 @@ public class FavoriteService implements QueryFavoriteUseCase {
         int rank = Math.toIntExact(favoriteQueryPort.countByFavoriteGreaterThan(favoriteValue) + 1);
         List<FavoriteHistoryResult> histories = getHistory(userId, 50);
 
-        authorizationPort.markFavoriteHistorySeen(userId, LocalDateTime.now());
         return new FavoriteMeResult(
                 userId,
                 favorite.nickName(),
@@ -65,6 +65,11 @@ public class FavoriteService implements QueryFavoriteUseCase {
                 unseenCount,
                 histories
         );
+    }
+
+    @Override
+    public void acknowledgeHistory(String userId) {
+        authorizationPort.markFavoriteHistorySeen(userId, LocalDateTime.now());
     }
 
     @Override

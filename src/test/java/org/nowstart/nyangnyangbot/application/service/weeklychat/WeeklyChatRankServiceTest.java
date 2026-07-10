@@ -18,7 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort.WeeklyChatRankRecordResult;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
-import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.ChatEventPayload;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyChatRankServiceTest {
@@ -34,10 +34,10 @@ class WeeklyChatRankServiceTest {
     void recordChat_ShouldCreateNewWeeklyRank_WhenFirstMessageOfWeek() {
         // 준비
         LocalDate now = LocalDate.of(2026, 3, 25);
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatEventPayload.Profile("치즈냥", List.of(), true),
+                new ChatReceived.Profile("치즈냥", List.of(), true),
                 "안녕",
                 null,
                 0L
@@ -62,10 +62,10 @@ class WeeklyChatRankServiceTest {
     void recordChat_ShouldIncrementExistingWeeklyRank_AndRefreshNickname() {
         // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatEventPayload.Profile("새닉네임", List.of(), true),
+                new ChatReceived.Profile("새닉네임", List.of(), true),
                 "두번째",
                 null,
                 0L
@@ -96,10 +96,10 @@ class WeeklyChatRankServiceTest {
     void recordChat_ShouldUseUserId_WhenNicknameMissing() {
         // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-42",
-                new ChatEventPayload.Profile("", List.of(), false),
+                new ChatReceived.Profile("", List.of(), false),
                 "세번째",
                 null,
                 0L
@@ -122,7 +122,7 @@ class WeeklyChatRankServiceTest {
     void recordChat_ShouldUseUserId_WhenProfileMissing() {
         // 준비
         LocalDate now = LocalDate.of(2026, 3, 26);
-        ChatEventPayload chatDto = new ChatEventPayload(
+        ChatReceived chatDto = new ChatReceived(
                 "channel-1",
                 "user-43",
                 null,

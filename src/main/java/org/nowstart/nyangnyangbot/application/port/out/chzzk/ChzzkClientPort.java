@@ -1,14 +1,12 @@
 package org.nowstart.nyangnyangbot.application.port.out.chzzk;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.List;
-import java.util.Map;
 
 public interface ChzzkClientPort {
 
-    ApiResult<AuthorizationToken> getAccessToken(AuthorizationTokenCommand request);
+    AuthorizationToken getAccessToken(AuthorizationTokenCommand request);
 
-    ApiResult<UserResult> getUser(String authorization);
+    UserResult getUser(String authorization);
 
     void sendMessage(MessageCommand request);
 
@@ -18,12 +16,9 @@ public interface ChzzkClientPort {
 
     void subscribeSubscriptionEvent(String sessionKey);
 
-    ApiResult<SessionResult> getSessionList(String clientId, String clientSecret);
+    SessionResult getSessionList(String clientId, String clientSecret);
 
-    ApiResult<SessionResult> getSession(String clientId, String clientSecret);
-
-    record ApiResult<T>(Integer code, String message, T content) {
-    }
+    SessionResult getSession(String clientId, String clientSecret);
 
     record AuthorizationToken(
             String accessToken,
@@ -56,35 +51,6 @@ public interface ChzzkClientPort {
         }
     }
 
-    record ChatEventPayload(
-            String channelId,
-            String senderChannelId,
-            Profile profile,
-            String content,
-            Map<String, String> emojis,
-            Long messageTime
-    ) {
-        public record Profile(
-                String nickname,
-                List<Map<String, String>> badges,
-                Boolean verifiedMark
-        ) {
-        }
-    }
-
-    record DonationEventPayload(
-            @JsonAlias({"donationId", "eventId", "id"})
-            String donationEventId,
-            String donationType,
-            String channelId,
-            String donatorChannelId,
-            String donatorNickname,
-            String payAmount,
-            String donationText,
-            Map<String, String> emojis
-    ) {
-    }
-
     record MessageCommand(String message) {
     }
 
@@ -103,22 +69,6 @@ public interface ChzzkClientPort {
         ) {
             public record SubscribedEvents(String eventType, String channelId) {
             }
-        }
-    }
-
-    record SubscriptionEventPayload(
-            String channelId,
-            String subscriberChannelId,
-            String subscriberNickname,
-            Integer tierNo,
-            String tierName,
-            Integer month
-    ) {
-    }
-
-    record SystemEventPayload(String type, SystemData data) {
-
-        public record SystemData(String sessionKey, String eventType, String channelId) {
         }
     }
 

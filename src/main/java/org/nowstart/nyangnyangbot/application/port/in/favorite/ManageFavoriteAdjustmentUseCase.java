@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.application.port.in.favorite;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public interface ManageFavoriteAdjustmentUseCase {
@@ -17,6 +18,7 @@ public interface ManageFavoriteAdjustmentUseCase {
             @NotNull(message = "amount is required")
             Integer amount,
             @NotBlank(message = "label is required")
+            @Size(max = 255, message = "label length must be 255 or less")
             String label
     ) {
     }
@@ -26,6 +28,7 @@ public interface ManageFavoriteAdjustmentUseCase {
             String userId,
             List<@Positive(message = "adjustmentIds must be positive") Long> adjustmentIds,
             Integer manualAmount,
+            @Size(max = 255, message = "manualHistory length must be 255 or less")
             String manualHistory
     ) {
     }
