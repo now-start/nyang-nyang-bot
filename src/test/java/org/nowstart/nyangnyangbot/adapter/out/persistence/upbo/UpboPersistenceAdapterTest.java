@@ -3,12 +3,12 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.upbo;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -134,7 +134,7 @@ class UpboPersistenceAdapterTest {
         return new UpboPersistenceAdapter(
                 upboTemplateRepository,
                 userUpboRepository,
-                Mappers.getMapper(UpboPersistenceMapper.class)
+                outboundContractValidator()
         );
     }
 

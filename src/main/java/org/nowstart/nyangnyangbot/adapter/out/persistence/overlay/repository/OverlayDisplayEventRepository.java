@@ -6,9 +6,6 @@ import java.util.Optional;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
 public interface OverlayDisplayEventRepository extends JpaRepository<OverlayDisplayEvent, Long> {
 
     List<OverlayDisplayEvent> findByStatusAndExpiresAtBefore(

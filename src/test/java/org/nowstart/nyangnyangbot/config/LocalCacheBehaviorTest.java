@@ -4,6 +4,7 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -11,18 +12,15 @@ import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
@@ -30,7 +28,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceMapper;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
@@ -333,31 +330,33 @@ class LocalCacheBehaviorTest {
     static class TestConfig {
 
         @Bean
+        OutboundContractValidator outboundContractValidatorBean() {
+            return outboundContractValidator();
+        }
+
+        @Bean
         CommandPort commandPort(
                 CommandRepository commandRepository,
-                CommandPersistenceMapper commandPersistenceMapper
+                OutboundContractValidator contractValidator
         ) {
-            return new CommandPersistenceAdapter(commandRepository, commandPersistenceMapper);
+            return new CommandPersistenceAdapter(commandRepository, contractValidator);
         }
 
         @Bean
         FavoriteAdjustmentPort favoriteAdjustmentPort(
                 FavoriteAdjustmentRepository favoriteAdjustmentRepository,
-                FavoriteAdjustmentPersistenceMapper favoriteAdjustmentPersistenceMapper
+                OutboundContractValidator contractValidator
         ) {
-            return new FavoriteAdjustmentPersistenceAdapter(
-                    favoriteAdjustmentRepository,
-                    favoriteAdjustmentPersistenceMapper
-            );
+            return new FavoriteAdjustmentPersistenceAdapter(favoriteAdjustmentRepository, contractValidator);
         }
 
         @Bean
         UpboPort upboPort(
                 UpboTemplateRepository upboTemplateRepository,
                 UserUpboRepository userUpboRepository,
-                UpboPersistenceMapper upboPersistenceMapper
+                OutboundContractValidator contractValidator
         ) {
-            return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository, upboPersistenceMapper);
+            return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository, contractValidator);
         }
 
         @Bean
@@ -366,36 +365,16 @@ class LocalCacheBehaviorTest {
                 RouletteItemRepository rouletteItemRepository,
                 RouletteEventRepository rouletteEventRepository,
                 RouletteRoundResultRepository rouletteRoundResultRepository,
-                RoulettePersistenceMapper roulettePersistenceMapper
+                OutboundContractValidator contractValidator
         ) {
             return new RoulettePersistenceAdapter(
                     rouletteTableRepository,
                     rouletteItemRepository,
                     rouletteEventRepository,
                     rouletteRoundResultRepository,
-                    roulettePersistenceMapper,
-                    new ObjectMapper()
+                    new ObjectMapper(),
+                    contractValidator
             );
-        }
-
-        @Bean
-        CommandPersistenceMapper commandPersistenceMapper() {
-            return Mappers.getMapper(CommandPersistenceMapper.class);
-        }
-
-        @Bean
-        FavoriteAdjustmentPersistenceMapper favoriteAdjustmentPersistenceMapper() {
-            return Mappers.getMapper(FavoriteAdjustmentPersistenceMapper.class);
-        }
-
-        @Bean
-        UpboPersistenceMapper upboPersistenceMapper() {
-            return Mappers.getMapper(UpboPersistenceMapper.class);
-        }
-
-        @Bean
-        RoulettePersistenceMapper roulettePersistenceMapper() {
-            return Mappers.getMapper(RoulettePersistenceMapper.class);
         }
 
         @Bean

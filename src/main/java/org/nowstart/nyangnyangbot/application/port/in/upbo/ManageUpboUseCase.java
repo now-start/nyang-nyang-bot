@@ -1,15 +1,22 @@
 package org.nowstart.nyangnyangbot.application.port.in.upbo;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public interface ManageUpboUseCase {
 
     List<UpboTemplateResult> getActiveTemplates();
 
-    UpboTemplateResult createTemplate(UpboTemplateCreateCommand command);
+    UpboTemplateResult createTemplate(
+            @Valid @NotNull(message = "command is required") UpboTemplateCreateCommand command
+    );
 
-    UserUpboResult applyUpbo(UpboApplyCommand command, String actorId);
+    UserUpboResult applyUpbo(
+            @Valid @NotNull(message = "command is required") UpboApplyCommand command,
+            String actorId
+    );
 
     record UpboTemplateCreateCommand(
             @NotBlank(message = "label is required")

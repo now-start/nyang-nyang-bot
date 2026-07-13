@@ -13,6 +13,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
@@ -33,8 +34,8 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     private final RouletteItemRepository rouletteItemRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
-    private final RoulettePersistenceMapper mapper;
     private final ObjectMapper objectMapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     @CacheEvict(cacheNames = CacheNames.ROULETTE_TABLES, allEntries = true)
@@ -47,7 +48,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .version(0)
                 .highRoundThreshold(highRoundThreshold)
                 .build());
-        return mapper.tableResult(saved);
+        return tableResult(saved);
     }
 
     @Override
@@ -78,28 +79,28 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .active(true)
                 .displayOrder(displayOrder)
                 .build());
-        return mapper.itemResult(saved);
+        return itemResult(saved);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_TABLES)
     public List<TableResult> findTablesOrderByIdDesc() {
         return rouletteTableRepository.findAllByOrderByIdDesc().stream()
-                .map(mapper::tableResult)
+                .map(this::tableResult)
                 .toList();
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_TABLE_BY_ID, key = "#tableId", unless = "#result == null")
     public Optional<TableResult> findTableById(Long tableId) {
-        return rouletteTableRepository.findById(tableId).map(mapper::tableResult);
+        return rouletteTableRepository.findById(tableId).map(this::tableResult);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdOrderByDisplayOrderAscIdAsc(tableId).stream()
-                .map(mapper::itemResult)
+                .map(this::itemResult)
                 .toList();
     }
 
@@ -107,14 +108,14 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     @Cacheable(cacheNames = CacheNames.ROULETTE_ACTIVE_ITEMS_BY_TABLE_ID, key = "#tableId")
     public List<ItemResult> findActiveItemsByTableId(Long tableId) {
         return rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(tableId).stream()
-                .map(mapper::itemResult)
+                .map(this::itemResult)
                 .toList();
     }
 
     @Override
     public List<TableResult> findActiveTables() {
         return rouletteTableRepository.findByActiveTrue().stream()
-                .map(mapper::tableResult)
+                .map(this::tableResult)
                 .toList();
     }
 
@@ -134,7 +135,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                     throw new IllegalStateException("another roulette table is already active");
         });
         table.activate();
-        return mapper.tableResult(rouletteTableRepository.save(table));
+        return tableResult(rouletteTableRepository.save(table));
     }
 
     @Override
@@ -147,13 +148,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         RouletteTable table = rouletteTableRepository.findById(tableId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         table.deactivate();
-        return mapper.tableResult(table);
+        return tableResult(table);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.ROULETTE_LATEST_ACTIVE_TABLE, unless = "#result == null")
     public Optional<TableResult> findLatestActiveTable() {
-        return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(mapper::tableResult);
+        return rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc().map(this::tableResult);
     }
 
     @Override
@@ -163,6 +164,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
 
     @Override
     public EventResult createEvent(CreateRouletteEventCommand command) {
+        contractValidator.request("roulette.createEvent", command);
         RouletteEvent saved = rouletteEventRepository.save(RouletteEvent.builder()
                 .donationEventId(command.donationEventId())
                 .idempotencyKey(command.idempotencyKey())
@@ -178,7 +180,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                 .itemsSnapshotJson(toJson(command.itemSnapshots()))
                 .status(command.status())
                 .build());
-        return mapper.eventResult(saved);
+        return eventResult(saved);
     }
 
     private String toJson(Object value) {
@@ -191,6 +193,12 @@ public class RoulettePersistenceAdapter implements RoulettePort {
 
     @Override
     public List<RoundResult> saveRounds(Long rouletteEventId, List<CreateRouletteRoundCommand> commands) {
+        if (commands == null) {
+            contractValidator.request("roulette.saveRounds", null);
+        }
+        for (int index = 0; index < commands.size(); index++) {
+            contractValidator.request("roulette.saveRounds[" + index + "]", commands.get(index));
+        }
         RouletteEvent event = rouletteEventRepository.getReferenceById(rouletteEventId);
         List<RouletteRoundResult> rounds = commands.stream()
                 .map(command -> RouletteRoundResult.builder()
@@ -207,34 +215,34 @@ public class RoulettePersistenceAdapter implements RoulettePort {
                         .build())
                 .toList();
         return rouletteRoundResultRepository.saveAll(rounds).stream()
-                .map(mapper::roundResult)
+                .map(this::roundResult)
                 .toList();
     }
 
     @Override
     public List<EventResult> findEventsByUserId(String userId) {
         return rouletteEventRepository.findByUserIdOrderByCreateDateDesc(userId).stream()
-                .map(mapper::eventResult)
+                .map(this::eventResult)
                 .toList();
     }
 
     @Override
     public Page<EventResult> findRecentEvents(Pageable pageable) {
         return rouletteEventRepository.findAllByOrderByCreateDateDesc(pageable)
-                .map(mapper::eventResult);
+                .map(this::eventResult);
     }
 
     @Override
     public List<RoundResult> findRoundsByEventId(Long rouletteEventId) {
         return rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(rouletteEventId).stream()
-                .map(mapper::roundResult)
+                .map(this::roundResult)
                 .toList();
     }
 
     @Override
     public List<RoundResult> findRoundsByUserId(String userId) {
         return rouletteRoundResultRepository.findByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
-                .map(mapper::roundResult)
+                .map(this::roundResult)
                 .toList();
     }
 
@@ -242,13 +250,13 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     public List<RoundResult> findTopRoundsByUserId(String userId, int limit) {
         return rouletteRoundResultRepository.findTop5ByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
                 .limit(limit)
-                .map(mapper::roundResult)
+                .map(this::roundResult)
                 .toList();
     }
 
     @Override
     public Optional<EventResult> findEventById(Long eventId) {
-        return rouletteEventRepository.findById(eventId).map(mapper::eventResult);
+        return rouletteEventRepository.findById(eventId).map(this::eventResult);
     }
 
     @Override
@@ -261,7 +269,7 @@ public class RoulettePersistenceAdapter implements RoulettePort {
 
     @Override
     public Optional<RoundResult> findRoundById(Long roundId) {
-        return rouletteRoundResultRepository.findById(roundId).map(mapper::roundResult);
+        return rouletteRoundResultRepository.findById(roundId).map(this::roundResult);
     }
 
     @Override
@@ -276,6 +284,75 @@ public class RoulettePersistenceAdapter implements RoulettePort {
         RouletteRoundResult round = rouletteRoundResultRepository.findById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette round not found"));
         round.markFailed(failureReason);
+    }
+
+    private TableResult tableResult(RouletteTable entity) {
+        return contractValidator.persistenceResult("roulette.tableResult", new TableResult(
+                entity.getId(),
+                entity.getTitle(),
+                entity.getCommand(),
+                entity.getPricePerRound(),
+                entity.isActive(),
+                entity.getVersion(),
+                entity.getHighRoundThreshold()
+        ));
+    }
+
+    private ItemResult itemResult(RouletteItem entity) {
+        return contractValidator.persistenceResult("roulette.itemResult", new ItemResult(
+                entity.getId(),
+                entity.getRouletteTable() == null ? null : entity.getRouletteTable().getId(),
+                entity.getLabel(),
+                entity.getProbabilityBasisPoints(),
+                entity.isLosingItem(),
+                entity.getRewardType(),
+                entity.getConversionMode(),
+                entity.getExchangeFavoriteValue(),
+                entity.isActive(),
+                entity.getDisplayOrder()
+        ));
+    }
+
+    private EventResult eventResult(RouletteEvent entity) {
+        return contractValidator.persistenceResult("roulette.eventResult", new EventResult(
+                entity.getId(),
+                entity.getDonationEventId(),
+                entity.getUserId(),
+                entity.getNickNameSnapshot(),
+                entity.getDonationAmount(),
+                entity.getDonationText(),
+                entity.getRouletteTableId(),
+                entity.getRouletteTableVersion(),
+                entity.getCommand(),
+                entity.getPricePerRound(),
+                entity.getRoundCount(),
+                entity.getItemsSnapshotJson(),
+                entity.getStatus(),
+                entity.getCreateDate()
+        ));
+    }
+
+    private RoundResult roundResult(RouletteRoundResult entity) {
+        RouletteEvent event = entity.getRouletteEvent();
+        return contractValidator.persistenceResult("roulette.roundResult", new RoundResult(
+                entity.getId(),
+                event == null ? null : event.getId(),
+                event == null ? null : event.getDonationEventId(),
+                event == null ? null : event.getUserId(),
+                event == null ? null : event.getNickNameSnapshot(),
+                entity.getRoundNo(),
+                entity.getItemLabel(),
+                entity.getProbabilityBasisPoints(),
+                entity.isLosingItem(),
+                entity.getRewardType(),
+                entity.getConversionMode(),
+                entity.getExchangeFavoriteValue(),
+                entity.getStatus(),
+                entity.getLedgerId(),
+                entity.getUserUpboId(),
+                entity.getFailureReason(),
+                entity.getTicket()
+        ));
     }
 
 }

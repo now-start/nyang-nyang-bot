@@ -14,18 +14,18 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 @RequiredArgsConstructor
 public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCase {
 
     private final FavoriteAdjustmentPort favoriteAdjustmentPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     public List<FavoriteAdjustmentOptionResult> getAdjustments() {
@@ -38,22 +38,16 @@ public class FavoriteAdjustmentService implements ManageFavoriteAdjustmentUseCas
 
     @Override
     public FavoriteAdjustmentOptionResult createAdjustment(FavoriteAdjustmentCreateCommand command) {
-        useCaseValidator.validate(command, "request is required");
         return favoriteAdjustmentOptionResult(favoriteAdjustmentPort.save(command.amount(), command.label().trim()));
     }
 
     @Override
     public FavoriteAdjustmentApplyResult applyAdjustments(FavoriteAdjustmentApplyCommand command) {
-        useCaseValidator.validate(command, "request is required");
         String userId = command.userId();
         List<Long> adjustmentIds = command.adjustmentIds();
         Integer manualAmount = command.manualAmount();
         String manualHistory = command.manualHistory();
         boolean hasManualAmount = manualAmount != null && manualAmount != 0;
-        if ((adjustmentIds == null || adjustmentIds.isEmpty()) && !hasManualAmount) {
-            throw new IllegalArgumentException("adjustmentIds or manualAmount is required");
-        }
-
         List<OptionResult> adjustments = List.of();
         if (adjustmentIds != null && !adjustmentIds.isEmpty()) {
             adjustments = favoriteAdjustmentPort.findAll().stream()

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
@@ -26,11 +27,11 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
-    private final FavoritePersistenceMapper mapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public Optional<FavoriteAccount> loadForUpdate(String userId) {
-        return favoriteRepository.findByIdForUpdate(userId).map(mapper::favoriteAccount);
+        return favoriteRepository.findByIdForUpdate(userId).map(this::favoriteAccount);
     }
 
     @Override
@@ -92,17 +93,17 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
 
     @Override
     public Page<SummaryResult> findAll(org.springframework.data.domain.Pageable pageable) {
-        return favoriteRepository.findAll(pageable).map(mapper::summaryResult);
+        return favoriteRepository.findAll(pageable).map(this::summaryResult);
     }
 
     @Override
     public Page<SummaryResult> findByNickNameContains(org.springframework.data.domain.Pageable pageable, String nickName) {
-        return favoriteRepository.findByNickNameContains(pageable, nickName).map(mapper::summaryResult);
+        return favoriteRepository.findByNickNameContains(pageable, nickName).map(this::summaryResult);
     }
 
     @Override
     public Optional<SummaryResult> findById(String userId) {
-        return favoriteRepository.findById(userId).map(mapper::summaryResult);
+        return favoriteRepository.findById(userId).map(this::summaryResult);
     }
 
     @Override
@@ -115,7 +116,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                                 .favorite(0)
                                 .build()
                 ));
-        return mapper.summaryResult(entity);
+        return summaryResult(entity);
     }
 
     @Override
@@ -132,7 +133,7 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 )
                 .getContent()
                 .stream()
-                .map(mapper::historyResult)
+                .map(this::historyResult)
                 .toList();
     }
 
@@ -156,5 +157,37 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
             return null;
         }
         return idempotencyKey;
+    }
+
+    private FavoriteAccount favoriteAccount(
+            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
+    ) {
+        return FavoriteAccount.of(entity.getUserId(), entity.getNickName(), entity.getFavorite());
+    }
+
+    private SummaryResult summaryResult(
+            org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount entity
+    ) {
+        return contractValidator.persistenceResult(
+                "favorite.summaryResult",
+                new SummaryResult(entity.getUserId(), entity.getNickName(), entity.getFavorite())
+        );
+    }
+
+    private HistoryResult historyResult(FavoriteHistory entity) {
+        return contractValidator.persistenceResult("favorite.historyResult", new HistoryResult(
+                entity.getId(),
+                entity.getFavoriteAccount() == null ? null : entity.getFavoriteAccount().getUserId(),
+                entity.getNickNameSnapshot(),
+                entity.getDelta(),
+                entity.getBalanceAfter() == null ? entity.getFavorite() : entity.getBalanceAfter(),
+                entity.getSourceType(),
+                entity.getDisplayCategory(),
+                entity.getPublicDescription() == null ? entity.getHistory() : entity.getPublicDescription(),
+                entity.getCorrectionOfLedgerId() != null,
+                entity.getFavorite(),
+                entity.getHistory(),
+                entity.getCreateDate()
+        ));
     }
 }

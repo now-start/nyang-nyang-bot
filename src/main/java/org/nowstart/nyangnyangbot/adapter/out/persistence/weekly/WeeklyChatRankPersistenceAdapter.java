@@ -7,6 +7,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatRankPort;
 import org.springframework.data.domain.PageRequest;
@@ -17,16 +18,17 @@ import org.springframework.stereotype.Component;
 public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
 
     private final WeeklyChatRankRepository weeklyChatRankRepository;
-    private final WeeklyChatRankPersistenceMapper mapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public Optional<WeeklyChatRankRecordResult> findByWeekStartDateAndUserId(LocalDate weekStartDate, String userId) {
         return weeklyChatRankRepository.findByWeekStartDateAndUserId(weekStartDate, userId)
-                .map(mapper::recordResult);
+                .map(this::recordResult);
     }
 
     @Override
     public WeeklyChatRankRecordResult save(WeeklyChatRankRecordResult record) {
+        contractValidator.request("weekly.save", record);
         WeeklyChatRank entity = record.id() == null
                 ? WeeklyChatRank.builder().build()
                 : weeklyChatRankRepository.findById(record.id()).orElseGet(WeeklyChatRank.builder()::build);
@@ -34,7 +36,7 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
         entity.setUserId(record.userId());
         entity.setNickName(record.nickName());
         entity.setChatCount(record.chatCount());
-        return mapper.recordResult(weeklyChatRankRepository.save(entity));
+        return recordResult(weeklyChatRankRepository.save(entity));
     }
 
     @Override
@@ -48,6 +50,16 @@ public class WeeklyChatRankPersistenceAdapter implements WeeklyChatRankPort {
             ranks.add(new WeeklyChatRankView(rank++, result.getNickname(), chatCount));
         }
         return ranks;
+    }
+
+    private WeeklyChatRankRecordResult recordResult(WeeklyChatRank entity) {
+        return contractValidator.persistenceResult("weekly.recordResult", new WeeklyChatRankRecordResult(
+                entity.getId(),
+                entity.getWeekStartDate(),
+                entity.getUserId(),
+                entity.getNickName(),
+                entity.getChatCount()
+        ));
     }
 
 }

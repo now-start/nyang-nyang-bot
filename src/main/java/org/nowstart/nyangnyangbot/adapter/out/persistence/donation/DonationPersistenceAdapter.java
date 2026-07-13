@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ public class DonationPersistenceAdapter implements DonationPort {
 
     private final DonationRepository donationRepository;
     private final ObjectMapper objectMapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public boolean existsByDonationEventId(String donationEventId) {
@@ -23,6 +25,7 @@ public class DonationPersistenceAdapter implements DonationPort {
 
     @Override
     public void save(SaveDonationCommand command) {
+        contractValidator.request("donation.save", command);
         donationRepository.save(Donation.builder()
                 .donationEventId(normalizeDonationEventId(command.donationEventId()))
                 .donationType(command.donationType())

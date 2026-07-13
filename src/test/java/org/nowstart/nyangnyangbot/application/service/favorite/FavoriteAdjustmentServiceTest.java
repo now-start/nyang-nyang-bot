@@ -5,8 +5,9 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,6 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdj
 import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentOptionResult;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort.OptionResult;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,14 +74,14 @@ class FavoriteAdjustmentServiceTest {
 
         // 실행 및 검증
         thenThrownBy(() -> service.createAdjustment(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("request is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("command is required");
         thenThrownBy(() -> service.createAdjustment(new FavoriteAdjustmentCreateCommand(null, "보너스")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("amount is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("amount is required");
         thenThrownBy(() -> service.createAdjustment(new FavoriteAdjustmentCreateCommand(10, " ")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("label is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("label is required");
     }
 
     @Test
@@ -192,18 +192,14 @@ class FavoriteAdjustmentServiceTest {
 
         // 실행 및 검증
         thenThrownBy(() -> service.applyAdjustments(new FavoriteAdjustmentApplyCommand(" ", List.of(), null, null)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("userId is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
         thenThrownBy(() -> service.applyAdjustments(new FavoriteAdjustmentApplyCommand("user-1", List.of(), 0, null)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("adjustmentIds or manualAmount is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("adjustmentIds or manualAmount is required");
     }
 
     private FavoriteAdjustmentService service() {
-        return new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase, validator());
-    }
-
-    private UseCaseValidator validator() {
-        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
+        return validated(new FavoriteAdjustmentService(favoriteAdjustmentPort, adjustFavoriteUseCase));
     }
 }

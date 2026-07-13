@@ -141,7 +141,6 @@ class ArchitectureBoundaryTest {
                         "application/port/out/overlay/repository",
                         "application/port/out/roulette/dto",
                         "application/port/out/roulette/repository",
-                        "application/port/out/subscription/repository",
                         "application/port/out/upbo/dto",
                         "application/port/out/upbo/repository",
                         "application/port/out/weekly/repository"
@@ -238,6 +237,20 @@ class ArchitectureBoundaryTest {
 
         // 검증
         then(violations).isEmpty();
+    }
+
+    @Test
+    void persistenceAdapters_ShouldUseExplicitMappingWithoutMapStruct() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
+                .filter(path -> path.getFileName().toString().endsWith("PersistenceMapper.java")
+                        || containsAny(path, "org.mapstruct."))
+                .toList();
+        String buildScript = Files.readString(Path.of("build.gradle"));
+
+        // 검증
+        then(violations).isEmpty();
+        then(buildScript).doesNotContain("mapstruct");
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.in.attendance;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotEmpty;
@@ -14,7 +15,9 @@ public interface ManageAttendanceUseCase {
 
     List<AttendanceUserSnapshot> getActiveUsers();
 
-    AttendanceApplyResult applyAttendance(AttendanceApplyCommand command);
+    AttendanceApplyResult applyAttendance(
+            @Valid @NotNull(message = "command is required") AttendanceApplyCommand command
+    );
 
     record AttendanceApplyCommand(
             @NotEmpty(message = "attendance targets are required")

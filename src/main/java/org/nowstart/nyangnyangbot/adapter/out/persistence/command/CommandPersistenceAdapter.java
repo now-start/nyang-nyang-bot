@@ -5,6 +5,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
@@ -18,40 +19,40 @@ import org.springframework.stereotype.Component;
 public class CommandPersistenceAdapter implements CommandPort {
 
     private final CommandRepository commandRepository;
-    private final CommandPersistenceMapper mapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public List<CommandRecord> findAllOrderByIdDesc() {
         return commandRepository.findAllByOrderByIdDesc().stream()
-                .map(mapper::commandRecord)
+                .map(this::commandRecord)
                 .toList();
     }
 
     @Override
     public Optional<CommandRecord> findById(Long commandId) {
-        return commandRepository.findById(commandId).map(mapper::commandRecord);
+        return commandRepository.findById(commandId).map(this::commandRecord);
     }
 
     @Override
     public Optional<CommandRecord> findByTrigger(String trigger) {
-        return commandRepository.findByTriggerToken(trigger).map(mapper::commandRecord);
+        return commandRepository.findByTriggerToken(trigger).map(this::commandRecord);
     }
 
     @Override
     public Optional<CommandRecord> findByActionKey(CommandActionKey actionKey) {
-        return commandRepository.findByActionKey(actionKey).map(mapper::commandRecord);
+        return commandRepository.findByActionKey(actionKey).map(this::commandRecord);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, key = "#trigger", unless = "#result == null")
     public Optional<CommandRecord> findActiveByTrigger(String trigger) {
-        return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(mapper::commandRecord);
+        return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(this::commandRecord);
     }
 
     @Override
     @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, key = "#actionKey", unless = "#result == null")
     public Optional<CommandRecord> findActiveByActionKey(CommandActionKey actionKey) {
-        return commandRepository.findByActionKeyAndActiveTrue(actionKey).map(mapper::commandRecord);
+        return commandRepository.findByActionKeyAndActiveTrue(actionKey).map(this::commandRecord);
     }
 
     @Override
@@ -60,6 +61,7 @@ public class CommandPersistenceAdapter implements CommandPort {
             @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, allEntries = true)
     })
     public CommandRecord create(CreateData data) {
+        contractValidator.request("command.create", data);
         Command saved = commandRepository.save(Command.builder()
                 .type(data.type())
                 .triggerToken(data.trigger())
@@ -73,7 +75,7 @@ public class CommandPersistenceAdapter implements CommandPort {
                 .createdBy(data.createdBy())
                 .updatedBy(data.updatedBy())
                 .build());
-        return mapper.commandRecord(saved);
+        return commandRecord(saved);
     }
 
     @Override
@@ -82,6 +84,7 @@ public class CommandPersistenceAdapter implements CommandPort {
             @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_ACTION_KEY, allEntries = true)
     })
     public CommandRecord update(UpdateData data) {
+        contractValidator.request("command.update", data);
         Command command = commandRepository.findById(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
         command.update(
@@ -94,6 +97,25 @@ public class CommandPersistenceAdapter implements CommandPort {
                 data.userCooldownSeconds(),
                 data.updatedBy()
         );
-        return mapper.commandRecord(command);
+        return commandRecord(command);
+    }
+
+    private CommandRecord commandRecord(Command entity) {
+        return contractValidator.persistenceResult("command.commandRecord", new CommandRecord(
+                entity.getId(),
+                entity.getType(),
+                entity.getTriggerToken(),
+                entity.getActionKey(),
+                entity.getMessageTemplate(),
+                entity.getTimerIntervalMinutes(),
+                entity.getTimerMinChatCount(),
+                entity.isActive(),
+                entity.getRequiredRole(),
+                entity.getUserCooldownSeconds(),
+                entity.getCreatedBy(),
+                entity.getUpdatedBy(),
+                entity.getCreateDate(),
+                entity.getModifyDate()
+        ));
     }
 }

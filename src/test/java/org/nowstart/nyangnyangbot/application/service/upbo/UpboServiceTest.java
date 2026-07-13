@@ -7,8 +7,9 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import org.mockito.BDDMockito;
 import static org.mockito.Mockito.never;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +26,6 @@ import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.Upb
 import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
@@ -46,7 +46,7 @@ class ManageUpboServiceTest {
 
     @BeforeEach
     void setUp() {
-        upboService = new ManageUpboService(upboPort, adjustFavoriteUseCase, validator());
+        upboService = validated(new ManageUpboService(upboPort, adjustFavoriteUseCase));
     }
 
     @Test
@@ -149,8 +149,8 @@ class ManageUpboServiceTest {
     void createTemplate_ShouldRejectInvalidTemplateCommand() {
         // 실행 및 검증
         thenThrownBy(() -> upboService.createTemplate(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("request is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("command is required");
         thenThrownBy(() -> upboService.createTemplate(new UpboTemplateCreateCommand(
                 "업보",
                 null,
@@ -159,8 +159,8 @@ class ManageUpboServiceTest {
                 " ",
                 ConversionMode.NONE.name()
         )))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("rewardType is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("rewardType is required");
         thenThrownBy(() -> upboService.createTemplate(new UpboTemplateCreateCommand(
                 "업보",
                 null,
@@ -169,8 +169,8 @@ class ManageUpboServiceTest {
                 RewardType.CUSTOM.name(),
                 " "
         )))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("conversionMode is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("conversionMode is required");
         thenThrownBy(() -> upboService.createTemplate(new UpboTemplateCreateCommand(
                 "업보",
                 null,
@@ -298,8 +298,8 @@ class ManageUpboServiceTest {
 
         // 실행 및 검증
         thenThrownBy(() -> upboService.applyUpbo(null, "admin-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("request is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("command is required");
         thenThrownBy(() -> upboService.applyUpbo(new UpboApplyCommand(
                 "user-1",
                 "치즈냥",
@@ -329,8 +329,8 @@ class ManageUpboServiceTest {
                 "공개 설명",
                 "관리자 확인"
         ), "admin-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("userId is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
         thenThrownBy(() -> upboService.applyUpbo(new UpboApplyCommand(
                 "user-1",
                 "치즈냥",
@@ -394,8 +394,8 @@ class ManageUpboServiceTest {
                 " ",
                 "관리자 확인"
         ), "admin-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("publicDescription is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("publicDescription is required");
     }
 
     @Test
@@ -412,8 +412,8 @@ class ManageUpboServiceTest {
                 "공개 설명",
                 ""
         ), "admin-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("privateMemo is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("privateMemo is required");
     }
 
     private UserResult userUpbo(Long id, UpboStatus status, Long ledgerId) {
@@ -436,7 +436,4 @@ class ManageUpboServiceTest {
         );
     }
 
-    private UseCaseValidator validator() {
-        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
-    }
 }

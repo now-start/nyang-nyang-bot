@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -11,9 +12,13 @@ import java.util.List;
 
 public interface ManageRouletteUseCase {
 
-    RouletteTableResult createTable(CreateRouletteTableCommand command);
+    RouletteTableResult createTable(
+            @Valid @NotNull(message = "command is required") CreateRouletteTableCommand command
+    );
 
-    RouletteItemResult addItem(AddRouletteItemCommand command);
+    RouletteItemResult addItem(
+            @Valid @NotNull(message = "command is required") AddRouletteItemCommand command
+    );
 
     List<RouletteTableResult> getTables();
 

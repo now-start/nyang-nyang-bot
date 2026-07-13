@@ -5,8 +5,9 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.willThrow;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,6 @@ import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanc
 import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase.AttendanceUserSnapshot;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {
@@ -121,13 +121,13 @@ class AttendanceServiceTest {
 
         // 실행 및 검증
         thenThrownBy(() -> attendanceService.applyAttendance(new AttendanceApplyCommand(List.of(), 1)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("attendance targets are required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("attendance targets are required");
 
         attendanceService.recordChatUser(chat("user-1", ""));
         thenThrownBy(() -> attendanceService.applyAttendance(new AttendanceApplyCommand(List.of("user-1"), 0)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("amount must be positive");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("amount must be positive");
     }
 
     @Test
@@ -141,8 +141,8 @@ class AttendanceServiceTest {
                 List.of(""),
                 2
         )))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("userId is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
         BDDMockito.then(grantFavoriteUseCase).shouldHaveNoInteractions();
     }
 
@@ -157,8 +157,8 @@ class AttendanceServiceTest {
                 java.util.Arrays.asList((String) null),
                 2
         )))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("userId is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
         BDDMockito.then(grantFavoriteUseCase).shouldHaveNoInteractions();
     }
 
@@ -206,10 +206,6 @@ class AttendanceServiceTest {
     }
 
     private AttendanceService service() {
-        return new AttendanceService(grantFavoriteUseCase, validator());
-    }
-
-    private UseCaseValidator validator() {
-        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
+        return validated(new AttendanceService(grantFavoriteUseCase));
     }
 }

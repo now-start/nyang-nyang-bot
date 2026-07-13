@@ -44,10 +44,6 @@ public interface ChzzkOpenApiClient {
     void subscribeDonationEvent(@RequestParam("sessionKey") String sessionKey);
 
     @Authorization
-    @PostMapping("/open/v1/sessions/events/subscribe/subscription")
-    void subscribeSubscriptionEvent(@RequestParam("sessionKey") String sessionKey);
-
-    @Authorization
     @PostMapping("/open/v1/chats/send")
     void sendMessage(@RequestBody MessageRequest message);
 }

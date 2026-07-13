@@ -14,6 +14,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.nowstart.nyangnyangbot.adapter.out.external.google.response.GoogleSheetRowResponse;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
 import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
     private static final String RANGE = "호감도 순위표!B2:H2000";
 
     private final GoogleProperty googleProperty;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     @SneakyThrows
@@ -52,9 +54,13 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
         if (values == null) {
             return List.of();
         }
-        return values.stream()
+        List<GoogleSheetRow> rows = values.stream()
                 .map(GoogleSheetRowResponse::new)
                 .flatMap(response -> response.toGoogleSheetRow().stream())
                 .toList();
+        for (int index = 0; index < rows.size(); index++) {
+            contractValidator.externalResponse("googleSheet.readFavoriteRows[" + index + "]", rows.get(index));
+        }
+        return rows;
     }
 }

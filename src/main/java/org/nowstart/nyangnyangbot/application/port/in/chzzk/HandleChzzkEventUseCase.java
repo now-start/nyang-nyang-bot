@@ -11,8 +11,6 @@ public interface HandleChzzkEventUseCase {
 
     void handleDonationEvent(DonationReceived event);
 
-    void handleSubscriptionEvent(SubscriptionReceived event);
-
     record SystemReceived(
             String type,
             SystemData data
@@ -55,13 +53,4 @@ public interface HandleChzzkEventUseCase {
     ) {
     }
 
-    record SubscriptionReceived(
-            String channelId,
-            String subscriberChannelId,
-            String subscriberNickname,
-            Integer tierNo,
-            String tierName,
-            Integer month
-    ) {
-    }
 }

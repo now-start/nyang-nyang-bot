@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.domain.chat;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,10 +37,6 @@ public class CommandCooldown {
             return currentTimeMillis;
         });
         return inCooldown.get();
-    }
-
-    public Map<String, Long> snapshot() {
-        return Map.copyOf(lastCommandTimes);
     }
 
     private boolean isBlank(String value) {

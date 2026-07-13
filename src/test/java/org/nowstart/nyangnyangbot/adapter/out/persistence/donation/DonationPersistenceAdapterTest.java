@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.Mockito.verify;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
@@ -23,7 +24,11 @@ class DonationPersistenceAdapterTest {
     @Test
     void save_ShouldStoreBlankDonationEventIdAsNull() {
         // 준비
-        DonationPersistenceAdapter adapter = new DonationPersistenceAdapter(donationRepository, new ObjectMapper());
+        DonationPersistenceAdapter adapter = new DonationPersistenceAdapter(
+                donationRepository,
+                new ObjectMapper(),
+                outboundContractValidator()
+        );
         ArgumentCaptor<Donation> captor = ArgumentCaptor.forClass(Donation.class);
         SaveDonationCommand donation = new SaveDonationCommand(
                 " ",

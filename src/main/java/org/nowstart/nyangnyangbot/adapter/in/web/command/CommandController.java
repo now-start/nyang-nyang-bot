@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
+import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletResponse;
 import io.micrometer.common.util.StringUtils;
 import java.util.List;
@@ -85,8 +86,8 @@ public class CommandController {
                     form.favorite()
             ));
             model.addAttribute("previewMessage", result.message());
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("previewError", e.getMessage());
+        } catch (IllegalArgumentException | ConstraintViolationException e) {
+            model.addAttribute("previewError", inputErrorMessage(e));
         }
         return COMMAND_PREVIEW_FRAGMENT;
     }
@@ -107,9 +108,9 @@ public class CommandController {
             model.addAttribute("commandForm", CommandForm.from(result));
             model.addAttribute("saveMessage", "저장됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ConstraintViolationException e) {
             model.addAttribute("commandForm", activeForm.withDefaults());
-            model.addAttribute("saveError", e.getMessage());
+            model.addAttribute("saveError", inputErrorMessage(e));
         }
         return COMMAND_EDITOR_FRAGMENT;
     }
@@ -132,9 +133,9 @@ public class CommandController {
             model.addAttribute("commandForm", CommandForm.from(result));
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ConstraintViolationException e) {
             model.addAttribute("commandForm", inactiveForm.withDefaults());
-            model.addAttribute("saveError", e.getMessage());
+            model.addAttribute("saveError", inputErrorMessage(e));
         }
         return COMMAND_EDITOR_FRAGMENT;
     }
@@ -145,6 +146,18 @@ public class CommandController {
                 .filter(command -> active == null || active == command.active())
                 .map(CommandView::from)
                 .toList();
+    }
+
+    private String inputErrorMessage(RuntimeException exception) {
+        if (exception instanceof ConstraintViolationException violationException) {
+            // HTML 조각에는 내부 메서드 경로를 노출하지 않고 사용자가 읽을 메시지만 표시한다.
+            return violationException.getConstraintViolations().stream()
+                    .map(violation -> violation.getMessage())
+                    .sorted()
+                    .distinct()
+                    .collect(java.util.stream.Collectors.joining(", "));
+        }
+        return exception.getMessage();
     }
 
     private CommandForm commandForm(Long commandId) {

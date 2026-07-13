@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +22,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
     private final OverlayDisplayEventRepository overlayDisplayEventRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
-    private final OverlayDisplayPersistenceMapper mapper;
-    private final org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceMapper rouletteMapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public void enqueueRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
@@ -80,10 +80,34 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     private DisplayEventResult toModel(OverlayDisplayEvent displayEvent) {
         RouletteEvent event = displayEvent.getRouletteEvent();
-        List<RoundResult> rounds = rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(event.getId())
+        List<DisplayRoundResult> rounds = rouletteRoundResultRepository
+                .findByRouletteEventIdOrderByRoundNoAsc(event.getId())
                 .stream()
-                .map(rouletteMapper::roundResult)
+                .map(this::displayRoundResult)
                 .toList();
-        return mapper.displayEventResult(displayEvent, rounds);
+        return contractValidator.persistenceResult("overlay.displayEventResult", new DisplayEventResult(
+                displayEvent.getId(),
+                event.getId(),
+                event.getNickNameSnapshot(),
+                event.getRoundCount(),
+                displayEvent.getExpiresAt(),
+                rounds
+        ));
+    }
+
+    private DisplayRoundResult displayRoundResult(RouletteRoundResult entity) {
+        return contractValidator.persistenceResult("overlay.displayRoundResult", new DisplayRoundResult(
+                entity.getId(),
+                entity.getRoundNo(),
+                entity.getItemLabel(),
+                entity.isLosingItem(),
+                entity.getRewardType(),
+                entity.getConversionMode(),
+                entity.getExchangeFavoriteValue(),
+                entity.getStatus(),
+                entity.getLedgerId(),
+                entity.getUserUpboId(),
+                entity.getFailureReason()
+        ));
     }
 }

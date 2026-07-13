@@ -5,6 +5,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.springframework.stereotype.Component;
 
@@ -13,15 +14,16 @@ import org.springframework.stereotype.Component;
 public class AuthorizationPersistenceAdapter implements AuthorizationPort {
 
     private final AuthorizationRepository authorizationRepository;
-    private final AuthorizationPersistenceMapper mapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     public Optional<AuthorizationAccountResult> findById(String channelId) {
-        return authorizationRepository.findById(channelId).map(mapper::accountResult);
+        return authorizationRepository.findById(channelId).map(this::accountResult);
     }
 
     @Override
     public AuthorizationAccountResult saveOrUpdate(SaveAuthorizationCommand command) {
+        contractValidator.request("authorization.saveOrUpdate", command);
         AuthorizationAccount saved = authorizationRepository.findById(command.channelId())
                 .map(existing -> authorizationRepository.save(update(existing, command)))
                 .orElseGet(() -> authorizationRepository.save(AuthorizationAccount.builder()
@@ -34,14 +36,15 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                         .scope(command.scope())
                         .admin(false)
                         .build()));
-        return mapper.accountResult(saved);
+        return accountResult(saved);
     }
 
     @Override
     public AuthorizationAccountResult updateToken(String channelId, SaveAuthorizationCommand command) {
+        contractValidator.request("authorization.updateToken", command);
         AuthorizationAccount entity = authorizationRepository.findById(channelId).orElseThrow();
         update(entity, command);
-        return mapper.accountResult(entity);
+        return accountResult(entity);
     }
 
     @Override
@@ -58,6 +61,21 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
         entity.setExpiresIn(command.expiresIn());
         entity.setScope(command.scope());
         return entity;
+    }
+
+    private AuthorizationAccountResult accountResult(AuthorizationAccount entity) {
+        return contractValidator.persistenceResult("authorization.accountResult", new AuthorizationAccountResult(
+                entity.getChannelId(),
+                entity.getChannelName(),
+                entity.getAccessToken(),
+                entity.getRefreshToken(),
+                entity.getTokenType(),
+                entity.getExpiresIn(),
+                entity.getScope(),
+                entity.isAdmin(),
+                entity.getModifyDate(),
+                entity.getFavoriteHistoryLastSeenAt()
+        ));
     }
 
 }

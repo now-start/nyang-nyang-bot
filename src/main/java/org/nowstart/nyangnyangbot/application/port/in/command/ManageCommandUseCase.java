@@ -1,8 +1,10 @@
 package org.nowstart.nyangnyangbot.application.port.in.command;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,11 +13,14 @@ public interface ManageCommandUseCase {
 
     List<CommandResult> getCommands();
 
-    CommandResult createCommand(CreateCommand request);
+    CommandResult createCommand(@Valid @NotNull(message = "command is required") CreateCommand request);
 
-    CommandResult updateCommand(Long commandId, UpdateCommand request);
+    CommandResult updateCommand(
+            Long commandId,
+            @Valid @NotNull(message = "command is required") UpdateCommand request
+    );
 
-    PreviewResult preview(PreviewCommand request);
+    PreviewResult preview(@Valid @NotNull(message = "preview is required") PreviewCommand request);
 
     ValidationResult validate(ValidateCommand request);
 

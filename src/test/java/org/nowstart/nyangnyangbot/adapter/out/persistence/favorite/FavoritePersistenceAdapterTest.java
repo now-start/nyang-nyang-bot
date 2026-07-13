@@ -3,13 +3,13 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
@@ -216,7 +216,7 @@ class FavoritePersistenceAdapterTest {
         return new FavoritePersistenceAdapter(
                 favoriteRepository,
                 favoriteHistoryRepository,
-                Mappers.getMapper(FavoritePersistenceMapper.class)
+                outboundContractValidator()
         );
     }
 

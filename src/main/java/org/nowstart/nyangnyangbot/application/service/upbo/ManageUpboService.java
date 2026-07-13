@@ -11,15 +11,16 @@ import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.CreateUserUpboCommand;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.TemplateResult;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort.UserResult;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
 import org.nowstart.nyangnyangbot.domain.upbo.UpboPolicy;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 @RequiredArgsConstructor
 public class ManageUpboService implements ManageUpboUseCase {
@@ -27,7 +28,6 @@ public class ManageUpboService implements ManageUpboUseCase {
     private final UpboPolicy upboPolicy = new UpboPolicy();
     private final UpboPort upboPort;
     private final AdjustFavoriteUseCase adjustFavoriteUseCase;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     public List<UpboTemplateResult> getActiveTemplates() {
@@ -38,7 +38,6 @@ public class ManageUpboService implements ManageUpboUseCase {
 
     @Override
     public UpboTemplateResult createTemplate(UpboTemplateCreateCommand command) {
-        useCaseValidator.validate(command, "request is required");
         RewardType rewardType = parseRewardType(command.rewardType());
         ConversionMode conversionMode = parseConversionMode(command.conversionMode());
         upboPolicy.validateTemplate(
@@ -60,7 +59,6 @@ public class ManageUpboService implements ManageUpboUseCase {
 
     @Override
     public UserUpboResult applyUpbo(UpboApplyCommand command, String actorId) {
-        useCaseValidator.validate(command, "request is required");
         TemplateResult template = resolveTemplate(command.templateId());
         RewardType rewardType = template == null ? parseRewardType(command.rewardType()) : template.rewardType();
         ConversionMode conversionMode = template == null

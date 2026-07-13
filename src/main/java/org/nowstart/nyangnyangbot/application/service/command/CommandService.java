@@ -17,9 +17,11 @@ import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class CommandService implements ManageCommandUseCase {
 
@@ -110,10 +112,6 @@ public class CommandService implements ManageCommandUseCase {
     @Override
     @Transactional(readOnly = true)
     public PreviewResult preview(PreviewCommand request) {
-        if (request == null) {
-            throw new IllegalArgumentException("preview is required");
-        }
-        useCaseValidator.validate(request, "preview is required");
         String message = templateRenderer.render(
                 cleanTemplate(request.messageTemplate()),
                 new TemplateContext(

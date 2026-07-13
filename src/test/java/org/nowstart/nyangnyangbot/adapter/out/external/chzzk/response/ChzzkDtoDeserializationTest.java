@@ -13,7 +13,7 @@ class ChzzkDtoDeserializationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void sessionDto_ShouldAllowNullPaginationFields() throws Exception {
+    void sessionDto_ShouldPreserveNullFieldsForContractValidation() throws Exception {
         String json = """
                 {
                   "code": 200,
@@ -38,7 +38,7 @@ class ChzzkDtoDeserializationTest {
         then(response.content().page()).isNull();
         then(response.content().totalCount()).isNull();
         then(response.content().totalPages()).isNull();
-        then(response.content().toSessionResult().data()).isEmpty();
+        then(response.content().toSessionResult().data()).isNull();
     }
 
     @Test

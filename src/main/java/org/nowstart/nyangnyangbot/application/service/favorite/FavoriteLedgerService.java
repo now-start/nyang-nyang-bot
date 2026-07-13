@@ -9,14 +9,15 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotency
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteBalanceChange;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 @RequiredArgsConstructor
 public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavoriteUseCase, CorrectFavoriteLedgerUseCase {
@@ -25,11 +26,9 @@ public class FavoriteLedgerService implements AdjustFavoriteUseCase, GrantFavori
     private final SaveFavoriteAccountPort saveFavoriteAccountPort;
     private final SaveFavoriteLedgerPort saveFavoriteLedgerPort;
     private final CheckIdempotencyPort checkIdempotencyPort;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     public FavoriteLedgerResult adjust(AdjustFavoriteCommand command) {
-        useCaseValidator.validate(command, "command is required");
         if (hasText(command.idempotencyKey()) && checkIdempotencyPort.existsByIdempotencyKey(command.idempotencyKey())) {
             return FavoriteLedgerResult.duplicate(command.userId());
         }

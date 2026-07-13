@@ -11,13 +11,5 @@
     <th class="text-end" scope="col" th:if="${actionLabel != null and actionLabel != ''}" th:text="${actionLabel}">작업</th>
 </tr>
 </thead>
-
-<td th:fragment="text-cell(value, muted)">
-    <span th:classappend="${muted} ? ' text-secondary'" th:text="${value}">값</span>
-</td>
-
-<td class="text-end" th:fragment="action-cell">
-    <th:block th:remove="tag">작업</th:block>
-</td>
 </body>
 </html>

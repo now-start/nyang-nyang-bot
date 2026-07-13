@@ -5,13 +5,13 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
@@ -30,6 +30,7 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Eve
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundRequestContractException;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
@@ -199,7 +200,9 @@ class RoulettePersistenceAdapterTest {
         RouletteEvent event = event(3L, RouletteEventStatus.CONFIRMED);
         given(rouletteEventRepository.save(any(RouletteEvent.class))).willReturn(event);
         given(rouletteEventRepository.getReferenceById(3L)).willReturn(event);
-        given(rouletteRoundResultRepository.saveAll(any())).willAnswer(invocation -> invocation.getArgument(0));
+        given(rouletteRoundResultRepository.saveAll(any())).willReturn(List.of(
+                round(4L, event, RouletteRoundStatus.CONFIRMED)
+        ));
 
         // 실행
         EventResult eventResult = adapter.createEvent(new CreateRouletteEventCommand(
@@ -244,6 +247,32 @@ class RoulettePersistenceAdapterTest {
         then(rounds).hasSize(1);
         then(rounds.getFirst().rouletteEventId()).isEqualTo(3L);
         then(rounds.getFirst().ticket()).isEqualTo(777);
+    }
+
+    @Test
+    void saveRounds_ShouldRejectMissingOrInvalidCommandsBeforePersistence() {
+        RoulettePersistenceAdapter adapter = adapter();
+        CreateRouletteRoundCommand invalid = new CreateRouletteRoundCommand(
+                null,
+                " ",
+                null,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        thenThrownBy(() -> adapter.saveRounds(3L, null))
+                .isInstanceOf(OutboundRequestContractException.class)
+                .hasMessageContaining("value is required");
+        thenThrownBy(() -> adapter.saveRounds(3L, List.of(invalid)))
+                .isInstanceOf(OutboundRequestContractException.class)
+                .hasMessageContaining("roundNo is required")
+                .hasMessageContaining("itemLabel is required");
+        BDDMockito.then(rouletteEventRepository).shouldHaveNoInteractions();
+        BDDMockito.then(rouletteRoundResultRepository).shouldHaveNoInteractions();
     }
 
     @Test
@@ -309,8 +338,8 @@ class RoulettePersistenceAdapterTest {
                 rouletteItemRepository,
                 rouletteEventRepository,
                 rouletteRoundResultRepository,
-                Mappers.getMapper(RoulettePersistenceMapper.class),
-                new ObjectMapper()
+                new ObjectMapper(),
+                outboundContractValidator()
         );
     }
 

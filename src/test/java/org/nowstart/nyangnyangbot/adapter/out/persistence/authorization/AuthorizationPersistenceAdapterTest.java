@@ -1,13 +1,14 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.authorization;
 
 import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,6 +16,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.A
 import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
+import org.nowstart.nyangnyangbot.application.validation.outbound.PersistenceDataContractException;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorizationPersistenceAdapterTest {
@@ -91,6 +94,23 @@ class AuthorizationPersistenceAdapterTest {
         then(existing.getFavoriteHistoryLastSeenAt()).isEqualTo(seenAt);
     }
 
+    @Test
+    void findById_ShouldRejectInvalidPersistedResult() {
+        AuthorizationAccount invalid = AuthorizationAccount.builder()
+                .channelId("channel-1")
+                .channelName("치즈냥")
+                .accessToken(null)
+                .refreshToken("refresh")
+                .tokenType("Bearer")
+                .expiresIn(3600)
+                .build();
+        given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(invalid));
+
+        thenThrownBy(() -> adapter().findById("channel-1"))
+                .isInstanceOf(PersistenceDataContractException.class)
+                .hasMessageContaining("accessToken is required");
+    }
+
     private AuthorizationAccount entity(String channelId) {
         return AuthorizationAccount.builder()
                 .channelId(channelId)
@@ -108,7 +128,7 @@ class AuthorizationPersistenceAdapterTest {
     private AuthorizationPersistenceAdapter adapter() {
         return new AuthorizationPersistenceAdapter(
                 authorizationRepository,
-                Mappers.getMapper(AuthorizationPersistenceMapper.class)
+                new OutboundContractValidator(Validation.buildDefaultValidatorFactory().getValidator())
         );
     }
 

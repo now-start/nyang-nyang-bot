@@ -1,5 +1,10 @@
 package org.nowstart.nyangnyangbot.application.port.out.chzzk;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 public interface ChzzkClientPort {
@@ -14,16 +19,19 @@ public interface ChzzkClientPort {
 
     void subscribeDonationEvent(String sessionKey);
 
-    void subscribeSubscriptionEvent(String sessionKey);
-
     SessionResult getSessionList(String clientId, String clientSecret);
 
     SessionResult getSession(String clientId, String clientSecret);
 
     record AuthorizationToken(
+            @NotBlank(message = "accessToken is required")
             String accessToken,
+            @NotBlank(message = "refreshToken is required")
             String refreshToken,
+            @NotBlank(message = "tokenType is required")
             String tokenType,
+            @NotNull(message = "expiresIn is required")
+            @Positive(message = "expiresIn must be positive")
             Integer expiresIn,
             String scope
     ) {
@@ -36,8 +44,11 @@ public interface ChzzkClientPort {
     }
 
     record AuthorizationTokenCommand(
+            @NotBlank(message = "grantType is required")
             String grantType,
+            @NotBlank(message = "clientId is required")
             String clientId,
+            @NotBlank(message = "clientSecret is required")
             String clientSecret,
             String code,
             String state,
@@ -51,27 +62,43 @@ public interface ChzzkClientPort {
         }
     }
 
-    record MessageCommand(String message) {
+    record MessageCommand(
+            @NotBlank(message = "message is required")
+            String message
+    ) {
     }
 
     record SessionResult(
             String url,
+            @PositiveOrZero(message = "page must not be negative")
             Integer page,
+            @PositiveOrZero(message = "totalCount must not be negative")
             Integer totalCount,
+            @PositiveOrZero(message = "totalPages must not be negative")
             Integer totalPages,
-            List<SessionData> data
+            @NotNull(message = "data is required")
+            List<@Valid @NotNull(message = "session data is required") SessionData> data
     ) {
         public record SessionData(
+                @NotBlank(message = "sessionKey is required")
                 String sessionKey,
                 String connectedDate,
                 String disconnectedDate,
-                List<SubscribedEvents> subscribedEvents
+                @NotNull(message = "subscribedEvents is required")
+                List<@Valid @NotNull(message = "subscribed event is required") SubscribedEvents> subscribedEvents
         ) {
-            public record SubscribedEvents(String eventType, String channelId) {
+            public record SubscribedEvents(
+                    @NotBlank(message = "eventType is required") String eventType,
+                    @NotBlank(message = "channelId is required") String channelId
+            ) {
             }
         }
     }
 
-    record UserResult(String channelId, String channelName, String status) {
+    record UserResult(
+            @NotBlank(message = "channelId is required") String channelId,
+            @NotBlank(message = "channelName is required") String channelName,
+            String status
+    ) {
     }
 }

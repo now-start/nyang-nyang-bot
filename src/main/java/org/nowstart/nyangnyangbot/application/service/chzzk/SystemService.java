@@ -32,10 +32,6 @@ public class SystemService {
             }
             sessionKey = connectedSessionKey;
             chzzkClientPort.subscribeChatEvent(connectedSessionKey);
-            // TODO: enable donation event subscription when handling is ready.
-            // chzzkOpenApi.subscribeDonationEvent(sessionKey);
-            // TODO: enable subscription event subscription when handling is ready.
-            // chzzkOpenApi.subscribeSubscriptionEvent(sessionKey);
         }
     }
 

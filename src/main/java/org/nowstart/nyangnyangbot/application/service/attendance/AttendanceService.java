@@ -15,18 +15,18 @@ import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseC
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.attendance.AttendanceUserState;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 @RequiredArgsConstructor
 public class AttendanceService implements ManageAttendanceUseCase, RecordAttendanceChatUseCase {
 
     private final GrantFavoriteUseCase grantFavoriteUseCase;
-    private final UseCaseValidator useCaseValidator;
     private final ReentrantLock cycleLock = new ReentrantLock();
     private AttendanceCycle cycle = AttendanceCycle.inactive();
 
@@ -93,7 +93,6 @@ public class AttendanceService implements ManageAttendanceUseCase, RecordAttenda
 
     @Override
     public AttendanceApplyResult applyAttendance(AttendanceApplyCommand command) {
-        useCaseValidator.validate(command, "command is required");
         List<AttendanceUserState> targets = closeCycle(command.userIds());
         int amount = command.amount();
 

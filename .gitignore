@@ -38,8 +38,12 @@ out/
 ### VS Code ###
 .vscode/
 
-# Local Codex helper
+# AI coding assistants
+.claude/
+.codex/
+.agents/
 .autocp
+.understand-anything/
 
 ### macOS ###
 .DS_Store

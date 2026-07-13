@@ -4,9 +4,6 @@ import java.util.List;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
 public interface RouletteRoundResultRepository extends JpaRepository<RouletteRoundResult, Long> {
 
     List<RouletteRoundResult> findByRouletteEventIdOrderByRoundNoAsc(Long rouletteEventId);

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SubscriptionReceived;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
 
 final class ChzzkSocketPayloads {
@@ -92,24 +91,4 @@ final class ChzzkSocketPayloads {
         }
     }
 
-    record SubscriptionPayload(
-            String channelId,
-            String subscriberChannelId,
-            String subscriberNickname,
-            Integer tierNo,
-            String tierName,
-            Integer month
-    ) {
-
-        SubscriptionReceived toEvent() {
-            return new SubscriptionReceived(
-                    channelId,
-                    subscriberChannelId,
-                    subscriberNickname,
-                    tierNo,
-                    tierName,
-                    month
-            );
-        }
-    }
 }

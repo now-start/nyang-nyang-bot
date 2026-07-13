@@ -4,8 +4,9 @@ import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUse
 import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,6 @@ import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotency
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteLedgerPort;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteAccount;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteLedgerEntry;
 import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
@@ -28,7 +28,7 @@ class FavoriteLedgerServiceTest {
     @BeforeEach
     void setUp() {
         ports = new FakeFavoritePorts();
-        service = new FavoriteLedgerService(ports, ports, ports, ports, validator());
+        service = validated(new FavoriteLedgerService(ports, ports, ports, ports));
     }
 
     @Test
@@ -173,26 +173,26 @@ class FavoriteLedgerServiceTest {
     void adjust_ShouldRejectInvalidCommandFields() {
         // 실행 및 검증
         thenThrownBy(() -> service.adjust(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("command is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("command is required");
         thenThrownBy(() -> service.adjust(AdjustFavoriteCommand.builder()
                 .delta(1)
                 .sourceType(FavoriteSourceType.ATTENDANCE)
                 .build()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("userId is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
         thenThrownBy(() -> service.adjust(AdjustFavoriteCommand.builder()
                 .userId("user-1")
                 .sourceType(FavoriteSourceType.ATTENDANCE)
                 .build()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("delta must not be zero");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("delta must not be zero");
         thenThrownBy(() -> service.adjust(AdjustFavoriteCommand.builder()
                 .userId("user-1")
                 .delta(1)
                 .build()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("sourceType is required");
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("sourceType is required");
     }
 
     private static class FakeFavoritePorts implements LoadFavoriteAccountPort, SaveFavoriteAccountPort,
@@ -230,7 +230,4 @@ class FavoriteLedgerServiceTest {
         }
     }
 
-    private UseCaseValidator validator() {
-        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
-    }
 }

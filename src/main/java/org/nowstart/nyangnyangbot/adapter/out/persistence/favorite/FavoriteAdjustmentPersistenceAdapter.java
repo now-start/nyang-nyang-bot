@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.springframework.cache.annotation.CacheEvict;
@@ -15,13 +16,13 @@ import org.springframework.stereotype.Component;
 public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentPort {
 
     private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
-    private final FavoriteAdjustmentPersistenceMapper mapper;
+    private final OutboundContractValidator contractValidator;
 
     @Override
     @Cacheable(cacheNames = CacheNames.FAVORITE_ADJUSTMENTS)
     public List<OptionResult> findAll() {
         return favoriteAdjustmentRepository.findAll().stream()
-                .map(mapper::optionResult)
+                .map(this::optionResult)
                 .toList();
     }
 
@@ -32,6 +33,13 @@ public class FavoriteAdjustmentPersistenceAdapter implements FavoriteAdjustmentP
                 .amount(amount)
                 .label(label)
                 .build());
-        return mapper.optionResult(saved);
+        return optionResult(saved);
+    }
+
+    private OptionResult optionResult(FavoriteAdjustment entity) {
+        return contractValidator.persistenceResult(
+                "favoriteAdjustment.optionResult",
+                new OptionResult(entity.getId(), entity.getAmount(), entity.getLabel())
+        );
     }
 }

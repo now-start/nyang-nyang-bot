@@ -5,9 +5,6 @@ import java.util.Optional;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
 public interface CommandRepository extends JpaRepository<Command, Long> {
 
     List<Command> findAllByOrderByIdDesc();

@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +27,6 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.Comma
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
@@ -294,11 +293,7 @@ class ManageRouletteServiceTest {
     }
 
     private ManageRouletteService service() {
-        return new ManageRouletteService(
-                roulettePort,
-                commandPort,
-                new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator())
-        );
+        return validated(new ManageRouletteService(roulettePort, commandPort));
     }
 
     private CommandRecord command(Long id, String trigger, CommandActionKey actionKey) {

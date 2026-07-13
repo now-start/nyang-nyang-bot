@@ -8,8 +8,8 @@ import static org.mockito.BDDMockito.given;
 import org.mockito.BDDMockito;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,6 @@ import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseC
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteEventCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteRoundCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.CommandType;
@@ -373,11 +372,7 @@ class RouletteApplicationServiceTest {
     }
 
     private ManageRouletteService createManageService() {
-        return new ManageRouletteService(
-                roulettePort,
-                commandPort,
-                new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator())
-        );
+        return validated(new ManageRouletteService(roulettePort, commandPort));
     }
 
     private ProcessRouletteDonationService createProcessService() {

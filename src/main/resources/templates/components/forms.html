@@ -21,18 +21,6 @@
 </div>
 
 <div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
-     th:fragment="text-input(id, label, value, placeholder, readonly, extraClass)">
-    <label class="form-label" th:for="${id}" th:text="${label}">텍스트</label>
-    <input class="form-control"
-           th:id="${id}"
-           th:name="${id}"
-           th:placeholder="${placeholder}"
-           th:readonly="${readonly}"
-           th:value="${value}"
-           type="text">
-</div>
-
-<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
      th:fragment="number-field(id, name, label, value, min, max, extraClass)">
     <label class="form-label" th:for="${id}" th:text="${label}">숫자</label>
     <input class="form-control"
@@ -40,20 +28,6 @@
            th:max="${max}"
            th:min="${min}"
            th:name="${name}"
-           th:value="${value}"
-           type="number">
-</div>
-
-<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
-     th:fragment="number-input(id, label, value, placeholder, min, max, step, extraClass)">
-    <label class="form-label" th:for="${id}" th:text="${label}">숫자</label>
-    <input class="form-control"
-           th:id="${id}"
-           th:max="${max}"
-           th:min="${min}"
-           th:name="${id}"
-           th:placeholder="${placeholder}"
-           th:step="${step}"
            th:value="${value}"
            type="number">
 </div>
@@ -108,15 +82,5 @@
     <label class="form-check-label" th:for="${id}" th:text="${label}">활성</label>
 </div>
 
-<div class="form-check mb-0"
-     th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
-     th:fragment="checkbox-input(id, label, checked, extraClass)">
-    <input class="form-check-input"
-           th:checked="${checked}"
-           th:id="${id}"
-           th:name="${id}"
-           type="checkbox">
-    <label class="form-check-label" th:for="${id}" th:text="${label}">선택</label>
-</div>
 </body>
 </html>

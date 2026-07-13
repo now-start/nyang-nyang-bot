@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.in.favorite;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +9,9 @@ import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 
 public interface AdjustFavoriteUseCase {
 
-    FavoriteLedgerResult adjust(AdjustFavoriteCommand command);
+    FavoriteLedgerResult adjust(
+            @Valid @NotNull(message = "command is required") AdjustFavoriteCommand command
+    );
 
     @Builder
     record AdjustFavoriteCommand(

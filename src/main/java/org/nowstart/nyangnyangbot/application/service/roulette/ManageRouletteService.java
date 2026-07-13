@@ -13,7 +13,6 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.Comma
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
@@ -23,21 +22,21 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class ManageRouletteService implements ManageRouletteUseCase {
 
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
     private final RoulettePort roulettePort;
     private final CommandPort commandPort;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     @Transactional
     public RouletteTableResult createTable(CreateRouletteTableCommand request) {
-        useCaseValidator.validate(request, "request is required");
         roulettePolicy.validateTableInput(request.title(), request.command(), request.pricePerRound());
         if (!roulettePort.findTablesOrderByIdDesc().isEmpty()) {
             throw new IllegalStateException("roulette table already exists");
@@ -59,7 +58,6 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     @Override
     @Transactional
     public RouletteItemResult addItem(AddRouletteItemCommand request) {
-        useCaseValidator.validate(request, "request is required");
         roulettePort.findTableById(request.tableId())
                 .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
         RewardType parsedRewardType = parseRewardType(request.rewardType());

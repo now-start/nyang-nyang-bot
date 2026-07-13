@@ -3,13 +3,13 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -123,7 +123,7 @@ class WeeklyChatRankPersistenceAdapterTest {
     private WeeklyChatRankPersistenceAdapter adapter() {
         return new WeeklyChatRankPersistenceAdapter(
                 weeklyChatRankRepository,
-                Mappers.getMapper(WeeklyChatRankPersistenceMapper.class)
+                outboundContractValidator()
         );
     }
 

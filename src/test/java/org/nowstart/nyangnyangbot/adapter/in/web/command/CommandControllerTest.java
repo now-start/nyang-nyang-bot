@@ -4,6 +4,8 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,6 +176,23 @@ class CommandControllerTest {
         ArgumentCaptor<CreateCommand> captor = ArgumentCaptor.forClass(CreateCommand.class);
         org.mockito.BDDMockito.then(manageCommandUseCase).should().createCommand(captor.capture());
         then(captor.getValue().active()).isFalse();
+    }
+
+    @Test
+    void save_ShouldRenderBeanValidationFailureInEditor() {
+        // 준비
+        var invalid = new CreateCommand(null, null, null, null, null, null, false, null, null, null);
+        var violations = Validation.buildDefaultValidatorFactory().getValidator().validate(invalid);
+        given(manageCommandUseCase.createCommand(any(CreateCommand.class)))
+                .willThrow(new ConstraintViolationException(violations));
+        ConcurrentModel model = new ConcurrentModel();
+
+        // 실행
+        String view = controller.save(CommandForm.empty(), false, null, response, model);
+
+        // 검증
+        then(view).isEqualTo("features/command/regions :: command-editor-region");
+        then(model.getAttribute("saveError")).isEqualTo("type is required");
     }
 
     @Test

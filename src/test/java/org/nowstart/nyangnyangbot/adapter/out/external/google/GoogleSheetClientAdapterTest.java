@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.external.google;
 
 import static org.assertj.core.api.BDDAssertions.then;
+import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,10 @@ import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 
 class GoogleSheetClientAdapterTest {
 
-    private final GoogleSheetClientAdapter adapter = new GoogleSheetClientAdapter(new GoogleProperty(null, null));
+    private final GoogleSheetClientAdapter adapter = new GoogleSheetClientAdapter(
+            new GoogleProperty(null, null),
+            outboundContractValidator()
+    );
 
     @Test
     void toRows_ShouldReturnOnlyValidRows() {
