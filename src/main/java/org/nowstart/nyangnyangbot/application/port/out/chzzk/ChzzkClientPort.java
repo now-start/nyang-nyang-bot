@@ -19,7 +19,7 @@ public interface ChzzkClientPort {
 
     void subscribeDonationEvent(String sessionKey);
 
-    SessionResult getSessionList(String clientId, String clientSecret);
+    SessionListResult getSessionList(String clientId, String clientSecret);
 
     SessionResult getSession(String clientId, String clientSecret);
 
@@ -69,7 +69,12 @@ public interface ChzzkClientPort {
     }
 
     record SessionResult(
-            String url,
+            @NotBlank(message = "url is required")
+            String url
+    ) {
+    }
+
+    record SessionListResult(
             @PositiveOrZero(message = "page must not be negative")
             Integer page,
             @PositiveOrZero(message = "totalCount must not be negative")

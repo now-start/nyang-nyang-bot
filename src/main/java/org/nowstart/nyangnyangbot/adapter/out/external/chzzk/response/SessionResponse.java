@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response;
 
 import java.util.List;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionListResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionResult;
 
 public record SessionResponse(
@@ -12,8 +13,11 @@ public record SessionResponse(
 ) {
 
     public SessionResult toSessionResult() {
-        return new SessionResult(
-                url,
+        return new SessionResult(url);
+    }
+
+    public SessionListResult toSessionListResult() {
+        return new SessionListResult(
                 page,
                 totalCount,
                 totalPages,
@@ -32,8 +36,8 @@ public record SessionResponse(
             List<SubscribedEvents> subscribedEvents
     ) {
 
-        private SessionResult.SessionData toSessionDataResult() {
-            return new SessionResult.SessionData(
+        private SessionListResult.SessionData toSessionDataResult() {
+            return new SessionListResult.SessionData(
                     sessionKey,
                     connectedDate,
                     disconnectedDate,
@@ -47,8 +51,8 @@ public record SessionResponse(
 
         public record SubscribedEvents(String eventType, String channelId) {
 
-            private SessionResult.SessionData.SubscribedEvents toSubscribedEventsResult() {
-                return new SessionResult.SessionData.SubscribedEvents(eventType, channelId);
+            private SessionListResult.SessionData.SubscribedEvents toSubscribedEventsResult() {
+                return new SessionListResult.SessionData.SubscribedEvents(eventType, channelId);
             }
         }
     }

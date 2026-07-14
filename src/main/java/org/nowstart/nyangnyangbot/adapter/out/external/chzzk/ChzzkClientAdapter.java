@@ -57,12 +57,12 @@ public class ChzzkClientAdapter implements ChzzkClientPort {
     }
 
     @Override
-    public SessionResult getSessionList(String clientId, String clientSecret) {
+    public SessionListResult getSessionList(String clientId, String clientSecret) {
         requireClientCredentials("chzzk.getSessionList", clientId, clientSecret);
         return requireContent(
                 "getSessionList",
                 chzzkOpenApi.getSessionList(clientId, clientSecret),
-                SessionResponse::toSessionResult
+                SessionResponse::toSessionListResult
         );
     }
 

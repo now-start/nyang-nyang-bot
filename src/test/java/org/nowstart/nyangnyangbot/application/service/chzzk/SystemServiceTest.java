@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionListResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.SessionResult;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkConfigurationPort;
 
@@ -30,12 +31,11 @@ class SystemServiceTest {
         SystemService service = new SystemService(chzzkConfigurationPort, chzzkClientPort);
         given(chzzkConfigurationPort.clientId()).willReturn("client");
         given(chzzkConfigurationPort.clientSecret()).willReturn("secret");
-        given(chzzkClientPort.getSessionList("client", "secret")).willReturn(new SessionResult(
+        given(chzzkClientPort.getSessionList("client", "secret")).willReturn(new SessionListResult(
                 null,
                 null,
                 null,
-                null,
-                List.of(new SessionResult.SessionData("session-1", null, null, List.of()))
+                List.of(new SessionListResult.SessionData("session-1", null, null, List.of()))
         ));
 
         service.handle(new SystemReceived(
@@ -66,7 +66,7 @@ class SystemServiceTest {
         given(chzzkConfigurationPort.clientId()).willReturn("client");
         given(chzzkConfigurationPort.clientSecret()).willReturn("secret");
         given(chzzkClientPort.getSession("client", "secret"))
-                .willReturn(new SessionResult(" ", null, null, null, List.of()));
+                .willReturn(new SessionResult(" "));
 
         thenThrownBy(service::getSession)
                 .isInstanceOf(IllegalStateException.class)

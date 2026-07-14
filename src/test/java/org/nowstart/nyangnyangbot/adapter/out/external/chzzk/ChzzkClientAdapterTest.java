@@ -88,26 +88,71 @@ class ChzzkClientAdapterTest {
     }
 
     @Test
-    void getSession_ShouldRejectMissingSessionData() {
+    void getSession_ShouldAcceptUrlOnlyResponse() {
         given(chzzkOpenApiClient.getSession("client", "secret")).willReturn(
-                new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 0, 0, null))
+                new ChzzkApiResponse<>(200, "OK", new SessionResponse("wss://example", null, null, null, null))
+        );
+
+        var result = adapter().getSession("client", "secret");
+
+        then(result.url()).isEqualTo("wss://example");
+    }
+
+    @Test
+    void getSession_ShouldRejectMissingUrl() {
+        given(chzzkOpenApiClient.getSession("client", "secret")).willReturn(
+                new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, null, null, null, null))
         );
 
         thenThrownBy(() -> adapter().getSession("client", "secret"))
+                .isInstanceOf(ExternalResponseContractException.class)
+                .hasMessageContaining("url is required");
+    }
+
+    @Test
+    void getSessionList_ShouldRejectMissingSessionData() {
+        given(chzzkOpenApiClient.getSessionList("client", "secret")).willReturn(
+                new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 0, 0, null))
+        );
+
+        thenThrownBy(() -> adapter().getSessionList("client", "secret"))
                 .isInstanceOf(ExternalResponseContractException.class)
                 .hasMessageContaining("data is required");
     }
 
     @Test
-    void getSession_ShouldRejectMissingSubscribedEvents() {
+    void getSessionList_ShouldMapSessionData() {
         SessionResponse.SessionData session = new SessionResponse.SessionData(
-                "session-1", null, null, null
+                "session-1",
+                "2026-07-14T00:00:00Z",
+                null,
+                List.of(new SessionResponse.SessionData.SubscribedEvents("CHAT", "channel-1"))
         );
-        given(chzzkOpenApiClient.getSession("client", "secret")).willReturn(
+        given(chzzkOpenApiClient.getSessionList("client", "secret")).willReturn(
                 new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 1, 1, List.of(session)))
         );
 
-        thenThrownBy(() -> adapter().getSession("client", "secret"))
+        var result = adapter().getSessionList("client", "secret");
+
+        then(result.data()).singleElement().satisfies(sessionResult -> {
+            then(sessionResult.sessionKey()).isEqualTo("session-1");
+            then(sessionResult.subscribedEvents()).singleElement().satisfies(event -> {
+                then(event.eventType()).isEqualTo("CHAT");
+                then(event.channelId()).isEqualTo("channel-1");
+            });
+        });
+    }
+
+    @Test
+    void getSessionList_ShouldRejectMissingSubscribedEvents() {
+        SessionResponse.SessionData session = new SessionResponse.SessionData(
+                "session-1", null, null, null
+        );
+        given(chzzkOpenApiClient.getSessionList("client", "secret")).willReturn(
+                new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 1, 1, List.of(session)))
+        );
+
+        thenThrownBy(() -> adapter().getSessionList("client", "secret"))
                 .isInstanceOf(ExternalResponseContractException.class)
                 .hasMessageContaining("subscribedEvents is required");
     }

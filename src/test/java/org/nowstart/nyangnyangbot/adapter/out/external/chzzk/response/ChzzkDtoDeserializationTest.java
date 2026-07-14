@@ -13,17 +13,13 @@ class ChzzkDtoDeserializationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void sessionDto_ShouldPreserveNullFieldsForContractValidation() throws Exception {
+    void sessionCreationDto_ShouldMapUrlOnlyResponse() throws Exception {
         String json = """
                 {
                   "code": 200,
                   "message": "OK",
                   "content": {
-                    "url": "wss://example",
-                    "page": null,
-                    "totalCount": null,
-                    "totalPages": null,
-                    "data": null
+                    "url": "https://example"
                   }
                 }
                 """;
@@ -35,10 +31,39 @@ class ChzzkDtoDeserializationTest {
         );
 
         then(response.code()).isEqualTo(200);
-        then(response.content().page()).isNull();
-        then(response.content().totalCount()).isNull();
-        then(response.content().totalPages()).isNull();
-        then(response.content().toSessionResult().data()).isNull();
+        then(response.content().toSessionResult().url()).isEqualTo("https://example");
+    }
+
+    @Test
+    void sessionListDto_ShouldPreserveNullNestedFieldsForContractValidation() throws Exception {
+        String json = """
+                {
+                  "code": 200,
+                  "message": "OK",
+                  "content": {
+                    "page": 0,
+                    "totalCount": 1,
+                    "totalPages": 1,
+                    "data": [{
+                      "sessionKey": "session-1",
+                      "connectedDate": "2026-07-14T00:00:00Z",
+                      "disconnectedDate": null,
+                      "subscribedEvents": null
+                    }]
+                  }
+                }
+                """;
+
+        ChzzkApiResponse<SessionResponse> response = objectMapper.readValue(
+                json,
+                new TypeReference<ChzzkApiResponse<SessionResponse>>() {
+                }
+        );
+
+        then(response.content().toSessionListResult().data()).singleElement().satisfies(session -> {
+            then(session.sessionKey()).isEqualTo("session-1");
+            then(session.subscribedEvents()).isNull();
+        });
     }
 
     @Test
