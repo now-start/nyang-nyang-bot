@@ -87,7 +87,7 @@
                    type="text">
         </div>
         <div class="mb-0">
-            <label class="form-label small text-secondary" for="roulette-command">후원 명령어</label>
+            <label class="form-label small text-secondary" for="roulette-command">후원 키워드</label>
             <input class="form-control fw-semibold text-success"
                    id="roulette-command"
                    maxlength="40"
@@ -112,7 +112,7 @@
     </form>
     <div class="border rounded-3 p-3 text-secondary small"
          th:if="${tables != null and !#lists.isEmpty(tables)}">
-        등록된 룰렛 하나를 계속 사용합니다. 명령어와 금액은 현재 룰렛 기준으로 운영됩니다.
+        등록된 룰렛 하나를 계속 사용합니다. 후원 키워드와 금액은 현재 룰렛 기준으로 운영됩니다.
     </div>
     <div th:replace="~{features/roulette/components :: roulette-table-list}"></div>
         </div>
@@ -263,7 +263,7 @@
     <div class="d-flex flex-wrap gap-2" id="roulette-reasons" th:unless="${isValid}">
         <span class="badge rounded-pill bg-danger-subtle text-danger"
               th:each="reason : ${validation == null ? null : validation.reasons}"
-              th:text="${reason == 'command is required' ? '명령어를 입력해야 합니다.' :
+              th:text="${reason == 'command is required' ? '후원 키워드를 입력해야 합니다.' :
                 (reason == 'pricePerRound is required' ? '1회 금액을 입력해야 합니다.' :
                 (reason == 'probability total must be 10000' ? '확률 합계가 100%가 되어야 합니다.' :
                 (reason == 'losing item is required' ? '꽝 항목이 하나 이상 필요합니다.' : reason)))}">사유</span>

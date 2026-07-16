@@ -30,6 +30,7 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Eve
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RecentRouletteResultQueryPort.RecentRound;
 import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundRequestContractException;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
@@ -178,7 +179,7 @@ class RoulettePersistenceAdapterTest {
         Optional<EventResult> foundEvent = adapter.findEventById(3L);
         List<RoundResult> roundsByEvent = adapter.findRoundsByEventId(3L);
         List<RoundResult> roundsByUser = adapter.findRoundsByUserId("user-1");
-        List<RoundResult> topRounds = adapter.findTopRoundsByUserId("user-1", 1);
+        List<RecentRound> recentRounds = adapter.findRecentRoundsByUserId("user-1");
         Optional<RoundResult> foundRound = adapter.findRoundById(4L);
 
         // 검증
@@ -189,7 +190,10 @@ class RoulettePersistenceAdapterTest {
         then(foundEvent).isPresent();
         then(roundsByEvent).hasSize(1);
         then(roundsByUser).hasSize(1);
-        then(topRounds).hasSize(1);
+        then(recentRounds).singleElement().satisfies(recentRound -> {
+            then(recentRound.roundNo()).isEqualTo(1);
+            then(recentRound.itemLabel()).isEqualTo("당첨");
+        });
         then(foundRound).isPresent();
     }
 

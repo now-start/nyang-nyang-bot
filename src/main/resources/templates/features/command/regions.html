@@ -5,7 +5,7 @@
          th:fragment="command-panel"
          th:with="listUrl=@{/admin/commands},
                   editorUrl=@{/admin/commands/editor}">
-    <div th:replace="~{features/command/components :: panel-header(${listUrl}, ${commandTypeOptions}, ${commandActiveOptions})}"></div>
+    <div th:replace="~{features/command/components :: panel-header(${listUrl}, ${commandActiveOptions})}"></div>
     <div th:replace="~{features/command/components :: workspace(${listUrl}, ${editorUrl})}"></div>
 </section>
 
@@ -42,8 +42,8 @@
         <input th:replace="~{components/forms :: hidden-field('commandId', ${commandForm == null ? '' : commandForm.commandId})}">
         <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
 
-        <div th:replace="~{features/command/components :: editor-fields(${commandForm}, ${commandEditorTypeOptions}, ${commandActionOptions}, ${commandRoleOptions})}"></div>
-        <div th:replace="~{features/command/components :: preview-sample}"></div>
+        <div th:replace="~{features/command/components :: editor-fields(${commandForm})}"></div>
+        <div th:replace="~{features/command/components :: variable-catalog(${commandVariables})}"></div>
         <div th:replace="~{features/command/components :: editor-actions(${validateUrl}, ${previewUrl}, ${deactivateUrl})}"></div>
     </form>
 
@@ -65,7 +65,7 @@
         <div th:replace="~{components/feedback :: alert(${previewError}, 'danger')}"></div>
     </th:block>
     <div class="border border-dashed rounded-3 p-3 small" th:if="${previewMessage}">
-        <span class="text-success fw-semibold">치즈냥봇</span>
+        <span class="text-success fw-semibold">냥냥봇:</span>
         <span th:text="${previewMessage}">미리보기 메시지</span>
     </div>
 </section>

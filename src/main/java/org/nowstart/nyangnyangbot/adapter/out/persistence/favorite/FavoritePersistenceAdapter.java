@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.Fa
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.CheckIdempotencyPort;
+import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteBalanceQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.LoadFavoriteAccountPort;
 import org.nowstart.nyangnyangbot.application.port.out.favorite.SaveFavoriteAccountPort;
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, SaveFavoriteAccountPort,
-        SaveFavoriteLedgerPort, CheckIdempotencyPort, FavoriteQueryPort {
+        SaveFavoriteLedgerPort, CheckIdempotencyPort, FavoriteQueryPort, FavoriteBalanceQueryPort {
 
     private final FavoriteRepository favoriteRepository;
     private final FavoriteHistoryRepository favoriteHistoryRepository;
@@ -104,6 +105,12 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
     @Override
     public Optional<SummaryResult> findById(String userId) {
         return favoriteRepository.findById(userId).map(this::summaryResult);
+    }
+
+    @Override
+    public Optional<Integer> findBalanceByUserId(String userId) {
+        return favoriteRepository.findById(userId)
+                .map(org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount::getFavorite);
     }
 
     @Override

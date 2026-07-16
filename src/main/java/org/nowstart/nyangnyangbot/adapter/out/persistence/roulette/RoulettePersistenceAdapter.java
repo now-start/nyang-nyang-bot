@@ -15,6 +15,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RecentRouletteResultQueryPort;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RecentRouletteResultQueryPort.RecentRound;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
@@ -28,7 +30,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class RoulettePersistenceAdapter implements RoulettePort {
+public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteResultQueryPort {
 
     private final RouletteTableRepository rouletteTableRepository;
     private final RouletteItemRepository rouletteItemRepository;
@@ -247,10 +249,9 @@ public class RoulettePersistenceAdapter implements RoulettePort {
     }
 
     @Override
-    public List<RoundResult> findTopRoundsByUserId(String userId, int limit) {
+    public List<RecentRound> findRecentRoundsByUserId(String userId) {
         return rouletteRoundResultRepository.findTop5ByRouletteEventUserIdOrderByCreateDateDesc(userId).stream()
-                .limit(limit)
-                .map(this::roundResult)
+                .map(entity -> new RecentRound(entity.getRoundNo(), entity.getItemLabel()))
                 .toList();
     }
 

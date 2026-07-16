@@ -10,6 +10,7 @@ import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.Comma
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandView;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.OptionView;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.VariableResult;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletContext;
@@ -29,6 +30,7 @@ class CommandTemplateTest {
         context.setVariable("commands", List.of(CommandView.from(command())));
         context.setVariable("commandForm", CommandForm.from(command()));
         context.setVariable("saveMessage", "저장됨");
+        context.setVariable("previewMessage", "치즈냥님, 오늘 공지는 ...");
 
         // 실행
         String html = templateEngine().process("features/command/regions", context);
@@ -43,16 +45,31 @@ class CommandTemplateTest {
         then(html).contains("30초");
         then(html).contains("admin");
         then(html).contains("hx-trigger=\"command-list-refresh from:body\"");
-        then(html).contains("name=\"type\"");
-        then(html).contains("value=\"TEXT\"");
         then(html).contains("type=\"hidden\"");
-        then(html).contains("id=\"command-type\"");
-        then(html).contains("disabled=\"disabled\"");
+        then(html).contains("id=\"command-filter-active\"");
+        then(html).contains("id=\"command-trigger\"");
+        then(html).contains("id=\"command-message-template\"");
+        then(html).contains("maxlength=\"1000\"");
         then(html).contains("hx-post=\"/admin/commands\"");
         then(html).contains("hx-post=\"/admin/commands/validate\"");
         then(html).contains("hx-post=\"/admin/commands/preview\"");
+        then(html).contains("사용 가능한 변수");
+        then(html).contains("{viewer.nickname}");
+        then(html).contains("시청자 닉네임");
+        then(html).contains("예: 치즈냥");
+        then(html).contains("냥냥봇");
+        then(html).contains("치즈냥님, 오늘 공지는 ...");
         then(html).contains("form-select");
         then(html).contains("form-control");
+        then(html).doesNotContain("id=\"command-filter-type\"");
+        then(html).doesNotContain("name=\"type\"");
+        then(html).doesNotContain("name=\"actionKey\"");
+        then(html).doesNotContain("name=\"timerIntervalMinutes\"");
+        then(html).doesNotContain("name=\"timerMinChatCount\"");
+        then(html).doesNotContain("name=\"requiredRole\"");
+        then(html).doesNotContain("id=\"command-preview-nickname\"");
+        then(html).doesNotContain("id=\"command-preview-args\"");
+        then(html).doesNotContain("id=\"command-preview-favorite\"");
         then(html).doesNotContain("components/common");
         then(html).doesNotContain("command-modal");
     }
@@ -77,31 +94,24 @@ class CommandTemplateTest {
     }
 
     static void setCommandOptions(WebContext context) {
-        context.setVariable("commandTypeOptions", List.of(
-                new OptionView("", "전체 유형"),
-                new OptionView("TEXT", "TEXT"),
-                new OptionView("TRIGGER", "TRIGGER"),
-                new OptionView("TIMER", "TIMER")
-        ));
-        context.setVariable("commandEditorTypeOptions", List.of(
-                new OptionView("TEXT", "TEXT"),
-                new OptionView("TRIGGER", "TRIGGER"),
-                new OptionView("TIMER", "TIMER")
-        ));
         context.setVariable("commandActiveOptions", List.of(
                 new OptionView("", "전체 상태"),
                 new OptionView("true", "활성"),
                 new OptionView("false", "비활성")
         ));
-        context.setVariable("commandActionOptions", List.of(
-                new OptionView("", "없음"),
-                new OptionView("FAVORITE_STATUS", "FAVORITE_STATUS"),
-                new OptionView("ROULETTE_RESULT", "ROULETTE_RESULT"),
-                new OptionView("ROULETTE_DONATION", "ROULETTE_DONATION")
-        ));
-        context.setVariable("commandRoleOptions", List.of(
-                new OptionView("USER", "USER"),
-                new OptionView("ADMIN", "ADMIN")
+        context.setVariable("commandVariables", List.of(
+                new VariableResult(
+                        "viewer.nickname",
+                        "시청자 닉네임",
+                        "명령어를 호출한 시청자의 닉네임",
+                        "치즈냥"
+                ),
+                new VariableResult(
+                        "favorite.balance",
+                        "호감도",
+                        "명령어를 호출한 시청자의 현재 호감도",
+                        "100"
+                )
         ));
     }
 
@@ -109,14 +119,9 @@ class CommandTemplateTest {
         LocalDateTime now = LocalDateTime.of(2026, 7, 6, 12, 0);
         return new CommandResult(
                 1L,
-                "TEXT",
                 "!공지",
-                null,
-                "{nickname}님",
-                10,
-                10,
+                "{viewer.nickname}님",
                 true,
-                "USER",
                 30,
                 "admin",
                 "admin",

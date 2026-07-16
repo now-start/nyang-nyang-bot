@@ -178,6 +178,18 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void commandVariableContributors_ShouldOnlyDependOnQueryPorts() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application/service/command"))
+                .filter(path -> path.getFileName().toString().endsWith("CommandVariableContributor.java"))
+                .filter(this::importsNonQueryApplicationPort)
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
     void domainLayer_ShouldNotContainDtoClasses() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("domain"))
@@ -499,6 +511,19 @@ class ArchitectureBoundaryTest {
                 }
             }
             return false;
+        } catch (IOException ex) {
+            throw new IllegalStateException("failed to read source file " + path, ex);
+        }
+    }
+
+    private boolean importsNonQueryApplicationPort(Path path) {
+        try {
+            return Files.readAllLines(path).stream()
+                    .map(String::trim)
+                    .filter(line -> line.startsWith(
+                            "import org.nowstart.nyangnyangbot.application.port."
+                    ))
+                    .anyMatch(line -> line.contains(".port.in.") || !line.contains("QueryPort"));
         } catch (IOException ex) {
             throw new IllegalStateException("failed to read source file " + path, ex);
         }

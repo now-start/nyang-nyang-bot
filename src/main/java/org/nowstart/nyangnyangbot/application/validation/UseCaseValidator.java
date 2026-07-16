@@ -13,16 +13,6 @@ public class UseCaseValidator {
 
     private final Validator validator;
 
-    public <T> void validate(T value, String requiredMessage) {
-        if (value == null) {
-            throw new IllegalArgumentException(requiredMessage);
-        }
-        List<String> errors = errors(value);
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", errors));
-        }
-    }
-
     public <T> List<String> errors(T value) {
         return validator.validate(value).stream()
                 .sorted(Comparator

@@ -1,20 +1,15 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer.TemplateContext;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
-import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
-import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -26,28 +21,12 @@ import org.springframework.validation.annotation.Validated;
 public class CommandService implements ManageCommandUseCase {
 
     public static final int DEFAULT_USER_COOLDOWN_SECONDS = 30;
-    private static final int MAX_TEMPLATE_LENGTH = 300;
     private static final int MIN_USER_COOLDOWN_SECONDS = 5;
     private static final int MAX_USER_COOLDOWN_SECONDS = 3_600;
-    private static final int MIN_TIMER_INTERVAL_MINUTES = 5;
-    private static final int DEFAULT_TIMER_INTERVAL_MINUTES = 10;
-    private static final int MAX_TIMER_INTERVAL_MINUTES = 1_440;
-    private static final int MIN_TIMER_CHAT_COUNT = 1;
-    private static final int DEFAULT_TIMER_CHAT_COUNT = 10;
-    private static final int MAX_TIMER_CHAT_COUNT = 10_000;
-    private static final String DEFAULT_ROLE = "USER";
-    private static final Set<String> ALLOWED_ROLES = Set.of("USER", "ADMIN");
-    private static final Set<String> TIMER_BLOCKED_VARIABLES = Set.of(
-            "nickname",
-            "command",
-            "args",
-            "arg1",
-            "arg2",
-            "favorite"
-    );
 
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
+    private final CommandVariableRegistry variableRegistry;
     private final UseCaseValidator useCaseValidator;
 
     @Override
@@ -59,72 +38,86 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     @Override
+    public List<VariableResult> getVariables() {
+        return variableRegistry.definitions().stream()
+                .map(definition -> new VariableResult(
+                        definition.key(),
+                        definition.label(),
+                        definition.description(),
+                        definition.example()
+                ))
+                .toList();
+    }
+
+    @Override
     @Transactional
     public CommandResult createCommand(CreateCommand request) {
         ValidationState state = validationForCreate(request);
-        if (!state.errors().isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", state.errors()));
-        }
+        requireValid(state);
         String actor = actor(request.actorId());
         CommandRecord saved = commandPort.create(new CommandPort.CreateData(
-                state.type(),
                 state.trigger(),
-                state.actionKey(),
                 state.messageTemplate(),
-                state.timerIntervalMinutes(),
-                state.timerMinChatCount(),
                 Boolean.TRUE.equals(request.active()),
-                state.requiredRole(),
                 state.userCooldownSeconds(),
                 actor,
                 actor
         ));
-        log.info("level=AUDIT action=command.create result=success commandId={} type={} trigger={}",
-                saved.id(), saved.type(), saved.trigger());
+        log.info("level=AUDIT action=command.create result=success commandId={} trigger={}",
+                saved.id(), saved.trigger());
         return commandResult(saved);
     }
 
     @Override
     @Transactional
     public CommandResult updateCommand(Long commandId, UpdateCommand request) {
+        if (request == null) {
+            throw new IllegalArgumentException("command is required");
+        }
         CommandRecord current = commandPort.findById(commandId)
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
-        ValidationState state = validationForUpdate(current, request);
-        if (!state.errors().isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", state.errors()));
-        }
+        String trigger = request.trigger() == null ? current.trigger() : request.trigger();
+        String template = request.messageTemplate() == null
+                ? current.messageTemplate()
+                : request.messageTemplate();
+        Integer cooldown = request.userCooldownSeconds() == null
+                ? current.userCooldownSeconds()
+                : request.userCooldownSeconds();
+        ValidationState state = validationForRequest(
+                commandId,
+                trigger,
+                template,
+                cooldown,
+                useCaseValidator.errors(request)
+        );
+        requireValid(state);
         CommandRecord saved = commandPort.update(new CommandPort.UpdateData(
                 commandId,
                 state.trigger(),
                 state.messageTemplate(),
-                state.timerIntervalMinutes(),
-                state.timerMinChatCount(),
                 request.active() == null ? current.active() : request.active(),
-                state.requiredRole(),
                 state.userCooldownSeconds(),
                 actor(request.actorId())
         ));
-        log.info("level=AUDIT action=command.update result=success commandId={} type={} trigger={}",
-                saved.id(), saved.type(), saved.trigger());
+        log.info("level=AUDIT action=command.update result=success commandId={} trigger={}",
+                saved.id(), saved.trigger());
         return commandResult(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PreviewResult preview(PreviewCommand request) {
-        String message = templateRenderer.render(
-                cleanTemplate(request.messageTemplate()),
-                new TemplateContext(
-                        fallback(request.nickname(), "치즈냥"),
-                        fallback(request.command(), "!명령어"),
-                        fallback(request.args(), ""),
-                        fallback(request.arg1(), ""),
-                        fallback(request.arg2(), ""),
-                        request.favorite() == null ? 0 : request.favorite(),
-                        LocalDateTime.now()
-                )
-        );
-        return new PreviewResult(message);
+        if (request == null) {
+            throw new IllegalArgumentException("preview is required");
+        }
+        List<String> errors = new ArrayList<>(useCaseValidator.errors(request));
+        String template = cleanTemplate(request.messageTemplate());
+        errors.addAll(templateErrors(template));
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join(", ", errors.stream().distinct().toList()));
+        }
+        Set<String> variables = templateRenderer.variables(template);
+        return new PreviewResult(templateRenderer.render(template, variableRegistry.sampleValues(variables)));
     }
 
     @Override
@@ -133,20 +126,14 @@ public class CommandService implements ManageCommandUseCase {
         if (request == null) {
             return new ValidationResult(false, List.of("command is required"));
         }
-        List<String> errors = validationForRequest(
+        ValidationState state = validationForRequest(
                 request.commandId(),
-                request.type(),
                 request.trigger(),
-                request.actionKey(),
                 request.messageTemplate(),
-                request.timerIntervalMinutes(),
-                request.timerMinChatCount(),
-                request.requiredRole(),
-                request.userCooldownSeconds()
-        )
-                .withAdditionalErrors(useCaseValidator.errors(request))
-                .errors();
-        return new ValidationResult(errors.isEmpty(), errors);
+                request.userCooldownSeconds(),
+                useCaseValidator.errors(request)
+        );
+        return new ValidationResult(state.errors().isEmpty(), state.errors());
     }
 
     private ValidationState validationForCreate(CreateCommand request) {
@@ -155,195 +142,40 @@ public class CommandService implements ManageCommandUseCase {
         }
         return validationForRequest(
                 null,
-                request.type(),
                 request.trigger(),
-                request.actionKey(),
                 request.messageTemplate(),
-                request.timerIntervalMinutes(),
-                request.timerMinChatCount(),
-                request.requiredRole(),
-                request.userCooldownSeconds()
-        )
-                .withAdditionalErrors(useCaseValidator.errors(request));
-    }
-
-    private ValidationState validationForUpdate(CommandRecord current, UpdateCommand request) {
-        if (request == null) {
-            throw new IllegalArgumentException("command is required");
-        }
-        List<String> errors = new ArrayList<>();
-        if (request.type() != null && !request.type().isBlank()) {
-            CommandType requestedType = parseTypeOrNull(request.type());
-            if (requestedType == null) {
-                errors.add("type is invalid");
-            } else if (requestedType != current.type()) {
-                errors.add("type cannot be changed");
-            }
-        }
-        if (request.actionKey() != null && !request.actionKey().isBlank()) {
-            CommandActionKey requestedActionKey = parseActionKeyOrNull(request.actionKey());
-            if (requestedActionKey == null) {
-                errors.add("actionKey is invalid");
-            } else if (requestedActionKey != current.actionKey()) {
-                errors.add("actionKey cannot be changed");
-            }
-        }
-        ValidationState merged = validationForRequest(
-                current.id(),
-                current.type().name(),
-                request.trigger() == null ? current.trigger() : request.trigger(),
-                current.actionKey() == null ? null : current.actionKey().name(),
-                request.messageTemplate() == null ? current.messageTemplate() : request.messageTemplate(),
-                request.timerIntervalMinutes() == null
-                        ? current.timerIntervalMinutes()
-                        : request.timerIntervalMinutes(),
-                request.timerMinChatCount() == null ? current.timerMinChatCount() : request.timerMinChatCount(),
-                request.requiredRole() == null ? current.requiredRole() : request.requiredRole(),
-                request.userCooldownSeconds() == null
-                        ? current.userCooldownSeconds()
-                        : request.userCooldownSeconds()
+                request.userCooldownSeconds(),
+                useCaseValidator.errors(request)
         );
-        errors.addAll(merged.errors());
-        return new ValidationState(
-                merged.type(),
-                merged.trigger(),
-                merged.actionKey(),
-                merged.messageTemplate(),
-                merged.timerIntervalMinutes(),
-                merged.timerMinChatCount(),
-                merged.requiredRole(),
-                merged.userCooldownSeconds(),
-                errors
-        )
-                .withAdditionalErrors(useCaseValidator.errors(request));
     }
 
     private ValidationState validationForRequest(
             Long commandId,
-            String typeValue,
             String triggerValue,
-            String actionKeyValue,
             String messageTemplateValue,
-            Integer timerIntervalMinutesValue,
-            Integer timerMinChatCountValue,
-            String requiredRoleValue,
-            Integer userCooldownSecondsValue
+            Integer userCooldownSecondsValue,
+            List<String> initialErrors
     ) {
-        List<String> errors = new ArrayList<>();
-        CommandType type = parseType(typeValue, errors);
+        List<String> errors = new ArrayList<>(initialErrors);
         String trigger = CommandTrigger.normalize(triggerValue);
-        CommandActionKey actionKey = parseActionKey(type, actionKeyValue, errors);
-        String role = role(requiredRoleValue, errors);
-        Integer cooldown = cooldown(actionKey, userCooldownSecondsValue, errors);
         String template = cleanTemplate(messageTemplateValue);
-        Integer timerIntervalMinutes = timerIntervalMinutesValue;
-        Integer timerMinChatCount = timerMinChatCountValue;
+        Integer cooldown = userCooldownSecondsValue == null
+                ? DEFAULT_USER_COOLDOWN_SECONDS
+                : userCooldownSecondsValue;
 
-        if (type != null) {
-            validateTrigger(type, trigger, errors);
-            validateTemplate(type, template, errors);
-            if (type != CommandType.TIMER) {
-                timerIntervalMinutes = null;
-                timerMinChatCount = null;
-                if (type == CommandType.TRIGGER) {
-                    template = null;
-                }
-            } else if (timerMinChatCount == null) {
-                timerMinChatCount = DEFAULT_TIMER_CHAT_COUNT;
-            }
-            if (type == CommandType.TIMER && timerIntervalMinutes == null) {
-                timerIntervalMinutes = DEFAULT_TIMER_INTERVAL_MINUTES;
-            }
-            validateTimer(type, timerIntervalMinutes, timerMinChatCount, template, errors);
-            if (type != CommandType.TRIGGER && actionKey != null) {
-                errors.add("actionKey is only allowed for TRIGGER");
-            }
-        }
-
-        if (trigger != null) {
-            validateDuplicateTrigger(commandId, trigger, errors);
-        }
-        if (actionKey != null) {
-            validateDuplicateActionKey(commandId, actionKey, errors);
-        }
-        return new ValidationState(
-                type,
-                trigger,
-                actionKey,
-                template,
-                timerIntervalMinutes,
-                timerMinChatCount,
-                role,
-                cooldown,
-                errors
-        );
-    }
-
-    private CommandType parseType(String value, List<String> errors) {
-        CommandType type = parseTypeOrNull(value);
-        if (type == null) {
-            errors.add(value == null || value.isBlank() ? "type is required" : "type is invalid");
-        }
-        return type;
-    }
-
-    private CommandType parseTypeOrNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return CommandType.parse(value);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
-    private CommandActionKey parseActionKey(
-            CommandType type,
-            String value,
-            List<String> errors
-    ) {
-        if (type != CommandType.TRIGGER && (value == null || value.isBlank())) {
-            return null;
-        }
-        if (type == CommandType.TRIGGER && (value == null || value.isBlank())) {
-            errors.add("actionKey is required");
-            return null;
-        }
-        CommandActionKey actionKey = parseActionKeyOrNull(value);
-        if (actionKey == null) {
-            errors.add("actionKey is invalid");
-        }
-        return actionKey;
-    }
-
-    private CommandActionKey parseActionKeyOrNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return CommandActionKey.parse(value);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
-    private void validateTrigger(CommandType type, String trigger, List<String> errors) {
-        if (type != CommandType.TIMER && trigger == null) {
-            errors.add("trigger is required");
-            return;
-        }
-        if (trigger == null) {
-            return;
-        }
         errors.addAll(CommandTrigger.validationErrors(trigger));
-    }
-
-    private void validateTemplate(CommandType type, String template, List<String> errors) {
-        if (type == CommandType.TRIGGER) {
-            return;
-        }
         errors.addAll(templateErrors(template));
+        if (cooldown < MIN_USER_COOLDOWN_SECONDS || cooldown > MAX_USER_COOLDOWN_SECONDS) {
+            errors.add("userCooldownSeconds must be between 5 and 3600");
+        }
+        if (trigger != null) {
+            commandPort.findByTrigger(trigger).ifPresent(existing -> {
+                if (!existing.id().equals(commandId)) {
+                    errors.add("trigger already exists");
+                }
+            });
+        }
+        return new ValidationState(trigger, template, cooldown, errors.stream().distinct().toList());
     }
 
     private List<String> templateErrors(String template) {
@@ -352,98 +184,33 @@ public class CommandService implements ManageCommandUseCase {
             errors.add("messageTemplate is required");
             return errors;
         }
-        if (template.length() > MAX_TEMPLATE_LENGTH) {
-            errors.add("messageTemplate length must be " + MAX_TEMPLATE_LENGTH + " or less");
+        if (template.length() > ManageCommandUseCase.MAX_TEMPLATE_LENGTH) {
+            errors.add("messageTemplate length must be "
+                    + ManageCommandUseCase.MAX_TEMPLATE_LENGTH + " or less");
         }
-        Set<String> unknown = CommandTemplateRenderer.unknownVariables(template);
+        Set<String> malformed = templateRenderer.malformedVariables(template);
+        if (!malformed.isEmpty()) {
+            errors.add("malformed template variables: " + String.join(", ", malformed));
+        }
+        Set<String> unknown = variableRegistry.unknownVariables(templateRenderer.variables(template));
         if (!unknown.isEmpty()) {
             errors.add("unknown template variables: " + String.join(", ", unknown));
         }
         return errors;
     }
 
-    private void validateTimer(
-            CommandType type,
-            Integer timerIntervalMinutes,
-            Integer timerMinChatCount,
-            String template,
-            List<String> errors
-    ) {
-        if (type != CommandType.TIMER) {
-            return;
+    private void requireValid(ValidationState state) {
+        if (!state.errors().isEmpty()) {
+            throw new IllegalArgumentException(String.join(", ", state.errors()));
         }
-        if (timerIntervalMinutes == null
-                || timerIntervalMinutes < MIN_TIMER_INTERVAL_MINUTES
-                || timerIntervalMinutes > MAX_TIMER_INTERVAL_MINUTES) {
-            errors.add("timerIntervalMinutes must be between 5 and 1440");
-        }
-        if (timerMinChatCount != null
-                && (timerMinChatCount < MIN_TIMER_CHAT_COUNT || timerMinChatCount > MAX_TIMER_CHAT_COUNT)) {
-            errors.add("timerMinChatCount must be between 1 and 10000");
-        }
-        List<String> blockedVariables = TIMER_BLOCKED_VARIABLES.stream()
-                .filter(variable -> templateRenderer.usesVariable(template, variable))
-                .sorted()
-                .toList();
-        if (!blockedVariables.isEmpty()) {
-            errors.add("timer messageTemplate cannot use caller variables: " + String.join(", ", blockedVariables));
-        }
-    }
-
-    private void validateDuplicateTrigger(Long commandId, String trigger, List<String> errors) {
-        commandPort.findByTrigger(trigger).ifPresent(existing -> {
-            if (!existing.id().equals(commandId)) {
-                errors.add("trigger already exists");
-            }
-        });
-    }
-
-    private String role(String value, List<String> errors) {
-        String role = value == null || value.isBlank()
-                ? DEFAULT_ROLE
-                : value.trim().toUpperCase(Locale.ROOT);
-        if (!ALLOWED_ROLES.contains(role)) {
-            errors.add("requiredRole is invalid");
-        }
-        return role;
-    }
-
-    private Integer cooldown(CommandActionKey actionKey, Integer value, List<String> errors) {
-        if (value == null) {
-            return DEFAULT_USER_COOLDOWN_SECONDS;
-        }
-        if (actionKey == CommandActionKey.ROULETTE_DONATION && value == 0) {
-            return value;
-        }
-        if (value < MIN_USER_COOLDOWN_SECONDS || value > MAX_USER_COOLDOWN_SECONDS) {
-            errors.add("userCooldownSeconds must be between 5 and 3600");
-        }
-        return value;
-    }
-
-    private void validateDuplicateActionKey(
-            Long commandId,
-            CommandActionKey actionKey,
-            List<String> errors
-    ) {
-        commandPort.findByActionKey(actionKey).ifPresent(existing -> {
-            if (!existing.id().equals(commandId)) {
-                errors.add("actionKey already exists");
-            }
-        });
     }
 
     private CommandResult commandResult(CommandRecord command) {
         return new CommandResult(
                 command.id(),
-                command.type().name(),
                 command.trigger(),
-                command.actionKey() == null ? null : command.actionKey().name(),
                 command.messageTemplate(),
-                command.timerIntervalMinutes(),
-                command.timerMinChatCount(),
                 command.active(),
-                command.requiredRole(),
                 command.userCooldownSeconds(),
                 command.createdBy(),
                 command.updatedBy(),
@@ -460,54 +227,11 @@ public class CommandService implements ManageCommandUseCase {
         return value == null || value.isBlank() ? "system" : value;
     }
 
-    private String fallback(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
-    }
-
     private record ValidationState(
-            CommandType type,
             String trigger,
-            CommandActionKey actionKey,
             String messageTemplate,
-            Integer timerIntervalMinutes,
-            Integer timerMinChatCount,
-            String requiredRole,
             Integer userCooldownSeconds,
             List<String> errors
     ) {
-
-        private ValidationState withAdditionalErrors(List<String> additionalErrors) {
-            if (additionalErrors == null || additionalErrors.isEmpty()) {
-                return new ValidationState(
-                        type,
-                        trigger,
-                        actionKey,
-                        messageTemplate,
-                        timerIntervalMinutes,
-                        timerMinChatCount,
-                        requiredRole,
-                        userCooldownSeconds,
-                        distinct(errors)
-                );
-            }
-            List<String> merged = new ArrayList<>(additionalErrors);
-            merged.addAll(errors);
-            return new ValidationState(
-                    type,
-                    trigger,
-                    actionKey,
-                    messageTemplate,
-                    timerIntervalMinutes,
-                    timerMinChatCount,
-                    requiredRole,
-                    userCooldownSeconds,
-                    distinct(merged)
-            );
-        }
-
-        private static List<String> distinct(List<String> values) {
-            return values.stream().distinct().toList();
-        }
     }
-
 }

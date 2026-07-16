@@ -3,12 +3,10 @@ package org.nowstart.nyangnyangbot.application.service.roulette;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -22,14 +20,10 @@ import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUse
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteSimulationResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteTableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
-import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
-import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
@@ -39,15 +33,11 @@ class ManageRouletteServiceTest {
     @Mock
     private RoulettePort roulettePort;
 
-    @Mock
-    private CommandPort commandPort;
-
     @Test
     void createTable_ShouldTrimInputAndUseDefaultThreshold() {
         // 준비
         ManageRouletteService service = service();
         given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
-        given(commandPort.findByTrigger("!룰렛")).willReturn(Optional.empty());
         given(roulettePort.createTable("기본", "!룰렛", 1_000L, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD))
                 .willReturn(table(1L, true, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD));
         given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
@@ -65,23 +55,6 @@ class ManageRouletteServiceTest {
         then(result.validation().activatable()).isTrue();
         BDDMockito.then(roulettePort).should()
                 .createTable("기본", "!룰렛", 1_000L, RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD);
-        BDDMockito.then(commandPort).should(never()).create(any());
-        BDDMockito.then(commandPort).should(never()).update(any());
-    }
-
-    @Test
-    void createTable_ShouldRejectWhenCommandConflictsWithManagedCommand() {
-        // 준비
-        ManageRouletteService service = service();
-        given(roulettePort.findTablesOrderByIdDesc()).willReturn(List.of());
-        given(commandPort.findByTrigger("!호감도"))
-                .willReturn(Optional.of(command(10L, "!호감도", CommandActionKey.FAVORITE_STATUS)));
-
-        // 실행 및 검증
-        thenThrownBy(() -> service.createTable(new CreateRouletteTableCommand("기본", "!호감도", 1_000L, null)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("roulette command conflicts with existing command");
-        BDDMockito.then(roulettePort).should(never()).createTable(any(), any(), any(), any());
     }
 
     @Test
@@ -94,7 +67,6 @@ class ManageRouletteServiceTest {
         thenThrownBy(() -> service.createTable(new CreateRouletteTableCommand("기본", "!룰렛", 1_000L, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("roulette table already exists");
-        BDDMockito.then(commandPort).shouldHaveNoInteractions();
         BDDMockito.then(roulettePort).should(never()).createTable(any(), any(), any(), any());
     }
 
@@ -184,9 +156,6 @@ class ManageRouletteServiceTest {
         given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
         given(roulettePort.findActiveItemsByTableId(1L)).willReturn(activeItems);
         given(roulettePort.findActiveTables()).willReturn(List.of());
-        given(commandPort.findByTrigger("!룰렛")).willReturn(Optional.empty());
-        given(commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION))
-                .willReturn(Optional.of(command(100L, "!이전룰렛", CommandActionKey.ROULETTE_DONATION)));
         given(roulettePort.activateTable(1L)).willReturn(table(1L, true, 10));
         given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
         given(roulettePort.findItemsByTableId(1L)).willReturn(activeItems);
@@ -201,54 +170,6 @@ class ManageRouletteServiceTest {
         then(deactivated.active()).isFalse();
         BDDMockito.then(roulettePort).should().activateTable(1L);
         BDDMockito.then(roulettePort).should().deactivateTable(1L);
-        BDDMockito.then(commandPort).should().update(argThat(data ->
-                data.id().equals(100L)
-                        && data.trigger().equals("!룰렛")
-                        && data.active()
-        ));
-    }
-
-    @Test
-    void deactivateTable_ShouldDeactivateMatchingRouletteDonationCommand() {
-        // 준비
-        ManageRouletteService service = service();
-        given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, true, 10)));
-        given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
-        given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
-                item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
-        ));
-        given(commandPort.findByActionKey(CommandActionKey.ROULETTE_DONATION))
-                .willReturn(Optional.of(command(100L, "!룰렛", CommandActionKey.ROULETTE_DONATION)));
-
-        // 실행
-        RouletteTableResult result = service.deactivateTable(1L);
-
-        // 검증
-        then(result.active()).isFalse();
-        BDDMockito.then(commandPort).should().update(argThat(data ->
-                data.id().equals(100L)
-                        && data.trigger().equals("!룰렛")
-                        && !data.active()
-        ));
-    }
-
-    @Test
-    void deactivateTable_ShouldNotDeactivateCommandWhenTableWasAlreadyInactive() {
-        // 준비
-        ManageRouletteService service = service();
-        given(roulettePort.findTableById(1L)).willReturn(Optional.of(table(1L, false, 10)));
-        given(roulettePort.deactivateTable(1L)).willReturn(table(1L, false, 10));
-        given(roulettePort.findItemsByTableId(1L)).willReturn(List.of(
-                item(1L, "꽝", 10_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, true)
-        ));
-
-        // 실행
-        RouletteTableResult result = service.deactivateTable(1L);
-
-        // 검증
-        then(result.active()).isFalse();
-        BDDMockito.then(commandPort).should(never()).findByActionKey(CommandActionKey.ROULETTE_DONATION);
-        BDDMockito.then(commandPort).should(never()).update(any());
     }
 
     @Test
@@ -293,26 +214,7 @@ class ManageRouletteServiceTest {
     }
 
     private ManageRouletteService service() {
-        return validated(new ManageRouletteService(roulettePort, commandPort));
-    }
-
-    private CommandRecord command(Long id, String trigger, CommandActionKey actionKey) {
-        return new CommandRecord(
-                id,
-                CommandType.TRIGGER,
-                trigger,
-                actionKey,
-                null,
-                null,
-                null,
-                true,
-                "USER",
-                0,
-                "system",
-                "system",
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        );
+        return validated(new ManageRouletteService(roulettePort));
     }
 
     private ItemResult item(

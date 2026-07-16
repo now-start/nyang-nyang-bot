@@ -65,8 +65,6 @@ public interface RoulettePort {
 
     List<RoundResult> findRoundsByUserId(String userId);
 
-    List<RoundResult> findTopRoundsByUserId(String userId, int limit);
-
     Optional<EventResult> findEventById(Long eventId);
 
     void updateEventStatus(Long eventId, RouletteEventStatus status);

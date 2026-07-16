@@ -21,7 +21,6 @@ public class OutboundContractValidator {
 
     public <T> T request(String operation, T value) {
         return validate(
-                operation,
                 value,
                 violations -> new OutboundRequestContractException(message(operation, violations)),
                 Default.class
@@ -30,7 +29,6 @@ public class OutboundContractValidator {
 
     public <T> T externalResponse(String operation, T value) {
         return validate(
-                operation,
                 value,
                 violations -> new ExternalResponseContractException(message(operation, violations)),
                 Default.class,
@@ -40,7 +38,6 @@ public class OutboundContractValidator {
 
     public <T> T persistenceResult(String operation, T value) {
         return validate(
-                operation,
                 value,
                 violations -> new PersistenceDataContractException(message(operation, violations)),
                 Default.class,
@@ -49,7 +46,6 @@ public class OutboundContractValidator {
     }
 
     private <T> T validate(
-            String operation,
             T value,
             Function<Set<? extends ConstraintViolation<?>>, RuntimeException> exceptionFactory,
             Class<?>... groups

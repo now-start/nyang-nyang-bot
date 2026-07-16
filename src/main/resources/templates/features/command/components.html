@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
-<div class="row g-3 align-items-end" th:fragment="panel-header(listUrl, typeOptions, activeOptions)">
+<div class="row g-3 align-items-end" th:fragment="panel-header(listUrl, activeOptions)">
     <div class="col-12 col-lg-7">
-        <p class="mb-0 small text-secondary">관리자 · 채팅</p>
+        <p class="mb-0 small text-secondary">스트리머 · 채팅</p>
         <h2 class="h4 fw-bold text-white mb-1">명령어 관리</h2>
         <p class="mb-0 small text-secondary">목록, 편집, 검증, 미리보기를 서버 fragment 기준으로 갱신합니다.</p>
     </div>
     <div class="col-12 col-lg-5">
-        <div th:replace="~{features/command/components :: filter-toolbar(${listUrl}, ${typeOptions}, ${activeOptions})}"></div>
+        <div th:replace="~{features/command/components :: filter-toolbar(${listUrl}, ${activeOptions})}"></div>
     </div>
 </div>
 
@@ -17,15 +17,12 @@
       hx-target="#command-list-region"
       hx-trigger="change, submit"
       id="command-filter-form"
-      th:fragment="filter-toolbar(listUrl, typeOptions, activeOptions)"
+      th:fragment="filter-toolbar(listUrl, activeOptions)"
       th:hx-get="${listUrl}">
-    <div class="col-12 col-sm-5">
-        <div th:replace="~{components/forms :: filter-select('command-filter-type', 'type', '유형', '', ${typeOptions}, null)}"></div>
-    </div>
-    <div class="col-12 col-sm-5">
+    <div class="col-12 col-sm-9">
         <div th:replace="~{components/forms :: filter-select('command-filter-active', 'active', '상태', '', ${activeOptions}, null)}"></div>
     </div>
-    <div class="col-12 col-sm-2 d-grid">
+    <div class="col-12 col-sm-3 d-grid">
         <th:block th:replace="~{components/buttons :: action-button(null, '조회', 'ghost', 'submit', null)}"></th:block>
     </div>
 </form>
@@ -67,7 +64,7 @@
 
     <div class="table-responsive" th:if="${commands != null and !#lists.isEmpty(commands)}">
         <table class="table table-dark table-hover align-middle mb-0">
-            <thead th:replace="~{components/tables :: header('유형', '명령어', '상태', '쿨타임', '수정자', '작업')}"></thead>
+            <thead th:replace="~{components/tables :: header('명령어', '상태', '쿨타임', '수정자', null, '작업')}"></thead>
             <tbody>
             <th:block th:each="command : ${commands}">
                 <tr th:replace="~{features/command/components :: command-row(${command}, ${editorUrl})}"></tr>
@@ -78,11 +75,6 @@
 </th:block>
 
 <tr th:classappend="${!command.active} ? ' opacity-50'" th:fragment="command-row(command, editorUrl)">
-    <td>
-        <span class="badge rounded-pill"
-              th:classappend="${command.type == 'TEXT'} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
-              th:text="${command.type}">TEXT</span>
-    </td>
     <td>
         <strong class="text-success" th:text="${command.triggerLabel}">!공지</strong>
         <span class="d-block small text-secondary text-truncate" th:text="${command.messageSummary}">응답 메시지</span>
@@ -110,49 +102,29 @@
 
 <div class="alert alert-danger" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
 
-<div class="row g-3"
-     th:fragment="editor-fields(commandForm, typeOptions, actionOptions, roleOptions)"
-     th:with="isExisting=${commandForm != null and commandForm.commandId != null}">
+<div class="row g-3" th:fragment="editor-fields(commandForm)">
     <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: select-field('command-type', 'type', '유형', ${commandForm == null ? 'TEXT' : commandForm.type}, ${typeOptions}, ${isExisting}, null)}"></div>
+        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!공지', 20, null)}"></div>
     </div>
     <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '트리거', ${commandForm == null ? '' : commandForm.trigger}, '!공지', 20, null)}"></div>
-    </div>
-    <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: select-field('command-action-key', 'actionKey', 'Action', ${commandForm == null ? '' : commandForm.actionKey}, ${actionOptions}, ${isExisting}, null)}"></div>
-    </div>
-    <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: select-field('command-required-role', 'requiredRole', '권한', ${commandForm == null ? 'USER' : commandForm.requiredRole}, ${roleOptions}, false, null)}"></div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '쿨타임', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 0, 3600, null)}"></div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div th:replace="~{components/forms :: number-field('command-timer-interval', 'timerIntervalMinutes', '타이머 분', ${commandForm == null ? 10 : commandForm.timerIntervalMinutes}, 5, 1440, null)}"></div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div th:replace="~{components/forms :: number-field('command-timer-chat-count', 'timerMinChatCount', '타이머 채팅', ${commandForm == null ? 10 : commandForm.timerMinChatCount}, 1, 10000, null)}"></div>
+        <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '사용자별 쿨타임(초)', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 5, 3600, null)}"></div>
     </div>
     <div class="col-12">
         <div th:replace="~{components/forms :: switch-field('command-active', 'active', '활성', ${commandForm != null and commandForm.active}, null)}"></div>
     </div>
     <div class="col-12">
-        <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '응답 템플릿 · 허용 변수: {nickname} {favorite}', ${commandForm == null ? '' : commandForm.messageTemplate}, '{nickname}님, 오늘 공지는 ...', 4, 300, null)}"></div>
+        <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '냥냥봇 응답 템플릿', ${commandForm == null ? '' : commandForm.messageTemplate}, '{viewer.nickname}님, 오늘 공지는 ...', 4, 1000, null)}"></div>
     </div>
 </div>
 
-<div class="border-top border-secondary-subtle pt-3" th:fragment="preview-sample">
-    <h4 class="h6 fw-bold mb-3">미리보기 샘플</h4>
-    <div class="row g-2">
-        <div class="col-12 col-md-4">
-            <div th:replace="~{components/forms :: text-field('command-preview-nickname', 'nickname', '닉네임', '치즈냥', '닉네임', null, null)}"></div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div th:replace="~{components/forms :: text-field('command-preview-args', 'args', '인자', '첫번째 두번째', '첫번째 두번째', null, null)}"></div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div th:replace="~{components/forms :: number-field('command-preview-favorite', 'favorite', '호감도', 100, null, null, null)}"></div>
+<div class="border-top border-secondary-subtle pt-3" th:fragment="variable-catalog(variables)">
+    <h4 class="h6 fw-bold mb-2">사용 가능한 변수</h4>
+    <p class="small text-secondary mb-3">템플릿에 아래 변수를 그대로 넣으면 실행 시 실제 값으로 바뀝니다. 미리보기에는 예시값이 사용됩니다.</p>
+    <div class="vstack gap-2" th:if="${variables != null and !#lists.isEmpty(variables)}">
+        <div class="border rounded-3 p-2" th:each="variable : ${variables}">
+            <code class="text-success" th:text="${'{' + variable.key + '}'}">{viewer.nickname}</code>
+            <span class="ms-2 small fw-semibold" th:text="${variable.label}">시청자 닉네임</span>
+            <span class="d-block small text-secondary" th:text="${variable.description + ' · 예: ' + variable.example}">설명</span>
         </div>
     </div>
 </div>

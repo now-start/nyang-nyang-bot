@@ -37,8 +37,6 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheConfig;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
-import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
-import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,8 +201,8 @@ class LocalCacheBehaviorTest {
 
     @Test
     void commandActiveTrigger_ShouldCacheAndEvictWhenUpdated() {
-        Command first = command(1L, "!호감도", CommandActionKey.FAVORITE_STATUS);
-        Command second = command(2L, "!호감도", CommandActionKey.FAVORITE_STATUS);
+        Command first = command(1L, "!호감도");
+        Command second = command(2L, "!호감도");
         given(commandRepository.findByTriggerTokenAndActiveTrue("!호감도"))
                 .willReturn(Optional.of(first))
                 .willReturn(Optional.of(second));
@@ -214,45 +212,17 @@ class LocalCacheBehaviorTest {
         then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(1L);
         BDDMockito.then(commandRepository).should(times(1)).findByTriggerTokenAndActiveTrue("!호감도");
 
-        commandPort.update(new CommandPort.UpdateData(1L, "!호감도", null, null, null, true, "USER", 30, "admin"));
-
-        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(2L);
-        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!호감도");
-    }
-
-    @Test
-    void commandActiveActionKey_ShouldCacheAndEvictWhenCreated() {
-        Command first = command(1L, "!룰렛", CommandActionKey.ROULETTE_DONATION);
-        Command second = command(2L, "!룰렛", CommandActionKey.ROULETTE_DONATION);
-        given(commandRepository.findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION))
-                .willReturn(Optional.of(first))
-                .willReturn(Optional.of(second));
-        given(commandRepository.save(any(Command.class))).willReturn(second);
-
-        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(1L);
-        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(1L);
-        BDDMockito.then(commandRepository)
-                .should(times(1))
-                .findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION);
-
-        commandPort.create(new CommandPort.CreateData(
-                CommandType.TRIGGER,
-                "!새룰렛",
-                CommandActionKey.ROULETTE_DONATION,
-                null,
-                null,
-                null,
+        commandPort.update(new CommandPort.UpdateData(
+                1L,
+                "!호감도",
+                "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
                 true,
-                "USER",
-                0,
-                "admin",
+                30,
                 "admin"
         ));
 
-        then(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION).orElseThrow().id()).isEqualTo(2L);
-        BDDMockito.then(commandRepository)
-                .should(times(2))
-                .findByActionKeyAndActiveTrue(CommandActionKey.ROULETTE_DONATION);
+        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(2L);
+        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!호감도");
     }
 
     @Test
@@ -312,14 +282,12 @@ class LocalCacheBehaviorTest {
                 .build();
     }
 
-    private Command command(Long id, String trigger, CommandActionKey actionKey) {
+    private Command command(Long id, String trigger) {
         return Command.builder()
                 .id(id)
-                .type(CommandType.TRIGGER)
                 .triggerToken(trigger)
-                .actionKey(actionKey)
+                .messageTemplate("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛")
                 .active(true)
-                .requiredRole("USER")
                 .userCooldownSeconds(30)
                 .createdBy("system")
                 .updatedBy("system")

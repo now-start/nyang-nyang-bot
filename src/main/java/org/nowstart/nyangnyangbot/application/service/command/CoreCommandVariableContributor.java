@@ -1,0 +1,65 @@
+package org.nowstart.nyangnyangbot.application.service.command;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CoreCommandVariableContributor implements CommandVariableContributor {
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final List<CommandVariableDefinition> DEFINITIONS = List.of(
+            definition("viewer.nickname", "시청자 닉네임", "명령어를 호출한 시청자의 표시 이름", "치즈냥"),
+            definition("invocation.command", "호출 명령어", "채팅에서 입력된 명령어", "!명령어"),
+            definition("invocation.args", "전체 인자", "명령어 뒤에 입력된 전체 내용", "첫번째 두번째"),
+            definition("invocation.arg1", "첫 번째 인자", "명령어의 첫 번째 인자", "첫번째"),
+            definition("invocation.arg2", "두 번째 인자", "명령어의 두 번째 인자", "두번째"),
+            definition("time.date", "오늘 날짜", "실행 시점의 날짜", "2026-07-16"),
+            definition("time.time", "현재 시각", "실행 시점의 시각", "21:00"),
+            definition("time.datetime", "현재 일시", "실행 시점의 날짜와 시각", "2026-07-16 21:00")
+    );
+
+    @Override
+    public List<CommandVariableDefinition> definitions() {
+        return DEFINITIONS;
+    }
+
+    @Override
+    public Map<String, String> resolve(Set<String> requestedKeys, CommandVariableContext context) {
+        LocalDateTime now = context.now() == null ? LocalDateTime.now() : context.now();
+        Map<String, String> values = new LinkedHashMap<>();
+        for (String key : requestedKeys) {
+            values.put(key, switch (key) {
+                case "viewer.nickname" -> value(context.nickname());
+                case "invocation.command" -> value(context.command());
+                case "invocation.args" -> value(context.args());
+                case "invocation.arg1" -> value(context.arg1());
+                case "invocation.arg2" -> value(context.arg2());
+                case "time.date" -> now.format(DATE_FORMAT);
+                case "time.time" -> now.format(TIME_FORMAT);
+                case "time.datetime" -> now.format(DATE_TIME_FORMAT);
+                default -> throw new IllegalArgumentException("unsupported core command variable: " + key);
+            });
+        }
+        return Map.copyOf(values);
+    }
+
+    private static CommandVariableDefinition definition(
+            String key,
+            String label,
+            String description,
+            String example
+    ) {
+        return new CommandVariableDefinition(key, label, description, example);
+    }
+
+    private String value(String value) {
+        return value == null ? "" : value;
+    }
+}

@@ -318,7 +318,7 @@ a{color:#00c37e;text-decoration:none}a:hover{color:#00FFA3}
   </div>
   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 150px;gap:12px;margin:18px 32px 0;background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
     <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">이름</label><input value="기본 룰렛" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
-    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">후원 명령어</label><input value="!룰렛" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-weight:600;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">후원 키워드</label><input value="!룰렛" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-weight:600;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
     <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">1회 금액 (치즈)</label><input value="1,000" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
     <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">최대 순차 애니메이션</label><input value="5" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
     <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
@@ -388,44 +388,43 @@ a{color:#00c37e;text-decoration:none}a:hover{color:#00FFA3}
   </div>
   <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:18px 32px 26px">
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;padding:4px 18px 6px;font-size:11.5px;color:#8f9894">
-        <span>트리거</span><span>유형</span><span>응답 / action</span><span style="text-align:right">상태</span>
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:12px;padding:4px 18px 6px;font-size:11.5px;color:#8f9894">
+        <span>호출어</span><span>응답 템플릿</span><span style="text-align:right">상태</span>
       </div>
-      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
-        <span style="color:#00FFA3;font-weight:700">!호감도</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TRIGGER</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">favorite.query · 쿨타임 30초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+        <span style="color:#00FFA3;font-weight:700">!호감도</span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛 · 쿨타임 30초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
       </div>
-      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
-        <span style="color:#00FFA3;font-weight:700">!룰렛결과</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TRIGGER</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">roulette.recent · 쿨타임 60초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2)" style-hover="border-color:#3c4541">
+        <span style="color:#00FFA3;font-weight:700">!룰렛결과</span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{viewer.nickname}님의 {roulette.recentSummary} · 쿨타임 30초</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
       </div>
       <div style="background:#181d1b;border:1px solid #00FFA3;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 12px rgba(0,255,163,0.1)">
-        <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center">
-          <span style="color:#00FFA3;font-weight:700">!규칙</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">TEXT</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">매너 채팅, 스포 금지…</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:12px;align-items:center">
+          <span style="color:#00FFA3;font-weight:700">!규칙</span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">매너 채팅, 스포 금지…</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">활성</span></span>
         </div>
         <div style="margin-top:8px;font-size:11.5px;color:#6f7773">편집 중 · 마지막 수정 07-06 스트리머냥</div>
       </div>
-      <div style="display:grid;grid-template-columns:110px 70px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2);opacity:0.65" style-hover="border-color:#3c4541">
-        <span style="color:#8f9894;font-weight:700">!디스코드</span><span style="font-size:11px;color:#8f9894"><span style="padding:2px 8px;border-radius:999px;background:#202623;font-weight:700">TEXT</span></span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">디스코드 링크 안내</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">비활성</span></span>
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:12px;align-items:center;background:#181d1b;border:1px solid #242b28;border-radius:13px;padding:12px 18px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.2);opacity:0.65" style-hover="border-color:#3c4541">
+        <span style="color:#8f9894;font-weight:700">!디스코드</span><span style="color:#8f9894;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">디스코드 링크 안내</span><span style="text-align:right"><span style="font-size:11px;padding:2px 9px;border-radius:999px;background:#202623;color:#8f9894;font-weight:700">비활성</span></span>
       </div>
     </div>
     <div style="background:#181d1b;border:1px solid #242b28;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:14px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:14px;font-weight:700;color:#ffffff">!규칙 편집</span>
-        <span style="font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(0,255,163,0.12);color:#00FFA3;font-weight:700">TEXT</span>
       </div>
       <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px">
         <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">트리거</label><input value="!규칙" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#00FFA3;font-weight:600;font-size:13.5px;font-family:inherit;outline:none" style-focus="border-color:#00FFA3"></div>
         <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11.5px;color:#8f9894">쿨타임 (초)</label><input value="60" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13.5px;font-family:inherit;outline:none;font-variant-numeric:tabular-nums" style-focus="border-color:#00FFA3"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:11.5px;color:#8f9894">메시지 템플릿 <span style="color:#6f7773">· 허용 변수: {nickname} {favorite}</span></label>
-        <div style="min-height:72px;padding:10px 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13px;line-height:1.6">{nickname}님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</div>
+        <label style="font-size:11.5px;color:#8f9894">메시지 템플릿 <span style="color:#6f7773">· 변수: {viewer.nickname} {favorite.balance}</span></label>
+        <div style="min-height:72px;padding:10px 12px;border-radius:10px;border:1px solid #2c3330;background:#161a19;color:#e6e9e7;font-size:13px;line-height:1.6">{viewer.nickname}님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:9px 12px;border-radius:10px;background:rgba(0,255,163,0.06);border:1px solid rgba(0,255,163,0.25);color:#e6e9e7">
-        <span style="width:6px;height:6px;border-radius:50%;background:#00FFA3;flex:none"></span>충돌 없음 — 기존 명령어·룰렛 후원 트리거와 중복되지 않습니다
+        <span style="width:6px;height:6px;border-radius:50%;background:#00FFA3;flex:none"></span>중복 없음 — 기존 채팅 명령어 호출어와 겹치지 않습니다
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label style="font-size:11.5px;color:#8f9894">미리보기</label>
-        <div style="padding:10px 12px;border-radius:10px;background:#101312;border:1px dashed #2c3330;font-size:13px;line-height:1.6"><span style="color:#00FFA3;font-weight:600">치즈냥봇</span> <span style="color:#e6e9e7">감자탕수육님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</span></div>
+        <div style="padding:10px 12px;border-radius:10px;background:#101312;border:1px dashed #2c3330;font-size:13px;line-height:1.6"><span style="color:#00FFA3;font-weight:600">냥냥봇:</span> <span style="color:#e6e9e7">치즈냥님, 매너 채팅 부탁드려요. 스포일러 금지 · 정치/혐오 발언 금지 · 도배 시 업보 적립됩니다.</span></div>
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:2px">
         <button style="height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,107,107,0.35);background:transparent;color:#ff6b6b;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,107,107,0.08)">비활성화</button>

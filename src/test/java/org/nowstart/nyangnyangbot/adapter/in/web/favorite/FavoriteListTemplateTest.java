@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.OptionView;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.VariableResult;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -85,8 +86,8 @@ class FavoriteListTemplateTest {
         then(html).contains("id=\"command-list-region\"");
         then(html).contains("hx-get=\"/admin/commands\"");
         then(html).contains("id=\"command-editor-region\"");
-        then(html).contains("id=\"command-filter-type\"");
         then(html).contains("id=\"command-filter-active\"");
+        then(html).doesNotContain("id=\"command-filter-type\"");
         then(html).contains("id=\"attendance-amount\"");
         then(html).contains("hx-post=\"/attendance/apply\"");
         then(html).contains("hx-post=\"/attendance/start\"");
@@ -266,31 +267,18 @@ class FavoriteListTemplateTest {
     }
 
     private void setCommandOptions(WebContext context) {
-        context.setVariable("commandTypeOptions", List.of(
-                new OptionView("", "전체 유형"),
-                new OptionView("TEXT", "TEXT"),
-                new OptionView("TRIGGER", "TRIGGER"),
-                new OptionView("TIMER", "TIMER")
-        ));
-        context.setVariable("commandEditorTypeOptions", List.of(
-                new OptionView("TEXT", "TEXT"),
-                new OptionView("TRIGGER", "TRIGGER"),
-                new OptionView("TIMER", "TIMER")
-        ));
         context.setVariable("commandActiveOptions", List.of(
                 new OptionView("", "전체 상태"),
                 new OptionView("true", "활성"),
                 new OptionView("false", "비활성")
         ));
-        context.setVariable("commandActionOptions", List.of(
-                new OptionView("", "없음"),
-                new OptionView("FAVORITE_STATUS", "FAVORITE_STATUS"),
-                new OptionView("ROULETTE_RESULT", "ROULETTE_RESULT"),
-                new OptionView("ROULETTE_DONATION", "ROULETTE_DONATION")
-        ));
-        context.setVariable("commandRoleOptions", List.of(
-                new OptionView("USER", "USER"),
-                new OptionView("ADMIN", "ADMIN")
+        context.setVariable("commandVariables", List.of(
+                new VariableResult(
+                        "viewer.nickname",
+                        "시청자 닉네임",
+                        "명령어를 호출한 시청자의 닉네임",
+                        "치즈냥"
+                )
         ));
     }
 

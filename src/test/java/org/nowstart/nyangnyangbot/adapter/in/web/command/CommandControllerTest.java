@@ -47,13 +47,13 @@ class CommandControllerTest {
     void list_ShouldReturnFilteredCommandListFragment() {
         // 준비
         given(manageCommandUseCase.getCommands()).willReturn(List.of(
-                command(1L, "TEXT", "!공지", true),
-                command(2L, "TIMER", null, false)
+                command(1L, "!공지", true),
+                command(2L, "!휴식", false)
         ));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.list("TEXT", true, model);
+        String view = controller.list(true, model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-list-region");
@@ -69,13 +69,13 @@ class CommandControllerTest {
     void list_ShouldPreserveUseCaseOrder() {
         // 준비
         given(manageCommandUseCase.getCommands()).willReturn(List.of(
-                command(2L, "TEXT", "!최근", true),
-                command(1L, "TEXT", "!이전", true)
+                command(2L, "!최근", true),
+                command(1L, "!이전", true)
         ));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        controller.list(null, null, model);
+        controller.list(null, model);
 
         // 검증
         @SuppressWarnings("unchecked")
@@ -86,7 +86,7 @@ class CommandControllerTest {
     @Test
     void editor_ShouldReturnSelectedCommandFormFragment() {
         // 준비
-        given(manageCommandUseCase.getCommands()).willReturn(List.of(command(1L, "TEXT", "!공지", true)));
+        given(manageCommandUseCase.getCommands()).willReturn(List.of(command(1L, "!공지", true)));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
@@ -114,35 +114,27 @@ class CommandControllerTest {
     }
 
     @Test
-    void validate_ShouldNormalizeStaleTimerFields() {
+    void validate_ShouldApplyDefaultsAndUseTemplateCommandContract() {
         // 준비
         given(manageCommandUseCase.validate(any())).willReturn(new ValidationResult(true, List.of()));
-        CommandForm staleTimerForm = new CommandForm(
+        CommandForm form = new CommandForm(
                 null,
-                "TIMER",
-                "!stale",
-                "FAVORITE_STATUS",
-                "{nickname}님",
-                10,
-                10,
+                "!호감도",
+                "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
                 true,
-                "USER",
-                30,
-                "치즈냥",
-                "첫번째 두번째",
-                100
+                null
         );
 
         // 실행
-        controller.validate(staleTimerForm, new ConcurrentModel());
+        controller.validate(form, new ConcurrentModel());
 
         // 검증
         ArgumentCaptor<ValidateCommand> captor = ArgumentCaptor.forClass(ValidateCommand.class);
         org.mockito.BDDMockito.then(manageCommandUseCase).should().validate(captor.capture());
-        then(captor.getValue().trigger()).isNull();
-        then(captor.getValue().actionKey()).isNull();
-        then(captor.getValue().messageTemplate()).isEqualTo("{nickname}님");
-        then(captor.getValue().timerIntervalMinutes()).isEqualTo(10);
+        then(captor.getValue().trigger()).isEqualTo("!호감도");
+        then(captor.getValue().messageTemplate())
+                .isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛");
+        then(captor.getValue().userCooldownSeconds()).isEqualTo(30);
     }
 
     @Test
@@ -162,7 +154,7 @@ class CommandControllerTest {
     @Test
     void save_ShouldReturnEditorWithOutOfBandList() {
         // 준비
-        CommandResult saved = command(1L, "TEXT", "!공지", true);
+        CommandResult saved = command(1L, "!공지", true);
         given(manageCommandUseCase.createCommand(any(CreateCommand.class))).willReturn(saved);
         ConcurrentModel model = new ConcurrentModel();
 
@@ -181,7 +173,7 @@ class CommandControllerTest {
     @Test
     void save_ShouldRenderBeanValidationFailureInEditor() {
         // 준비
-        var invalid = new CreateCommand(null, null, null, null, null, null, false, null, null, null);
+        var invalid = new CreateCommand(null, null, false, null, null);
         var violations = Validation.buildDefaultValidatorFactory().getValidator().validate(invalid);
         given(manageCommandUseCase.createCommand(any(CreateCommand.class)))
                 .willThrow(new ConstraintViolationException(violations));
@@ -192,84 +184,44 @@ class CommandControllerTest {
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");
-        then(model.getAttribute("saveError")).isEqualTo("type is required");
+        then(model.getAttribute("saveError"))
+                .isEqualTo("messageTemplate is required, trigger is required");
     }
 
     @Test
-    void save_ShouldNormalizeStaleTextFields() {
+    void save_ShouldMapTemplateCommandFields() {
         // 준비
-        CommandResult saved = command(1L, "TEXT", "!공지", true);
+        CommandResult saved = command(1L, "!공지", true);
         given(manageCommandUseCase.createCommand(any(CreateCommand.class))).willReturn(saved);
-        CommandForm staleTextForm = new CommandForm(
+        CommandForm form = new CommandForm(
                 null,
-                "TEXT",
                 "!공지",
-                "FAVORITE_STATUS",
-                "{nickname}님",
-                10,
-                10,
+                "{viewer.nickname}님, 오늘 공지는 ...",
                 true,
-                "USER",
-                30,
-                "치즈냥",
-                "첫번째 두번째",
-                100
+                30
         );
 
         // 실행
-        controller.save(staleTextForm, true, null, response, new ConcurrentModel());
+        controller.save(form, true, null, response, new ConcurrentModel());
 
         // 검증
         ArgumentCaptor<CreateCommand> captor = ArgumentCaptor.forClass(CreateCommand.class);
         org.mockito.BDDMockito.then(manageCommandUseCase).should().createCommand(captor.capture());
-        then(captor.getValue().actionKey()).isNull();
-        then(captor.getValue().timerIntervalMinutes()).isNull();
-        then(captor.getValue().timerMinChatCount()).isNull();
-        then(captor.getValue().messageTemplate()).isEqualTo("{nickname}님");
-    }
-
-    @Test
-    void save_ShouldNormalizeStaleTriggerFields() {
-        // 준비
-        CommandResult saved = command(1L, "TRIGGER", "!호감도", true);
-        given(manageCommandUseCase.createCommand(any(CreateCommand.class))).willReturn(saved);
-        CommandForm staleTriggerForm = new CommandForm(
-                null,
-                "TRIGGER",
-                "!호감도",
-                "FAVORITE_STATUS",
-                "{nickname}님",
-                10,
-                10,
-                true,
-                "USER",
-                30,
-                "치즈냥",
-                "첫번째 두번째",
-                100
-        );
-
-        // 실행
-        controller.save(staleTriggerForm, true, null, response, new ConcurrentModel());
-
-        // 검증
-        ArgumentCaptor<CreateCommand> captor = ArgumentCaptor.forClass(CreateCommand.class);
-        org.mockito.BDDMockito.then(manageCommandUseCase).should().createCommand(captor.capture());
-        then(captor.getValue().actionKey()).isEqualTo("FAVORITE_STATUS");
-        then(captor.getValue().messageTemplate()).isNull();
-        then(captor.getValue().timerIntervalMinutes()).isNull();
-        then(captor.getValue().timerMinChatCount()).isNull();
+        then(captor.getValue().trigger()).isEqualTo("!공지");
+        then(captor.getValue().messageTemplate()).isEqualTo("{viewer.nickname}님, 오늘 공지는 ...");
+        then(captor.getValue().active()).isTrue();
+        then(captor.getValue().userCooldownSeconds()).isEqualTo(30);
     }
 
     @Test
     void deactivate_ShouldUpdateCommandAsInactive() {
         // 준비
-        CommandResult saved = command(1L, "TEXT", "!공지", false);
+        CommandResult saved = command(1L, "!공지", false);
         given(manageCommandUseCase.updateCommand(any(), any(UpdateCommand.class))).willReturn(saved);
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.deactivate(CommandForm.from(command(1L, "TEXT", "!공지", true)), null, response, model);
+        String view = controller.deactivate(CommandForm.from(command(1L, "!공지", true)), null, response, model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");
@@ -295,18 +247,13 @@ class CommandControllerTest {
         then(model.getAttribute("saveError")).isEqualTo("저장된 명령어만 비활성화할 수 있습니다.");
     }
 
-    private CommandResult command(Long id, String type, String trigger, boolean active) {
+    private CommandResult command(Long id, String trigger, boolean active) {
         LocalDateTime now = LocalDateTime.of(2026, 7, 6, 12, 0);
         return new CommandResult(
                 id,
-                type,
                 trigger,
-                null,
-                "{nickname}님",
-                10,
-                10,
+                "{viewer.nickname}님",
                 active,
-                "USER",
                 30,
                 "admin",
                 "admin",

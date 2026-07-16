@@ -37,8 +37,13 @@ class OutboundPortContractTest {
         then(messages(new MessageCommand(" "))).contains("message is required");
         then(messages(new SaveAuthorizationCommand(" ", null, null, null, null, null, null)))
                 .contains("channelId is required", "accessToken is required", "refreshToken is required");
-        then(messages(new CreateData(null, null, null, null, null, null, false, null, null, null, null)))
-                .contains("type is required", "requiredRole is required", "createdBy is required");
+        then(messages(new CreateData(null, null, false, null, null, null)))
+                .contains(
+                        "trigger is required",
+                        "messageTemplate is required",
+                        "userCooldownSeconds is required",
+                        "createdBy is required"
+                );
         then(messages(new SaveDonationCommand(null, null, null, null, null, null, null, null)))
                 .contains("payAmount is required");
         then(messages(new CreateRouletteEventCommand(
@@ -71,8 +76,8 @@ class OutboundPortContractTest {
                 .contains("id is required");
 
         then(resultMessages(new CommandRecord(
-                null, null, null, null, null, null, null, false, null, null, null, null, null, null
-        ))).contains("id is required", "type is required");
+                null, null, null, false, null, null, null, null, null
+        ))).contains("id is required", "trigger is required", "messageTemplate is required");
         then(resultMessages(new OptionResult(null, null, null)))
                 .contains("id is required", "amount is required", "label is required");
         then(resultMessages(new SummaryResult(null, null, null)))

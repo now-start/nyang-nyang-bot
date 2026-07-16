@@ -6,7 +6,6 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import org.mockito.BDDMockito;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
@@ -22,15 +21,11 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Ite
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteEventCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteRoundCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
-import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
-import org.nowstart.nyangnyangbot.domain.type.CommandType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
@@ -43,9 +38,6 @@ class RouletteApplicationServiceTest {
 
     @Mock
     private RoulettePort roulettePort;
-
-    @Mock
-    private CommandPort commandPort;
 
     @Mock
     private RouletteRoundApplyService rouletteRoundApplyService;
@@ -267,6 +259,7 @@ class RouletteApplicationServiceTest {
         BDDMockito.then(overlayDisplayService).should().enqueueRouletteEvent(20L);
         ArgumentCaptor<CreateRouletteEventCommand> eventCaptor = ArgumentCaptor.forClass(CreateRouletteEventCommand.class);
         BDDMockito.then(roulettePort).should().createEvent(eventCaptor.capture());
+        then(eventCaptor.getValue().command()).isEqualTo(table.command());
         then(eventCaptor.getValue().itemSnapshots())
                 .extracting(RouletteItemSnapshot::label)
                 .contains("호감도 +10", "꽝");
@@ -372,14 +365,11 @@ class RouletteApplicationServiceTest {
     }
 
     private ManageRouletteService createManageService() {
-        return validated(new ManageRouletteService(roulettePort, commandPort));
+        return validated(new ManageRouletteService(roulettePort));
     }
 
     private ProcessRouletteDonationService createProcessService() {
-        lenient().when(commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION))
-                .thenReturn(Optional.of(rouletteDonationCommand()));
         return new ProcessRouletteDonationService(
-                commandPort,
                 roulettePort,
                 rouletteRoundApplyService,
                 new RouletteEventStatusService(roulettePort),
@@ -393,25 +383,6 @@ class RouletteApplicationServiceTest {
 
     private TableResult table(boolean active, Integer highRoundThreshold) {
         return new TableResult(1L, "기본 룰렛", "!룰렛", 1_000L, active, 1, highRoundThreshold);
-    }
-
-    private CommandRecord rouletteDonationCommand() {
-        return new CommandRecord(
-                100L,
-                CommandType.TRIGGER,
-                "!룰렛",
-                CommandActionKey.ROULETTE_DONATION,
-                null,
-                null,
-                null,
-                true,
-                "USER",
-                0,
-                "system",
-                "system",
-                null,
-                null
-        );
     }
 
     private ItemResult item(String label, int probability, boolean losingItem, Integer favoriteValue) {

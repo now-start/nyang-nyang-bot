@@ -76,8 +76,27 @@ class FlywayMigrationTest {
         );
         Integer weeklyUniqueIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "uk_weekly_chat_rank_week_user");
         Integer weeklyWeekIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "idx_weekly_chat_rank_week");
+        Integer legacyCommandColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'command' "
+                        + "and lower(column_name) in "
+                        + "('type', 'action_key', 'timer_interval_minutes', 'timer_min_chat_count', 'required_role')",
+                Integer.class
+        );
+        Integer legacyCommandActionCount = jdbcTemplate.queryForObject(
+                "select count(*) from command where trigger_token = '!룰렛'",
+                Integer.class
+        );
+        String favoriteTemplate = jdbcTemplate.queryForObject(
+                "select message_template from command where trigger_token = '!호감도'",
+                String.class
+        );
+        String rouletteResultTemplate = jdbcTemplate.queryForObject(
+                "select message_template from command where trigger_token = '!룰렛결과'",
+                String.class
+        );
 
-        assertThat(migrationCount).isEqualTo(3);
+        assertThat(migrationCount).isEqualTo(4);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
         assertThat(sourceTypeColumnCount).isEqualTo(1);
@@ -87,6 +106,142 @@ class FlywayMigrationTest {
         assertThat(foreignKeyCount).isZero();
         assertThat(weeklyUniqueIndexCount).isEqualTo(1);
         assertThat(weeklyWeekIndexCount).isEqualTo(1);
+        assertThat(legacyCommandColumnCount).isZero();
+        assertThat(legacyCommandActionCount).isZero();
+        assertThat(favoriteTemplate).isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛");
+        assertThat(rouletteResultTemplate).isEqualTo("{viewer.nickname}님의 {roulette.recentSummary}");
+    }
+
+    @Test
+    @DisplayName("V4는 실제 사용 중인 룰렛 후원 키워드를 룰렛 설정으로 이전한다")
+    void flywayMigration_ShouldTransferLegacyRouletteDonationCommand() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:flyway-command-transfer-test" + H2_MARIADB_OPTIONS,
+                "sa",
+                ""
+        );
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .target("3")
+                .load();
+        flyway.migrate();
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.update(
+                "insert into roulette_table "
+                        + "(title, command, price_per_round, active, version, high_round_threshold) "
+                        + "values ('기본 룰렛', '!원본', 1000, true, 0, 100)"
+        );
+        jdbcTemplate.update(
+                "update command set trigger_token = '!후원룰렛', active = true "
+                        + "where action_key = 'ROULETTE_DONATION'"
+        );
+
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+
+        assertThat(jdbcTemplate.queryForObject(
+                "select command from roulette_table where active = true",
+                String.class
+        )).isEqualTo("!후원룰렛");
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from command where trigger_token = '!후원룰렛'",
+                Integer.class
+        )).isZero();
+    }
+
+    @Test
+    @DisplayName("V4는 비활성 레거시 명령에 의존하던 룰렛을 활성 상태로 남기지 않는다")
+    void flywayMigration_ShouldDeactivateRouletteWhenLegacyCommandIsInactive() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:flyway-command-inactive-test" + H2_MARIADB_OPTIONS,
+                "sa",
+                ""
+        );
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .target("3")
+                .load()
+                .migrate();
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.update(
+                "insert into roulette_table "
+                        + "(title, command, price_per_round, active, version, high_round_threshold) "
+                        + "values ('기본 룰렛', '!원본', 1000, true, 0, 100)"
+        );
+        jdbcTemplate.update(
+                "update command set active = false where action_key = 'ROULETTE_DONATION'"
+        );
+
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+
+        assertThat(jdbcTemplate.queryForObject(
+                "select active from roulette_table where title = '기본 룰렛'",
+                Boolean.class
+        )).isFalse();
+    }
+
+    @Test
+    @DisplayName("V4는 저장된 이전 템플릿 변수를 정식 변수 키로 이전한다")
+    void flywayMigration_ShouldMigrateLegacyTemplateVariables() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:flyway-command-variable-migration-test" + H2_MARIADB_OPTIONS,
+                "sa",
+                ""
+        );
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .target("3")
+                .load()
+                .migrate();
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        String boundaryTemplate = "{arg1}".repeat(50);
+        jdbcTemplate.update(
+                "insert into command "
+                        + "(type, trigger_token, message_template, active, required_role, "
+                        + "user_cooldown_seconds, created_by, updated_by) "
+                        + "values ('TEXT', '!이전변수', "
+                        + "'{nickname}|{command}|{args}|{arg1}|{arg2}|{favorite}|{date}|{time}|{datetime}', "
+                        + "true, 'USER', 30, 'system', 'system')"
+        );
+        jdbcTemplate.update(
+                "insert into command "
+                        + "(type, trigger_token, message_template, active, required_role, "
+                        + "user_cooldown_seconds, created_by, updated_by) "
+                        + "values ('TEXT', '!경계변수', ?, true, 'USER', 30, 'system', 'system')",
+                boundaryTemplate
+        );
+
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+
+        assertThat(jdbcTemplate.queryForObject(
+                "select message_template from command where trigger_token = '!이전변수'",
+                String.class
+        )).isEqualTo(
+                "{viewer.nickname}|{invocation.command}|{invocation.args}|{invocation.arg1}|"
+                        + "{invocation.arg2}|{favorite.balance}|{time.date}|{time.time}|{time.datetime}"
+        );
+        assertThat(boundaryTemplate).hasSize(300);
+        assertThat(jdbcTemplate.queryForObject(
+                "select message_template from command where trigger_token = '!경계변수'",
+                String.class
+        )).isEqualTo("{invocation.arg1}".repeat(50)).hasSize(850);
     }
 
     @Test

@@ -45,21 +45,6 @@
 </div>
 
 <div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
-     th:fragment="select-field(id, name, label, value, options, disabled, extraClass)">
-    <label class="form-label" th:for="${id}" th:text="${label}">선택</label>
-    <input th:if="${disabled}" th:name="${name}" th:value="${value}" type="hidden">
-    <select class="form-select"
-            th:disabled="${disabled}"
-            th:id="${id}"
-            th:name="${name}">
-        <option th:each="option : ${options}"
-                th:selected="${option.value == value}"
-                th:text="${option.label}"
-                th:value="${option.value}">옵션</option>
-    </select>
-</div>
-
-<div class="mb-0" th:classappend="${extraClass == null ? '' : ' ' + extraClass}"
      th:fragment="filter-select(id, name, label, value, options, extraClass)">
     <label class="visually-hidden" th:for="${id}" th:text="${label}">필터</label>
     <select class="form-select" th:id="${id}" th:name="${name}">

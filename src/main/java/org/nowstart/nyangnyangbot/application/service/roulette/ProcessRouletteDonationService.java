@@ -8,8 +8,6 @@ import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseC
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteEventCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRouletteRoundCommand;
@@ -20,7 +18,6 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Tab
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteItemSnapshot;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
-import org.nowstart.nyangnyangbot.domain.type.CommandActionKey;
 import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.springframework.stereotype.Service;
@@ -32,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProcessRouletteDonationService implements ProcessRouletteDonationUseCase {
 
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
-    private final CommandPort commandPort;
     private final RoulettePort roulettePort;
     private final RouletteRoundApplyService rouletteRoundApplyService;
     private final RouletteEventStatusService rouletteEventStatusService;
@@ -47,17 +43,15 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
         if (isBlank(donation.donationEventId())) {
             return RouletteRunResult.ignored("donation event id is required");
         }
-        CommandRecord rouletteCommand = commandPort.findActiveByActionKey(CommandActionKey.ROULETTE_DONATION)
-                .orElse(null);
-        if (rouletteCommand == null || isBlank(rouletteCommand.trigger())) {
-            return RouletteRunResult.ignored("roulette command not configured");
-        }
         TableResult table = roulettePort.findLatestActiveTable()
                 .orElse(null);
         if (table == null) {
             return RouletteRunResult.ignored("active roulette table not found");
         }
-        if (!roulettePolicy.containsCommand(donation.donationText(), rouletteCommand.trigger())) {
+        if (isBlank(table.command())) {
+            return RouletteRunResult.ignored("roulette command not configured");
+        }
+        if (!roulettePolicy.containsCommand(donation.donationText(), table.command())) {
             return RouletteRunResult.ignored("roulette command not found");
         }
         if (roulettePort.existsEventByDonationEventId(donation.donationEventId())) {
@@ -89,7 +83,7 @@ public class ProcessRouletteDonationService implements ProcessRouletteDonationUs
                 donation.donationText(),
                 table.id(),
                 table.version(),
-                rouletteCommand.trigger(),
+                table.command(),
                 table.pricePerRound(),
                 roundCount,
                 items.stream().map(this::itemSnapshot).toList(),
