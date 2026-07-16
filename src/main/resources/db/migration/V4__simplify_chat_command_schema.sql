@@ -1,5 +1,10 @@
 -- Irreversible cutover: V3 command type/action/timer/role columns are removed.
 -- Back up the production database before deployment; a V3 application cannot run after this migration.
+-- Existing production databases can still use utf8mb3, but command templates may contain 4-byte emoji.
+
+SET NAMES utf8mb4;
+
+ALTER TABLE command CONVERT TO CHARACTER SET utf8mb4;
 
 UPDATE roulette_table
 SET command = (
