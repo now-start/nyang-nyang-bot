@@ -14,6 +14,7 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.timer.RecordTimerChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
@@ -36,6 +37,9 @@ class ChatServiceTest {
 
     @Mock
     private WeeklyChatRankService weeklyChatRankService;
+
+    @Mock
+    private RecordTimerChatUseCase recordTimerChatUseCase;
 
     @Mock
     private CommandPort commandPort;
@@ -64,6 +68,25 @@ class ChatServiceTest {
         // 검증
         BDDMockito.then(attendanceService).should().recordChatUser(any(ChatReceived.class));
         BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatReceived.class));
+        BDDMockito.then(recordTimerChatUseCase).should().recordChatActivity();
+    }
+
+    @Test
+    void handle_ShouldNotCountChatWithoutSenderForTimer() {
+        ChatReceived chatDto = new ChatReceived("channel-1", null, null, "안녕", null, 1711111111L);
+
+        chatService.handle(chatDto);
+
+        BDDMockito.then(recordTimerChatUseCase).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void handle_ShouldNotCountBroadcasterSelfMessageForTimer() {
+        ChatReceived chatDto = new ChatReceived("channel-1", "channel-1", null, "안내", null, 1711111111L);
+
+        chatService.handle(chatDto);
+
+        BDDMockito.then(recordTimerChatUseCase).shouldHaveNoInteractions();
     }
 
     @Test
@@ -237,6 +260,7 @@ class ChatServiceTest {
         return new ChatService(
                 attendanceService,
                 weeklyChatRankService,
+                recordTimerChatUseCase,
                 commandPort,
                 chzzkClientPort,
                 templateRenderer,

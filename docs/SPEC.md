@@ -11,7 +11,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 - 업보/쿠폰/리워드 보유 목록
 - 출석체크와 주간 채팅 순위
 - 후원 룰렛과 OBS 오버레이
-- 관리자 명령어 관리
+- 관리자 명령어와 타이머 메시지 관리
 
 ## Roles
 
@@ -21,7 +21,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 | --- | --- |
 | 방문자 | 로그인 화면 |
 | 일반 사용자 | 본인 호감도, 실제 순위, 본인 히스토리, 본인 업보 목록, 주간 채팅 TOP 10 |
-| 관리자 | 전체 목록, 검색, 조정, 출석, 룰렛, 오버레이, 명령어 |
+| 관리자 | 전체 목록, 검색, 조정, 출석, 룰렛, 오버레이, 명령어, 타이머 메시지 |
 
 일반 사용자는 다른 사용자의 상세 내역을 볼 수 없다. 일반 사용자 화면은 본인 카드만 보여주되 순위는 전체 호감도 기준 실제 순위를 표시한다.
 
@@ -72,7 +72,16 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 - 저장 템플릿 원문은 최대 1000자이며, 실제 채팅 응답은 변수 치환 후 유니코드 문자 기준 최대 300자로 제한한다.
 - 기본 명령어 프리셋은 DB에 최초 복사된 이후 스트리머가 독립적으로 수정한다.
 - 룰렛 후원 실행은 채팅 명령어가 아니다. 후원 키워드, 금액, 활성 상태는 룰렛 설정이 직접 소유한다.
-- 실행기가 없는 타이머 명령은 제공하지 않는다. 타이머를 추가할 때는 예약, 중복 실행 방지, 최소 채팅 수 집계를 함께 구현한다.
+- 타이머 메시지는 채팅 명령어와 별도 모델로 관리하며 호출자 문맥이 없는 `time.*` 변수만 사용한다.
+
+### Timer Message
+
+- 타이머 메시지는 발송 간격과 최소 시청자 채팅 수를 모두 충족해야 실행한다.
+- 채팅 수는 각 타이머의 마지막 성공 발송 이후부터 누적하며, 발송 중 들어온 채팅은 다음 회차에 보존한다.
+- 실행기는 만료 시간이 있는 DB 조건부 클레임을 사용해 여러 인스턴스가 동시에 같은 타이머를 발송하지 않도록 한다.
+- 발송 성공 시 클레임 시점까지의 채팅 수만 차감하고 다음 실행 시각을 계산한다.
+- 발송 실패 시 클레임을 해제하고 1분 뒤 재시도하며, 한 타이머의 실패가 다른 타이머 실행을 막지 않는다.
+- CHZZK 메시지 API가 멱등성 키를 받지 않으므로 HTTP 성공 직후 프로세스가 종료되는 극단적 상황은 at-least-once 재전송 가능성이 있다.
 
 ## Web Routes
 
@@ -101,11 +110,17 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 | GET | `/overlay/roulette` | 토큰 | OBS 오버레이 화면 |
 | GET | `/overlay/roulette/events/next` | 토큰 | 다음 오버레이 이벤트 |
 | GET | `/admin/commands` | ADMIN | 명령어 목록 |
-| GET | `/admin/commands/editor` | ADMIN | 명령어 편집 fragment |
-| POST | `/admin/commands/validate` | ADMIN | 명령어 검증 |
-| POST | `/admin/commands/preview` | ADMIN | 명령어 미리보기 |
+| GET | `/admin/commands/editor` | ADMIN | 명령어 선택 안내 또는 편집 fragment |
+| GET | `/admin/commands/editor/new` | ADMIN | 새 명령어 편집 fragment |
+| POST | `/admin/commands/preview` | ADMIN | 명령어 검증과 미리보기 |
 | POST | `/admin/commands` | ADMIN | 명령어 저장 |
 | POST | `/admin/commands/deactivate` | ADMIN | 명령어 비활성화 |
+| GET | `/admin/timers` | ADMIN | 타이머 메시지 목록 |
+| GET | `/admin/timers/editor` | ADMIN | 타이머 선택 안내 또는 편집 fragment |
+| GET | `/admin/timers/editor/new` | ADMIN | 새 타이머 편집 fragment |
+| POST | `/admin/timers/preview` | ADMIN | 타이머 검증과 미리보기 |
+| POST | `/admin/timers` | ADMIN | 타이머 저장 |
+| POST | `/admin/timers/deactivate` | ADMIN | 타이머 비활성화 |
 | GET | `/local/test-login` | local | 테스트 계정 선택 |
 | POST | `/local/test-login` | local | 테스트 계정 전환 |
 
@@ -140,6 +155,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 - 관리자/일반/음수 계정
 - 히스토리, 주간 채팅 순위
 - 단일 룰렛과 최근 실행 이벤트
+- 비활성 타이머 메시지 예시
 - 업보 템플릿과 사용자 보유 업보
 - 관리자 조정 템플릿
 
@@ -153,6 +169,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 중심 봇이다.
 - Grafana 대시보드는 `docs/grafana_dashboard.json`을 사용한다.
 - 배포 전 최소 검증은 `sh gradlew test`이다.
 - V4 명령어 마이그레이션은 이전 컬럼을 제거하는 비가역 전환이다. 배포 전에 운영 DB 스냅샷을 만들고 MariaDB 복제본에서 마이그레이션을 검증하며, V4 적용 후에는 V3 애플리케이션으로 롤백하지 않는다.
+- V5는 `command`를 변경하지 않고 별도 `timer_message` 테이블과 실행 클레임 인덱스를 추가한다.
 
 ## Documentation Policy
 

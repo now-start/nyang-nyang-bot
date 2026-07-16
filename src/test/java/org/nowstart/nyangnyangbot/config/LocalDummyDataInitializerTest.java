@@ -24,6 +24,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
@@ -57,6 +59,9 @@ class LocalDummyDataInitializerTest {
 
     @Mock
     private RouletteRoundResultRepository rouletteRoundResultRepository;
+
+    @Mock
+    private TimerMessageRepository timerMessageRepository;
 
     @Mock
     private UpboTemplateRepository upboTemplateRepository;
@@ -94,6 +99,7 @@ class LocalDummyDataInitializerTest {
         BDDMockito.then(rouletteItemRepository).should().saveAll(any());
         BDDMockito.then(rouletteEventRepository).should(times(3)).save(any());
         BDDMockito.then(rouletteRoundResultRepository).should(times(3)).saveAll(any());
+        BDDMockito.then(timerMessageRepository).should().save(any(TimerMessage.class));
         BDDMockito.then(upboTemplateRepository).should().saveAll(any());
         BDDMockito.then(userUpboRepository).should().saveAll(any());
         BDDMockito.then(favoriteAdjustmentRepository).should().saveAll(any());
@@ -110,6 +116,7 @@ class LocalDummyDataInitializerTest {
         given(favoriteHistoryRepository.count()).willReturn(1L);
         given(weeklyChatRankRepository.count()).willReturn(1L);
         given(rouletteTableRepository.count()).willReturn(1L);
+        given(timerMessageRepository.count()).willReturn(1L);
         given(upboTemplateRepository.count()).willReturn(1L);
         given(userUpboRepository.count()).willReturn(1L);
         given(favoriteAdjustmentRepository.count()).willReturn(1L);
@@ -124,6 +131,7 @@ class LocalDummyDataInitializerTest {
         BDDMockito.then(rouletteItemRepository).shouldHaveNoInteractions();
         BDDMockito.then(rouletteEventRepository).shouldHaveNoInteractions();
         BDDMockito.then(rouletteRoundResultRepository).shouldHaveNoInteractions();
+        BDDMockito.then(timerMessageRepository).should(never()).save(any());
         BDDMockito.then(upboTemplateRepository).should(never()).saveAll(any());
         BDDMockito.then(userUpboRepository).should(never()).saveAll(any());
         BDDMockito.then(favoriteAdjustmentRepository).should(never()).saveAll(any());
@@ -141,6 +149,7 @@ class LocalDummyDataInitializerTest {
                 rouletteItemRepository,
                 rouletteEventRepository,
                 rouletteRoundResultRepository,
+                timerMessageRepository,
                 upboTemplateRepository,
                 userUpboRepository
         );

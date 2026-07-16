@@ -10,6 +10,7 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidateCommand;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.VariableResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -28,10 +29,10 @@ public class CommandController {
 
     private static final String COMMAND_LIST_FRAGMENT = "features/command/regions :: command-list-region";
     private static final String COMMAND_EDITOR_FRAGMENT = "features/command/regions :: command-editor-region";
-    private static final String COMMAND_VALIDATE_FRAGMENT = "features/command/regions :: command-validation-region";
-    private static final String COMMAND_PREVIEW_FRAGMENT = "features/command/regions :: command-preview-region";
+    private static final String COMMAND_REVIEW_FRAGMENT = "features/command/regions :: command-review-region";
     private static final String DEFAULT_ACTOR = "system";
     private static final String COMMAND_LIST_REFRESH_TRIGGER = "command-list-refresh";
+    private static final String COMMAND_NOT_FOUND_MESSAGE = "명령어를 찾을 수 없습니다.";
 
     private final ManageCommandUseCase manageCommandUseCase;
 
@@ -43,33 +44,40 @@ public class CommandController {
 
     @GetMapping("/editor")
     public String editor(@RequestParam(required = false) Long commandId, Model model) {
-        model.addAttribute("commandForm", commandId == null ? CommandForm.empty() : commandForm(commandId));
+        if (commandId == null) {
+            return COMMAND_EDITOR_FRAGMENT;
+        }
+        try {
+            model.addAttribute("commandForm", commandForm(commandId));
+            addCommandVariables(model);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("saveError", inputErrorMessage(e));
+        }
+        return COMMAND_EDITOR_FRAGMENT;
+    }
+
+    @GetMapping("/editor/new")
+    public String newEditor(Model model) {
+        model.addAttribute("commandForm", CommandForm.empty());
         addCommandVariables(model);
         return COMMAND_EDITOR_FRAGMENT;
     }
 
-    @PostMapping("/validate")
-    public String validate(@ModelAttribute CommandForm form, Model model) {
-        CommandForm normalizedForm = form.withDefaults();
-        var result = manageCommandUseCase.validate(new ValidateCommand(
-                normalizedForm.commandId(),
-                normalizedForm.trigger(),
-                normalizedForm.messageTemplate(),
-                normalizedForm.userCooldownSeconds()
-        ));
-        model.addAttribute("validationResult", new ValidationView(result.valid(), result.errors()));
-        return COMMAND_VALIDATE_FRAGMENT;
-    }
-
     @PostMapping("/preview")
     public String preview(@ModelAttribute CommandForm form, Model model) {
-        try {
-            var result = manageCommandUseCase.preview(new PreviewCommand(form.messageTemplate()));
-            model.addAttribute("previewMessage", result.message());
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            model.addAttribute("previewError", inputErrorMessage(e));
+        CommandForm normalizedForm = form.withDefaults();
+        var validation = manageCommandUseCase.validate(validateCommand(normalizedForm));
+        if (!validation.valid()) {
+            model.addAttribute("reviewResult", new ReviewView(false, validation.errors(), null));
+            return COMMAND_REVIEW_FRAGMENT;
         }
-        return COMMAND_PREVIEW_FRAGMENT;
+        try {
+            var result = manageCommandUseCase.preview(new PreviewCommand(normalizedForm.messageTemplate()));
+            model.addAttribute("reviewResult", new ReviewView(true, List.of(), result.message()));
+        } catch (IllegalArgumentException | ConstraintViolationException e) {
+            model.addAttribute("reviewResult", new ReviewView(false, List.of(inputErrorMessage(e)), null));
+        }
+        return COMMAND_REVIEW_FRAGMENT;
     }
 
     @PostMapping
@@ -101,28 +109,25 @@ public class CommandController {
 
     @PostMapping("/deactivate")
     public String deactivate(
-            @ModelAttribute CommandForm form,
+            @RequestParam(required = false) Long commandId,
             Authentication authentication,
             HttpServletResponse response,
             Model model
     ) {
         addCommandVariables(model);
-        if (form.commandId() == null) {
-            model.addAttribute("commandForm", form.withDefaults());
+        if (commandId == null) {
             model.addAttribute("saveError", "저장된 명령어만 비활성화할 수 있습니다.");
             return COMMAND_EDITOR_FRAGMENT;
         }
-        CommandForm inactiveForm = form.deactivate();
         try {
             CommandResult result = manageCommandUseCase.updateCommand(
-                    inactiveForm.commandId(),
-                    updateCommand(inactiveForm, actor(authentication))
+                    commandId,
+                    new UpdateCommand(null, null, false, null, actor(authentication))
             );
             model.addAttribute("commandForm", CommandForm.from(result));
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
         } catch (IllegalArgumentException | ConstraintViolationException e) {
-            model.addAttribute("commandForm", inactiveForm);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
         return COMMAND_EDITOR_FRAGMENT;
@@ -136,7 +141,37 @@ public class CommandController {
     }
 
     private void addCommandVariables(Model model) {
-        model.addAttribute("commandVariables", manageCommandUseCase.getVariables());
+        List<VariableResult> variables = manageCommandUseCase.getVariables();
+        model.addAttribute("commandVariableGroups", List.of(
+                        variableGroup("viewer", "시청자", variables),
+                        variableGroup("invocation", "명령 입력", variables),
+                        variableGroup("time", "시간", variables),
+                        integrationVariableGroup(variables)
+                ).stream()
+                .filter(group -> !group.variables().isEmpty())
+                .toList());
+    }
+
+    private VariableGroupView variableGroup(String key, String label, List<VariableResult> variables) {
+        return new VariableGroupView(
+                key,
+                label,
+                variables.stream()
+                        .filter(variable -> variable.key().startsWith(key + "."))
+                        .toList()
+        );
+    }
+
+    private VariableGroupView integrationVariableGroup(List<VariableResult> variables) {
+        return new VariableGroupView(
+                "integration",
+                "연동 데이터",
+                variables.stream()
+                        .filter(variable -> !variable.key().startsWith("viewer."))
+                        .filter(variable -> !variable.key().startsWith("invocation."))
+                        .filter(variable -> !variable.key().startsWith("time."))
+                        .toList()
+        );
     }
 
     private String inputErrorMessage(RuntimeException exception) {
@@ -147,7 +182,9 @@ public class CommandController {
                     .distinct()
                     .collect(java.util.stream.Collectors.joining(", "));
         }
-        return exception.getMessage();
+        return "command not found".equals(exception.getMessage())
+                ? COMMAND_NOT_FOUND_MESSAGE
+                : exception.getMessage();
     }
 
     private CommandForm commandForm(Long commandId) {
@@ -155,7 +192,7 @@ public class CommandController {
                 .filter(command -> commandId.equals(command.id()))
                 .findFirst()
                 .map(CommandForm::from)
-                .orElseGet(CommandForm::empty);
+                .orElseThrow(() -> new IllegalArgumentException(COMMAND_NOT_FOUND_MESSAGE));
     }
 
     private CreateCommand createCommand(CommandForm form, String actor) {
@@ -175,6 +212,15 @@ public class CommandController {
                 form.active(),
                 form.userCooldownSeconds(),
                 actor
+        );
+    }
+
+    private ValidateCommand validateCommand(CommandForm form) {
+        return new ValidateCommand(
+                form.commandId(),
+                form.trigger(),
+                form.messageTemplate(),
+                form.userCooldownSeconds()
         );
     }
 
@@ -272,6 +318,9 @@ public class CommandController {
         }
     }
 
-    public record ValidationView(boolean valid, List<String> errors) {
+    public record ReviewView(boolean valid, List<String> errors, String previewMessage) {
+    }
+
+    public record VariableGroupView(String key, String label, List<VariableResult> variables) {
     }
 }

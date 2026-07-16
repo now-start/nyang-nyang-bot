@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="row g-3 align-items-end" th:fragment="panel-header(listUrl, activeOptions)">
+    <div class="col-12 col-lg-7">
+        <p class="mb-0 small text-secondary">스트리머 · 자동 발송</p>
+        <h2 class="h4 fw-bold text-white mb-1">타이머 메시지</h2>
+        <p class="mb-0 small text-secondary">설정한 시간이 지나고 시청자 채팅 수를 채우면 메시지를 한 번 발송합니다.</p>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div th:replace="~{features/timer/components :: filter-toolbar(${listUrl}, ${activeOptions})}"></div>
+    </div>
+</div>
+
+<form class="row g-2"
+      hx-swap="outerHTML"
+      hx-target="#timer-list-region"
+      hx-trigger="change, submit"
+      id="timer-filter-form"
+      th:fragment="filter-toolbar(listUrl, activeOptions)"
+      th:hx-get="${listUrl}">
+    <div class="col-12 col-sm-9">
+        <div th:replace="~{components/forms :: filter-select('timer-filter-active', 'active', '상태', '', ${activeOptions}, null)}"></div>
+    </div>
+    <div class="col-12 col-sm-3 d-grid">
+        <th:block th:replace="~{components/buttons :: action-button(null, '조회', 'ghost', 'submit', null)}"></th:block>
+    </div>
+</form>
+
+<div class="row g-3" th:fragment="workspace(listUrl, editorUrl)">
+    <div class="col-12 col-xl-7">
+        <section class="card p-3"
+                 hx-swap="outerHTML"
+                 hx-trigger="load"
+                 id="timer-list-region"
+                 th:hx-get="${listUrl}">
+            <div class="text-secondary">타이머 목록을 불러오는 중입니다.</div>
+        </section>
+    </div>
+    <div class="col-12 col-xl-5">
+        <section class="card p-3"
+                 hx-swap="outerHTML"
+                 hx-trigger="load"
+                 id="timer-editor-region"
+                 th:hx-get="${editorUrl}">
+            <div class="text-secondary">편집 영역을 불러오는 중입니다.</div>
+        </section>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
+     th:fragment="list-header(newEditorUrl)">
+    <div>
+        <h3 class="h6 fw-bold mb-1">타이머 목록</h3>
+        <p class="mb-0 small text-secondary">채팅 수는 마지막 성공 발송 이후부터 누적됩니다.</p>
+    </div>
+    <th:block th:replace="~{components/buttons :: hx-get-button(null, '새 타이머', 'ghost', 'sm', ${newEditorUrl}, '#timer-editor-region', 'outerHTML', null)}"></th:block>
+</div>
+
+<th:block th:fragment="timer-table(timerMessages, editorUrl)">
+    <th:block th:if="${timerMessages == null or #lists.isEmpty(timerMessages)}">
+        <div th:replace="~{components/feedback :: empty-state('표시할 타이머가 없습니다.')}"></div>
+    </th:block>
+
+    <div class="table-responsive" th:if="${timerMessages != null and !#lists.isEmpty(timerMessages)}">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead th:replace="~{components/tables :: header('메시지', '상태', '주기', '채팅', '다음 발송', '작업')}"></thead>
+            <tbody>
+            <th:block th:each="timer : ${timerMessages}">
+                <tr th:replace="~{features/timer/components :: timer-row(${timer}, ${editorUrl})}"></tr>
+            </th:block>
+            </tbody>
+        </table>
+    </div>
+</th:block>
+
+<tr th:fragment="timer-row(timer, editorUrl)">
+    <td>
+        <strong class="text-white d-block text-truncate timer-message-summary" th:text="${timer.messageSummary}">안내 메시지</strong>
+        <span class="small text-secondary" th:text="${timer.updatedByLabel}">admin</span>
+    </td>
+    <td>
+        <span class="badge rounded-pill"
+              th:classappend="${timer.active} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
+              th:text="${timer.statusLabel}">활성</span>
+    </td>
+    <td class="text-end tabular-nums" th:text="${timer.intervalLabel}">30분</td>
+    <td class="text-end tabular-nums" th:text="${timer.chatProgressLabel}">7 / 10</td>
+    <td class="text-nowrap small tabular-nums" th:text="${timer.nextRunLabel}">2026-07-16 21:30</td>
+    <td class="text-end">
+        <th:block th:replace="~{components/buttons :: hx-get-button(null, '편집', 'ghost', 'sm', ${editorUrl + '?timerMessageId=' + timer.id}, '#timer-editor-region', 'outerHTML', null)}"></th:block>
+    </td>
+</tr>
+
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
+     th:fragment="editor-header(timerMessageForm, saveMessage)">
+    <div>
+        <h3 class="h6 fw-bold mb-1"
+            data-editor-heading
+            tabindex="-1"
+            th:text="${timerMessageForm != null and timerMessageForm.timerMessageId != null ? '타이머 편집' : '새 타이머'}">새 타이머</h3>
+        <p class="mb-0 small text-secondary">간격과 최소 채팅 조건을 모두 만족하면 발송합니다.</p>
+    </div>
+    <span aria-live="polite" role="status" th:if="${saveMessage}">
+        <span th:replace="~{components/badges :: status(${saveMessage}, 'success')}">저장됨</span>
+    </span>
+</div>
+
+<div class="alert alert-danger" role="alert" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
+
+<div class="row g-3" th:fragment="editor-fields(timerMessageForm)">
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: number-field('timer-interval-minutes', 'intervalMinutes', '발송 간격(분)', ${timerMessageForm.intervalMinutes}, 5, 1440, null)}"></div>
+        <p class="form-text mb-0">성공적으로 발송한 시점부터 다시 계산합니다.</p>
+    </div>
+    <div class="col-12 col-md-6">
+        <div th:replace="~{components/forms :: number-field('timer-min-chat-count', 'minChatCount', '최소 시청자 채팅 수', ${timerMessageForm.minChatCount}, 1, 10000, null)}"></div>
+        <p class="form-text mb-0">마지막 성공 발송 이후 받은 채팅 기준입니다.</p>
+    </div>
+    <div class="col-12">
+        <div th:replace="~{components/forms :: switch-field('timer-active', 'active', '활성', ${timerMessageForm.active}, null)}"></div>
+    </div>
+    <div class="col-12">
+        <div th:replace="~{components/forms :: textarea-field('timer-message-template', 'messageTemplate', '냥냥봇 발송 메시지', ${timerMessageForm.messageTemplate}, '지금 시각은 {time.time}입니다.', 5, 1000, null)}"></div>
+        <div class="dropdown mt-2">
+            <button aria-expanded="false"
+                    class="btn btn-outline-secondary btn-sm"
+                    data-bs-auto-close="outside"
+                    data-bs-toggle="dropdown"
+                    type="button">변수 넣기</button>
+            <div class="dropdown-menu template-variable-menu p-2">
+                <h4 class="dropdown-header px-2">시간</h4>
+                <ul class="list-unstyled mb-0">
+                    <li th:each="variable : ${timerVariables}">
+                        <button class="dropdown-item rounded-2 px-2 py-2 text-wrap"
+                                data-template-target="#timer-message-template"
+                                th:attr="data-template-variable=${'{' + variable.key + '}'}"
+                                type="button">
+                            <span class="d-flex flex-wrap align-items-baseline gap-2">
+                                <span class="fw-semibold" th:text="${variable.label}">현재 시각</span>
+                                <code class="text-success text-break" th:text="${'{' + variable.key + '}'}">{time.time}</code>
+                            </span>
+                            <span class="d-block small text-secondary" th:text="${variable.description + ' · 예: ' + variable.example}">설명</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<dl class="row g-2 small border rounded-3 p-3 mb-0" th:fragment="execution-status(timerMessageForm)"
+    th:if="${timerMessageForm.timerMessageId != null}">
+    <dt class="col-5 text-secondary fw-normal">누적 채팅</dt>
+    <dd class="col-7 text-end tabular-nums mb-0"
+        th:text="${timerMessageForm.chatCountSinceLastSend + ' / ' + timerMessageForm.minChatCount}">7 / 10</dd>
+    <dt class="col-5 text-secondary fw-normal">최근 발송</dt>
+    <dd class="col-7 text-end tabular-nums mb-0"
+        th:text="${timerMessageForm.lastSentAt == null ? '-' : #temporals.format(timerMessageForm.lastSentAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+    <dt class="col-5 text-secondary fw-normal">다음 예정</dt>
+    <dd class="col-7 text-end tabular-nums mb-0"
+        th:text="${timerMessageForm.nextRunAt == null ? '-' : #temporals.format(timerMessageForm.nextRunAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+</dl>
+
+<div class="d-flex flex-wrap gap-2" th:fragment="editor-actions(timerMessageForm, previewUrl, deactivateUrl)">
+    <th:block th:if="${timerMessageForm.timerMessageId != null and timerMessageForm.active}">
+        <th:block th:replace="~{components/buttons :: hx-post-button(null, '비활성화', 'danger', null, ${deactivateUrl}, '#timer-editor-region', '#timer-editor-form [name=timerMessageId]', 'outerHTML', 'me-auto')}"></th:block>
+    </th:block>
+    <th:block th:replace="~{components/buttons :: hx-post-button(null, '검증 및 미리보기', 'ghost', null, ${previewUrl}, '#timer-review-region', '#timer-editor-form', 'outerHTML', ${timerMessageForm.timerMessageId == null ? 'ms-auto' : null})}"></th:block>
+    <th:block th:replace="~{components/buttons :: action-button(null, ${timerMessageForm.timerMessageId == null ? '타이머 생성' : '변경사항 저장'}, 'primary', 'submit', null)}"></th:block>
+</div>
+</body>
+</html>

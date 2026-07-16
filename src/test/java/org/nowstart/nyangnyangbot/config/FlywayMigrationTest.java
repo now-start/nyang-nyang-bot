@@ -96,7 +96,7 @@ class FlywayMigrationTest {
                 String.class
         );
 
-        assertThat(migrationCount).isEqualTo(4);
+        assertThat(migrationCount).isEqualTo(5);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
         assertThat(sourceTypeColumnCount).isEqualTo(1);

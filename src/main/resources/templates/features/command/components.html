@@ -5,7 +5,7 @@
     <div class="col-12 col-lg-7">
         <p class="mb-0 small text-secondary">스트리머 · 채팅</p>
         <h2 class="h4 fw-bold text-white mb-1">명령어 관리</h2>
-        <p class="mb-0 small text-secondary">목록, 편집, 검증, 미리보기를 서버 fragment 기준으로 갱신합니다.</p>
+        <p class="mb-0 small text-secondary">명령어 응답을 만들고 실제 출력 결과까지 한 화면에서 확인합니다.</p>
     </div>
     <div class="col-12 col-lg-5">
         <div th:replace="~{features/command/components :: filter-toolbar(${listUrl}, ${activeOptions})}"></div>
@@ -49,12 +49,12 @@
 </div>
 
 <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
-     th:fragment="list-header(editorUrl)">
+     th:fragment="list-header(newEditorUrl)">
     <div>
         <h3 class="h6 fw-bold mb-1">목록</h3>
-        <p class="mb-0 small text-secondary">행을 선택하면 오른쪽 편집 영역이 갱신됩니다.</p>
+        <p class="mb-0 small text-secondary">편집 버튼을 누르면 오른쪽에서 내용을 수정할 수 있습니다.</p>
     </div>
-    <th:block th:replace="~{components/buttons :: hx-get-button(null, '추가', 'primary', 'sm', ${editorUrl}, '#command-editor-region', 'outerHTML', null)}"></th:block>
+    <th:block th:replace="~{components/buttons :: hx-get-button(null, '새 명령어', 'ghost', 'sm', ${newEditorUrl}, '#command-editor-region', 'outerHTML', null)}"></th:block>
 </div>
 
 <th:block th:fragment="command-table(commands, editorUrl)">
@@ -74,7 +74,7 @@
     </div>
 </th:block>
 
-<tr th:classappend="${!command.active} ? ' opacity-50'" th:fragment="command-row(command, editorUrl)">
+<tr th:fragment="command-row(command, editorUrl)">
     <td>
         <strong class="text-success" th:text="${command.triggerLabel}">!공지</strong>
         <span class="d-block small text-secondary text-truncate" th:text="${command.messageSummary}">응답 메시지</span>
@@ -92,15 +92,20 @@
 </tr>
 
 <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3"
-     th:fragment="editor-header(saveMessage)">
+     th:fragment="editor-header(commandForm, saveMessage)">
     <div>
-        <h3 class="h6 fw-bold mb-1">편집</h3>
-        <p class="mb-0 small text-secondary">저장 전에 검증과 미리보기를 확인합니다.</p>
+        <h3 class="h6 fw-bold mb-1"
+            data-editor-heading
+            tabindex="-1"
+            th:text="${commandForm.commandId == null ? '새 명령어' : '명령어 편집'}">새 명령어</h3>
+        <p class="mb-0 small text-secondary">응답을 확인한 뒤 명령어를 저장합니다.</p>
     </div>
-    <span th:if="${saveMessage}" th:replace="~{components/badges :: status(${saveMessage}, 'success')}">저장됨</span>
+    <span aria-live="polite" role="status" th:if="${saveMessage}">
+        <span th:replace="~{components/badges :: status(${saveMessage}, 'success')}">저장됨</span>
+    </span>
 </div>
 
-<div class="alert alert-danger" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
+<div class="alert alert-danger" role="alert" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
 
 <div class="row g-3" th:fragment="editor-fields(commandForm)">
     <div class="col-12 col-md-6">
@@ -114,26 +119,43 @@
     </div>
     <div class="col-12">
         <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '냥냥봇 응답 템플릿', ${commandForm == null ? '' : commandForm.messageTemplate}, '{viewer.nickname}님, 오늘 공지는 ...', 4, 1000, null)}"></div>
+        <div class="dropdown mt-2" th:replace="~{features/command/components :: variable-picker(${commandVariableGroups})}"></div>
     </div>
 </div>
 
-<div class="border-top border-secondary-subtle pt-3" th:fragment="variable-catalog(variables)">
-    <h4 class="h6 fw-bold mb-2">사용 가능한 변수</h4>
-    <p class="small text-secondary mb-3">템플릿에 아래 변수를 그대로 넣으면 실행 시 실제 값으로 바뀝니다. 미리보기에는 예시값이 사용됩니다.</p>
-    <div class="vstack gap-2" th:if="${variables != null and !#lists.isEmpty(variables)}">
-        <div class="border rounded-3 p-2" th:each="variable : ${variables}">
-            <code class="text-success" th:text="${'{' + variable.key + '}'}">{viewer.nickname}</code>
-            <span class="ms-2 small fw-semibold" th:text="${variable.label}">시청자 닉네임</span>
-            <span class="d-block small text-secondary" th:text="${variable.description + ' · 예: ' + variable.example}">설명</span>
-        </div>
+<div class="dropdown mt-2" th:fragment="variable-picker(variableGroups)">
+    <button aria-expanded="false"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-auto-close="outside"
+            data-bs-toggle="dropdown"
+            type="button">변수 넣기</button>
+    <div class="dropdown-menu template-variable-menu p-2">
+        <th:block th:each="group : ${variableGroups}">
+            <h4 class="dropdown-header px-2" th:text="${group.label}">시청자</h4>
+            <ul class="list-unstyled mb-2">
+                <li th:each="variable : ${group.variables}">
+                    <button class="dropdown-item rounded-2 px-2 py-2 text-wrap"
+                            data-template-target="#command-message-template"
+                            th:attr="data-template-variable=${'{' + variable.key + '}'}"
+                            type="button">
+                        <span class="d-flex flex-wrap align-items-baseline gap-2">
+                            <span class="fw-semibold" th:text="${variable.label}">시청자 닉네임</span>
+                            <code class="text-success text-break" th:text="${'{' + variable.key + '}'}">{viewer.nickname}</code>
+                        </span>
+                        <span class="d-block small text-secondary" th:text="${variable.description + ' · 예: ' + variable.example}">설명</span>
+                    </button>
+                </li>
+            </ul>
+        </th:block>
     </div>
 </div>
 
-<div class="d-flex flex-wrap gap-2" th:fragment="editor-actions(validateUrl, previewUrl, deactivateUrl)">
-    <th:block th:replace="~{components/buttons :: hx-post-button(null, '비활성화', 'danger', null, ${deactivateUrl}, '#command-editor-region', '#command-editor-form', 'outerHTML', 'me-auto')}"></th:block>
-    <th:block th:replace="~{components/buttons :: hx-post-button(null, '검증', 'ghost', null, ${validateUrl}, '#command-validation-region', '#command-editor-form', 'outerHTML', null)}"></th:block>
-    <th:block th:replace="~{components/buttons :: hx-post-button(null, '미리보기', 'ghost', null, ${previewUrl}, '#command-preview-region', '#command-editor-form', 'outerHTML', null)}"></th:block>
-    <th:block th:replace="~{components/buttons :: action-button(null, '저장', 'primary', 'submit', null)}"></th:block>
+<div class="d-flex flex-wrap gap-2" th:fragment="editor-actions(commandForm, previewUrl, deactivateUrl)">
+    <th:block th:if="${commandForm.commandId != null and commandForm.active}">
+        <th:block th:replace="~{components/buttons :: hx-post-button(null, '비활성화', 'danger', null, ${deactivateUrl}, '#command-editor-region', '#command-editor-form [name=commandId]', 'outerHTML', 'me-auto')}"></th:block>
+    </th:block>
+    <th:block th:replace="~{components/buttons :: hx-post-button(null, '검증 및 미리보기', 'ghost', null, ${previewUrl}, '#command-review-region', '#command-editor-form', 'outerHTML', ${commandForm.commandId == null ? 'ms-auto' : null})}"></th:block>
+    <th:block th:replace="~{components/buttons :: action-button(null, ${commandForm.commandId == null ? '명령어 생성' : '변경사항 저장'}, 'primary', 'submit', null)}"></th:block>
 </div>
 </body>
 </html>

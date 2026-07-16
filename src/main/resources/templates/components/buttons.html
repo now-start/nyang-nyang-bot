@@ -28,6 +28,7 @@
         th:text="${label}">버튼</button>
 
 <button th:fragment="hx-post-button(id, label, variant, size, url, target, include, swap, extraClass)"
+        hx-disabled-elt="this"
         th:hx-include="${include}"
         th:hx-post="${url}"
         th:hx-swap="${swap}"

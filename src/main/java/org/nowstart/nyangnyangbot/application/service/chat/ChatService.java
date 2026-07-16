@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.timer.RecordTimerChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
@@ -30,6 +31,7 @@ public class ChatService {
 
     private final RecordAttendanceChatUseCase recordAttendanceChatUseCase;
     private final RecordWeeklyChatUseCase recordWeeklyChatUseCase;
+    private final RecordTimerChatUseCase recordTimerChatUseCase;
     private final CommandPort commandPort;
     private final ChzzkClientPort chzzkClientPort;
     private final CommandTemplateRenderer templateRenderer;
@@ -45,6 +47,9 @@ public class ChatService {
         recordWeeklyChatUseCase.recordChat(chat);
         if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
+        }
+        if (!ChatEventSupport.senderChannelId(chat).equals(chat.channelId())) {
+            recordTimerChatUseCase.recordChatActivity();
         }
         String commandToken = firstToken(chat.content());
         if (commandToken == null || !commandToken.startsWith("!")) {

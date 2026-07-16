@@ -24,6 +24,8 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
@@ -96,6 +98,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
     private final RouletteItemRepository rouletteItemRepository;
     private final RouletteEventRepository rouletteEventRepository;
     private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final TimerMessageRepository timerMessageRepository;
     private final UpboTemplateRepository upboTemplateRepository;
     private final UserUpboRepository userUpboRepository;
 
@@ -108,6 +111,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         seedWeeklyChatRanks();
         RouletteTable rouletteTable = seedRouletteTable();
         seedRouletteEvents(rouletteTable);
+        seedTimerMessages();
         seedUpboTemplates();
         seedUserUpbos();
         seedFavoriteAdjustments();
@@ -234,6 +238,22 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .mapToObj(roundNo -> rouletteRound(partial, roundNo, roundNo == 5 ? "쿠폰" : "호감도 +30",
                         false, roundNo == 5 ? RouletteRoundStatus.CONFIRMED : RouletteRoundStatus.APPLIED))
                 .toList());
+    }
+
+    private void seedTimerMessages() {
+        if (timerMessageRepository.count() > 0) {
+            return;
+        }
+        timerMessageRepository.save(TimerMessage.builder()
+                .messageTemplate("잠시 후 방송이 계속됩니다. 현재 시각은 {time.time}입니다.")
+                .intervalMinutes(30)
+                .minChatCount(10)
+                .active(false)
+                .chatCountSinceLastSend(0)
+                .claimedChatCount(0)
+                .createdBy("local")
+                .updatedBy("local")
+                .build());
     }
 
     private void seedUpboTemplates() {

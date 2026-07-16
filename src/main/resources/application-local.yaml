@@ -6,6 +6,8 @@ chzzk:
   redirect-uri: http://localhost:8080/login/oauth2/code/chzzk
 
 nyang:
+  timer:
+    enabled: false
   local-auth:
     enabled: true
     login-page-enabled: true

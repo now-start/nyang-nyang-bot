@@ -17,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandForm;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandView;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.ReviewView;
+import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.VariableGroupView;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
@@ -100,23 +102,73 @@ class CommandControllerTest {
     }
 
     @Test
-    void validate_ShouldReturnValidationFragment() {
+    void editor_ShouldReturnPlaceholderWithoutLoadingFormData() {
         // 준비
-        given(manageCommandUseCase.validate(any())).willReturn(new ValidationResult(true, List.of()));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.validate(CommandForm.empty(), model);
+        String view = controller.editor(null, model);
 
         // 검증
-        then(view).isEqualTo("features/command/regions :: command-validation-region");
-        then(model.getAttribute("validationResult")).isNotNull();
+        then(view).isEqualTo("features/command/regions :: command-editor-region");
+        then(model.containsAttribute("commandForm")).isFalse();
+        then(model.containsAttribute("commandVariableGroups")).isFalse();
+        org.mockito.BDDMockito.then(manageCommandUseCase).shouldHaveNoInteractions();
     }
 
     @Test
-    void validate_ShouldApplyDefaultsAndUseTemplateCommandContract() {
+    void editor_WhenCommandDoesNotExist_ShouldRenderErrorInsteadOfThrowing() {
+        // 준비
+        given(manageCommandUseCase.getCommands()).willReturn(List.of());
+        ConcurrentModel model = new ConcurrentModel();
+
+        // 실행
+        String view = controller.editor(999L, model);
+
+        // 검증
+        then(view).isEqualTo("features/command/regions :: command-editor-region");
+        then(model.getAttribute("saveError")).isEqualTo("명령어를 찾을 수 없습니다.");
+        then(model.containsAttribute("commandForm")).isFalse();
+    }
+
+    @Test
+    void newEditor_ShouldReturnEmptyCreateFormWithGroupedVariables() {
+        // 준비
+        given(manageCommandUseCase.getVariables()).willReturn(List.of(
+                new ManageCommandUseCase.VariableResult(
+                        "viewer.nickname",
+                        "시청자 닉네임",
+                        "명령어를 호출한 시청자의 닉네임",
+                        "치즈냥"
+                ),
+                new ManageCommandUseCase.VariableResult(
+                        "favorite.balance",
+                        "호감도",
+                        "명령어를 호출한 시청자의 현재 호감도",
+                        "100"
+                )
+        ));
+        ConcurrentModel model = new ConcurrentModel();
+
+        // 실행
+        String view = controller.newEditor(model);
+
+        // 검증
+        then(view).isEqualTo("features/command/regions :: command-editor-region");
+        CommandForm form = (CommandForm) model.getAttribute("commandForm");
+        then(form.commandId()).isNull();
+        @SuppressWarnings("unchecked")
+        List<VariableGroupView> groups = (List<VariableGroupView>) model.getAttribute("commandVariableGroups");
+        then(groups).extracting(VariableGroupView::label).containsExactly("시청자", "연동 데이터");
+        then(groups.getFirst().variables()).extracting(ManageCommandUseCase.VariableResult::key)
+                .containsExactly("viewer.nickname");
+    }
+
+    @Test
+    void preview_ShouldValidateFullFormAndReturnCombinedReview() {
         // 준비
         given(manageCommandUseCase.validate(any())).willReturn(new ValidationResult(true, List.of()));
+        given(manageCommandUseCase.preview(any())).willReturn(new PreviewResult("치즈냥님의 호감도는 100 입니다.💛"));
         CommandForm form = new CommandForm(
                 null,
                 "!호감도",
@@ -124,11 +176,17 @@ class CommandControllerTest {
                 true,
                 null
         );
+        ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        controller.validate(form, new ConcurrentModel());
+        String view = controller.preview(form, model);
 
         // 검증
+        then(view).isEqualTo("features/command/regions :: command-review-region");
+        ReviewView review = (ReviewView) model.getAttribute("reviewResult");
+        then(review.valid()).isTrue();
+        then(review.errors()).isEmpty();
+        then(review.previewMessage()).isEqualTo("치즈냥님의 호감도는 100 입니다.💛");
         ArgumentCaptor<ValidateCommand> captor = ArgumentCaptor.forClass(ValidateCommand.class);
         org.mockito.BDDMockito.then(manageCommandUseCase).should().validate(captor.capture());
         then(captor.getValue().trigger()).isEqualTo("!호감도");
@@ -138,17 +196,24 @@ class CommandControllerTest {
     }
 
     @Test
-    void preview_ShouldReturnPreviewFragment() {
+    void preview_ShouldReturnValidationErrorsWithoutRenderingPreview() {
         // 준비
-        given(manageCommandUseCase.preview(any())).willReturn(new PreviewResult("치즈냥님"));
+        given(manageCommandUseCase.validate(any()))
+                .willReturn(new ValidationResult(false, List.of("trigger already exists")));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
         String view = controller.preview(CommandForm.empty(), model);
 
         // 검증
-        then(view).isEqualTo("features/command/regions :: command-preview-region");
-        then(model.getAttribute("previewMessage")).isEqualTo("치즈냥님");
+        then(view).isEqualTo("features/command/regions :: command-review-region");
+        ReviewView review = (ReviewView) model.getAttribute("reviewResult");
+        then(review.valid()).isFalse();
+        then(review.errors()).containsExactly("trigger already exists");
+        then(review.previewMessage()).isNull();
+        org.mockito.BDDMockito.then(manageCommandUseCase)
+                .should(org.mockito.Mockito.never())
+                .preview(any());
     }
 
     @Test
@@ -214,14 +279,14 @@ class CommandControllerTest {
     }
 
     @Test
-    void deactivate_ShouldUpdateCommandAsInactive() {
+    void deactivate_ShouldRequestOnlyActiveStateChange() {
         // 준비
         CommandResult saved = command(1L, "!공지", false);
         given(manageCommandUseCase.updateCommand(any(), any(UpdateCommand.class))).willReturn(saved);
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.deactivate(CommandForm.from(command(1L, "!공지", true)), null, response, model);
+        String view = controller.deactivate(1L, null, response, model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");
@@ -232,6 +297,9 @@ class CommandControllerTest {
         ArgumentCaptor<UpdateCommand> captor = ArgumentCaptor.forClass(UpdateCommand.class);
         org.mockito.BDDMockito.then(manageCommandUseCase).should().updateCommand(org.mockito.ArgumentMatchers.eq(1L), captor.capture());
         then(captor.getValue().active()).isFalse();
+        then(captor.getValue().trigger()).isNull();
+        then(captor.getValue().messageTemplate()).isNull();
+        then(captor.getValue().userCooldownSeconds()).isNull();
     }
 
     @Test
@@ -240,7 +308,7 @@ class CommandControllerTest {
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.deactivate(CommandForm.empty(), null, response, model);
+        String view = controller.deactivate(null, null, response, model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");

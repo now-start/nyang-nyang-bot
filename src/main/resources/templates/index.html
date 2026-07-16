@@ -40,6 +40,7 @@
             defer
             src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             th:unless="${landingMode}"></script>
+    <script defer th:src="@{/js/template-variable-picker.js}" th:unless="${landingMode}"></script>
     <link href="https://nng-phinf.pstatic.net/MjAyNDAzMDlfMjQg/MDAxNzA5OTI3ODk5MTk4.-R_7VTIWynEx4CSWpUvSgqWIGlylkkv-hv8JsHugcvQg.d3Vl9GN584w3__Lxbaq5zWYBBhugPJ-CIZHl6KoZ1-8g.PNG/%ED%95%98%ED%8A%B8%EC%86%90_%EC%95%8C%ED%8A%B8%EB%B8%8C%EC%9D%B4.png?type=f120_120_na"
           rel="icon">
 </head>
@@ -99,6 +100,10 @@
 
         <section aria-labelledby="command-tab-button" class="tab-pane fade" id="command-tab" role="tabpanel" th:if="${isAdmin}">
             <div th:replace="~{features/command/regions :: command-panel}"></div>
+        </section>
+
+        <section aria-labelledby="timer-tab-button" class="tab-pane fade" id="timer-tab" role="tabpanel" th:if="${isAdmin}">
+            <div th:replace="~{features/timer/regions :: timer-panel}"></div>
         </section>
     </div>
 </div>

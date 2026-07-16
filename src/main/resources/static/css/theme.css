@@ -230,6 +230,11 @@
     color: #ffffff !important;
 }
 
+.nav[role="tablist"] .nav-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 /* 주간 채팅 순위 — 랭킹 칩만 흐르는 티커 */
 .weekly-rank-ticker {
     position: relative;
@@ -373,6 +378,45 @@
 
 :where(.border-dashed) {
     border-width: 0;
+}
+
+/* 명령어·타이머 템플릿 변수 선택기 */
+.template-variable-menu {
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: min(24rem, 45vh);
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: #181d1b;
+    border-color: #2c3330;
+    box-shadow: var(--bs-box-shadow-lg);
+}
+
+.template-variable-menu .dropdown-item:hover,
+.template-variable-menu .dropdown-item:focus {
+    color: #ffffff;
+    background-color: rgba(0, 255, 163, 0.08);
+}
+
+.template-variable-menu .dropdown-header:not(:first-child) {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #242b28;
+}
+
+.timer-message-summary {
+    max-width: 24rem;
+}
+
+.template-preview-message {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+    .template-variable-menu {
+        width: calc(100vw - 3rem);
+        max-height: 55vh;
+    }
 }
 
 /* 헤더 그라데이션 — linear-gradient(180deg,#151918,#101312) */
