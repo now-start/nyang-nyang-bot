@@ -33,7 +33,7 @@ public class AuthorizationAccount extends BaseEntity {
     @Setter
     private String scope;
     @Setter
-    private LocalDateTime favoriteHistoryLastSeenAt;
+    private LocalDateTime lastLoginAt;
     private boolean admin;
 
 }

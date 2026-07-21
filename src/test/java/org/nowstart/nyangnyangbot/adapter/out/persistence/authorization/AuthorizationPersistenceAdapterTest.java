@@ -54,7 +54,9 @@ class AuthorizationPersistenceAdapterTest {
 
         // 검증
         then(result.channelId()).isEqualTo("channel-1");
-        BDDMockito.then(authorizationRepository).should().save(org.mockito.ArgumentMatchers.any(AuthorizationAccount.class));
+        var captor = org.mockito.ArgumentCaptor.forClass(AuthorizationAccount.class);
+        BDDMockito.then(authorizationRepository).should().save(captor.capture());
+        then(captor.getValue().getLastLoginAt()).isNotNull();
     }
 
     @Test
@@ -78,20 +80,21 @@ class AuthorizationPersistenceAdapterTest {
     }
 
     @Test
-    void markFavoriteHistorySeen_ShouldUpdateOnlyWhenEntityExists() {
+    void saveOrUpdate_ShouldRecordLoginTimeAndTokenRefreshShouldNotChangeIt() {
         // 준비
         AuthorizationPersistenceAdapter adapter = adapter();
         AuthorizationAccount existing = entity("channel-1");
-        LocalDateTime seenAt = LocalDateTime.of(2026, 5, 16, 23, 40);
         given(authorizationRepository.findById("channel-1")).willReturn(Optional.of(existing));
-        given(authorizationRepository.findById("missing")).willReturn(Optional.empty());
+        given(authorizationRepository.save(existing)).willReturn(existing);
 
         // 실행
-        adapter.markFavoriteHistorySeen("channel-1", seenAt);
-        adapter.markFavoriteHistorySeen("missing", seenAt);
+        adapter.saveOrUpdate(command("new-access", "new-refresh", "변경"));
+        LocalDateTime loggedInAt = existing.getLastLoginAt();
+        adapter.updateToken("channel-1", command("refreshed-access", "refreshed-refresh", "변경"));
 
         // 검증
-        then(existing.getFavoriteHistoryLastSeenAt()).isEqualTo(seenAt);
+        then(loggedInAt).isNotNull();
+        then(existing.getLastLoginAt()).isEqualTo(loggedInAt);
     }
 
     @Test
@@ -121,7 +124,7 @@ class AuthorizationPersistenceAdapterTest {
                 .expiresIn(3600)
                 .scope("chat")
                 .admin(true)
-                .favoriteHistoryLastSeenAt(null)
+                .lastLoginAt(null)
                 .build();
     }
 

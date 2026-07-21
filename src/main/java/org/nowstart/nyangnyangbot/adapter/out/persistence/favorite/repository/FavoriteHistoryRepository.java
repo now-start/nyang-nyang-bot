@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository;
 
-import java.time.LocalDateTime;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +11,4 @@ public interface FavoriteHistoryRepository extends JpaRepository<FavoriteHistory
 
     boolean existsByIdempotencyKey(String idempotencyKey);
 
-    long countByFavoriteAccountUserId(String userId);
-
-    long countByFavoriteAccountUserIdAndCreateDateAfter(String userId, LocalDateTime createDate);
 }

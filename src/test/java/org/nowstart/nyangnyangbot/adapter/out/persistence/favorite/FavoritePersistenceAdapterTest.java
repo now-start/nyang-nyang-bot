@@ -184,22 +184,17 @@ class FavoritePersistenceAdapterTest {
     }
 
     @Test
-    void historyQueries_ShouldMapFallbackFieldsAndCounts() {
+    void historyQueries_ShouldMapFallbackFields() {
         // 준비
         FavoritePersistenceAdapter adapter = adapter();
         FavoriteAccount favorite = favorite("user-1", "치즈냥", 30);
-        LocalDateTime now = LocalDateTime.of(2026, 5, 16, 22, 30);
         FavoriteHistory modern = history(1L, favorite, 5, 35, "공개 설명", "이전 설명");
         FavoriteHistory legacy = history(2L, null, -3, null, null, "레거시 설명");
         given(favoriteHistoryRepository.findByFavoriteAccountUserId(any(), any()))
                 .willReturn(new PageImpl<>(List.of(modern, legacy)));
-        given(favoriteHistoryRepository.countByFavoriteAccountUserId("user-1")).willReturn(2L);
-        given(favoriteHistoryRepository.countByFavoriteAccountUserIdAndCreateDateAfter("user-1", now)).willReturn(1L);
 
         // 실행
         List<HistoryResult> histories = adapter.findHistory("user-1", 10);
-        long total = adapter.countHistory("user-1");
-        long recent = adapter.countHistoryAfter("user-1", now);
 
         // 검증
         then(histories).hasSize(2);
@@ -208,8 +203,6 @@ class FavoritePersistenceAdapterTest {
         then(histories.get(1).channelId()).isNull();
         then(histories.get(1).balanceAfter()).isEqualTo(legacy.getFavorite());
         then(histories.get(1).publicDescription()).isEqualTo("레거시 설명");
-        then(total).isEqualTo(2L);
-        then(recent).isEqualTo(1L);
     }
 
     private FavoritePersistenceAdapter adapter() {

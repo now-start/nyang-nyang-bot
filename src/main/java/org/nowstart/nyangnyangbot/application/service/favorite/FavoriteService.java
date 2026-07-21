@@ -1,11 +1,9 @@
 package org.nowstart.nyangnyangbot.application.service.favorite;
 
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
 import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
@@ -20,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class FavoriteService implements QueryFavoriteUseCase, AcknowledgeFavoriteHistoryUseCase {
+public class FavoriteService implements QueryFavoriteUseCase {
 
     private final FavoriteQueryPort favoriteQueryPort;
     private final AuthorizationPort authorizationPort;
@@ -49,10 +47,6 @@ public class FavoriteService implements QueryFavoriteUseCase, AcknowledgeFavorit
         SummaryResult favorite = favoriteQueryPort.findById(userId)
                 .orElse(new SummaryResult(userId, authorization.channelName(), 0));
 
-        LocalDateTime lastSeenAt = authorization.favoriteHistoryLastSeenAt();
-        long unseenCount = lastSeenAt == null
-                ? favoriteQueryPort.countHistory(userId)
-                : favoriteQueryPort.countHistoryAfter(userId, lastSeenAt);
         int favoriteValue = favorite.favorite() == null ? 0 : favorite.favorite();
         int rank = Math.toIntExact(favoriteQueryPort.countByFavoriteGreaterThan(favoriteValue) + 1);
         List<FavoriteHistoryResult> histories = getHistory(userId, 50);
@@ -62,14 +56,8 @@ public class FavoriteService implements QueryFavoriteUseCase, AcknowledgeFavorit
                 favorite.nickName(),
                 favorite.favorite(),
                 rank,
-                unseenCount,
                 histories
         );
-    }
-
-    @Override
-    public void acknowledgeHistory(String userId) {
-        authorizationPort.markFavoriteHistorySeen(userId, LocalDateTime.now());
     }
 
     @Override

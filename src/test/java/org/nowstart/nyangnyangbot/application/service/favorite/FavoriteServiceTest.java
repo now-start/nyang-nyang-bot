@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.application.service.favorite;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -166,7 +165,6 @@ class FavoriteServiceTest {
 
         given(authorizationPort.findById("user1")).willReturn(Optional.of(authorization));
         given(favoriteQueryPort.findById("user1")).willReturn(Optional.of(favorite));
-        given(favoriteQueryPort.countHistory("user1")).willReturn(1L);
         given(favoriteQueryPort.countByFavoriteGreaterThan(42)).willReturn(3L);
         given(favoriteQueryPort.findHistory("user1", 50)).willReturn(List.of(history));
 
@@ -178,19 +176,6 @@ class FavoriteServiceTest {
         then(result.nickName()).isEqualTo("치즈냥");
         then(result.favorite()).isEqualTo(42);
         then(result.rank()).isEqualTo(4);
-        then(result.unseenCount()).isEqualTo(1L);
         then(result.histories()).hasSize(1);
-        BDDMockito.then(authorizationPort).should(never())
-                .markFavoriteHistorySeen(BDDMockito.anyString(), BDDMockito.any(LocalDateTime.class));
-    }
-
-    @Test
-    void acknowledgeHistory_ShouldMarkFavoriteHistorySeen() {
-        // 실행
-        favoriteService.acknowledgeHistory("user1");
-
-        // 검증
-        BDDMockito.then(authorizationPort).should()
-                .markFavoriteHistorySeen(BDDMockito.eq("user1"), BDDMockito.any(LocalDateTime.class));
     }
 }

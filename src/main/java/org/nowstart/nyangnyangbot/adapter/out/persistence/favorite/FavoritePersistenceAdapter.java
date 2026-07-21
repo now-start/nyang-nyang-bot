@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.favorite;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -142,16 +141,6 @@ public class FavoritePersistenceAdapter implements LoadFavoriteAccountPort, Save
                 .stream()
                 .map(this::historyResult)
                 .toList();
-    }
-
-    @Override
-    public long countHistory(String userId) {
-        return favoriteHistoryRepository.countByFavoriteAccountUserId(userId);
-    }
-
-    @Override
-    public long countHistoryAfter(String userId, LocalDateTime createDate) {
-        return favoriteHistoryRepository.countByFavoriteAccountUserIdAndCreateDateAfter(userId, createDate);
     }
 
     @Override

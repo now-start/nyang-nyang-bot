@@ -9,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteHistoryResult;
 import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase.UserUpboResult;
@@ -26,7 +25,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
@@ -48,7 +46,6 @@ public class FavoriteController {
     private static final DateTimeFormatter HISTORY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final QueryFavoriteUseCase queryFavoriteUseCase;
-    private final AcknowledgeFavoriteHistoryUseCase acknowledgeFavoriteHistoryUseCase;
     private final QueryUpboUseCase queryUpboUseCase;
     private final QueryWeeklyChatRankUseCase queryWeeklyChatRankUseCase;
     @Value("${nyang.local-auth.login-page-enabled:false}")
@@ -86,22 +83,6 @@ public class FavoriteController {
             Model model
     ) {
         model.addAttribute("histories", favoriteHistories(userId, limit));
-        return FAVORITE_HISTORY_FRAGMENT;
-    }
-
-    @Operation(summary = "호감도 히스토리 확인", description = "히스토리를 조회하고 본인 계정의 미확인 상태를 갱신합니다.")
-    @PostMapping("/history/acknowledge")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.name")
-    public String acknowledgeFavoriteHistory(
-            @RequestParam String userId,
-            @RequestParam(defaultValue = "10") int limit,
-            Authentication authentication,
-            Model model
-    ) {
-        model.addAttribute("histories", favoriteHistories(userId, limit));
-        if (authentication != null && userId.equals(authentication.getName())) {
-            acknowledgeFavoriteHistoryUseCase.acknowledgeHistory(userId);
-        }
         return FAVORITE_HISTORY_FRAGMENT;
     }
 

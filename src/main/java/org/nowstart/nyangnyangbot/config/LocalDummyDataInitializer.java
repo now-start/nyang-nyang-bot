@@ -315,7 +315,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .tokenType("Bearer")
                 .expiresIn(3600)
                 .scope("local")
-                .favoriteHistoryLastSeenAt(LocalDateTime.now().minusDays(1))
+                .lastLoginAt(LocalDateTime.now().minusDays(1))
                 .admin(admin)
                 .build();
     }

@@ -19,7 +19,6 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AcknowledgeFavoriteHistoryUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteMeResult;
 import org.nowstart.nyangnyangbot.application.port.in.favorite.QueryFavoriteUseCase.FavoriteSummaryResult;
@@ -43,9 +42,6 @@ class FavoriteControllerTest {
 
     @Mock
     private QueryFavoriteUseCase favoriteService;
-
-    @Mock
-    private AcknowledgeFavoriteHistoryUseCase acknowledgeFavoriteHistoryUseCase;
 
     @Mock
     private QueryUpboUseCase queryUpboUseCase;
@@ -250,7 +246,6 @@ class FavoriteControllerTest {
         then(resultPage.getContent()).containsExactly(new FavoriteSummaryResult("user1", "유저1", 100));
         then(resultPage.getTotalElements()).isEqualTo(1);
         BDDMockito.then(favoriteService).should().getMyFavorite("user1");
-        BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should(never()).acknowledgeHistory(anyString());
         BDDMockito.then(favoriteService).should(never()).getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
         BDDMockito.then(weeklyChatRankService).should().getWeeklyRanks(10);
@@ -317,14 +312,13 @@ class FavoriteControllerTest {
         then(result.getModel().get("currentUserRank")).isEqualTo(7);
         then(response.getHeader("HX-Push-Url")).isEqualTo("/nyang-nyang-bot/favorite/list?page=0&size=10");
         BDDMockito.then(favoriteService).should().getMyFavorite("user1");
-        BDDMockito.then(acknowledgeFavoriteHistoryUseCase).should(never()).acknowledgeHistory(anyString());
         BDDMockito.then(favoriteService).should(never()).getList(any(Pageable.class));
         BDDMockito.then(favoriteService).should(never()).getByNickName(any(), anyString());
     }
 
     private void givenMyFavorite(String userId, String nickName, Integer favorite) {
         given(favoriteService.getMyFavorite(userId))
-                .willReturn(new FavoriteMeResult(userId, nickName, favorite, 7, 0L, List.of()));
+                .willReturn(new FavoriteMeResult(userId, nickName, favorite, 7, List.of()));
         given(queryUpboUseCase.getUserUpbos(userId, null)).willReturn(List.of());
     }
 

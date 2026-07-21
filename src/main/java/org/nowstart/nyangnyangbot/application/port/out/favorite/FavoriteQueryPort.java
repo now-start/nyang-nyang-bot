@@ -25,10 +25,6 @@ public interface FavoriteQueryPort {
 
     List<HistoryResult> findHistory(String userId, int limit);
 
-    long countHistory(String userId);
-
-    long countHistoryAfter(String userId, LocalDateTime createDate);
-
     long countByFavoriteGreaterThan(Integer favorite);
 
     record SummaryResult(

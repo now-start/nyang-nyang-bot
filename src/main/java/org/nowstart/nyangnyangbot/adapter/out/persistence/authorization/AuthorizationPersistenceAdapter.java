@@ -24,8 +24,13 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
     @Override
     public AuthorizationAccountResult saveOrUpdate(SaveAuthorizationCommand command) {
         contractValidator.request("authorization.saveOrUpdate", command);
+        LocalDateTime loggedInAt = LocalDateTime.now();
         AuthorizationAccount saved = authorizationRepository.findById(command.channelId())
-                .map(existing -> authorizationRepository.save(update(existing, command)))
+                .map(existing -> {
+                    update(existing, command);
+                    existing.setLastLoginAt(loggedInAt);
+                    return authorizationRepository.save(existing);
+                })
                 .orElseGet(() -> authorizationRepository.save(AuthorizationAccount.builder()
                         .channelId(command.channelId())
                         .channelName(command.channelName())
@@ -35,6 +40,7 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                         .expiresIn(command.expiresIn())
                         .scope(command.scope())
                         .admin(false)
+                        .lastLoginAt(loggedInAt)
                         .build()));
         return accountResult(saved);
     }
@@ -45,12 +51,6 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
         AuthorizationAccount entity = authorizationRepository.findById(channelId).orElseThrow();
         update(entity, command);
         return accountResult(entity);
-    }
-
-    @Override
-    public void markFavoriteHistorySeen(String channelId, LocalDateTime seenAt) {
-        authorizationRepository.findById(channelId)
-                .ifPresent(entity -> entity.setFavoriteHistoryLastSeenAt(seenAt));
     }
 
     private AuthorizationAccount update(AuthorizationAccount entity, SaveAuthorizationCommand command) {
@@ -74,7 +74,7 @@ public class AuthorizationPersistenceAdapter implements AuthorizationPort {
                 entity.getScope(),
                 entity.isAdmin(),
                 entity.getModifyDate(),
-                entity.getFavoriteHistoryLastSeenAt()
+                entity.getLastLoginAt()
         ));
     }
 

@@ -66,6 +66,18 @@ class FlywayMigrationTest {
                         + "and lower(column_name) = 'month'",
                 Integer.class
         );
+        Integer lastLoginColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'authorization_account' "
+                        + "and lower(column_name) = 'last_login_at'",
+                Integer.class
+        );
+        Integer favoriteHistoryLastSeenColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'authorization_account' "
+                        + "and lower(column_name) = 'favorite_history_last_seen_at'",
+                Integer.class
+        );
         Integer oldFavoriteTableCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.tables where lower(table_name) = 'favorite_entity'",
                 Integer.class
@@ -96,12 +108,14 @@ class FlywayMigrationTest {
                 String.class
         );
 
-        assertThat(migrationCount).isEqualTo(5);
+        assertThat(migrationCount).isEqualTo(6);
         assertThat(rouletteTableCount).isEqualTo(1);
         assertThat(ledgerColumnCount).isEqualTo(1);
         assertThat(sourceTypeColumnCount).isEqualTo(1);
         assertThat(subscriptionMonthColumnCount).isEqualTo(1);
         assertThat(legacyMonthColumnCount).isZero();
+        assertThat(lastLoginColumnCount).isEqualTo(1);
+        assertThat(favoriteHistoryLastSeenColumnCount).isZero();
         assertThat(oldFavoriteTableCount).isZero();
         assertThat(foreignKeyCount).isZero();
         assertThat(weeklyUniqueIndexCount).isEqualTo(1);
@@ -110,6 +124,39 @@ class FlywayMigrationTest {
         assertThat(legacyCommandActionCount).isZero();
         assertThat(favoriteTemplate).isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛");
         assertThat(rouletteResultTemplate).isEqualTo("{viewer.nickname}님의 {roulette.recentSummary}");
+    }
+
+    @Test
+    @DisplayName("V6는 이전 컬럼 삭제 후 중단된 DB에도 다시 적용할 수 있다")
+    void flywayMigration_ShouldRecoverFromPartiallyAppliedV6() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:flyway-v6-recovery-test" + H2_MARIADB_OPTIONS,
+                "sa",
+                ""
+        );
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .target("5")
+                .load();
+        flyway.migrate();
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.execute("alter table authorization_account drop column favorite_history_last_seen_at");
+
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+
+        Integer lastLoginColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) = 'authorization_account' "
+                        + "and lower(column_name) = 'last_login_at'",
+                Integer.class
+        );
+        assertThat(lastLoginColumnCount).isEqualTo(1);
     }
 
     @Test

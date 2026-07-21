@@ -14,8 +14,6 @@ public interface AuthorizationPort {
 
     AuthorizationAccountResult updateToken(String channelId, SaveAuthorizationCommand command);
 
-    void markFavoriteHistorySeen(String channelId, LocalDateTime seenAt);
-
     record SaveAuthorizationCommand(
             @NotBlank(message = "channelId is required")
             String channelId,
@@ -49,7 +47,7 @@ public interface AuthorizationPort {
             String scope,
             boolean admin,
             LocalDateTime modifyDate,
-            LocalDateTime favoriteHistoryLastSeenAt
+            LocalDateTime lastLoginAt
     ) {
     }
 }
