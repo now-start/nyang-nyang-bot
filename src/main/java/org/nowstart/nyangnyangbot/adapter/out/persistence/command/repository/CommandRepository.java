@@ -11,5 +11,5 @@ public interface CommandRepository extends JpaRepository<Command, Long> {
 
     Optional<Command> findByTriggerToken(String triggerToken);
 
-    Optional<Command> findByTriggerTokenAndActiveTrue(String triggerToken);
+    List<Command> findByActiveTrue();
 }

@@ -1,12 +1,18 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.doReturn;
 import static org.mockito.BDDMockito.given;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +32,7 @@ import org.nowstart.nyangnyangbot.application.service.command.CommandVariableReg
 import org.nowstart.nyangnyangbot.application.service.command.CoreCommandVariableContributor;
 import org.nowstart.nyangnyangbot.application.service.command.FavoriteCommandVariableContributor;
 import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
+import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
@@ -69,6 +76,7 @@ class ChatServiceTest {
         BDDMockito.then(attendanceService).should().recordChatUser(any(ChatReceived.class));
         BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatReceived.class));
         BDDMockito.then(recordTimerChatUseCase).should().recordChatActivity();
+        BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -81,12 +89,14 @@ class ChatServiceTest {
     }
 
     @Test
-    void handle_ShouldNotCountBroadcasterSelfMessageForTimer() {
-        ChatReceived chatDto = new ChatReceived("channel-1", "channel-1", null, "안내", null, 1711111111L);
+    void handle_ShouldNotCountOrExecuteBroadcasterSelfMessage() {
+        ChatReceived chatDto = new ChatReceived("channel-1", "channel-1", null, "치하", null, 1711111111L);
 
         chatService.handle(chatDto);
 
         BDDMockito.then(recordTimerChatUseCase).shouldHaveNoInteractions();
+        BDDMockito.then(commandPort).shouldHaveNoInteractions();
+        BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -94,8 +104,8 @@ class ChatServiceTest {
         // 준비
         chatService = BDDMockito.spy(service());
         doReturn(1_000L, 2_000L, 32_000L).when(chatService).currentTimeMillis();
-        given(commandPort.findActiveByTrigger("!호감도"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!호감도", command(
                         10L,
                         "!호감도",
                         "{viewer.nickname}",
@@ -115,10 +125,65 @@ class ChatServiceTest {
     }
 
     @Test
+    void handle_ShouldExecuteBareTrigger() {
+        // 준비
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("치하", command(
+                        11L,
+                        "치하",
+                        "안녕하세요 {viewer.nickname}님!",
+                        30
+                )));
+        ChatReceived chatDto = chat("치하", "치즈냥");
+
+        // 실행
+        chatService.handle(chatDto);
+
+        // 검증
+        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("안녕하세요 치즈냥님!"));
+    }
+
+    @Test
+    void handle_ShouldLogExecutedCommandForDashboard() {
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("치하", command(
+                        11L,
+                        "치하",
+                        "안녕하세요 {viewer.nickname}님!",
+                        30
+                )));
+        Logger logger = (Logger) LoggerFactory.getLogger(ChatService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            chatService.handle(chat("치하", "치즈냥"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        ILoggingEvent event = appender.list.stream()
+                .filter(logEvent -> logEvent.getFormattedMessage().startsWith("event=command.executed"))
+                .findFirst()
+                .orElseThrow();
+        Map<String, Object> attributes = event.getKeyValuePairs().stream()
+                .collect(Collectors.toMap(pair -> pair.key, pair -> pair.value));
+        assertThat(event.getFormattedMessage())
+                .isEqualTo("event=command.executed commandId=11 trigger=치하 nickname=치즈냥");
+        assertThat(attributes)
+                .containsEntry("event", "command.executed")
+                .containsEntry("command_id", 11L)
+                .containsEntry("command_trigger", "치하")
+                .containsEntry("user_nickname", "치즈냥");
+    }
+
+    @Test
     void handle_ShouldRenderNamespacedViewerAndInvocationVariables() {
         // 준비
-        given(commandPort.findActiveByTrigger("!인사"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!인사", command(
                         20L,
                         "!인사",
                         "{viewer.nickname} {invocation.command} {invocation.args} "
@@ -141,8 +206,8 @@ class ChatServiceTest {
         // 준비
         chatService = BDDMockito.spy(service());
         doReturn(1_000L, 2_000L).when(chatService).currentTimeMillis();
-        given(commandPort.findActiveByTrigger("!호감도"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!호감도", command(
                         25L,
                         "!호감도",
                         "{favorite.balance}",
@@ -165,8 +230,8 @@ class ChatServiceTest {
     @Test
     void handle_ShouldSkipBlankRenderedResponse() {
         // 준비
-        given(commandPort.findActiveByTrigger("!인자"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!인자", command(
                         26L,
                         "!인자",
                         "{invocation.args}",
@@ -184,8 +249,8 @@ class ChatServiceTest {
     @Test
     void handle_ShouldRenderZeroWhenFavoriteDoesNotExistUsingReadOnlyQuery() {
         // 준비
-        given(commandPort.findActiveByTrigger("!호감도"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!호감도", command(
                         30L,
                         "!호감도",
                         "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
@@ -207,8 +272,8 @@ class ChatServiceTest {
     @Test
     void handle_ShouldNotQueryUnusedFavoriteContributor() {
         // 준비
-        given(commandPort.findActiveByTrigger("!인사"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!인사", command(
                         40L,
                         "!인사",
                         "안녕하세요 {viewer.nickname}님!",
@@ -229,8 +294,8 @@ class ChatServiceTest {
     @Test
     void handle_ShouldUseSenderIdWhenProfileMissing() {
         // 준비
-        given(commandPort.findActiveByTrigger("!인사"))
-                .willReturn(Optional.of(command(
+        given(commandPort.findActiveCommandsByTrigger())
+                .willReturn(Map.of("!인사", command(
                         50L,
                         "!인사",
                         "{viewer.nickname}",

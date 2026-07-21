@@ -48,15 +48,19 @@ public class ChatService {
         if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
         }
-        if (!ChatEventSupport.senderChannelId(chat).equals(chat.channelId())) {
-            recordTimerChatUseCase.recordChatActivity();
-        }
-        String commandToken = firstToken(chat.content());
-        if (commandToken == null || !commandToken.startsWith("!")) {
+        if (ChatEventSupport.senderChannelId(chat).equals(chat.channelId())) {
             return;
         }
-        commandPort.findActiveByTrigger(CommandTrigger.normalize(commandToken))
-                .ifPresent(command -> runCommand(command, chat, commandToken));
+        recordTimerChatUseCase.recordChatActivity();
+        String commandToken = firstToken(chat.content());
+        if (commandToken == null) {
+            return;
+        }
+        CommandRecord command = commandPort.findActiveCommandsByTrigger()
+                .get(CommandTrigger.normalize(commandToken));
+        if (command != null) {
+            runCommand(command, chat, commandToken);
+        }
     }
 
     private void runCommand(CommandRecord command, ChatReceived chat, String commandToken) {
@@ -85,6 +89,14 @@ public class ChatService {
             return;
         }
         chzzkClientPort.sendMessage(new MessageCommand(message));
+        String nickname = ChatEventSupport.displayName(chat);
+        log.atInfo()
+                .addKeyValue("event", "command.executed")
+                .addKeyValue("command_id", command.id())
+                .addKeyValue("command_trigger", command.trigger())
+                .addKeyValue("user_nickname", nickname)
+                .log("event=command.executed commandId={} trigger={} nickname={}",
+                        command.id(), command.trigger(), nickname);
     }
 
     boolean isInCooldown(String userId, String commandId, Integer cooldownSeconds) {

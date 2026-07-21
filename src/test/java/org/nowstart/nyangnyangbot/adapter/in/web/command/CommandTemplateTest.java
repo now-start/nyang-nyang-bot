@@ -139,6 +139,7 @@ class CommandTemplateTest {
         // 검증
         then(html).contains("새 명령어");
         then(html).contains("명령어 생성");
+        then(html).contains("placeholder=\"!호감도 또는 치하\"");
         then(html).doesNotContain("비활성화");
     }
 

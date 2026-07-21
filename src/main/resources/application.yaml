@@ -2,6 +2,12 @@ spring:
   application:
     name: nyang-nyang-bot
 
+otel:
+  instrumentation:
+    logback-appender:
+      experimental:
+        capture-key-value-pair-attributes: true
+
 ---
 
 spring:

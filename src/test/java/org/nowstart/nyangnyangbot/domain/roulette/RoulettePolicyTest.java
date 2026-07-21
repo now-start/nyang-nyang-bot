@@ -180,6 +180,9 @@ class RoulettePolicyTest {
         thenThrownBy(() -> roulettePolicy.validateTableInput("기본", " ", 1_000L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("command is required");
+        thenThrownBy(() -> roulettePolicy.validateTableInput("기본", "룰렛", 1_000L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("command must start with !");
         thenThrownBy(() -> roulettePolicy.validateTableInput("기본", "!룰렛", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("pricePerRound is required");

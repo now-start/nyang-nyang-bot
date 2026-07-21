@@ -203,14 +203,14 @@ class LocalCacheBehaviorTest {
     void commandActiveTrigger_ShouldCacheAndEvictWhenUpdated() {
         Command first = command(1L, "!호감도");
         Command second = command(2L, "!호감도");
-        given(commandRepository.findByTriggerTokenAndActiveTrue("!호감도"))
-                .willReturn(Optional.of(first))
-                .willReturn(Optional.of(second));
+        given(commandRepository.findByActiveTrue())
+                .willReturn(List.of(first))
+                .willReturn(List.of(second));
         given(commandRepository.findById(1L)).willReturn(Optional.of(first));
 
-        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(1L);
-        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(1L);
-        BDDMockito.then(commandRepository).should(times(1)).findByTriggerTokenAndActiveTrue("!호감도");
+        then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(1L);
+        then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(1L);
+        BDDMockito.then(commandRepository).should(times(1)).findByActiveTrue();
 
         commandPort.update(new CommandPort.UpdateData(
                 1L,
@@ -221,17 +221,17 @@ class LocalCacheBehaviorTest {
                 "admin"
         ));
 
-        then(commandPort.findActiveByTrigger("!호감도").orElseThrow().id()).isEqualTo(2L);
-        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!호감도");
+        then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(2L);
+        BDDMockito.then(commandRepository).should(times(2)).findByActiveTrue();
     }
 
     @Test
-    void commandActiveTrigger_ShouldNotCacheMissingCommand() {
-        given(commandRepository.findByTriggerTokenAndActiveTrue("!없음")).willReturn(Optional.empty());
+    void commandActiveTriggers_ShouldCacheEmptyCatalog() {
+        given(commandRepository.findByActiveTrue()).willReturn(List.of());
 
-        then(commandPort.findActiveByTrigger("!없음")).isEmpty();
-        then(commandPort.findActiveByTrigger("!없음")).isEmpty();
-        BDDMockito.then(commandRepository).should(times(2)).findByTriggerTokenAndActiveTrue("!없음");
+        then(commandPort.findActiveCommandsByTrigger()).isEmpty();
+        then(commandPort.findActiveCommandsByTrigger()).isEmpty();
+        BDDMockito.then(commandRepository).should(times(1)).findByActiveTrue();
     }
 
     private FavoriteAdjustment adjustment(Long id, Integer amount, String label) {

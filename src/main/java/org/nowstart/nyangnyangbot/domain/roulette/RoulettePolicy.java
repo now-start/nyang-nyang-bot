@@ -103,6 +103,9 @@ public class RoulettePolicy {
         if (isBlank(command)) {
             throw new IllegalArgumentException("command is required");
         }
+        if (!command.trim().startsWith("!")) {
+            throw new IllegalArgumentException("command must start with !");
+        }
         if (pricePerRound == null || pricePerRound <= 0) {
             throw new IllegalArgumentException("pricePerRound is required");
         }

@@ -1,6 +1,10 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.command;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toUnmodifiableMap;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
@@ -37,9 +41,11 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     @Override
-    @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, key = "#trigger", unless = "#result == null")
-    public Optional<CommandRecord> findActiveByTrigger(String trigger) {
-        return commandRepository.findByTriggerTokenAndActiveTrue(trigger).map(this::commandRecord);
+    @Cacheable(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, sync = true)
+    public Map<String, CommandRecord> findActiveCommandsByTrigger() {
+        return commandRepository.findByActiveTrue().stream()
+                .map(this::commandRecord)
+                .collect(toUnmodifiableMap(CommandRecord::trigger, identity()));
     }
 
     @Override

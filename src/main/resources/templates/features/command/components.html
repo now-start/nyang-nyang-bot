@@ -76,7 +76,7 @@
 
 <tr th:fragment="command-row(command, editorUrl)">
     <td>
-        <strong class="text-success" th:text="${command.triggerLabel}">!공지</strong>
+        <strong class="text-success" th:text="${command.triggerLabel}">치하</strong>
         <span class="d-block small text-secondary text-truncate" th:text="${command.messageSummary}">응답 메시지</span>
     </td>
     <td>
@@ -109,7 +109,7 @@
 
 <div class="row g-3" th:fragment="editor-fields(commandForm)">
     <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!공지', 20, null)}"></div>
+        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!호감도 또는 치하', 20, null)}"></div>
     </div>
     <div class="col-12 col-md-6">
         <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '사용자별 쿨타임(초)', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 5, 3600, null)}"></div>

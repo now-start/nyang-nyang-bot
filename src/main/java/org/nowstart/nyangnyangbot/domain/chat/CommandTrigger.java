@@ -25,9 +25,6 @@ public final class CommandTrigger {
             errors.add("trigger is required");
             return errors;
         }
-        if (!value.startsWith("!")) {
-            errors.add("trigger must start with !");
-        }
         if (value.length() < 2 || value.length() > MAX_LENGTH) {
             errors.add("trigger length must be between 2 and " + MAX_LENGTH);
         }

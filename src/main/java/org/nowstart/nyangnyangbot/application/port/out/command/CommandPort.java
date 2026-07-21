@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
 
@@ -16,7 +17,7 @@ public interface CommandPort {
 
     Optional<CommandRecord> findByTrigger(String trigger);
 
-    Optional<CommandRecord> findActiveByTrigger(String trigger);
+    Map<String, CommandRecord> findActiveCommandsByTrigger();
 
     CommandRecord create(CreateData data);
 

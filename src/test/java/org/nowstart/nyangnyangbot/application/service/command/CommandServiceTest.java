@@ -72,6 +72,35 @@ class CommandServiceTest {
     }
 
     @Test
+    void createCommand_ShouldAcceptBareTrigger() {
+        // 준비
+        CommandService service = service();
+        given(commandPort.findByTrigger("치하")).willReturn(Optional.empty());
+        given(commandPort.create(any(CreateData.class))).willAnswer(invocation -> {
+            CreateData data = invocation.getArgument(0);
+            return record(
+                    2L,
+                    data.trigger(),
+                    data.messageTemplate(),
+                    data.active(),
+                    data.userCooldownSeconds()
+            );
+        });
+
+        // 실행
+        CommandResult result = service.createCommand(new CreateCommand(
+                " 치하 ",
+                "안녕하세요 {viewer.nickname}님!",
+                true,
+                30,
+                "admin-1"
+        ));
+
+        // 검증
+        then(result.trigger()).isEqualTo("치하");
+    }
+
+    @Test
     void createCommand_ShouldDefaultToInactive() {
         // 준비
         CommandService service = service();
@@ -274,7 +303,7 @@ class CommandServiceTest {
         ));
 
         // 검증
-        then(result.message()).isEqualTo("치즈냥 !명령어 첫번째 두번째 첫번째 두번째 100");
+        then(result.message()).isEqualTo("치즈냥 치하 첫번째 두번째 첫번째 두번째 100");
         BDDMockito.then(favoriteBalanceQueryPort).shouldHaveNoInteractions();
     }
 

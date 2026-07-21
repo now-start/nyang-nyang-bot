@@ -16,7 +16,7 @@ public class CoreCommandVariableContributor implements CommandVariableContributo
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final List<CommandVariableDefinition> DEFINITIONS = List.of(
             definition("viewer.nickname", "시청자 닉네임", "명령어를 호출한 시청자의 표시 이름", "치즈냥"),
-            definition("invocation.command", "호출 명령어", "채팅에서 입력된 명령어", "!명령어"),
+            definition("invocation.command", "호출 명령어", "채팅에서 입력된 명령어", "치하"),
             definition("invocation.args", "전체 인자", "명령어 뒤에 입력된 전체 내용", "첫번째 두번째"),
             definition("invocation.arg1", "첫 번째 인자", "명령어의 첫 번째 인자", "첫번째"),
             definition("invocation.arg2", "두 번째 인자", "명령어의 두 번째 인자", "두번째"),
