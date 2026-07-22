@@ -50,7 +50,9 @@ CREATE TABLE command
     trigger_token         VARCHAR(20)                     NOT NULL COMMENT '채팅에서 명령어를 식별하는 토큰',
     message_template      VARCHAR(1000)                   NOT NULL COMMENT '명령 실행 시 렌더링할 메시지 템플릿',
     is_active             BOOLEAN                         NOT NULL DEFAULT TRUE COMMENT '명령어 사용 여부',
-    user_cooldown_seconds INTEGER                         NOT NULL DEFAULT 30 COMMENT '사용자별 재실행 제한 시간(초)',
+    execution_policy      VARCHAR(32)                     NOT NULL DEFAULT 'USER_INTERVAL' COLLATE utf8mb4_nopad_bin
+        COMMENT '사용자별 재실행 제한 기준',
+    user_cooldown_seconds INTEGER                         NULL DEFAULT 30 COMMENT '사용자별 재실행 제한 시간(초); 달력일 기준이면 NULL',
     created_by_user_id    VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '생성 사용자; NULL은 시스템 생성',
     updated_by_user_id    VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '최종 변경 사용자; NULL은 시스템 변경',
     created_at            DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
@@ -67,30 +69,44 @@ CREATE TABLE command
     CONSTRAINT ck_command__active
         CHECK (is_active IN (FALSE, TRUE)),
     CONSTRAINT ck_command__cooldown
-        CHECK (user_cooldown_seconds BETWEEN 5 AND 3600)
+        CHECK ((execution_policy = 'USER_INTERVAL'
+                    AND user_cooldown_seconds IS NOT NULL
+                    AND user_cooldown_seconds BETWEEN 5 AND 3600)
+            OR (execution_policy = 'USER_CALENDAR_DAY'
+                    AND user_cooldown_seconds IS NULL))
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '사용자 정의 채팅 명령어';
 
-CREATE TABLE user_command_count
+CREATE TABLE command_execution
 (
-    id          BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '사용자별 명령 카운트 식별자',
-    command_id  BIGINT                          NOT NULL COMMENT '집계 대상 명령어 식별자',
-    user_id     VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '명령을 실행한 사용자 식별자',
-    count_value BIGINT                          NOT NULL DEFAULT 0 COMMENT '사용자별 누적 실행 횟수',
+    id                        BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '명령 실행 이벤트 식별자',
+    command_id                BIGINT                          NOT NULL COMMENT '실행한 명령어 식별자',
+    user_id                   VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '명령을 실행한 사용자 식별자',
+    executed_at               DATETIME(6)                     NOT NULL COMMENT 'UTC 기준 명령 실행 확정 시각; 애플리케이션이 승인 Instant를 명시 저장',
+    execution_policy_snapshot VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '실행 시점의 사용자별 재실행 제한 기준 스냅샷',
+    cooldown_seconds_snapshot INTEGER                         NULL COMMENT '실행 시점의 사용자별 재실행 제한 초 스냅샷; 달력일 기준이면 NULL',
+    calendar_date             DATE                            NULL COMMENT 'Asia/Seoul 기준 명령 실행 일자; 달력일 기준에서만 저장',
     PRIMARY KEY (id),
-    CONSTRAINT uk_user_command_count__command_user UNIQUE (command_id, user_id),
-    CONSTRAINT fk_user_command_count__command
-        FOREIGN KEY (command_id) REFERENCES command (id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_command_count__user_account
-        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE CASCADE,
-    CONSTRAINT ck_user_command_count__value
-        CHECK (count_value >= 0)
+    CONSTRAINT uk_command_execution__command_user_date UNIQUE (command_id, user_id, calendar_date),
+    CONSTRAINT fk_command_execution__command
+        FOREIGN KEY (command_id) REFERENCES command (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_command_execution__user_account
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
+    CONSTRAINT ck_command_execution__policy
+        CHECK ((execution_policy_snapshot = 'USER_INTERVAL'
+                    AND cooldown_seconds_snapshot IS NOT NULL
+                    AND cooldown_seconds_snapshot BETWEEN 5 AND 3600
+                    AND calendar_date IS NULL)
+            OR (execution_policy_snapshot = 'USER_CALENDAR_DAY'
+                    AND cooldown_seconds_snapshot IS NULL
+                    AND calendar_date IS NOT NULL)),
+    INDEX idx_command_execution__user_command_time (user_id, command_id, executed_at, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
-    COMMENT = '명령어와 사용자 조합별 실행 횟수';
+    COMMENT = '전체·사용자별 횟수와 일별 연속 실행을 계산하는 명령 실행 이벤트';
 
 CREATE TABLE timer_message
 (
@@ -162,7 +178,7 @@ CREATE TABLE point_ledger_entry
         CHECK (delta <> 0),
     CONSTRAINT ck_point_ledger_entry__source
         CHECK (source_type IN (
-                               'ADMIN_ADJUSTMENT', 'ATTENDANCE', 'SHEET_MIGRATION',
+                               'ADMIN_ADJUSTMENT', 'PRESENCE_REWARD', 'SHEET_MIGRATION',
                                'REWARD_MANUAL', 'REWARD_ROULETTE', 'CORRECTION'
             )),
     CONSTRAINT ck_point_ledger_entry__correction_source
@@ -208,22 +224,6 @@ CREATE TABLE weekly_chat_count
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = 'Asia/Seoul 기준 사용자별 주간 채팅 수';
-
-CREATE TABLE daily_attendance
-(
-    point_ledger_entry_id BIGINT                          NOT NULL COMMENT '출석 포인트를 지급한 원장 항목 식별자',
-    user_id               VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '출석 사용자 식별자',
-    attendance_date       DATE                            NOT NULL COMMENT 'Asia/Seoul 기준 출석 일자',
-    PRIMARY KEY (point_ledger_entry_id),
-    CONSTRAINT uk_daily_attendance__user_date UNIQUE (user_id, attendance_date),
-    CONSTRAINT fk_daily_attendance__point_ledger
-        FOREIGN KEY (point_ledger_entry_id, user_id)
-            REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
-    INDEX idx_daily_attendance__date_user (attendance_date, user_id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = '하루에 한 번 인정되는 사용자 출석 기록';
 
 CREATE TABLE donation
 (

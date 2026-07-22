@@ -21,44 +21,25 @@ BEGIN
         SET MESSAGE_TEXT = 'point_ledger_entry is insert-only and cannot be deleted';
 END//
 
-CREATE TRIGGER trg_daily_attendance__guard_insert
-BEFORE INSERT ON daily_attendance
+-- The application treats command_execution as append-only. DELETE intentionally
+-- remains available only for an operator's direct database count reset.
+CREATE TRIGGER trg_command_execution__guard_insert
+BEFORE INSERT ON command_execution
 FOR EACH ROW
 BEGIN
-    DECLARE ledger_source_type VARCHAR(32) DEFAULT NULL;
-    DECLARE ledger_created_at DATETIME(6) DEFAULT NULL;
-
-    SELECT source_type, created_at INTO ledger_source_type, ledger_created_at
-    FROM point_ledger_entry
-    WHERE id = NEW.point_ledger_entry_id
-      AND user_id = NEW.user_id
-    FOR UPDATE;
-
-    IF ledger_source_type IS NULL OR ledger_source_type <> 'ATTENDANCE' THEN
+    IF NEW.execution_policy_snapshot = 'USER_CALENDAR_DAY'
+       AND NOT (NEW.calendar_date <=> DATE(DATE_ADD(NEW.executed_at, INTERVAL 9 HOUR))) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'daily_attendance requires an ATTENDANCE point ledger entry';
-    END IF;
-
-    IF NEW.attendance_date <> DATE(ledger_created_at) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'daily_attendance date must match its point ledger timestamp';
+            SET MESSAGE_TEXT = 'command_execution calendar_date must match the UTC approval time in Asia/Seoul';
     END IF;
 END//
 
-CREATE TRIGGER trg_daily_attendance__reject_update
-BEFORE UPDATE ON daily_attendance
+CREATE TRIGGER trg_command_execution__reject_update
+BEFORE UPDATE ON command_execution
 FOR EACH ROW
 BEGIN
     SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'daily_attendance is an immutable fact';
-END//
-
-CREATE TRIGGER trg_daily_attendance__reject_delete
-BEFORE DELETE ON daily_attendance
-FOR EACH ROW
-BEGIN
-    SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'daily_attendance cannot be deleted';
+        SET MESSAGE_TEXT = 'command_execution rows cannot be updated; operator resets use DELETE';
 END//
 
 CREATE TRIGGER trg_donation__reject_update

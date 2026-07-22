@@ -2,6 +2,9 @@
 -- Dialect: MariaDB 10.11
 -- Read-only: this file contains SELECT statements only.
 -- Run against a consistent production snapshot before generating any destructive cutover migration.
+-- For a live read-only session, the caller must execute
+--   START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY;
+-- before this file and COMMIT afterward; transaction control is intentionally kept outside this file.
 -- Unless a section says MANUAL REVIEW, every problem_count must be 0.
 
 -- 1. Schema and Flyway inventory
@@ -313,6 +316,8 @@ FROM (
 ) legacy_template;
 
 -- 5. Point account, ledger, and preset
+-- V8 maps legacy ATTENDANCE (administrator presence reward) to PRESENCE_REWARD;
+-- it is not migrated into command_execution.
 SELECT 'point_account_invalid' AS check_name, COUNT(*) AS problem_count
 FROM favorite_account
 WHERE user_id IS NULL
@@ -482,23 +487,13 @@ WHERE week_start_date IS NULL
    OR chat_count IS NULL
    OR chat_count < 0;
 
--- Existing ATTENDANCE ledger events become daily facts using the stored local DATETIME
--- as Asia/Seoul wall time. Multiple grants for one user/day are ambiguous and block cutover.
-SELECT 'attendance_duplicate_user_day' AS check_name, COUNT(*) AS problem_count
-FROM (
-    SELECT favorite_account_user_id, DATE(create_date) AS attendance_date
-    FROM favorite_history
-    WHERE BINARY source_type = BINARY 'ATTENDANCE'
-    GROUP BY BINARY favorite_account_user_id, DATE(create_date)
-    HAVING COUNT(*) > 1
-) duplicate_attendance;
-
--- MANUAL REVIEW: this is the exact historical attendance set V8 will preserve.
+-- MANUAL REVIEW: legacy ATTENDANCE means an administrator-issued presence reward,
+-- not a user daily check-in. V8 preserves every row as PRESENCE_REWARD.
 SELECT
-    COUNT(*) AS attendance_source_row_count,
-    COUNT(DISTINCT HEX(favorite_account_user_id)) AS attendance_user_count,
-    MIN(DATE(create_date)) AS first_attendance_date,
-    MAX(DATE(create_date)) AS last_attendance_date
+    COUNT(*) AS presence_reward_source_row_count,
+    COUNT(DISTINCT HEX(favorite_account_user_id)) AS presence_reward_user_count,
+    MIN(create_date) AS first_presence_reward_at,
+    MAX(create_date) AS last_presence_reward_at
 FROM favorite_history
 WHERE BINARY source_type = BINARY 'ATTENDANCE';
 
@@ -740,7 +735,7 @@ WHERE (BINARY round_result.status = BINARY 'APPLIED'
 SELECT COUNT(*) AS discarded_upbo_template_count
 FROM upbo_template;
 
--- MUST BE ZERO: a linked template ID is source provenance that the 17-table target
+-- MUST BE ZERO: a linked template ID is source provenance that the 16-table target
 -- cannot preserve. Do not cut over until the target design is revised or the link is
 -- explicitly retained through an approved migration plan.
 SELECT 'reward_template_provenance_present' AS check_name, COUNT(*) AS problem_count
@@ -953,12 +948,11 @@ WITH canonical_user AS (
       FROM canonical_user WHERE user_id IS NOT NULL AND user_id <> ''
     UNION ALL SELECT 'oauth_credential', COUNT(*) FROM authorization_account
     UNION ALL SELECT 'command', COUNT(*) FROM command
-    UNION ALL SELECT 'user_command_count', 0
+    UNION ALL SELECT 'command_execution', 0
     UNION ALL SELECT 'timer_message', COUNT(*) FROM timer_message
     UNION ALL SELECT 'point_ledger_entry', COUNT(*) FROM favorite_history
     UNION ALL SELECT 'point_adjustment_preset', COUNT(*) FROM favorite_adjustment
     UNION ALL SELECT 'weekly_chat_count', COUNT(*) FROM weekly_chat_rank
-    UNION ALL SELECT 'daily_attendance', COUNT(*) FROM favorite_history WHERE BINARY source_type = BINARY 'ATTENDANCE'
     UNION ALL SELECT 'donation', COUNT(*) FROM donation
     UNION ALL SELECT 'roulette_config',
         (SELECT COUNT(*) FROM roulette_table) + (SELECT COUNT(*) FROM roulette_event)
