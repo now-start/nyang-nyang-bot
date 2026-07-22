@@ -73,20 +73,6 @@ CREATE TABLE command
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '사용자 정의 채팅 명령어';
 
-CREATE TABLE command_count
-(
-    command_id  BIGINT NOT NULL COMMENT '집계 대상 명령어 식별자',
-    count_value BIGINT NOT NULL DEFAULT 0 COMMENT '명령어가 수락된 누적 실행 횟수',
-    PRIMARY KEY (command_id),
-    CONSTRAINT fk_command_count__command
-        FOREIGN KEY (command_id) REFERENCES command (id) ON DELETE CASCADE,
-    CONSTRAINT ck_command_count__value
-        CHECK (count_value >= 0)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = '명령어별 전체 실행 횟수';
-
 CREATE TABLE user_command_count
 (
     id          BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '사용자별 명령 카운트 식별자',
@@ -148,27 +134,11 @@ CREATE TABLE timer_message
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '채팅량과 주기를 기준으로 전송하는 타이머 메시지';
 
-CREATE TABLE point_account
-(
-    user_id    VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '포인트 소유 사용자 식별자',
-    balance    BIGINT                          NOT NULL DEFAULT 0 COMMENT '현재 포인트 잔액',
-    created_at DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '계정 생성 시각',
-    updated_at DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '잔액 최종 변경 시각',
-    PRIMARY KEY (user_id),
-    CONSTRAINT fk_point_account__user_account
-        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = '사용자별 현재 포인트 잔액';
-
 CREATE TABLE point_ledger_entry
 (
     id                     BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '포인트 원장 항목 식별자',
-    user_id                VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '포인트 계정 사용자 식별자',
+    user_id                VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '포인트 소유 사용자 식별자',
     delta                  BIGINT                           NOT NULL COMMENT '이번 거래의 포인트 증감량',
-    balance_after          BIGINT                           NOT NULL COMMENT '거래 적용 직후 잔액',
     source_type            VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '포인트 변경 원인 유형',
     source_reference       VARCHAR(191)                     NULL COMMENT '외부 이벤트나 업무 요청의 추적용 참조값',
     description            VARCHAR(500)                     NOT NULL COMMENT '사용자에게 표시 가능한 변경 설명',
@@ -181,8 +151,8 @@ CREATE TABLE point_ledger_entry
     CONSTRAINT uk_point_ledger_entry__id_user UNIQUE (id, user_id),
     CONSTRAINT uk_point_ledger_entry__idempotency UNIQUE (idempotency_key),
     CONSTRAINT uk_point_ledger_entry__correction UNIQUE (correction_of_entry_id),
-    CONSTRAINT fk_point_ledger_entry__point_account
-        FOREIGN KEY (user_id) REFERENCES point_account (user_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_point_ledger_entry__user_account
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_point_ledger_entry__correction
         FOREIGN KEY (correction_of_entry_id, user_id)
             REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
@@ -241,47 +211,19 @@ CREATE TABLE weekly_chat_count
 
 CREATE TABLE daily_attendance
 (
-    id                    BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '일별 출석 식별자',
-    attendance_date       DATE                            NOT NULL COMMENT 'Asia/Seoul 기준 출석 일자',
-    user_id               VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '출석 사용자 식별자',
     point_ledger_entry_id BIGINT                          NOT NULL COMMENT '출석 포인트를 지급한 원장 항목 식별자',
-    attended_at           DATETIME(6)                     NOT NULL COMMENT '출석을 최초 인정한 시각',
-    PRIMARY KEY (id),
-    CONSTRAINT uk_daily_attendance__date_user UNIQUE (attendance_date, user_id),
-    CONSTRAINT uk_daily_attendance__point_ledger UNIQUE (point_ledger_entry_id, user_id),
-    CONSTRAINT fk_daily_attendance__user_account
-        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
+    user_id               VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '출석 사용자 식별자',
+    attendance_date       DATE                            NOT NULL COMMENT 'Asia/Seoul 기준 출석 일자',
+    PRIMARY KEY (point_ledger_entry_id),
+    CONSTRAINT uk_daily_attendance__user_date UNIQUE (user_id, attendance_date),
     CONSTRAINT fk_daily_attendance__point_ledger
         FOREIGN KEY (point_ledger_entry_id, user_id)
             REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
-    CONSTRAINT ck_daily_attendance__local_date
-        CHECK (attendance_date = DATE(attended_at)),
-    INDEX idx_daily_attendance__date_time (attendance_date, attended_at, id)
+    INDEX idx_daily_attendance__date_user (attendance_date, user_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '하루에 한 번 인정되는 사용자 출석 기록';
-
-CREATE TABLE attendance_streak
-(
-    user_id              VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '출석 사용자 식별자',
-    current_streak       INTEGER                         NOT NULL COMMENT '마지막 출석일까지 이어진 연속 출석 일수',
-    longest_streak       INTEGER                         NOT NULL COMMENT '역대 최장 연속 출석 일수',
-    last_attendance_date DATE                            NOT NULL COMMENT '가장 최근 출석 일자',
-    updated_at           DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '출석 상태 최종 변경 시각',
-    PRIMARY KEY (user_id),
-    CONSTRAINT fk_attendance_streak__user_account
-        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_attendance_streak__last_attendance
-        FOREIGN KEY (last_attendance_date, user_id)
-            REFERENCES daily_attendance (attendance_date, user_id) ON DELETE CASCADE,
-    CONSTRAINT ck_attendance_streak__values
-        CHECK (current_streak >= 1 AND longest_streak >= current_streak)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = '사용자별 현재 및 최장 연속 출석 상태';
 
 CREATE TABLE donation
 (
@@ -434,46 +376,12 @@ CREATE TABLE roulette_round
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '불변 옵션을 참조하는 룰렛의 개별 추첨 회차';
 
-CREATE TABLE reward_template
-(
-    id              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '보상 템플릿 식별자',
-    label           VARCHAR(100) NOT NULL COMMENT '보상 이름',
-    description     VARCHAR(500) NULL COMMENT '보상 사용 목적 설명',
-    reward_type     VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '보상 유형',
-    conversion_mode VARCHAR(16) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '포인트 변환 처리 방식',
-    point_delta     BIGINT       NULL COMMENT '포인트 변환 시 적용할 증감량',
-    is_active       BOOLEAN      NOT NULL DEFAULT TRUE COMMENT '관리 화면에서 선택 가능 여부',
-    display_order   INTEGER      NOT NULL DEFAULT 0 COMMENT '관리 화면 표시 순서',
-    created_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
-    updated_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-        ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 변경 시각',
-    PRIMARY KEY (id),
-    CONSTRAINT ck_reward_template__reward_type
-        CHECK (reward_type IN ('POINT', 'COUPON', 'MISSION', 'PARTICIPATION_PRIORITY', 'CUSTOM')),
-    CONSTRAINT ck_reward_template__conversion_mode
-        CHECK (conversion_mode IN ('AUTO', 'MANUAL', 'NONE')),
-    CONSTRAINT ck_reward_template__point_value
-        CHECK ((conversion_mode = 'AUTO' AND point_delta IS NOT NULL AND point_delta <> 0)
-            OR conversion_mode = 'MANUAL'
-            OR (conversion_mode = 'NONE' AND point_delta IS NULL)),
-    CONSTRAINT ck_reward_template__active
-        CHECK (is_active IN (FALSE, TRUE)),
-    CONSTRAINT ck_reward_template__display_order
-        CHECK (display_order >= 0),
-    INDEX idx_reward_template__active_order (is_active, display_order, id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = '반복 사용 가능한 보상 지급 템플릿';
-
 CREATE TABLE reward_grant
 (
     id                    BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '사용자에게 지급된 보상 식별자',
     user_id               VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '보상을 받은 사용자 식별자',
-    reward_template_id    BIGINT                           NULL COMMENT '지급에 사용한 보상 템플릿 식별자',
     roulette_round_id     BIGINT                           NULL COMMENT '룰렛 지급의 원인이 된 회차 식별자',
     point_ledger_entry_id BIGINT                           NULL COMMENT '자동 포인트 전환 원장 항목 식별자',
-    grant_source          VARCHAR(16) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '보상 지급 원인',
     label                 VARCHAR(100)                     NOT NULL COMMENT '실제로 지급된 보상 이름',
     reward_type           VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '실제로 지급된 보상 유형',
     conversion_mode       VARCHAR(16) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '지급 당시 포인트 변환 처리 방식',
@@ -492,8 +400,6 @@ CREATE TABLE reward_grant
     CONSTRAINT uk_reward_grant__idempotency UNIQUE (idempotency_key),
     CONSTRAINT fk_reward_grant__user_account
         FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
-    CONSTRAINT fk_reward_grant__reward_template
-        FOREIGN KEY (reward_template_id) REFERENCES reward_template (id) ON DELETE SET NULL,
     CONSTRAINT fk_reward_grant__roulette_round
         FOREIGN KEY (roulette_round_id) REFERENCES roulette_round (id) ON DELETE RESTRICT,
     CONSTRAINT fk_reward_grant__point_ledger_entry
@@ -501,14 +407,9 @@ CREATE TABLE reward_grant
             REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_reward_grant__actor_user
         FOREIGN KEY (actor_user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
-    CONSTRAINT ck_reward_grant__source
-        CHECK (grant_source IN ('MANUAL', 'ROULETTE')),
-    CONSTRAINT ck_reward_grant__source_round
-        CHECK ((grant_source = 'ROULETTE' AND roulette_round_id IS NOT NULL)
-            OR (grant_source <> 'ROULETTE' AND roulette_round_id IS NULL)),
-    CONSTRAINT ck_reward_grant__manual_actor
-        CHECK ((grant_source = 'MANUAL' AND actor_user_id IS NOT NULL)
-            OR (grant_source <> 'MANUAL' AND actor_user_id IS NULL)),
+    CONSTRAINT ck_reward_grant__origin
+        CHECK ((roulette_round_id IS NULL AND actor_user_id IS NOT NULL)
+            OR (roulette_round_id IS NOT NULL AND actor_user_id IS NULL)),
     CONSTRAINT ck_reward_grant__reward_type
         CHECK (reward_type IN ('POINT', 'COUPON', 'MISSION', 'PARTICIPATION_PRIORITY', 'CUSTOM')),
     CONSTRAINT ck_reward_grant__conversion_mode
@@ -524,8 +425,7 @@ CREATE TABLE reward_grant
     CONSTRAINT ck_reward_grant__conversion_status
         CHECK ((conversion_mode = 'AUTO' AND status IN ('CONVERTED', 'CORRECTED'))
             OR (conversion_mode <> 'AUTO' AND status IN ('OWNED', 'USED'))),
-    INDEX idx_reward_grant__user_status_created (user_id, status, created_at, id),
-    INDEX idx_reward_grant__template (reward_template_id)
+    INDEX idx_reward_grant__user_status_created (user_id, status, created_at, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

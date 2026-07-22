@@ -26,8 +26,9 @@ BEFORE INSERT ON daily_attendance
 FOR EACH ROW
 BEGIN
     DECLARE ledger_source_type VARCHAR(32) DEFAULT NULL;
+    DECLARE ledger_created_at DATETIME(6) DEFAULT NULL;
 
-    SELECT source_type INTO ledger_source_type
+    SELECT source_type, created_at INTO ledger_source_type, ledger_created_at
     FROM point_ledger_entry
     WHERE id = NEW.point_ledger_entry_id
       AND user_id = NEW.user_id
@@ -36,6 +37,11 @@ BEGIN
     IF ledger_source_type IS NULL OR ledger_source_type <> 'ATTENDANCE' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'daily_attendance requires an ATTENDANCE point ledger entry';
+    END IF;
+
+    IF NEW.attendance_date <> DATE(ledger_created_at) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'daily_attendance date must match its point ledger timestamp';
     END IF;
 END//
 
@@ -382,10 +388,8 @@ FOR EACH ROW
 BEGIN
     IF NEW.id <> OLD.id
         OR NEW.user_id <> OLD.user_id
-        OR NOT (NEW.reward_template_id <=> OLD.reward_template_id)
         OR NOT (NEW.roulette_round_id <=> OLD.roulette_round_id)
         OR NOT (NEW.point_ledger_entry_id <=> OLD.point_ledger_entry_id)
-        OR NEW.grant_source <> OLD.grant_source
         OR NOT (NEW.label <=> OLD.label)
         OR NEW.reward_type <> OLD.reward_type
         OR NEW.conversion_mode <> OLD.conversion_mode

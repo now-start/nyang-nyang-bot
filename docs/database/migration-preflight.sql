@@ -734,27 +734,21 @@ WHERE (BINARY round_result.status = BINARY 'APPLIED'
 -- Java migration must prove each round matches exactly one option in its event JSON,
 -- validate the same losing/NONE/null rule, and translate legacy FAVORITE to POINT.
 
--- 9. Reward template and grant
-SELECT 'reward_template_invalid' AS check_name, COUNT(*) AS problem_count
-FROM upbo_template
-WHERE label IS NULL
-   OR TRIM(label) = ''
-   OR CHAR_LENGTH(label) > 100
-   OR CHAR_LENGTH(description) > 500
-   OR reward_type IS NULL
-   OR BINARY reward_type NOT IN ('FAVORITE', 'COUPON', 'MISSION', 'PARTICIPATION_PRIORITY', 'CUSTOM')
-   OR conversion_mode IS NULL
-   OR BINARY conversion_mode NOT IN ('AUTO', 'MANUAL', 'NONE')
-   OR (BINARY conversion_mode = BINARY 'AUTO'
-       AND (exchange_favorite_value IS NULL OR exchange_favorite_value = 0))
-   OR (BINARY conversion_mode = BINARY 'NONE' AND COALESCE(exchange_favorite_value, 0) <> 0)
-   OR display_order IS NULL
-   OR display_order < 0
-   OR create_date IS NULL;
+-- 9. Reward grant
+-- INFORMATIONAL: template selection has no production input adapter and the target
+-- stores complete grant facts, so unreferenced catalog rows are intentionally not migrated.
+SELECT COUNT(*) AS discarded_upbo_template_count
+FROM upbo_template;
+
+-- MUST BE ZERO: a linked template ID is source provenance that the 17-table target
+-- cannot preserve. Do not cut over until the target design is revised or the link is
+-- explicitly retained through an approved migration plan.
+SELECT 'reward_template_provenance_present' AS check_name, COUNT(*) AS problem_count
+FROM user_upbo
+WHERE upbo_template_id IS NOT NULL;
 
 SELECT 'reward_grant_invalid' AS check_name, COUNT(*) AS problem_count
 FROM user_upbo reward
-LEFT JOIN upbo_template template ON template.id = reward.upbo_template_id
 LEFT JOIN favorite_history ledger ON ledger.id = reward.ledger_id
 WHERE reward.user_id IS NULL
    OR TRIM(reward.user_id) = ''
@@ -769,7 +763,6 @@ WHERE reward.user_id IS NULL
    OR BINARY reward.conversion_mode NOT IN ('AUTO', 'MANUAL', 'NONE')
    OR reward.source_type IS NULL
    OR BINARY reward.source_type NOT IN ('UPBO_MANUAL', 'UPBO_ROULETTE')
-   OR (reward.upbo_template_id IS NOT NULL AND template.id IS NULL)
    OR (reward.ledger_id IS NOT NULL AND ledger.id IS NULL)
    OR (BINARY reward.conversion_mode = BINARY 'AUTO'
        AND (reward.exchange_favorite_value IS NULL
@@ -960,16 +953,12 @@ WITH canonical_user AS (
       FROM canonical_user WHERE user_id IS NOT NULL AND user_id <> ''
     UNION ALL SELECT 'oauth_credential', COUNT(*) FROM authorization_account
     UNION ALL SELECT 'command', COUNT(*) FROM command
-    UNION ALL SELECT 'command_count', 0
     UNION ALL SELECT 'user_command_count', 0
     UNION ALL SELECT 'timer_message', COUNT(*) FROM timer_message
-    UNION ALL SELECT 'point_account', COUNT(*) FROM favorite_account
     UNION ALL SELECT 'point_ledger_entry', COUNT(*) FROM favorite_history
     UNION ALL SELECT 'point_adjustment_preset', COUNT(*) FROM favorite_adjustment
     UNION ALL SELECT 'weekly_chat_count', COUNT(*) FROM weekly_chat_rank
     UNION ALL SELECT 'daily_attendance', COUNT(*) FROM favorite_history WHERE BINARY source_type = BINARY 'ATTENDANCE'
-    UNION ALL SELECT 'attendance_streak', COUNT(DISTINCT HEX(favorite_account_user_id))
-      FROM favorite_history WHERE BINARY source_type = BINARY 'ATTENDANCE'
     UNION ALL SELECT 'donation', COUNT(*) FROM donation
     UNION ALL SELECT 'roulette_config',
         (SELECT COUNT(*) FROM roulette_table) + (SELECT COUNT(*) FROM roulette_event)
@@ -978,7 +967,6 @@ WITH canonical_user AS (
         + COALESCE((SELECT SUM(JSON_LENGTH(items_snapshot_json)) FROM roulette_event), 0)
     UNION ALL SELECT 'roulette_run', COUNT(*) FROM roulette_event
     UNION ALL SELECT 'roulette_round', COUNT(*) FROM roulette_round_result
-    UNION ALL SELECT 'reward_template', COUNT(*) FROM upbo_template
     UNION ALL SELECT 'reward_grant', COUNT(*) FROM user_upbo
     UNION ALL SELECT 'overlay_access_token', COUNT(*) FROM overlay_token
     UNION ALL SELECT 'overlay_display_job', COUNT(*) FROM overlay_display_event
