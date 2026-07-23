@@ -10,16 +10,16 @@ public record GoogleSheetRowResponse(List<Object> values) {
         if (values == null || values.size() < 3) {
             return Optional.empty();
         }
-        String nickName = parseText(values.get(0));
+        String displayName = parseText(values.get(0));
         String userId = parseText(values.get(1));
-        Integer favorite = parseFavorite(values.getLast());
-        if (nickName == null || userId == null || favorite == null) {
+        Long point = parsePoint(values.getLast());
+        if (displayName == null || userId == null || point == null) {
             return Optional.empty();
         }
         return Optional.of(new GoogleSheetRow(
-                nickName,
+                displayName,
                 userId,
-                favorite
+                point
         ));
     }
 
@@ -31,7 +31,7 @@ public record GoogleSheetRowResponse(List<Object> values) {
         return text.isEmpty() ? null : text;
     }
 
-    private Integer parseFavorite(Object value) {
+    private Long parsePoint(Object value) {
         if (value == null) {
             return null;
         }
@@ -40,7 +40,7 @@ public record GoogleSheetRowResponse(List<Object> values) {
             return null;
         }
         try {
-            return Integer.valueOf(text);
+            return Long.valueOf(text);
         } catch (NumberFormatException ex) {
             return null;
         }

@@ -9,6 +9,21 @@ public record CommandVariableContext(
         String args,
         String arg1,
         String arg2,
-        LocalDateTime now
+        LocalDateTime now,
+        long totalCount,
+        long userCount,
+        int currentStreak,
+        int longestStreak
 ) {
+    public CommandVariableContext(
+            String userId,
+            String nickname,
+            String command,
+            String args,
+            String arg1,
+            String arg2,
+            LocalDateTime now
+    ) {
+        this(userId, nickname, command, args, arg1, arg2, now, 0, 0, 0, 0);
+    }
 }

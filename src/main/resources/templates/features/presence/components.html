@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="vstack gap-3" th:fragment="presence-panel">
+    <form class="card"
+          hx-disabled-elt="find button"
+          hx-post="/presence-rewards/apply"
+          hx-swap="innerHTML"
+          hx-target="#presence-feedback"
+          id="presence-form"
+          method="post"
+          th:hx-post="@{/presence-rewards/apply}">
+        <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+        <div class="card-header d-flex flex-wrap align-items-center gap-2 py-3">
+            <h2 class="h6 fw-bold text-white mb-0">생존자 확인</h2>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-2">
+                수동 제어
+            </span>
+            <div class="d-flex gap-2 ms-auto">
+                <button class="btn btn-outline-success btn-sm"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#presence-feedback"
+                        th:hx-post="@{/presence-rewards/start}"
+                        type="button">수집 시작</button>
+                <button class="btn btn-outline-secondary btn-sm"
+                        hx-disabled-elt="this"
+                        hx-swap="innerHTML"
+                        hx-target="#presence-feedback"
+                        th:hx-post="@{/presence-rewards/stop}"
+                        type="button">수집 중지</button>
+            </div>
+        </div>
+        <div class="card-body vstack gap-3 border-bottom">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small text-secondary" for="presence-amount">지급 포인트</label>
+                    <input class="form-control fw-bold text-success tabular-nums"
+                           id="presence-amount"
+                           min="1"
+                           name="amount"
+                           required
+                           type="number"
+                           value="1">
+                </div>
+            </div>
+            <div class="vstack gap-2"
+                 hx-swap="outerHTML"
+                 hx-trigger="presence-users-refresh from:body"
+                 id="presence-list"
+                 th:hx-post="@{/presence-rewards/users}">
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
+                </div>
+                <div class="text-secondary small">수집 시작 후 현재 채팅 참여자를 불러옵니다.</div>
+            </div>
+            <div class="mt-2" id="presence-feedback"></div>
+        </div>
+        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+            <span class="small text-secondary">적용 시 사용자당 1회만 지급됩니다</span>
+            <th:block th:replace="~{components/buttons :: action-button('presence-apply', '선택 대상 반영', 'primary', 'submit', null)}"></th:block>
+        </div>
+    </form>
+</div>
+
+<div class="vstack gap-2"
+     hx-include="#presence-list input[name='userIds'], #presence-list input[name='knownUserIds']"
+     hx-post="/presence-rewards/users"
+     hx-swap="outerHTML"
+     hx-trigger="change from:.presence-user-checkbox delay:100ms, presence-users-refresh from:body, every 5s"
+     hx-vals='{"selectionInitialized":"true"}'
+     id="presence-list"
+     th:fragment="presence-list(users)"
+     th:hx-post="@{/presence-rewards/users}">
+    <div class="d-flex flex-wrap gap-2">
+        <span class="badge rounded-pill bg-success-subtle text-success tabular-nums"
+              th:text="${selectedCount == null ? 0 : selectedCount} + '명 선택'">0명 선택</span>
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
+              th:text="${totalCount == null ? 0 : totalCount} + '명 현재'">0명 현재</span>
+    </div>
+    <div class="text-secondary small" th:if="${users == null or #lists.isEmpty(users)}">현재 채팅 참여자가 없습니다.</div>
+    <div class="d-flex flex-wrap gap-2 overflow-auto py-2"
+         style="max-height:230px;"
+         th:if="${users != null and !#lists.isEmpty(users)}">
+        <th:block th:each="user, iterStat : ${users}"
+                  th:with="selected=${selectedUserIds == null or selectedUserIds.contains(user.userId) or !knownUserIds.contains(user.userId)},
+                           controlId=${'presence-user-' + iterStat.index}">
+            <input name="knownUserIds" th:value="${user.userId}" type="hidden">
+            <input autocomplete="off"
+                   class="btn-check presence-user-checkbox"
+                   th:id="${controlId}"
+                   name="userIds"
+                   th:checked="${selected}"
+                   th:value="${user.userId}"
+                   type="checkbox">
+            <label class="btn btn-outline-success btn-sm rounded-pill"
+                   th:for="${controlId}"
+                   th:text="${user.displayName != null and !#strings.isEmpty(user.displayName) ? user.displayName : user.userId}">치즈냥</label>
+        </th:block>
+    </div>
+</div>
+
+<div th:fragment="presence-feedback-response(message, tone, resetPresenceList)">
+    <div th:replace="~{components/feedback :: alert(${message}, ${tone})}"></div>
+    <div class="vstack gap-2"
+         hx-swap="outerHTML"
+         hx-swap-oob="outerHTML"
+         hx-trigger="presence-users-refresh from:body"
+         id="presence-list"
+         th:hx-post="@{/presence-rewards/users}"
+         th:if="${resetPresenceList}">
+        <div class="d-flex flex-wrap gap-2">
+            <span class="badge rounded-pill bg-success-subtle text-success">0명 선택</span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary">0명 현재</span>
+        </div>
+        <div class="text-secondary small">수집 시작 후 현재 채팅 참여자를 불러옵니다.</div>
+    </div>
+</div>
+</body>
+</html>

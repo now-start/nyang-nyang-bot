@@ -1,26 +1,25 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteItemCommand;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteTableCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ItemResult;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.TableResult;
-import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ConfigResult;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateConfigCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateOptionCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.OptionResult;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Slf4j
 @Service
 @Validated
 @RequiredArgsConstructor
@@ -30,195 +29,166 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     private final RoulettePort roulettePort;
 
     @Override
-    @Transactional
-    public RouletteTableResult createTable(CreateRouletteTableCommand request) {
-        roulettePolicy.validateTableInput(request.title(), request.command(), request.pricePerRound());
-        if (!roulettePort.findTablesOrderByIdDesc().isEmpty()) {
-            throw new IllegalStateException("roulette table already exists");
-        }
-        String normalizedCommand = CommandTrigger.normalize(request.command());
-        CommandTrigger.validate(normalizedCommand);
-        TableResult saved = roulettePort.createTable(
-                request.title().trim(),
-                normalizedCommand,
-                request.pricePerRound(),
-                request.highRoundThreshold() == null
+    public RouletteConfigResult createConfig(CreateRouletteConfigCommand command) {
+        roulettePolicy.validateConfigInput(command.title(), command.triggerToken(), command.pricePerRound());
+        ConfigResult config = roulettePort.createConfig(new CreateConfigCommand(
+                command.title().trim(),
+                command.triggerToken().trim(),
+                command.pricePerRound(),
+                command.highRoundThreshold() == null
                         ? RoulettePolicy.DEFAULT_HIGH_ROUND_THRESHOLD
-                        : request.highRoundThreshold()
+                        : command.highRoundThreshold(),
+                now()
+        ));
+        return configResult(config, List.of());
+    }
+
+    @Override
+    public RouletteOptionResult addOption(AddRouletteOptionCommand command) {
+        RewardType rewardType = parseRewardType(command.rewardType());
+        ConversionMode conversionMode = parseConversionMode(command.conversionMode());
+        boolean losing = Boolean.TRUE.equals(command.losing());
+        roulettePolicy.validateOptionInput(
+                command.label(),
+                command.probabilityBasisPoints(),
+                losing,
+                rewardType,
+                conversionMode,
+                command.pointDelta()
         );
-        return tableResult(saved);
+        OptionResult option = roulettePort.addOption(new CreateOptionCommand(
+                command.configId(),
+                command.label().trim(),
+                command.probabilityBasisPoints(),
+                losing,
+                rewardType,
+                conversionMode,
+                command.pointDelta(),
+                command.displayOrder() == null ? 0 : command.displayOrder(),
+                now()
+        ));
+        return optionResult(option);
     }
 
     @Override
-    @Transactional
-    public RouletteItemResult addItem(AddRouletteItemCommand request) {
-        roulettePort.findTableById(request.tableId())
-                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        RewardType parsedRewardType = parseRewardType(request.rewardType());
-        ConversionMode parsedConversionMode = parseConversionMode(request.conversionMode());
-        roulettePolicy.validateItemInput(
-                request.label(),
-                request.probabilityBasisPoints(),
-                parsedRewardType,
-                parsedConversionMode,
-                request.exchangeFavoriteValue()
-        );
-        ItemResult item = roulettePort.addItem(
-                request.tableId(),
-                request.label().trim(),
-                request.probabilityBasisPoints(),
-                Boolean.TRUE.equals(request.losingItem()),
-                parsedRewardType,
-                parsedConversionMode,
-                request.exchangeFavoriteValue(),
-                request.displayOrder() == null ? 0 : request.displayOrder()
-        );
-        return itemResult(item);
+    public Page<RouletteConfigSummaryResult> getConfigs(Pageable pageable) {
+        return roulettePort.findConfigs(pageable).map(this::configSummaryResult);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<RouletteTableResult> getTables() {
-        return roulettePort.findTablesOrderByIdDesc().stream()
-                .map(this::tableResult)
-                .toList();
+    public RouletteConfigResult getConfig(Long configId) {
+        ConfigResult config = requireConfig(configId);
+        return configResult(config, roulettePort.findOptionsByConfigId(configId));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public RouletteValidationResult validateTable(Long tableId) {
-        TableResult table = roulettePort.findTableById(tableId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        return activationValidation(table, activeItems(tableId));
+    public RouletteValidationResult validateConfig(Long configId) {
+        ConfigResult config = requireConfig(configId);
+        return validation(roulettePolicy.validateActivation(config, roulettePort.findOptionsByConfigId(configId)));
     }
 
     @Override
-    @Transactional
-    public RouletteTableResult activateTable(Long tableId) {
-        TableResult table = roulettePort.findTableById(tableId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        List<ItemResult> items = activeItems(tableId);
-        RouletteValidationResult validation = activationValidation(table, items);
+    public RouletteConfigResult activateConfig(Long configId) {
+        ConfigResult config = requireConfig(configId);
+        List<OptionResult> options = roulettePort.findOptionsByConfigId(configId);
+        RouletteActivationValidation validation = roulettePolicy.validateActivation(config, options);
         if (!validation.activatable()) {
             throw new IllegalStateException(String.join(", ", validation.reasons()));
         }
-        roulettePort.findActiveTables().stream()
-                .filter(activeTable -> !activeTable.id().equals(tableId))
-                .findAny()
-                .ifPresent(activeTable -> {
-                    throw new IllegalStateException("another roulette table is already active");
-                });
-        TableResult saved = roulettePort.activateTable(tableId);
-        log.info("level=AUDIT action=roulette_table.activate result=success tableId={}", saved.id());
-        return tableResult(saved, items, validation);
+        return configResult(roulettePort.activateConfig(configId, now()), options);
     }
 
     @Override
-    @Transactional
-    public RouletteTableResult deactivateTable(Long tableId) {
-        roulettePort.findTableById(tableId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette table not found"));
-        TableResult table = roulettePort.deactivateTable(tableId);
-        log.info("level=AUDIT action=roulette_table.deactivate result=success tableId={}", table.id());
-        return tableResult(table);
+    public RouletteConfigResult archiveConfig(Long configId) {
+        ConfigResult archived = roulettePort.archiveConfig(configId, now());
+        return configResult(archived, roulettePort.findOptionsByConfigId(configId));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public RouletteSimulationResult simulate(Long tableId, int iterations) {
-        List<ItemResult> items = activeItems(tableId);
+    public RouletteSimulationResult simulate(Long configId, int iterations) {
+        List<OptionResult> options = roulettePort.findOptionsByConfigId(configId);
+        RouletteActivationValidation validation = roulettePolicy.validateActivation(requireConfig(configId), options);
+        if (!validation.activatable()) {
+            throw new IllegalStateException("roulette config is not valid");
+        }
         int safeIterations = roulettePolicy.safeSimulationIterations(iterations);
         Map<String, Integer> counts = new LinkedHashMap<>();
-        items.forEach(item -> counts.put(item.label(), 0));
+        options.forEach(option -> counts.put(option.label(), 0));
         for (int i = 0; i < safeIterations; i++) {
-            ItemResult selected = roulettePolicy.selectItem(items);
-            counts.put(selected.label(), counts.get(selected.label()) + 1);
+            OptionResult selected = roulettePolicy.selectOption(options);
+            counts.compute(selected.label(), (label, count) -> count + 1);
         }
-        List<RouletteSimulationResult.Entry> entries = counts.entrySet().stream()
+        return new RouletteSimulationResult(safeIterations, counts.entrySet().stream()
                 .map(entry -> new RouletteSimulationResult.Entry(
                         entry.getKey(),
                         entry.getValue(),
                         entry.getValue() / (double) safeIterations
                 ))
-                .toList();
-        return new RouletteSimulationResult(safeIterations, entries);
+                .toList());
     }
 
-    private RouletteTableResult tableResult(TableResult table) {
-        List<ItemResult> items = roulettePort.findItemsByTableId(table.id());
-        return tableResult(table, items, activationValidation(table, activeOnly(items)));
+    Instant now() {
+        return Instant.now();
     }
 
-    private RouletteTableResult tableResult(
-            TableResult table,
-            List<ItemResult> items,
-            RouletteValidationResult validation
-    ) {
-        return new RouletteTableResult(
-                table.id(),
-                table.title(),
-                table.command(),
-                table.pricePerRound(),
-                table.active(),
-                table.version(),
-                table.highRoundThreshold(),
-                validation,
-                items.stream().map(this::itemResult).toList()
+    private RouletteConfigResult configResult(ConfigResult config, List<OptionResult> options) {
+        return new RouletteConfigResult(
+                config.id(),
+                config.title(),
+                config.triggerToken(),
+                config.pricePerRound(),
+                config.status().name(),
+                config.highRoundThreshold(),
+                validation(roulettePolicy.validateActivation(config, options)),
+                options.stream().map(this::optionResult).toList(),
+                config.createdAt(),
+                config.updatedAt()
         );
     }
 
-    private RouletteItemResult itemResult(ItemResult item) {
-        return new RouletteItemResult(
-                item.id(),
-                item.label(),
-                item.probabilityBasisPoints(),
-                item.losingItem(),
-                item.rewardType() == null ? null : item.rewardType().name(),
-                item.conversionMode() == null ? null : item.conversionMode().name(),
-                item.exchangeFavoriteValue(),
-                item.active(),
-                item.displayOrder()
+    private RouletteOptionResult optionResult(OptionResult option) {
+        return new RouletteOptionResult(
+                option.id(),
+                option.label(),
+                option.probabilityBasisPoints(),
+                option.losing(),
+                option.rewardType().name(),
+                option.conversionMode().name(),
+                option.pointDelta(),
+                option.displayOrder()
         );
     }
 
-    private RouletteValidationResult activationValidation(
-            TableResult table,
-            List<ItemResult> items
-    ) {
-        RouletteActivationValidation validation = roulettePolicy.validateActivation(table, items);
+    private RouletteConfigSummaryResult configSummaryResult(ConfigResult config) {
+        return new RouletteConfigSummaryResult(
+                config.id(),
+                config.title(),
+                config.triggerToken(),
+                config.pricePerRound(),
+                config.status().name(),
+                config.createdAt()
+        );
+    }
+
+    private RouletteValidationResult validation(RouletteActivationValidation validation) {
         return new RouletteValidationResult(
                 validation.activatable(),
                 validation.reasons(),
                 validation.probabilityTotal(),
-                validation.hasLosingItem()
+                validation.hasLosingOption()
         );
     }
 
-    private List<ItemResult> activeItems(Long tableId) {
-        return roulettePort.findActiveItemsByTableId(tableId);
-    }
-
-    private List<ItemResult> activeOnly(List<ItemResult> items) {
-        return items.stream()
-                .filter(ItemResult::active)
-                .toList();
+    private ConfigResult requireConfig(Long configId) {
+        return roulettePort.findConfigById(configId)
+                .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
     }
 
     private RewardType parseRewardType(String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-        return RewardType.valueOf(value.trim());
+        return value == null || value.isBlank() ? null : RewardType.valueOf(value.trim());
     }
 
     private ConversionMode parseConversionMode(String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-        return ConversionMode.valueOf(value.trim());
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+        return value == null || value.isBlank() ? null : ConversionMode.valueOf(value.trim());
     }
 }

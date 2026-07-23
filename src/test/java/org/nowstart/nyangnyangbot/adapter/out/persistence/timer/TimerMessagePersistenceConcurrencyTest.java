@@ -37,8 +37,6 @@ class TimerMessagePersistenceConcurrencyTest {
                         .claimedChatCount(10)
                         .claimToken("claim-1")
                         .claimExpiresAt(now.plusMinutes(2))
-                        .createdBy("admin")
-                        .updatedBy("admin")
                         .build()).getId()
         );
 
@@ -63,7 +61,7 @@ class TimerMessagePersistenceConcurrencyTest {
                     true,
                     now,
                     false,
-                    "editor"
+                    null
             );
         });
 
@@ -130,7 +128,7 @@ class TimerMessagePersistenceConcurrencyTest {
                     true,
                     adminNextRunAt,
                     true,
-                    "editor"
+                    null
             );
             timerMessageRepository.flush();
         });
@@ -200,8 +198,6 @@ class TimerMessagePersistenceConcurrencyTest {
                         .nextRunAt(now)
                         .chatCountSinceLastSend(10)
                         .claimedChatCount(0)
-                        .createdBy("admin")
-                        .updatedBy("admin")
                         .build()).getId()
         );
 
@@ -264,8 +260,6 @@ class TimerMessagePersistenceConcurrencyTest {
                         .claimedChatCount(claimedChatCount)
                         .claimToken(claimToken)
                         .claimExpiresAt(claimTime.plusMinutes(2))
-                        .createdBy("admin")
-                        .updatedBy("admin")
                         .build()).getId()
         );
     }

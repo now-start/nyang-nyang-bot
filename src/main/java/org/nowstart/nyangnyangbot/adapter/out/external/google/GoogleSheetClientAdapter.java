@@ -30,7 +30,7 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
 
     @Override
     @SneakyThrows
-    public List<GoogleSheetRow> readFavoriteRows() {
+    public List<GoogleSheetRow> readPointRows() {
         GoogleCredentials credentials = loadCredentials();
         Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
                 .setApplicationName("google-sheet-project")
@@ -59,7 +59,7 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
                 .flatMap(response -> response.toGoogleSheetRow().stream())
                 .toList();
         for (int index = 0; index < rows.size(); index++) {
-            contractValidator.externalResponse("googleSheet.readFavoriteRows[" + index + "]", rows.get(index));
+            contractValidator.externalResponse("googleSheet.readPointRows[" + index + "]", rows.get(index));
         }
         return rows;
     }

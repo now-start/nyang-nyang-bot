@@ -108,11 +108,21 @@
 <div class="alert alert-danger" role="alert" th:fragment="save-error(saveError)" th:if="${saveError}" th:text="${saveError}"></div>
 
 <div class="row g-3" th:fragment="editor-fields(commandForm)">
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-4">
         <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!호감도 또는 치하', 20, null)}"></div>
     </div>
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-4">
+        <label class="form-label" for="command-execution-policy">사용자별 실행 제한</label>
+        <select class="form-select" id="command-execution-policy" name="executionPolicy">
+            <option th:each="option : ${commandExecutionPolicyOptions}"
+                    th:selected="${commandForm != null and option.value == commandForm.executionPolicy}"
+                    th:text="${option.label}"
+                    th:value="${option.value}">사용자별 시간 간격</option>
+        </select>
+    </div>
+    <div class="col-12 col-md-4">
         <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '사용자별 쿨타임(초)', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 5, 3600, null)}"></div>
+        <p class="small text-secondary mb-0">하루 1회 정책에서는 이 값이 저장되지 않습니다.</p>
     </div>
     <div class="col-12">
         <div th:replace="~{components/forms :: switch-field('command-active', 'active', '활성', ${commandForm != null and commandForm.active}, null)}"></div>

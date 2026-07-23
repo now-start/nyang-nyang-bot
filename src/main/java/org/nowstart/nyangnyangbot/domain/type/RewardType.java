@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.domain.type;
 
 public enum RewardType {
-    FAVORITE,
+    POINT,
     COUPON,
     MISSION,
     PARTICIPATION_PRIORITY,

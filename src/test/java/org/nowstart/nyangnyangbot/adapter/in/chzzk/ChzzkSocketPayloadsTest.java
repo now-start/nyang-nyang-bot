@@ -11,15 +11,18 @@ class ChzzkSocketPayloadsTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void donationPayload_ShouldAcceptProviderEventIdAlias() throws Exception {
+    void donationPayload_ShouldMatchOfficialPayloadWithoutInventingProviderEventId() throws Exception {
         DonationPayload payload = objectMapper.readValue("""
                 {
-                  "eventId": "donation-1",
+                  "donationType": "CHAT",
+                  "channelId": "streamer-1",
+                  "donatorChannelId": "viewer-1",
                   "payAmount": "1,000"
                 }
                 """, DonationPayload.class);
 
-        then(payload.toEvent().donationEventId()).isEqualTo("donation-1");
-        then(payload.toEvent().payAmount()).isEqualTo("1,000");
+        then(payload.toEvent("chzzk-received:test").ingestionKey())
+                .isEqualTo("chzzk-received:test");
+        then(payload.toEvent("chzzk-received:test").payAmount()).isEqualTo("1,000");
     }
 }

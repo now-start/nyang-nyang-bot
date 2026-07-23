@@ -19,7 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class LocalTestLoginController {
 
-    private static final String DEFAULT_REDIRECT = "/favorite/list";
+    private static final String DEFAULT_REDIRECT = "/points/list";
     private static final String LOGIN_VIEW = "local/test-login";
 
     @GetMapping("/local/test-login")

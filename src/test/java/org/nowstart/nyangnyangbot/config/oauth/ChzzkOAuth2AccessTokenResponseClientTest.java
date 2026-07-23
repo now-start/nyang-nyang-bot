@@ -4,14 +4,15 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
 import java.util.Map;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort.OAuthCredentialRecord;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort.SaveOAuthCredential;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
@@ -32,17 +33,18 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
     private ChzzkClientPort chzzkClientPort;
 
     @Mock
-    private AuthorizationPort authorizationPort;
+    private OAuthCredentialPort credentialPort;
 
     @Test
     void getTokenResponse_ShouldExchangeChzzkCodeAndPersistAuthorizationAccount() {
         // 준비
         ChzzkOAuth2AccessTokenResponseClient client =
-                new ChzzkOAuth2AccessTokenResponseClient(chzzkProperty, chzzkClientPort, authorizationPort);
+                new ChzzkOAuth2AccessTokenResponseClient(chzzkProperty, chzzkClientPort, credentialPort);
         AuthorizationToken token = new AuthorizationToken("access", "refresh", "Bearer", 3600, "chat");
         UserResult user = new UserResult("channel-1", "tester", "ACTIVE");
-        AuthorizationAccountResult saved = new AuthorizationAccountResult(
-                "channel-1", "tester", "access", "refresh", "Bearer", 3600, "chat", true, null, null
+        OAuthCredentialRecord saved = new OAuthCredentialRecord(
+                "channel-1", "tester", "access", "refresh", "Bearer", "chat", true,
+                Instant.now().plusSeconds(3600), 0, Instant.now(), Instant.now()
         );
         given(chzzkProperty.clientId()).willReturn("client-id");
         given(chzzkProperty.clientSecret()).willReturn("client-secret");
@@ -55,8 +57,8 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
                 null
         ))).willReturn(token);
         given(chzzkClientPort.getUser("Bearer access")).willReturn(user);
-        SaveAuthorizationCommand saveCommand = saveCommand(user, token);
-        given(authorizationPort.saveOrUpdate(saveCommand)).willReturn(saved);
+        SaveOAuthCredential saveCommand = saveCommand(user, token);
+        given(credentialPort.saveLogin(saveCommand)).willReturn(saved);
 
         // 실행
         var response = client.getTokenResponse(grantRequest());
@@ -70,37 +72,7 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
                 "channel_name", "tester",
                 "admin", true
         ));
-        BDDMockito.then(authorizationPort).should().saveOrUpdate(saveCommand);
-    }
-
-    @Test
-    void getTokenResponse_ShouldAllowMissingExpiresInFromChzzk() {
-        // 준비
-        ChzzkOAuth2AccessTokenResponseClient client =
-                new ChzzkOAuth2AccessTokenResponseClient(chzzkProperty, chzzkClientPort, authorizationPort);
-        AuthorizationToken token = new AuthorizationToken("access", "refresh", "Bearer", null, "chat");
-        UserResult user = new UserResult("channel-1", "tester", "ACTIVE");
-        AuthorizationAccountResult saved = new AuthorizationAccountResult(
-                "channel-1", "tester", "access", "refresh", "Bearer", null, "chat", false, null, null
-        );
-        given(chzzkProperty.clientId()).willReturn("client-id");
-        given(chzzkProperty.clientSecret()).willReturn("client-secret");
-        given(chzzkClientPort.getAccessToken(new AuthorizationTokenCommand(
-                "authorization_code",
-                "client-id",
-                "client-secret",
-                "code-1",
-                "state-1",
-                null
-        ))).willReturn(token);
-        given(chzzkClientPort.getUser("Bearer access")).willReturn(user);
-        given(authorizationPort.saveOrUpdate(saveCommand(user, token))).willReturn(saved);
-
-        // 실행
-        var response = client.getTokenResponse(grantRequest());
-
-        // 검증
-        then(response.getAccessToken().getTokenValue()).isEqualTo("access");
+        BDDMockito.then(credentialPort).should().saveLogin(saveCommand);
     }
 
     private OAuth2AuthorizationCodeGrantRequest grantRequest() {
@@ -120,8 +92,8 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
         );
     }
 
-    private SaveAuthorizationCommand saveCommand(UserResult user, AuthorizationToken token) {
-        return new SaveAuthorizationCommand(
+    private SaveOAuthCredential saveCommand(UserResult user, AuthorizationToken token) {
+        return new SaveOAuthCredential(
                 user.channelId(),
                 user.channelName(),
                 token.accessToken(),

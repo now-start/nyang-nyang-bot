@@ -1,11 +1,11 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.timer;
 
 import java.util.List;
-import org.nowstart.nyangnyangbot.adapter.in.web.favorite.FavoriteController;
+import org.nowstart.nyangnyangbot.adapter.in.web.point.PointController;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-@ControllerAdvice(assignableTypes = {FavoriteController.class, TimerMessageController.class})
+@ControllerAdvice(assignableTypes = {PointController.class, TimerMessageController.class})
 public class TimerMessageModelAdvice {
 
     private static final List<OptionView> TIMER_ACTIVE_OPTIONS = List.of(

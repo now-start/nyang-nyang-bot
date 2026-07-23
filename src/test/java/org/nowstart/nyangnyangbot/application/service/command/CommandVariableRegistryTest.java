@@ -33,7 +33,7 @@ class CommandVariableRegistryTest {
                 definition("viewer.nickname"),
                 definition("invocation.args")
         ));
-        given(unusedContributor.definitions()).willReturn(List.of(definition("favorite.balance")));
+        given(unusedContributor.definitions()).willReturn(List.of(definition("point.balance")));
         CommandVariableRegistry registry = new CommandVariableRegistry(List.of(
                 requestedContributor,
                 unusedContributor

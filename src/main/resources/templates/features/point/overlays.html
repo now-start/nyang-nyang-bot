@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div aria-hidden="true" aria-labelledby="point-adjustment-modal-title" class="modal fade" id="point-adjustment-modal" tabindex="-1" th:fragment="point-adjustment-modal">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content" id="point-adjustment-modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="modal-title h6 text-white mb-0" id="point-adjustment-modal-title">관리자 처리</h2>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary">ADMIN 전용</span>
+                </div>
+                <button aria-label="닫기" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+            </div>
+            <div class="modal-body text-secondary">대상을 불러오는 중입니다.</div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-content" id="point-adjustment-modal-content" th:fragment="point-adjustment-modal-content">
+    <form hx-disabled-elt="find button"
+          hx-swap="innerHTML"
+          hx-target="#point-adjustment-feedback"
+          id="point-adjustment-form"
+          method="post"
+          th:hx-post="@{/points/adjustments/apply}">
+        <div class="modal-header">
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="modal-title h6 text-white mb-0" id="point-adjustment-modal-title">관리자 처리</h2>
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary">ADMIN 전용</span>
+            </div>
+            <button aria-label="닫기" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+        </div>
+        <div class="modal-body vstack gap-3">
+            <input name="userId" th:value="${target.userId}" type="hidden">
+            <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+
+            <div class="d-flex align-items-center gap-3 border rounded-3 p-3"
+                 th:with="displayName=${target.displayName != null and !#strings.isEmpty(target.displayName) ? target.displayName : target.userId}">
+                <span class="badge bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center flex-shrink-0 fs-6"
+                      style="width:34px;height:34px;"
+                      th:text="${#strings.substring(displayName, 0, 1)}">감</span>
+                <div class="overflow-hidden">
+                    <div class="fw-semibold text-white" th:text="${displayName}">치즈냥</div>
+                    <div class="small text-secondary text-truncate" th:text="${'channelId: ' + target.userId}">channelId: user-1</div>
+                </div>
+                <span class="ms-auto small text-secondary flex-shrink-0">현재 호감도
+                    <strong class="text-success fs-6 tabular-nums"
+                            th:text="${target.point == null ? 0 : #numbers.formatInteger(target.point, 0, 'COMMA')}">875</strong>
+                </span>
+            </div>
+
+            <div>
+                <label class="form-label small text-secondary mb-2">조정 템플릿</label>
+                <div th:replace="~{features/point/overlays :: adjustment-list(${presets})}"></div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small text-secondary" for="manual-amount">증감값 (부호 포함)</label>
+                    <input class="form-control fw-bold text-success text-end tabular-nums"
+                           id="manual-amount"
+                           name="manualAmount"
+                           type="number">
+                </div>
+                <div class="col-12 col-md-8">
+                    <label class="form-label small text-secondary" for="manual-description">공개 설명 · 사용자에게 표시됨</label>
+                    <input class="form-control"
+                           id="manual-description"
+                           name="manualDescription"
+                           placeholder="사유 입력"
+                           type="text">
+                </div>
+            </div>
+
+            <div class="mt-2" id="point-adjustment-feedback"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="reset">선택 초기화</button>
+            <button class="btn btn-success" type="submit">수정 적용</button>
+        </div>
+    </form>
+</div>
+
+<div class="d-flex flex-wrap gap-2"
+     id="adjustment-list"
+     th:fragment="adjustment-list(presets)">
+    <th:block th:each="preset : ${presets}">
+        <input autocomplete="off"
+               class="btn-check"
+               name="presetIds"
+               th:id="${'adjustment-' + preset.id}"
+               th:value="${preset.id}"
+               type="checkbox">
+        <label class="btn btn-sm rounded-pill"
+               th:classappend="${preset.amount < 0} ? ' btn-outline-danger' : ' btn-outline-success'"
+               th:for="${'adjustment-' + preset.id}">
+            <span th:text="${preset.label}">출석 보너스</span>
+            <strong class="tabular-nums" th:text="${preset.amount > 0 ? '+' + preset.amount : preset.amount}">+1</strong>
+        </label>
+    </th:block>
+    <div class="text-secondary small" th:if="${presets != null and #lists.isEmpty(presets)}">조정 항목 없음</div>
+</div>
+</body>
+</html>

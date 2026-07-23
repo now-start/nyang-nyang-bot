@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GoogleController {
 
     private static final String SYNC_FEEDBACK_FRAGMENT = "components/feedback :: alert";
-    private static final String FAVORITE_BOARD_REFRESH_TRIGGER = "favorite-board-refresh";
+    private static final String POINT_BOARD_REFRESH_TRIGGER = "point-board-refresh";
 
     private final SyncGoogleSheetUseCase syncGoogleSheetUseCase;
 
@@ -35,7 +35,7 @@ public class GoogleController {
             runSync();
             model.addAttribute("message", "데이터 동기화 완료");
             model.addAttribute("tone", "success");
-            response.addHeader("HX-Trigger", FAVORITE_BOARD_REFRESH_TRIGGER);
+            response.addHeader("HX-Trigger", POINT_BOARD_REFRESH_TRIGGER);
         } catch (RuntimeException e) {
             log.warn("[DBSync][FAILED]", e);
             model.addAttribute("message", "데이터 동기화 실패");
@@ -46,7 +46,7 @@ public class GoogleController {
 
     private void runSync() {
         log.info("[DBSync][START]");
-        syncGoogleSheetUseCase.updateFavorite();
+        syncGoogleSheetUseCase.synchronizePoints();
         log.info("[DBSync][END]");
     }
 }

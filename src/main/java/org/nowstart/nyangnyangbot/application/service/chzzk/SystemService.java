@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.application.service.chzzk;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class SystemService {
 
@@ -30,8 +28,9 @@ public class SystemService {
                 log.warn("[SYSTEM] ignored connected event without session key");
                 return;
             }
-            sessionKey = connectedSessionKey;
             chzzkClientPort.subscribeChatEvent(connectedSessionKey);
+            chzzkClientPort.subscribeDonationEvent(connectedSessionKey);
+            sessionKey = connectedSessionKey;
         }
     }
 

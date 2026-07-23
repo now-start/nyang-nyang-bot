@@ -6,6 +6,6 @@ public record RouletteActivationValidation(
         boolean activatable,
         List<String> reasons,
         int probabilityTotal,
-        boolean hasLosingItem
+        boolean hasLosingOption
 ) {
 }

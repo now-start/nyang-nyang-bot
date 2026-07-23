@@ -10,7 +10,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 class TimerMessageFlywayMigrationTest {
 
     private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1";
+            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
 
     @Test
     void flywayMigration_ShouldCreateDuplicateSafeTimerMessageSchema() {
@@ -46,7 +46,7 @@ class TimerMessageFlywayMigrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.indexes "
                         + "where lower(table_name) = 'timer_message' "
-                        + "and lower(index_name) like 'idx_timer_message_due%'",
+                        + "and lower(index_name) = 'idx_timer_message__due'",
                 Integer.class
         )).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(

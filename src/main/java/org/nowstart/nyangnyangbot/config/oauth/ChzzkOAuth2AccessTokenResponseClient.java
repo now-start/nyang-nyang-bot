@@ -3,9 +3,9 @@ package org.nowstart.nyangnyangbot.config.oauth;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.AuthorizationAccountResult;
-import org.nowstart.nyangnyangbot.application.port.out.authorization.AuthorizationPort.SaveAuthorizationCommand;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort.OAuthCredentialRecord;
+import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort.SaveOAuthCredential;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationToken;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
@@ -25,7 +25,7 @@ public class ChzzkOAuth2AccessTokenResponseClient
 
     private final ChzzkProperty chzzkProperty;
     private final ChzzkClientPort chzzkClientPort;
-    private final AuthorizationPort authorizationPort;
+    private final OAuthCredentialPort credentialPort;
 
     @Override
     public OAuth2AccessTokenResponse getTokenResponse(OAuth2AuthorizationCodeGrantRequest authorizationGrantRequest) {
@@ -45,7 +45,7 @@ public class ChzzkOAuth2AccessTokenResponseClient
                 null
         ));
         UserResult user = chzzkClientPort.getUser(token.tokenType() + " " + token.accessToken());
-        AuthorizationAccountResult saved = authorizationPort.saveOrUpdate(saveCommand(user, token));
+        OAuthCredentialRecord saved = credentialPort.saveLogin(saveCommand(user, token));
 
         OAuth2AccessTokenResponse.Builder response = OAuth2AccessTokenResponse.withToken(token.accessToken())
                 .tokenType(OAuth2AccessToken.TokenType.BEARER)
@@ -57,8 +57,8 @@ public class ChzzkOAuth2AccessTokenResponseClient
         return response.build();
     }
 
-    private SaveAuthorizationCommand saveCommand(UserResult user, AuthorizationToken token) {
-        return new SaveAuthorizationCommand(
+    private SaveOAuthCredential saveCommand(UserResult user, AuthorizationToken token) {
+        return new SaveOAuthCredential(
                 user.channelId(),
                 user.channelName(),
                 token.accessToken(),
@@ -69,10 +69,10 @@ public class ChzzkOAuth2AccessTokenResponseClient
         );
     }
 
-    private Map<String, Object> additionalParameters(AuthorizationAccountResult saved) {
+    private Map<String, Object> additionalParameters(OAuthCredentialRecord saved) {
         Map<String, Object> parameters = new LinkedHashMap<>();
-        parameters.put(ChzzkOAuth2UserService.CHANNEL_ID_PARAMETER, saved.channelId());
-        parameters.put(ChzzkOAuth2UserService.CHANNEL_NAME_PARAMETER, saved.channelName());
+        parameters.put(ChzzkOAuth2UserService.CHANNEL_ID_PARAMETER, saved.userId());
+        parameters.put(ChzzkOAuth2UserService.CHANNEL_NAME_PARAMETER, saved.displayName());
         parameters.put(ChzzkOAuth2UserService.ADMIN_PARAMETER, saved.admin());
         return parameters;
     }

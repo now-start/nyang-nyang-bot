@@ -7,9 +7,12 @@ import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDispl
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -30,24 +33,44 @@ public class OverlayController {
     }
 
     @Operation(summary = "다음 오버레이 표시 fragment 조회")
-    @GetMapping("/overlay/roulette/events/next")
-    public String nextEvent(
+    @GetMapping("/overlay/roulette/jobs/next")
+    public String nextJob(
             @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorization,
             Model model
     ) {
         try {
-            return manageOverlayDisplayUseCase.claimNextEvent(authorization(authorization))
-                    .map(event -> overlayEvent(event, authorization, model))
+            return manageOverlayDisplayUseCase.claimNextJob(authorization(authorization))
+                    .map(job -> overlayJob(job, model))
                     .orElse(WAIT_FRAGMENT);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException exception) {
             model.addAttribute("message", "오버레이 토큰이 유효하지 않습니다.");
             return ERROR_FRAGMENT;
         }
     }
 
-    private String overlayEvent(OverlayDisplayResult event, String authorization, Model model) {
+    @Operation(summary = "오버레이 표시 완료")
+    @PostMapping("/overlay/roulette/jobs/{displayJobId}/displayed")
+    public String markDisplayed(
+            @PathVariable Long displayJobId,
+            @RequestParam String claimToken,
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            Model model
+    ) {
+        try {
+            manageOverlayDisplayUseCase.markDisplayed(
+                    displayJobId,
+                    claimToken,
+                    authorization(authorization)
+            );
+            return WAIT_FRAGMENT;
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            model.addAttribute("message", "오버레이 표시 작업을 완료하지 못했습니다.");
+            return ERROR_FRAGMENT;
+        }
+    }
+
+    private String overlayJob(OverlayDisplayResult event, Model model) {
         model.addAttribute("event", event);
-        manageOverlayDisplayUseCase.markDisplayed(event.displayEventId(), authorization(authorization));
         return EVENT_FRAGMENT;
     }
 

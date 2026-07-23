@@ -1,107 +1,81 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
-import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.RecordAttendanceChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ApprovedCommand;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ExecuteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.timer.RecordTimerChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.presence.RecordPresenceChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
-import org.nowstart.nyangnyangbot.application.service.command.CommandVariableContext;
-import org.nowstart.nyangnyangbot.application.service.command.CommandVariableRegistry;
-import org.nowstart.nyangnyangbot.domain.chat.CommandCooldown;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class ChatService {
 
-    private static final long DEFAULT_COMMAND_COOLDOWN_MILLIS = 30_000L;
-
-    private final RecordAttendanceChatUseCase recordAttendanceChatUseCase;
+    private final RecordPresenceChatUseCase recordPresenceChatUseCase;
     private final RecordWeeklyChatUseCase recordWeeklyChatUseCase;
     private final RecordTimerChatUseCase recordTimerChatUseCase;
+    private final ExecuteCommandUseCase executeCommandUseCase;
     private final CommandPort commandPort;
     private final ChzzkClientPort chzzkClientPort;
-    private final CommandTemplateRenderer templateRenderer;
-    private final CommandVariableRegistry variableRegistry;
-    private final CommandCooldown commandCooldown = new CommandCooldown(DEFAULT_COMMAND_COOLDOWN_MILLIS);
 
     public void handle(ChatReceived chat) {
         if (chat == null) {
             return;
         }
         log.info("[ChzzkChat] socket received: {}", chat);
-        recordAttendanceChatUseCase.recordChatUser(chat);
-        recordWeeklyChatUseCase.recordChat(chat);
+        runBestEffort("presence", () -> recordPresenceChatUseCase.recordChatUser(chat));
+        runBestEffort("weekly_chat", () -> recordWeeklyChatUseCase.recordChat(chat));
         if (!ChatEventSupport.hasSenderChannelId(chat)) {
             return;
         }
         if (ChatEventSupport.senderChannelId(chat).equals(chat.channelId())) {
             return;
         }
-        recordTimerChatUseCase.recordChatActivity();
+        runBestEffort("timer_chat", recordTimerChatUseCase::recordChatActivity);
         String commandToken = firstToken(chat.content());
         if (commandToken == null) {
             return;
         }
-        CommandRecord command = commandPort.findActiveCommandsByTrigger()
-                .get(CommandTrigger.normalize(commandToken));
-        if (command != null) {
-            runCommand(command, chat, commandToken);
+        if (!commandPort.findActiveCommandsByTrigger().containsKey(CommandTrigger.normalize(commandToken))) {
+            return;
         }
+        runCommand(chat, commandToken);
     }
 
-    private void runCommand(CommandRecord command, ChatReceived chat, String commandToken) {
+    private void runCommand(ChatReceived chat, String commandToken) {
         String[] tokens = tokens(chat.content());
         String userId = ChatEventSupport.senderChannelId(chat);
-        if (isInCooldown(userId, String.valueOf(command.id()), command.userCooldownSeconds())) {
-            return;
-        }
-        CommandVariableContext context = new CommandVariableContext(
+        var approved = executeCommandUseCase.execute(new ExecuteCommand(
+                commandToken,
                 userId,
                 ChatEventSupport.displayName(chat),
-                commandToken,
                 args(tokens),
                 tokens.length > 1 ? tokens[1] : "",
-                tokens.length > 2 ? tokens[2] : "",
-                LocalDateTime.now()
-        );
-        Set<String> requestedVariables = templateRenderer.variables(command.messageTemplate());
-        String message = templateRenderer.render(
-                command.messageTemplate(),
-                variableRegistry.resolve(requestedVariables, context)
-        );
-        if (message.isBlank()) {
-            log.debug("Command response was blank and will not be sent: commandId={} trigger={}",
-                    command.id(), command.trigger());
+                tokens.length > 2 ? tokens[2] : ""
+        ));
+        if (approved.isEmpty()) {
             return;
         }
-        chzzkClientPort.sendMessage(new MessageCommand(message));
+        ApprovedCommand command = approved.get();
+        chzzkClientPort.sendMessage(new MessageCommand(command.renderedMessage()));
         String nickname = ChatEventSupport.displayName(chat);
         log.atInfo()
                 .addKeyValue("event", "command.executed")
-                .addKeyValue("command_id", command.id())
+                .addKeyValue("command_id", command.commandId())
                 .addKeyValue("command_trigger", command.trigger())
                 .addKeyValue("user_nickname", nickname)
                 .log("event=command.executed commandId={} trigger={} nickname={}",
-                        command.id(), command.trigger(), nickname);
-    }
-
-    boolean isInCooldown(String userId, String commandId, Integer cooldownSeconds) {
-        long cooldownMillis = (cooldownSeconds == null ? 30L : cooldownSeconds) * 1_000L;
-        return commandCooldown.isInCooldown(userId, commandId, currentTimeMillis(), cooldownMillis);
+                        command.commandId(), command.trigger(), nickname);
     }
 
     String firstToken(String content) {
@@ -123,7 +97,12 @@ public class ChatService {
         return content.trim().split("\\s+");
     }
 
-    long currentTimeMillis() {
-        return System.currentTimeMillis();
+    private void runBestEffort(String consumer, Runnable operation) {
+        try {
+            operation.run();
+        } catch (RuntimeException failure) {
+            log.warn("event=chat.consumer.failed consumer={}", consumer, failure);
+        }
     }
+
 }

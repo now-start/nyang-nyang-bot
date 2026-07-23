@@ -53,6 +53,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+    testImplementation 'org.testcontainers:testcontainers-mariadb'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -71,6 +73,18 @@ dependencyManagement {
 
 test {
     useJUnitPlatform()
+}
+
+tasks.register('mariaDbMigrationTest', Test) {
+    description = 'Runs the mandatory MariaDB V6-to-canonical migration and recovery scenarios.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'org.nowstart.nyangnyangbot.config.MariaDbCanonicalMigrationTest'
+    }
+    systemProperty 'nyang.test.require-mariadb', 'true'
 }
 
 bootRun {

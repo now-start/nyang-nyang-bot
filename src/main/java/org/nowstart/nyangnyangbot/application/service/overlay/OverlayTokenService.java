@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.service.overlay;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase;
@@ -20,11 +20,12 @@ public class OverlayTokenService implements IssueOverlayTokenUseCase {
     @Override
     @Transactional
     public OverlayTokenIssueResult issueToken(String actorId) {
-        LocalDateTime now = LocalDateTime.now();
-        overlayTokenPort.revokeActive(now);
+        Instant now = now();
+        overlayTokenPort.revokeActiveAndFlush(now);
         String rawToken = overlayTokenPolicy.generateToken();
-        Long tokenId = overlayTokenPort.saveIssuedToken(hashToken(rawToken), actorId);
-        log.info("level=AUDIT action=overlay_token.rotate result=success actor={} tokenId={}", actorId, tokenId);
+        Long tokenId = overlayTokenPort.saveIssuedToken(hashToken(rawToken), actorId, now);
+        log.info("level=AUDIT action=overlay_access_token.rotate result=success actor={} tokenId={}",
+                actorId, tokenId);
         return new OverlayTokenIssueResult(tokenId, rawToken);
     }
 
@@ -38,5 +39,9 @@ public class OverlayTokenService implements IssueOverlayTokenUseCase {
 
     String hashToken(String rawToken) {
         return overlayTokenPolicy.hashToken(rawToken);
+    }
+
+    Instant now() {
+        return Instant.now();
     }
 }

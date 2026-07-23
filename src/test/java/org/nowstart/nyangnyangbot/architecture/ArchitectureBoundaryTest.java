@@ -20,11 +20,8 @@ class ArchitectureBoundaryTest {
             "domain"
     );
     private static final List<String> ALLOWED_DOMAIN_RECORDS = List.of(
-            "AttendanceUserState.java",
-            "FavoriteBalanceChange.java",
-            "FavoriteLedgerEntry.java",
-            "RouletteActivationValidation.java",
-            "RouletteItemSnapshot.java"
+            "PresenceUserState.java",
+            "RouletteActivationValidation.java"
     );
 
     @Test
@@ -266,6 +263,29 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void persistenceToOneRelationships_ShouldBeLazyAndLeaveForeignKeysToFlyway() throws IOException {
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
+                .filter(path -> containsAny(path, "@ManyToOne", "@OneToOne"))
+                .filter(path -> !containsAny(path, "fetch = FetchType.LAZY")
+                        || !containsAny(path, "@ForeignKey(ConstraintMode.NO_CONSTRAINT)"))
+                .toList();
+
+        then(violations).isEmpty();
+    }
+
+    @Test
+    void removedPersistenceModels_ShouldNotReturn() throws IOException {
+        List<Path> legacyDirectories = List.of(
+                SOURCE_ROOT.resolve("adapter/out/persistence/authorization"),
+                SOURCE_ROOT.resolve("adapter/out/persistence/favorite"),
+                SOURCE_ROOT.resolve("adapter/out/persistence/upbo")
+        );
+
+        then(legacyDirectories.stream().flatMap(this::javaFilesUnchecked).toList()).isEmpty();
+        then(SOURCE_ROOT.resolve("domain/chat/CommandCooldown.java")).doesNotExist();
+    }
+
+    @Test
     void inboundWebAdapters_ShouldNotOwnScheduledTasks() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/in/web"))
@@ -301,7 +321,7 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void persistenceEntities_ShouldNotDeclareDdlConstraintsOrIndexes() throws IOException {
+    void persistenceEntities_ShouldLeaveUniqueConstraintsAndIndexesToFlyway() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
                 .filter(path -> path.toString().contains("/entity/"))
@@ -309,24 +329,7 @@ class ArchitectureBoundaryTest {
                         "\\buniqueConstraints\\b",
                         "@UniqueConstraint\\b",
                         "@Index\\b",
-                        "\\bunique\\s*=\\s*true\\b",
-                        "\\bnullable\\s*=\\s*false\\b"
-                ))
-                .toList();
-
-        // 검증
-        then(violations).isEmpty();
-    }
-
-    @Test
-    void persistenceEntities_ShouldUseImplicitJpaPhysicalNaming() throws IOException {
-        // 실행
-        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter/out/persistence"))
-                .filter(path -> path.toString().contains("/entity/"))
-                .filter(path -> containsPattern(path,
-                        "@Table\\s*\\([^)]*\\bname\\s*=",
-                        "@Column\\s*\\([^)]*\\bname\\s*=",
-                        "@JoinColumn\\s*\\([^)]*\\bname\\s*="
+                        "\\bunique\\s*=\\s*true\\b"
                 ))
                 .toList();
 

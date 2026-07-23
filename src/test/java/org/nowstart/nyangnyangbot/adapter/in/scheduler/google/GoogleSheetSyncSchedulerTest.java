@@ -29,7 +29,7 @@ class GoogleSheetSyncSchedulerTest {
         googleSheetSyncScheduler.syncDatabase();
 
         // 검증
-        BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+        BDDMockito.then(syncGoogleSheetUseCase).should().synchronizePoints();
     }
 
     @Test

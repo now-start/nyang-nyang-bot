@@ -2,39 +2,41 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <section class="overlay-idle text-center"
-     hx-swap="outerHTML"
-     hx-trigger="load"
-     id="overlay-root"
-     th:fragment="overlay-loader"
-     hx-get="/overlay/roulette/events/next"
-     hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")}'>
+         hx-get="/overlay/roulette/jobs/next"
+         hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")} '
+         hx-swap="outerHTML"
+         hx-trigger="load"
+         id="overlay-root"
+         th:fragment="overlay-loader">
     <div class="spinner-border text-success" role="status">
         <span class="visually-hidden">룰렛 대기 중...</span>
     </div>
 </section>
 
 <section class="overlay-idle text-center"
-     hx-swap="outerHTML"
-     hx-trigger="every 2s"
-     id="overlay-root"
-     th:fragment="overlay-wait"
-     hx-get="/overlay/roulette/events/next"
-     hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")}'>
+         hx-get="/overlay/roulette/jobs/next"
+         hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")} '
+         hx-swap="outerHTML"
+         hx-trigger="every 2s"
+         id="overlay-root"
+         th:fragment="overlay-wait">
     <div class="spinner-border text-success" role="status">
         <span class="visually-hidden">룰렛 대기 중...</span>
     </div>
 </section>
 
-<section hx-swap="outerHTML"
-         hx-trigger="load delay:5s"
-         id="overlay-root"
-         th:fragment="overlay-event(event)"
-         hx-get="/overlay/roulette/events/next"
-         hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")}'>
+<form hx-swap="outerHTML"
+      hx-trigger="load delay:5s"
+      id="overlay-root"
+      method="post"
+      th:fragment="overlay-event(event)"
+      th:hx-post="@{/overlay/roulette/jobs/{jobId}/displayed(jobId=${event.displayJobId})}"
+      hx-headers='js:{"Authorization": "Bearer " + (new URLSearchParams(location.hash.slice(1)).get("token") || "")} '>
+    <input name="claimToken" th:value="${event.claimToken}" type="hidden">
     <div class="overlay-panel mx-auto p-4 p-md-5 text-center">
         <div class="d-flex align-items-center justify-content-center gap-3 mb-4">
             <span class="overlay-title"
-                  th:text="${(event.nickName == null ? '후원자' : event.nickName) + '님의 룰렛'}">후원자님의 룰렛</span>
+                  th:text="${(event.donorDisplayName == null ? '후원자' : event.donorDisplayName) + '님의 룰렛'}">후원자님의 룰렛</span>
             <span class="overlay-round-pill" th:text="${'총 ' + event.roundCount + '회'}">총 1회</span>
         </div>
         <div class="overlay-stage">
@@ -50,17 +52,24 @@
                     <div class="small text-secondary overlay-round-no"
                          th:text="${round.roundNo + ' / ' + event.roundCount}">1 / 1</div>
                     <div class="overlay-result"
-                         th:classappend="${round.losingItem} ? ' overlay-result-losing'"
-                         th:text="${round.itemLabel == null ? '-' : round.itemLabel}">당첨</div>
-                    <div class="text-secondary" th:if="${round.losingItem}">다음 기회에</div>
-                    <div class="text-success fw-semibold" th:if="${!round.losingItem and round.exchangeFavoriteValue != null}"
-                         th:text="${'호감도 ' + (round.exchangeFavoriteValue > 0 ? '+' + round.exchangeFavoriteValue : round.exchangeFavoriteValue)}">호감도 +1</div>
-                    <div class="text-warning" th:if="${!round.losingItem and round.exchangeFavoriteValue == null}">마이페이지에서 확인</div>
+                         th:classappend="${round.losing} ? ' overlay-result-losing'"
+                         th:text="${round.optionLabel == null ? '-' : round.optionLabel}">당첨</div>
+                    <div class="text-secondary" th:if="${round.losing}">다음 기회에</div>
+                    <div class="text-success fw-semibold"
+                         th:if="${!round.losing and round.pointDelta != null}"
+                         th:text="${'포인트 ' + (round.pointDelta > 0 ? '+' + round.pointDelta : round.pointDelta)}">포인트 +1</div>
+                    <div class="text-warning"
+                         th:if="${!round.losing and round.pointDelta == null}">마이페이지에서 확인</div>
+                </div>
+                <div class="text-secondary mt-3"
+                     th:if="${event.roundCount > event.rounds.size()}"
+                     th:text="${'외 ' + (event.roundCount - event.rounds.size()) + '회 결과는 내역에서 확인'}">
+                    외 결과는 내역에서 확인
                 </div>
             </div>
         </div>
     </div>
-</section>
+</form>
 
 <section class="overlay-error text-center"
          id="overlay-root"

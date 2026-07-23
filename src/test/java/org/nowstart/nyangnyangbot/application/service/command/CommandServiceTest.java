@@ -24,7 +24,7 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CreateData;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.UpdateData;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteBalanceQueryPort;
+import org.nowstart.nyangnyangbot.application.port.out.point.PointQueryPort;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +34,7 @@ class CommandServiceTest {
     private CommandPort commandPort;
 
     @Mock
-    private FavoriteBalanceQueryPort favoriteBalanceQueryPort;
+    private PointQueryPort pointQueryPort;
 
     private final CommandTemplateRenderer templateRenderer = new CommandTemplateRenderer();
 
@@ -57,7 +57,7 @@ class CommandServiceTest {
         // 실행
         CommandResult result = service.createCommand(new CreateCommand(
                 " !HELLO ",
-                "{viewer.nickname}님의 호감도는 {favorite.balance}",
+                "{viewer.nickname}님의 호감도는 {point.balance}",
                 true,
                 null,
                 "admin-1"
@@ -65,7 +65,7 @@ class CommandServiceTest {
 
         // 검증
         then(result.trigger()).isEqualTo("!hello");
-        then(result.messageTemplate()).isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance}");
+        then(result.messageTemplate()).isEqualTo("{viewer.nickname}님의 호감도는 {point.balance}");
         ArgumentCaptor<CreateData> captor = ArgumentCaptor.forClass(CreateData.class);
         BDDMockito.then(commandPort).should().create(captor.capture());
         then(captor.getValue().userCooldownSeconds()).isEqualTo(30);
@@ -137,7 +137,7 @@ class CommandServiceTest {
                 .willReturn(Optional.of(record(
                         1L,
                         "!호감도",
-                        "{viewer.nickname}님의 호감도는 {favorite.balance}",
+                        "{viewer.nickname}님의 호감도는 {point.balance}",
                         true,
                         30
                 )));
@@ -145,7 +145,7 @@ class CommandServiceTest {
         // 실행 및 검증
         thenThrownBy(() -> service.createCommand(new CreateCommand(
                 "!호감도",
-                "{viewer.nickname} {favorite.balance}",
+                "{viewer.nickname} {point.balance}",
                 true,
                 30,
                 "admin-1"
@@ -261,8 +261,8 @@ class CommandServiceTest {
     void updateCommand_ShouldKeepOmittedFieldsAndPersistTemplate() {
         // 준비
         CommandService service = service();
-        CommandRecord current = record(1L, "!호감도", "기존 {favorite.balance}", true, 30);
-        given(commandPort.findById(1L)).willReturn(Optional.of(current));
+        CommandRecord current = record(1L, "!호감도", "기존 {point.balance}", true, 30);
+        given(commandPort.findByIdForUpdate(1L)).willReturn(Optional.of(current));
         given(commandPort.findByTrigger("!호감도")).willReturn(Optional.of(current));
         given(commandPort.update(any(UpdateData.class))).willAnswer(invocation -> {
             UpdateData data = invocation.getArgument(0);
@@ -278,7 +278,7 @@ class CommandServiceTest {
         // 실행
         CommandResult result = service.updateCommand(1L, new UpdateCommand(
                 null,
-                "{viewer.nickname}님의 호감도는 {favorite.balance}",
+                "{viewer.nickname}님의 호감도는 {point.balance}",
                 null,
                 null,
                 "admin-1"
@@ -288,7 +288,7 @@ class CommandServiceTest {
         then(result.trigger()).isEqualTo("!호감도");
         then(result.active()).isTrue();
         then(result.userCooldownSeconds()).isEqualTo(30);
-        then(result.messageTemplate()).isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance}");
+        then(result.messageTemplate()).isEqualTo("{viewer.nickname}님의 호감도는 {point.balance}");
     }
 
     @Test
@@ -299,12 +299,12 @@ class CommandServiceTest {
         // 실행
         var result = service.preview(new PreviewCommand(
                 "{viewer.nickname} {invocation.command} {invocation.args} "
-                        + "{invocation.arg1} {invocation.arg2} {favorite.balance}"
+                        + "{invocation.arg1} {invocation.arg2} {point.balance}"
         ));
 
         // 검증
         then(result.message()).isEqualTo("치즈냥 치하 첫번째 두번째 첫번째 두번째 100");
-        BDDMockito.then(favoriteBalanceQueryPort).shouldHaveNoInteractions();
+        BDDMockito.then(pointQueryPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -318,7 +318,7 @@ class CommandServiceTest {
         // 검증
         then(variables)
                 .extracting(variable -> variable.key())
-                .contains("viewer.nickname", "invocation.command", "favorite.balance")
+                .contains("viewer.nickname", "invocation.command", "point.balance")
                 .doesNotContain("nickname", "command", "favorite");
     }
 
@@ -336,7 +336,7 @@ class CommandServiceTest {
     private CommandService service() {
         CommandVariableRegistry variableRegistry = new CommandVariableRegistry(List.of(
                 new CoreCommandVariableContributor(),
-                new FavoriteCommandVariableContributor(favoriteBalanceQueryPort)
+                new PointCommandVariableContributor(pointQueryPort)
         ));
         return new CommandService(commandPort, templateRenderer, variableRegistry, validator());
     }

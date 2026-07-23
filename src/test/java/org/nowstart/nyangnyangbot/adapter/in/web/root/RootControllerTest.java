@@ -42,7 +42,7 @@ class RootControllerTest {
 
     @Test
     @DisplayName("인증된 사용자는 호감도 목록으로 리다이렉트한다")
-    void index_ShouldRedirectToFavoriteList_WhenAuthenticated() {
+    void index_ShouldRedirectToPointList_WhenAuthenticated() {
         // 준비
         UsernamePasswordAuthenticationToken authenticated =
                 new UsernamePasswordAuthenticationToken("channel-1", "N/A", List.of());
@@ -51,6 +51,6 @@ class RootControllerTest {
         ModelAndView result = rootController.index(authenticated);
 
         // 검증
-        then(result.getViewName()).isEqualTo("redirect:/favorite/list");
+        then(result.getViewName()).isEqualTo("redirect:/points/list");
     }
 }

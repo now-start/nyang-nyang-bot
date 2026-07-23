@@ -18,7 +18,7 @@ public class GoogleSheetSyncScheduler {
     @Scheduled(cron = "0 0 4 * * ?")
     public void syncDatabase() {
         log.info("[DBSync][START]");
-        syncGoogleSheetUseCase.updateFavorite();
+        syncGoogleSheetUseCase.synchronizePoints();
         log.info("[DBSync][END]");
     }
 }

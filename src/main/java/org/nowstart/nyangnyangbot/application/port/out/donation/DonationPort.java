@@ -1,26 +1,36 @@
 package org.nowstart.nyangnyangbot.application.port.out.donation;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import java.util.Map;
+import java.time.Instant;
+import java.util.Optional;
 
 public interface DonationPort {
 
-    boolean existsByDonationEventId(String donationEventId);
+    Optional<DonationResult> findByIngestionKey(String ingestionKey);
 
-    void save(SaveDonationCommand command);
+    DonationResult save(SaveDonationCommand command);
 
     record SaveDonationCommand(
-            String donationEventId,
+            String ingestionKey,
             String donationType,
-            String channelId,
-            String donatorChannelId,
-            String donatorNickname,
-            @NotNull(message = "payAmount is required")
-            @PositiveOrZero(message = "payAmount must not be negative")
-            Long payAmount,
-            String donationText,
-            Map<String, String> emojis
+            String recipientUserId,
+            String donorUserId,
+            String donorDisplayName,
+            long amount,
+            String message,
+            Instant receivedAt
+    ) {
+    }
+
+    record DonationResult(
+            Long id,
+            String ingestionKey,
+            String donationType,
+            String recipientUserId,
+            String donorUserId,
+            String donorDisplayName,
+            long amount,
+            String message,
+            Instant receivedAt
     ) {
     }
 }

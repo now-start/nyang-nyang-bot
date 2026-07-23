@@ -24,7 +24,7 @@ class GoogleSheetClientAdapterTest {
         ));
 
         then(rows).containsExactly(
-                new GoogleSheetRow("정상", "user-1", 10)
+                new GoogleSheetRow("정상", "user-1", 10L)
         );
     }
 

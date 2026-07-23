@@ -42,7 +42,7 @@ public interface HandleChzzkEventUseCase {
     }
 
     record DonationReceived(
-            String donationEventId,
+            String ingestionKey,
             String donationType,
             String channelId,
             String donatorChannelId,

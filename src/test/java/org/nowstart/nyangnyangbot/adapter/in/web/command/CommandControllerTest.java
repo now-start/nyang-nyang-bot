@@ -142,7 +142,7 @@ class CommandControllerTest {
                         "치즈냥"
                 ),
                 new ManageCommandUseCase.VariableResult(
-                        "favorite.balance",
+                        "point.balance",
                         "호감도",
                         "명령어를 호출한 시청자의 현재 호감도",
                         "100"
@@ -172,7 +172,7 @@ class CommandControllerTest {
         CommandForm form = new CommandForm(
                 null,
                 "!호감도",
-                "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
+                "{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛",
                 true,
                 null
         );
@@ -191,7 +191,7 @@ class CommandControllerTest {
         org.mockito.BDDMockito.then(manageCommandUseCase).should().validate(captor.capture());
         then(captor.getValue().trigger()).isEqualTo("!호감도");
         then(captor.getValue().messageTemplate())
-                .isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛");
+                .isEqualTo("{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛");
         then(captor.getValue().userCooldownSeconds()).isEqualTo(30);
     }
 

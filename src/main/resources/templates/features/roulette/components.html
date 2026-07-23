@@ -7,7 +7,7 @@
 
 <div class="vstack gap-3" th:fragment="roulette-overlay-panel">
     <div th:replace="~{features/roulette/components :: roulette-overlay-section}"></div>
-    <div th:replace="~{features/roulette/components :: roulette-events-loader}"></div>
+    <div th:replace="~{features/roulette/components :: roulette-runs-loader}"></div>
 </div>
 
 <div class="row g-3"
@@ -15,463 +15,345 @@
      hx-trigger="load"
      id="roulette-config-region"
      th:fragment="roulette-config-loader"
-     th:hx-get="@{|/admin/roulette/tables${selectedTableId == null ? '' : '?selectedTableId=' + selectedTableId}|}">
+     th:hx-get="@{/admin/roulette/configs(selectedConfigId=${selectedConfigId})}">
     <div class="col-12">
         <div class="card"><div class="card-body text-secondary">룰렛 설정을 불러오는 중입니다.</div></div>
     </div>
 </div>
 
-<div class="row g-3"
-     id="roulette-config-region"
-     th:fragment="roulette-config-region">
+<div class="row g-3" id="roulette-config-region" th:fragment="roulette-config-region">
     <div class="alert mb-0"
          role="alert"
          th:classappend="${rouletteTone == 'success'} ? ' alert-success' :
            (${rouletteTone == 'danger'} ? ' alert-danger' : ' alert-secondary')"
          th:if="${rouletteMessage}"
          th:text="${rouletteMessage}">상태 메시지</div>
+
     <div class="col-12">
         <section class="card">
             <div class="card-body d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
                 <div>
                     <span class="small text-secondary">관리자 · 룰렛</span>
-                    <h3 class="h5 fw-bold text-white mb-1">룰렛 관리</h3>
-                    <p class="text-secondary mb-0">채널에서 사용할 단일 룰렛의 확률, 항목, 활성 상태를 관리합니다.</p>
+                    <h3 class="h5 fw-bold text-white mb-1">룰렛 설정 관리</h3>
+                    <p class="text-secondary mb-0">활성화한 설정과 옵션은 변경하지 않고, 변경이 필요하면 새 설정을 만듭니다.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2"
-                     th:with="validation=${table == null ? null : table.validation},
+                     th:with="validation=${config == null ? null : config.validation},
                               probabilityTotal=${validation == null or validation.probabilityTotal == null ? 0 : validation.probabilityTotal}">
                     <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
                           th:text="${'확률 ' + #numbers.formatDecimal(probabilityTotal / 100.0, 1, 2) + '%'}">확률 100%</span>
                     <span class="badge rounded-pill"
-                          th:classappend="${validation != null and validation.hasLosingItem == true} ? ' bg-success-subtle text-success' : ' bg-danger-subtle text-danger'"
-                          th:text="${validation != null and validation.hasLosingItem == true ? '꽝 포함' : '꽝 없음'}">꽝 포함</span>
+                          th:classappend="${validation != null and validation.hasLosingOption == true} ? ' bg-success-subtle text-success' : ' bg-danger-subtle text-danger'"
+                          th:text="${validation != null and validation.hasLosingOption == true ? '꽝 포함' : '꽝 없음'}">꽝 포함</span>
                     <span class="badge rounded-pill"
                           th:classappend="${validation != null and validation.activatable == true} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
-                          th:text="${validation != null and validation.activatable == true ? '활성화 가능' : '검증 필요'}">활성화 가능</span>
-                    <span class="badge rounded-pill"
-                          th:classappend="${table != null and table.active == true} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary'"
-                          th:text="${table != null and table.active == true ? '활성 상태' : '비활성 상태'}">활성 상태</span>
+                          th:text="${validation != null and validation.activatable == true ? '검증 통과' : '검증 필요'}">검증 통과</span>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary"
+                          th:text="${config == null ? '설정 없음' : config.status}">DRAFT</span>
                 </div>
             </div>
         </section>
     </div>
-    <div th:replace="~{features/roulette/components :: roulette-table-section}"></div>
-    <div th:replace="~{features/roulette/components :: roulette-item-form-section}"></div>
-    <div th:replace="~{features/roulette/components :: roulette-detail-section}"></div>
-</div>
 
-<div class="col-12 col-xl-4" th:fragment="roulette-table-section">
-    <section class="card h-100">
-        <div class="card-body vstack gap-3">
-    <div class="d-flex align-items-center justify-content-between">
-        <h3 class="h6 fw-bold text-white mb-0">단일 룰렛 설정</h3>
-        <span class="small text-secondary">하나만 생성 · 사용</span>
-    </div>
-    <form class="vstack gap-2"
-          hx-disabled-elt="find button"
-          hx-swap="outerHTML"
-          hx-target="#roulette-config-region"
-          id="roulette-table-form"
-          th:hx-post="@{/admin/roulette/tables}"
-          th:if="${tables == null or #lists.isEmpty(tables)}">
-        <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
-        <div class="mb-0" id="roulette-title-field">
-            <label class="form-label small text-secondary" for="roulette-title">테이블 이름</label>
-            <input class="form-control"
-                   id="roulette-title"
-                   maxlength="80"
-                   name="title"
-                   placeholder="테이블 이름"
-                   required
-                   type="text">
-        </div>
-        <div class="mb-0">
-            <label class="form-label small text-secondary" for="roulette-command">후원 키워드</label>
-            <input class="form-control fw-semibold text-success"
-                   id="roulette-command"
-                   maxlength="40"
-                   name="command"
-                   placeholder="!룰렛"
-                   required
-                   type="text"
-                   value="!룰렛">
-        </div>
-        <div class="mb-0">
-            <label class="form-label small text-secondary" for="roulette-price">1회 금액 (치즈)</label>
-            <input class="form-control tabular-nums"
-                   id="roulette-price"
-                   min="1"
-                   name="pricePerRound"
-                   required
-                   type="number"
-                   value="1000">
-        </div>
-        <input name="highRoundThreshold" type="hidden" value="100">
-        <th:block th:replace="~{components/buttons :: action-button('roulette-create', '룰렛 생성', 'primary', 'submit', null)}"></th:block>
-    </form>
-    <div class="border rounded-3 p-3 text-secondary small"
-         th:if="${tables != null and !#lists.isEmpty(tables)}">
-        등록된 룰렛 하나를 계속 사용합니다. 후원 키워드와 금액은 현재 룰렛 기준으로 운영됩니다.
-    </div>
-    <div th:replace="~{features/roulette/components :: roulette-table-list}"></div>
-        </div>
-    </section>
-</div>
-
-<div class="vstack gap-2"
-     id="roulette-table-list"
-     th:fragment="roulette-table-list">
-    <div class="text-secondary small" th:if="${tables == null or #lists.isEmpty(tables)}">등록된 룰렛이 없습니다.</div>
-    <button class="btn text-start d-flex justify-content-between align-items-center gap-2"
-            th:classappend="${table.id == selectedTableId ? ' btn-outline-success active' : ' btn-outline-secondary'}"
-            th:data-table-id="${table.id}"
-            th:each="table : ${tables}"
-            th:hx-get="@{/admin/roulette/tables/{id}/detail(id=${table.id})}"
-            hx-swap="outerHTML"
-            hx-target="#roulette-config-region"
-            type="button">
-        <span th:text="${table.title == null ? '룰렛 #' + table.id : table.title}">기본 룰렛</span>
-        <strong class="tabular-nums" th:text="${(table.command == null ? '-' : table.command) + ' · ' + #numbers.formatInteger(table.pricePerRound == null ? 0 : table.pricePerRound, 0, 'COMMA')}">!룰렛 · 1,000</strong>
-    </button>
-</div>
-
-<form class="col-12 col-xl-4"
-      hx-disabled-elt="find button"
-      hx-swap="outerHTML"
-      hx-target="#roulette-config-region"
-      id="roulette-item-form"
-      th:fragment="roulette-item-form-section"
-      th:hx-post="@{/admin/roulette/items}">
-    <section class="card h-100">
-        <div class="card-body vstack gap-3">
-    <h3 class="h6 fw-bold text-white mb-0">항목 추가</h3>
-    <div class="text-secondary small" th:if="${table == null}">룰렛 테이블을 선택해 주세요.</div>
-    <th:block th:if="${table != null}">
-        <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
-        <input id="roulette-selected-table-id" name="tableId" th:value="${table.id}" type="hidden">
-        <div class="vstack gap-2">
-            <div class="mb-0" id="roulette-item-label-field">
-                <label class="form-label small text-secondary" for="roulette-item-label">항목 이름</label>
-                <input class="form-control"
-                       id="roulette-item-label"
-                       maxlength="80"
-                       name="label"
-                       placeholder="항목 이름"
-                       required
-                       type="text">
-            </div>
-            <div class="mb-0">
-                <label class="form-label small text-secondary" for="roulette-item-probability">확률(%)</label>
-                <input class="form-control tabular-nums"
-                       id="roulette-item-probability"
-                       max="100"
-                       min="0"
-                       name="probabilityPercent"
-                       placeholder="확률(%)"
-                       required
-                       step="0.01"
-                       type="number">
-            </div>
-            <div class="form-check mb-0">
-                <input class="form-check-input" id="roulette-item-losing" name="losingItem" type="checkbox" value="true">
-                <label class="form-check-label" for="roulette-item-losing">꽝 항목</label>
-            </div>
-            <div class="mb-0">
-                <label class="form-label small text-secondary" for="roulette-item-reward">보상 (결과 타입)</label>
-                <select class="form-select" id="roulette-item-reward" name="rewardType">
-                    <option value="FAVORITE">호감도</option>
-                    <option value="COUPON">쿠폰</option>
-                    <option value="MISSION">미션</option>
-                    <option value="PARTICIPATION_PRIORITY">참여 우선권</option>
-                    <option value="CUSTOM">기타</option>
-                </select>
-            </div>
-            <div class="mb-0">
-                <label class="form-label small text-secondary" for="roulette-item-conversion">반영 방식</label>
-                <select class="form-select" id="roulette-item-conversion" name="conversionMode">
-                    <option value="AUTO">자동 반영</option>
-                    <option value="MANUAL">수동 처리</option>
-                    <option value="NONE">반영 없음</option>
-                </select>
-            </div>
-            <div th:replace="~{components/forms :: number-field('roulette-item-value', 'exchangeFavoriteValue', '호감도 값', '', null, null, null)}"></div>
-            <th:block th:replace="~{components/buttons :: action-button('roulette-item-add', '추가', 'primary', 'submit', null)}"></th:block>
-        </div>
-    </th:block>
-        </div>
-    </section>
-</form>
-
-<div class="col-12 col-xl-4"
-     id="roulette-detail"
-     th:data-table-id="${table == null ? '' : table.id}"
-     th:fragment="roulette-detail-section">
-    <section class="card h-100">
-        <div class="card-body vstack gap-3">
-    <div class="text-secondary small" th:if="${table == null}">룰렛 테이블을 선택해 주세요.</div>
-    <th:block th:if="${table != null}">
-        <div>
-            <h3 class="h6 fw-bold text-white mb-2">현재 항목</h3>
-            <div class="vstack gap-2" id="roulette-item-list">
-                <div class="text-secondary small" th:if="${table.items == null or #lists.isEmpty(table.items)}">등록된 항목이 없습니다.</div>
-                <div class="border rounded-3 p-2" th:each="item : ${table.items}">
-                    <div class="d-flex justify-content-between align-items-center gap-2">
-                        <strong class="d-flex align-items-center gap-2">
-                            <span th:text="${item.label == null ? '-' : item.label}">항목</span>
-                            <span class="badge rounded-pill bg-secondary-subtle text-secondary" th:if="${item.losingItem}">필수 · 꽝</span>
-                        </strong>
-                        <span class="badge rounded-pill bg-success-subtle text-success tabular-nums"
-                              th:text="${#numbers.formatDecimal((item.probabilityBasisPoints == null ? 0 : item.probabilityBasisPoints) / 100.0, 1, 2) + '%'}">10%</span>
+    <div class="col-12 col-xl-4">
+        <section class="card h-100">
+            <div class="card-body vstack gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="h6 fw-bold text-white mb-0">설정 버전</h3>
+                    <span class="small text-secondary">새 버전 생성</span>
+                </div>
+                <form class="vstack gap-2"
+                      hx-disabled-elt="find button"
+                      hx-swap="outerHTML"
+                      hx-target="#roulette-config-region"
+                      id="roulette-config-form"
+                      th:hx-post="@{/admin/roulette/configs}">
+                    <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-title">설정 이름</label>
+                        <input class="form-control" id="roulette-title" maxlength="100" name="title" required type="text">
                     </div>
-                    <div class="small text-secondary">
-                        <span th:if="${item.losingItem}">꽝</span>
-                        <th:block th:unless="${item.losingItem}">
-                            <span th:text="${item.rewardType}">FAVORITE</span>
-                            <span class="text-success fw-semibold tabular-nums"
-                                  th:if="${item.exchangeFavoriteValue != null}"
-                                  th:text="${item.exchangeFavoriteValue > 0 ? '+' + item.exchangeFavoriteValue : item.exchangeFavoriteValue}">+1</span>
-                            <span th:if="${item.exchangeFavoriteValue == null}" th:text="${item.conversionMode}">AUTO</span>
-                        </th:block>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-trigger-token">후원 키워드</label>
+                        <input class="form-control fw-semibold text-success" id="roulette-trigger-token" maxlength="20"
+                               name="triggerToken" required type="text" value="!룰렛">
+                    </div>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-price">1회 금액 (치즈)</label>
+                        <input class="form-control tabular-nums" id="roulette-price" min="1" name="pricePerRound"
+                               required type="number" value="1000">
+                    </div>
+                    <input name="highRoundThreshold" type="hidden" value="100">
+                    <button class="btn btn-success" id="roulette-create" type="submit">새 설정 생성</button>
+                </form>
+
+                <div class="vstack gap-2" id="roulette-config-list">
+                    <div class="text-secondary small" th:if="${configs == null or #lists.isEmpty(configs)}">등록된 설정이 없습니다.</div>
+                    <button class="btn text-start d-flex justify-content-between align-items-center gap-2"
+                            th:classappend="${entry.id == selectedConfigId ? ' btn-outline-success active' : ' btn-outline-secondary'}"
+                            th:each="entry : ${configs}"
+                            th:hx-get="@{/admin/roulette/configs/{id}/detail(id=${entry.id})}"
+                            hx-swap="outerHTML"
+                            hx-target="#roulette-config-region"
+                            type="button">
+                        <span th:text="${entry.title}">기본 룰렛</span>
+                        <span class="small text-secondary" th:text="${entry.status}">DRAFT</span>
+                    </button>
+                    <div class="d-flex justify-content-between gap-2"
+                         th:if="${configsPage != null and configsPage.totalPages > 1}">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                hx-swap="outerHTML"
+                                hx-target="#roulette-config-region"
+                                th:disabled="${configsPage.first}"
+                                th:hx-get="@{/admin/roulette/configs(page=${configsPage.number - 1},size=${configsPage.size})}"
+                                type="button">이전</button>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                hx-swap="outerHTML"
+                                hx-target="#roulette-config-region"
+                                th:disabled="${configsPage.last}"
+                                th:hx-get="@{/admin/roulette/configs(page=${configsPage.number + 1},size=${configsPage.size})}"
+                                type="button">다음</button>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div th:replace="~{features/roulette/components :: roulette-status}"></div>
-        <div th:replace="~{features/roulette/components :: roulette-actions}"></div>
-    </th:block>
-        </div>
-    </section>
-</div>
-
-<div class="vstack gap-3" th:fragment="roulette-status" th:with="validation=${table.validation},
-        isValid=${validation != null and validation.activatable == true}">
-    <div aria-live="polite"
-         class="alert d-flex flex-wrap align-items-center gap-3 mb-0"
-         role="status"
-         th:classappend="${isValid} ? ' alert-success' : ' alert-danger'">
-        <span>확률 합계
-            <strong class="tabular-nums" id="roulette-probability-total"
-                    th:text="${#numbers.formatDecimal((validation == null or validation.probabilityTotal == null ? 0 : validation.probabilityTotal) / 100.0, 1, 2) + '%'}">0%</strong>
-        </span>
-        <span id="roulette-losing-state"
-              th:text="${validation != null and validation.hasLosingItem ? '꽝 포함 OK' : '꽝 항목 없음'}">꽝 항목 없음</span>
-        <span id="roulette-active-state" th:text="${table.active ? '활성 상태' : '비활성 상태'}">비활성 상태</span>
-        <span class="fw-bold" th:if="${isValid}">활성화 가능</span>
+        </section>
     </div>
-    <div class="d-flex flex-wrap gap-2" id="roulette-reasons" th:unless="${isValid}">
-        <span class="badge rounded-pill bg-danger-subtle text-danger"
-              th:each="reason : ${validation == null ? null : validation.reasons}"
-              th:text="${reason == 'command is required' ? '후원 키워드를 입력해야 합니다.' :
-                (reason == 'pricePerRound is required' ? '1회 금액을 입력해야 합니다.' :
-                (reason == 'probability total must be 10000' ? '확률 합계가 100%가 되어야 합니다.' :
-                (reason == 'losing item is required' ? '꽝 항목이 하나 이상 필요합니다.' : reason)))}">사유</span>
+
+    <div class="col-12 col-xl-4">
+        <section class="card h-100">
+            <div class="card-body vstack gap-3">
+                <h3 class="h6 fw-bold text-white mb-0">옵션 추가</h3>
+                <div class="text-secondary small" th:if="${config == null}">룰렛 설정을 선택해 주세요.</div>
+                <div class="alert alert-secondary mb-0" th:if="${config != null and config.status != 'DRAFT'}">
+                    활성화된 설정은 변경할 수 없습니다. 새 설정을 만들어 주세요.
+                </div>
+                <form class="vstack gap-2"
+                      hx-disabled-elt="find button"
+                      hx-swap="outerHTML"
+                      hx-target="#roulette-config-region"
+                      id="roulette-option-form"
+                      th:hx-post="@{/admin/roulette/options}"
+                      th:if="${config != null and config.status == 'DRAFT'}">
+                    <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+                    <input name="configId" th:value="${config.id}" type="hidden">
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-option-label">옵션 이름</label>
+                        <input class="form-control" id="roulette-option-label" maxlength="100" name="label" required type="text">
+                    </div>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-option-probability">확률(%)</label>
+                        <input class="form-control tabular-nums" id="roulette-option-probability" max="100" min="0"
+                               name="probabilityPercent" required step="0.01" type="number">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" id="roulette-option-losing" name="losing" type="checkbox" value="true">
+                        <label class="form-check-label" for="roulette-option-losing">꽝 옵션</label>
+                    </div>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-option-reward">보상 타입</label>
+                        <select class="form-select" id="roulette-option-reward" name="rewardType">
+                            <option value="POINT">호감도 포인트</option>
+                            <option value="COUPON">쿠폰</option>
+                            <option value="MISSION">미션</option>
+                            <option value="PARTICIPATION_PRIORITY">참여 우선권</option>
+                            <option value="CUSTOM">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-option-conversion">반영 방식</label>
+                        <select class="form-select" id="roulette-option-conversion" name="conversionMode">
+                            <option value="AUTO">자동 반영</option>
+                            <option value="MANUAL">수동 처리</option>
+                            <option value="NONE">반영 없음</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small text-secondary" for="roulette-option-point-delta">포인트 증감</label>
+                        <input class="form-control tabular-nums" id="roulette-option-point-delta" name="pointDelta" type="number">
+                    </div>
+                    <button class="btn btn-success" id="roulette-option-add" type="submit">옵션 추가</button>
+                </form>
+            </div>
+        </section>
     </div>
-    <div th:replace="~{features/roulette/components :: roulette-simulation}"></div>
+
+    <div class="col-12 col-xl-4">
+        <section class="card h-100">
+            <div class="card-body vstack gap-3">
+                <div class="text-secondary small" th:if="${config == null}">룰렛 설정을 선택해 주세요.</div>
+                <th:block th:if="${config != null}">
+                    <div>
+                        <h3 class="h6 fw-bold text-white mb-1" th:text="${config.title}">기본 룰렛</h3>
+                        <div class="small text-secondary tabular-nums"
+                             th:text="${config.triggerToken + ' · ' + #numbers.formatInteger(config.pricePerRound, 0, 'COMMA') + '치즈'}">!룰렛 · 1,000치즈</div>
+                    </div>
+                    <div class="vstack gap-2" id="roulette-option-list">
+                        <div class="text-secondary small" th:if="${config.options == null or #lists.isEmpty(config.options)}">등록된 옵션이 없습니다.</div>
+                        <div class="border rounded-3 p-2" th:each="option : ${config.options}">
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <strong>
+                                    <span th:text="${option.label}">옵션</span>
+                                    <span class="badge rounded-pill bg-secondary-subtle text-secondary" th:if="${option.losing}">꽝</span>
+                                </strong>
+                                <span class="badge rounded-pill bg-success-subtle text-success tabular-nums"
+                                      th:text="${#numbers.formatDecimal(option.probabilityBasisPoints / 100.0, 1, 2) + '%'}">10%</span>
+                            </div>
+                            <div class="small text-secondary" th:unless="${option.losing}">
+                                <span th:text="${option.rewardType}">POINT</span>
+                                <span class="text-success fw-semibold tabular-nums" th:if="${option.pointDelta != null}"
+                                      th:text="${option.pointDelta > 0 ? '+' + option.pointDelta : option.pointDelta}">+1</span>
+                                <span th:if="${option.pointDelta == null}" th:text="${option.conversionMode}">MANUAL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert mb-0"
+                         th:classappend="${config.validation.activatable} ? ' alert-success' : ' alert-danger'">
+                        <div class="d-flex flex-wrap gap-3">
+                            <span>확률 합계 <strong class="tabular-nums"
+                                th:text="${#numbers.formatDecimal(config.validation.probabilityTotal / 100.0, 1, 2) + '%'}">100%</strong></span>
+                            <span th:text="${config.validation.hasLosingOption ? '꽝 포함' : '꽝 없음'}">꽝 포함</span>
+                        </div>
+                        <div class="small mt-1" th:each="reason : ${config.validation.reasons}" th:text="${reason}">검증 사유</div>
+                    </div>
+
+                    <div th:replace="~{features/roulette/components :: roulette-simulation}"></div>
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+                        <button class="btn btn-outline-secondary"
+                                th:hx-get="@{/admin/roulette/configs/{id}/simulation(id=${config.id},iterations=10000)}"
+                                hx-swap="outerHTML"
+                                hx-target="#roulette-simulation"
+                                type="button">1만 회 시뮬레이션</button>
+                        <button class="btn btn-outline-secondary"
+                                hx-disabled-elt="this"
+                                th:hx-post="@{/admin/roulette/configs/{id}/archive(id=${config.id})}"
+                                hx-swap="outerHTML"
+                                hx-target="#roulette-config-region"
+                                th:if="${config.status == 'ACTIVE'}"
+                                type="button">보관</button>
+                        <button class="btn btn-success"
+                                hx-disabled-elt="this"
+                                th:disabled="${!config.validation.activatable}"
+                                th:hx-post="@{/admin/roulette/configs/{id}/activate(id=${config.id})}"
+                                hx-swap="outerHTML"
+                                hx-target="#roulette-config-region"
+                                th:if="${config.status == 'DRAFT'}"
+                                type="button">활성화</button>
+                    </div>
+                </th:block>
+            </div>
+        </section>
+    </div>
 </div>
 
 <div class="vstack gap-2" id="roulette-simulation" th:fragment="roulette-simulation">
+    <div class="small text-secondary" th:if="${simulation != null}"
+         th:text="${'총 ' + #numbers.formatInteger(simulation.iterations, 0, 'COMMA') + '회'}">총 10,000회</div>
     <div class="d-flex justify-content-between gap-2 border rounded-3 px-3 py-2 tabular-nums"
-         th:each="item : ${simulation == null ? null : simulation.items}">
-        <span th:text="${item.label}">항목</span>
-        <strong th:text="${item.count + '회 · ' + #numbers.formatDecimal((item.ratio == null ? 0 : item.ratio) * 100, 1, 2) + '%'}">0회 · 0%</strong>
+         th:each="entry : ${simulation == null ? null : simulation.options}">
+        <span th:text="${entry.label}">옵션</span>
+        <strong th:text="${entry.count + '회 · ' + #numbers.formatDecimal(entry.ratio * 100, 1, 2) + '%'}">0회 · 0%</strong>
     </div>
-</div>
-
-<div class="d-flex flex-wrap gap-2 justify-content-end" th:fragment="roulette-actions"
-     th:with="canActivate=${table.validation != null and table.validation.activatable == true}">
-    <button class="btn btn-outline-secondary"
-            id="roulette-simulate"
-            th:hx-get="@{/admin/roulette/tables/{id}/simulation(id=${table.id}, iterations=10000)}"
-            hx-swap="outerHTML"
-            hx-target="#roulette-simulation"
-            type="button">1만 회 시뮬레이션</button>
-    <button class="btn btn-outline-secondary"
-            hx-disabled-elt="this"
-            id="roulette-deactivate"
-            th:hx-post="@{/admin/roulette/tables/{id}/deactivate(id=${table.id})}"
-            hx-swap="outerHTML"
-            hx-target="#roulette-config-region"
-            type="button">비활성화</button>
-    <button class="btn btn-success"
-            hx-disabled-elt="this"
-            id="roulette-activate"
-            th:disabled="${!canActivate}"
-            th:hx-post="@{/admin/roulette/tables/{id}/activate(id=${table.id})}"
-            hx-swap="outerHTML"
-            hx-target="#roulette-config-region"
-            type="button">활성화</button>
 </div>
 
 <section class="card" th:fragment="roulette-overlay-section">
     <div class="card-body vstack gap-3">
-    <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
-        <div>
-            <span class="small text-secondary">관리자 · OBS</span>
-            <h3 class="h5 fw-bold text-white mb-1">오버레이 토큰 관리</h3>
-            <p class="text-secondary mb-0">발급된 URL은 OBS 브라우저 소스에 등록하고, 최근 룰렛 이벤트를 재송출할 수 있습니다.</p>
-        </div>
-        <button class="btn btn-success align-self-start"
-                hx-disabled-elt="this"
-                hx-post="/admin/overlay/roulette/token"
-                hx-swap="outerHTML"
-                hx-target="#overlay-token-url-field"
-                id="overlay-token-issue"
-                th:hx-post="@{/admin/overlay/roulette/token}"
-                type="button">새 토큰 발급</button>
-    </div>
-    <div class="row g-3">
-        <div class="col-12 col-xl-7">
-            <div th:replace="~{features/roulette/components :: overlay-token-url-field(${tokenUrl})}"></div>
-        </div>
-        <div class="col-12 col-xl-5">
-            <div class="border rounded-3 p-3 h-100 vstack gap-2">
-                <div class="d-flex align-items-center justify-content-between gap-2">
-                    <strong class="text-white">토큰 운영 메모</strong>
-                    <span class="badge rounded-pill bg-secondary-subtle text-secondary">local</span>
-                </div>
-                <p class="small text-secondary mb-0">현재 구현은 발급 직후 URL만 노출합니다. 저장된 토큰 목록, 재발급, 폐기는 토큰 저장소 조회 API가 붙으면 같은 영역에 확장합니다.</p>
+        <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
+            <div>
+                <span class="small text-secondary">관리자 · OBS</span>
+                <h3 class="h5 fw-bold text-white mb-1">오버레이 토큰 관리</h3>
+                <p class="text-secondary mb-0">발급된 URL은 OBS 브라우저 소스에 등록하고, 최근 룰렛 실행을 재송출할 수 있습니다.</p>
             </div>
+            <button class="btn btn-success align-self-start"
+                    hx-disabled-elt="this"
+                    hx-swap="outerHTML"
+                    hx-target="#overlay-token-url-field"
+                    id="overlay-token-issue"
+                    th:hx-post="@{/admin/overlay/roulette/token}"
+                    type="button">새 토큰 발급</button>
         </div>
-    </div>
-    <form class="row g-2 align-items-end"
-          hx-disabled-elt="find button"
-          hx-swap="innerHTML"
-          hx-target="#roulette-overlay-feedback"
-          id="overlay-replay-form"
-          method="post"
-          th:hx-post="@{/admin/overlay/roulette/events/replay}">
-        <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
-        <div class="col-12 col-md-auto mb-0">
-            <label class="form-label small text-secondary" for="overlay-replay-event-id">재송출 실행 ID</label>
-            <input class="form-control tabular-nums"
-                   id="overlay-replay-event-id"
-                   min="1"
-                   name="rouletteEventId"
-                   required
-                   type="number">
-        </div>
-        <div class="col-12 col-md-auto">
-            <button class="btn btn-outline-secondary"
-                    id="overlay-replay"
-                    type="submit">이벤트 재송출</button>
-        </div>
-    </form>
-    <p class="small text-secondary mb-0">재송출은 오버레이 표시만 다시 수행하며, 원장에 재반영되지 않습니다.</p>
-    <div class="mt-2" id="roulette-overlay-feedback"></div>
+        <div th:replace="~{features/roulette/components :: overlay-token-url-field(${tokenUrl})}"></div>
+        <form class="row g-2 align-items-end"
+              hx-disabled-elt="find button"
+              hx-swap="innerHTML"
+              hx-target="#roulette-overlay-feedback"
+              id="overlay-replay-form"
+              th:hx-post="@{/admin/overlay/roulette/runs/replay}">
+            <th:block th:replace="~{components/forms :: csrf-field}"></th:block>
+            <div class="col-12 col-md-auto">
+                <label class="form-label small text-secondary" for="overlay-replay-run-id">재송출 실행 ID</label>
+                <input class="form-control tabular-nums" id="overlay-replay-run-id" min="1" name="rouletteRunId" required type="number">
+            </div>
+            <div class="col-12 col-md-auto">
+                <button class="btn btn-outline-secondary" id="overlay-replay" type="submit">실행 재송출</button>
+            </div>
+        </form>
+        <p class="small text-secondary mb-0">재송출은 표시 작업만 새로 만들며 포인트 원장을 다시 반영하지 않습니다.</p>
+        <div id="roulette-overlay-feedback"></div>
     </div>
 </section>
 
 <div class="mb-0" id="overlay-token-url-field" th:fragment="overlay-token-url-field(tokenUrl)">
-    <div class="alert alert-success d-flex align-items-center gap-2 mb-3"
-         th:if="${tokenUrl != null and !#strings.isEmpty(tokenUrl)}">
-        <span aria-hidden="true" class="rounded-circle bg-success" style="width:6px;height:6px;"></span>
-        <strong>새 토큰이 발급되었습니다.</strong>
-        <span>이 값은 다시 볼 수 없습니다.</span>
+    <div class="alert alert-success mb-3" th:if="${tokenUrl != null and !#strings.isEmpty(tokenUrl)}">
+        <strong>새 토큰이 발급되었습니다.</strong> 이 값은 다시 볼 수 없습니다.
     </div>
     <label class="form-label small text-secondary" for="overlay-token-url">OBS 오버레이 URL</label>
-    <input class="form-control font-monospace text-success"
-           id="overlay-token-url"
-           name="overlay-token-url"
-           placeholder="OBS 오버레이 URL"
-           readonly
-           th:value="${tokenUrl}"
-           type="text">
-    <p class="small text-secondary mb-0 mt-1" th:if="${tokenUrl != null and !#strings.isEmpty(tokenUrl)}">
-        이 값은 다시 볼 수 없습니다 — 지금 복사해 OBS 브라우저 소스에 등록해 주세요.</p>
+    <input class="form-control font-monospace text-success" id="overlay-token-url" readonly th:value="${tokenUrl}" type="text">
 </div>
 
 <div class="card"
      hx-swap="outerHTML"
      hx-trigger="load"
-     id="roulette-events-region"
-     th:fragment="roulette-events-loader"
-     th:hx-get="@{/admin/roulette/events}">
+     id="roulette-runs-region"
+     th:fragment="roulette-runs-loader"
+     th:hx-get="@{/admin/roulette/runs}">
     <div class="card-body text-secondary">최근 실행 기록을 불러오는 중입니다.</div>
 </div>
 
 <div class="card"
      hx-swap="outerHTML"
-     hx-trigger="roulette-event-refresh from:body"
-     id="roulette-events-region"
-     th:fragment="roulette-events"
-     th:hx-get="@{/admin/roulette/events}">
+     hx-trigger="roulette-run-refresh from:body"
+     id="roulette-runs-region"
+     th:fragment="roulette-runs"
+     th:hx-get="@{/admin/roulette/runs}">
     <div class="card-body">
-    <div class="d-flex align-items-baseline justify-content-between mb-3">
-        <h3 class="h6 fw-bold text-white mb-0">최근 실행 · 재송출</h3>
-        <span class="small text-secondary">재송출은 원장에 재반영되지 않습니다</span>
-    </div>
-    <div id="roulette-event-list">
-        <div class="text-secondary small" th:if="${eventsPage == null or #lists.isEmpty(eventsPage.content)}">룰렛 실행 기록이 없습니다.</div>
-        <th:block th:if="${eventsPage != null and !#lists.isEmpty(eventsPage.content)}">
-            <div class="table-responsive">
-                <table class="table table-dark table-sm align-middle mb-0">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>닉네임</th>
-                        <th class="text-end">후원</th>
-                        <th class="text-end">횟수</th>
-                        <th>상태</th>
-                        <th class="text-end">재송출</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="event : ${eventsPage.content}">
-                        <td class="tabular-nums" th:text="${'#' + event.eventId}">#1</td>
-                        <td th:text="${event.nickNameSnapshot == null ? event.userId : event.nickNameSnapshot}">치즈냥</td>
-                        <td class="text-end tabular-nums" th:text="${#numbers.formatInteger(event.donationAmount == null ? 0 : event.donationAmount, 0, 'COMMA')}">1,000</td>
-                        <td class="text-end tabular-nums" th:text="${#numbers.formatInteger(event.roundCount == null ? 0 : event.roundCount, 0, 'COMMA') + '회'}">1회</td>
-                        <td>
-                            <span class="badge rounded-pill"
-                                  th:classappend="${event.status == 'FAILED'} ? ' bg-danger-subtle text-danger' :
-                                    (${event.status == 'APPLIED' or event.status == 'CONFIRMED'} ? ' bg-success-subtle text-success' : ' bg-secondary-subtle text-secondary')"
-                                  th:text="${event.status == 'CONFIRMED' ? '확정' :
-                                    (event.status == 'APPLIED' ? '반영' :
-                                    (event.status == 'PARTIALLY_APPLIED' ? '부분 반영' :
-                                    (event.status == 'FAILED' ? '실패' : event.status)))}">반영</span>
-                        </td>
-                        <td class="text-end">
-                            <button th:class="${event.status == 'FAILED'} ? 'btn btn-success btn-sm' : 'btn btn-outline-secondary btn-sm'"
-                                    th:data-event-id="${event.eventId}"
-                                    th:hx-post="@{/admin/overlay/roulette/events/{eventId}/replay(eventId=${event.eventId})}"
-                                    hx-disabled-elt="this"
-                                    hx-swap="innerHTML"
-                                    hx-target="#roulette-overlay-feedback"
-                                    type="button">재송출</button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </th:block>
-    </div>
-    <div class="d-flex flex-wrap gap-2 justify-content-end mt-3" id="roulette-event-pagination">
-        <button class="btn btn-outline-secondary btn-sm"
-                th:disabled="${eventsPage == null or eventsPage.number <= 0}"
-                th:hx-get="@{/admin/roulette/events(page=${eventsPage == null ? 0 : eventsPage.number - 1}, size=${eventsPage == null ? 5 : eventsPage.size})}"
-                hx-swap="outerHTML"
-                hx-target="#roulette-events-region"
-                th:if="${eventsPage != null and eventsPage.totalPages > 1}"
-                type="button">이전</button>
-        <button class="btn btn-outline-secondary btn-sm tabular-nums"
-                th:classappend="${pageNumber == eventsPage.number ? ' active' : ''}"
-                th:each="pageNumber : ${eventsPage == null ? null : #numbers.sequence(0, eventsPage.totalPages - 1)}"
-                th:hx-get="@{/admin/roulette/events(page=${pageNumber}, size=${eventsPage.size})}"
-                hx-swap="outerHTML"
-                hx-target="#roulette-events-region"
-                th:if="${eventsPage != null and eventsPage.totalPages > 1}"
-                th:text="${pageNumber + 1}"
-                type="button">1</button>
-        <button class="btn btn-outline-secondary btn-sm"
-                th:disabled="${eventsPage == null or eventsPage.number >= eventsPage.totalPages - 1}"
-                th:hx-get="@{/admin/roulette/events(page=${eventsPage == null ? 0 : eventsPage.number + 1}, size=${eventsPage == null ? 5 : eventsPage.size})}"
-                hx-swap="outerHTML"
-                hx-target="#roulette-events-region"
-                th:if="${eventsPage != null and eventsPage.totalPages > 1}"
-                type="button">다음</button>
-    </div>
+        <div class="d-flex align-items-baseline justify-content-between mb-3">
+            <h3 class="h6 fw-bold text-white mb-0">최근 실행 · 재송출</h3>
+            <span class="small text-secondary">재송출은 원장에 재반영되지 않습니다</span>
+        </div>
+        <div class="text-secondary small" th:if="${runsPage == null or #lists.isEmpty(runsPage.content)}">룰렛 실행 기록이 없습니다.</div>
+        <div class="table-responsive" th:if="${runsPage != null and !#lists.isEmpty(runsPage.content)}">
+            <table class="table table-dark table-sm align-middle mb-0">
+                <thead><tr><th>ID</th><th>닉네임</th><th class="text-end">후원</th><th class="text-end">횟수</th><th>상태</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="run : ${runsPage.content}">
+                    <td class="tabular-nums" th:text="${'#' + run.runId}">#1</td>
+                    <td th:text="${run.donorDisplayName == null ? run.userId : run.donorDisplayName}">치즈냥</td>
+                    <td class="text-end tabular-nums" th:text="${#numbers.formatInteger(run.donationAmount, 0, 'COMMA')}">1,000</td>
+                    <td class="text-end tabular-nums" th:text="${run.roundCount + '회'}">1회</td>
+                    <td><span class="badge rounded-pill bg-secondary-subtle text-secondary" th:text="${run.status}">APPLIED</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-outline-secondary btn-sm"
+                                th:hx-post="@{/admin/overlay/roulette/runs/{runId}/replay(runId=${run.runId})}"
+                                hx-disabled-elt="this"
+                                hx-swap="innerHTML"
+                                hx-target="#roulette-overlay-feedback"
+                                type="button">재송출</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-content-end mt-3" th:if="${runsPage != null and runsPage.totalPages > 1}">
+            <button class="btn btn-outline-secondary btn-sm"
+                    th:disabled="${runsPage.number <= 0}"
+                    th:hx-get="@{/admin/roulette/runs(page=${runsPage.number - 1},size=${runsPage.size})}"
+                    hx-swap="outerHTML" hx-target="#roulette-runs-region" type="button">이전</button>
+            <button class="btn btn-outline-secondary btn-sm"
+                    th:disabled="${runsPage.number >= runsPage.totalPages - 1}"
+                    th:hx-get="@{/admin/roulette/runs(page=${runsPage.number + 1},size=${runsPage.size})}"
+                    hx-swap="outerHTML" hx-target="#roulette-runs-region" type="button">다음</button>
+        </div>
     </div>
 </div>
 </body>

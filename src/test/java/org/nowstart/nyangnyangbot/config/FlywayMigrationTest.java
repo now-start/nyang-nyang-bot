@@ -15,7 +15,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 class FlywayMigrationTest {
 
     private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1";
+            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
 
     @Test
     @DisplayName("Flyway SQL 마이그레이션을 신규 DB에 적용할 수 있다")
@@ -38,61 +38,57 @@ class FlywayMigrationTest {
                         + "where \"success\" = true and \"version\" is not null",
                 Integer.class
         );
-        Integer rouletteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'roulette_table'",
+        Integer businessTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables "
+                        + "where table_schema = 'PUBLIC' and lower(table_name) <> 'flyway_schema_history'",
                 Integer.class
         );
-        Integer ledgerColumnCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'favorite_history' "
-                        + "and lower(column_name) = 'idempotency_key'",
+        Integer canonicalTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'PUBLIC' "
+                        + "and lower(table_name) in ('user_account', 'oauth_credential', 'command', "
+                        + "'command_execution', 'timer_message', 'point_ledger_entry', "
+                        + "'point_adjustment_preset', 'weekly_chat_count', 'donation', "
+                        + "'roulette_config', 'roulette_option', 'roulette_run', 'roulette_round', "
+                        + "'reward_grant', 'overlay_access_token', 'overlay_display_job')",
                 Integer.class
         );
-        Integer sourceTypeColumnCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'favorite_history' "
-                        + "and lower(column_name) = 'source_type'",
+        Integer legacyTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'PUBLIC' "
+                        + "and (lower(table_name) like 'next_%' "
+                        + "or lower(table_name) like 'migration_%' "
+                        + "or lower(table_name) in ('authorization_account', 'favorite_account', "
+                        + "'favorite_history', 'favorite_adjustment', 'weekly_chat_rank', "
+                        + "'roulette_table', 'roulette_item', 'roulette_event', "
+                        + "'roulette_round_result', 'user_upbo', 'upbo_template', "
+                        + "'overlay_token', 'overlay_display_event', 'subscription'))",
                 Integer.class
         );
-        Integer subscriptionMonthColumnCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'subscription' "
-                        + "and lower(column_name) = 'subscription_month'",
+        Integer commandExecutionCount = jdbcTemplate.queryForObject(
+                "select count(*) from command_execution",
                 Integer.class
         );
-        Integer legacyMonthColumnCount = jdbcTemplate.queryForObject(
+        Integer commandExecutionColumnCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'subscription' "
-                        + "and lower(column_name) = 'month'",
+                        + "where lower(table_name) = 'command_execution' "
+                        + "and lower(column_name) in ('execution_policy_snapshot', "
+                        + "'cooldown_seconds_snapshot', 'calendar_date')",
                 Integer.class
         );
         Integer lastLoginColumnCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'authorization_account' "
+                        + "where lower(table_name) = 'user_account' "
                         + "and lower(column_name) = 'last_login_at'",
-                Integer.class
-        );
-        Integer favoriteHistoryLastSeenColumnCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'authorization_account' "
-                        + "and lower(column_name) = 'favorite_history_last_seen_at'",
-                Integer.class
-        );
-        Integer oldFavoriteTableCount = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'favorite_entity'",
                 Integer.class
         );
         Integer foreignKeyCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.referential_constraints",
                 Integer.class
         );
-        Integer weeklyUniqueIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "uk_weekly_chat_rank_week_user");
-        Integer weeklyWeekIndexCount = indexExists(jdbcTemplate, "weekly_chat_rank", "idx_weekly_chat_rank_week");
         Integer legacyCommandColumnCount = jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
                         + "where lower(table_name) = 'command' "
-                        + "and lower(column_name) in "
-                        + "('type', 'action_key', 'timer_interval_minutes', 'timer_min_chat_count', 'required_role')",
+                        + "and lower(column_name) in ('active', 'created_by', 'updated_by', "
+                        + "'create_date', 'modify_date')",
                 Integer.class
         );
         Integer legacyCommandActionCount = jdbcTemplate.queryForObject(
@@ -108,21 +104,17 @@ class FlywayMigrationTest {
                 String.class
         );
 
-        assertThat(migrationCount).isEqualTo(6);
-        assertThat(rouletteTableCount).isEqualTo(1);
-        assertThat(ledgerColumnCount).isEqualTo(1);
-        assertThat(sourceTypeColumnCount).isEqualTo(1);
-        assertThat(subscriptionMonthColumnCount).isEqualTo(1);
-        assertThat(legacyMonthColumnCount).isZero();
+        assertThat(migrationCount).isEqualTo(13);
+        assertThat(businessTableCount).isEqualTo(16);
+        assertThat(canonicalTableCount).isEqualTo(16);
+        assertThat(legacyTableCount).isZero();
+        assertThat(commandExecutionCount).isZero();
+        assertThat(commandExecutionColumnCount).isEqualTo(3);
         assertThat(lastLoginColumnCount).isEqualTo(1);
-        assertThat(favoriteHistoryLastSeenColumnCount).isZero();
-        assertThat(oldFavoriteTableCount).isZero();
-        assertThat(foreignKeyCount).isZero();
-        assertThat(weeklyUniqueIndexCount).isEqualTo(1);
-        assertThat(weeklyWeekIndexCount).isEqualTo(1);
+        assertThat(foreignKeyCount).isEqualTo(25);
         assertThat(legacyCommandColumnCount).isZero();
         assertThat(legacyCommandActionCount).isZero();
-        assertThat(favoriteTemplate).isEqualTo("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛");
+        assertThat(favoriteTemplate).isEqualTo("{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛");
         assertThat(rouletteResultTemplate).isEqualTo("{viewer.nickname}님의 {roulette.recentSummary}");
     }
 
@@ -147,6 +139,7 @@ class FlywayMigrationTest {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
+                .target("6")
                 .load()
                 .migrate();
 
@@ -188,6 +181,7 @@ class FlywayMigrationTest {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
+                .target("4")
                 .load()
                 .migrate();
 
@@ -229,6 +223,7 @@ class FlywayMigrationTest {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
+                .target("4")
                 .load()
                 .migrate();
 
@@ -274,6 +269,7 @@ class FlywayMigrationTest {
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
+                .target("4")
                 .load()
                 .migrate();
 
@@ -341,6 +337,7 @@ class FlywayMigrationTest {
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .baselineVersion("1")
+                .target("2")
                 .load()
                 .migrate();
 

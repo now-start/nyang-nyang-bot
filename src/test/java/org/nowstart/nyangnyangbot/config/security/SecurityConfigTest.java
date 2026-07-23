@@ -85,7 +85,7 @@ class SecurityConfigTest {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(get("/favorite/list"))
+            mockMvc.perform(get("/points/list"))
                     .andExpect(status().isFound())
                     .andExpect(header().string("Location", "/oauth2/authorization/chzzk"));
         }
@@ -104,7 +104,7 @@ class SecurityConfigTest {
     }
 
     @Test
-    void authenticatedRootRedirectsToFavoriteList() throws Exception {
+    void authenticatedRootRedirectsToPointList() throws Exception {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
@@ -112,7 +112,7 @@ class SecurityConfigTest {
         // 실행 및 검증
             mockMvc.perform(get("/").session(session("user", Collections.emptyList())))
                     .andExpect(status().isFound())
-                    .andExpect(header().string("Location", "/favorite/list"));
+                    .andExpect(header().string("Location", "/points/list"));
         }
     }
 
@@ -133,7 +133,7 @@ class SecurityConfigTest {
         // 검증
                     .andExpect(status().isOk());
 
-            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+            BDDMockito.then(syncGoogleSheetUseCase).should().synchronizePoints();
         }
     }
 
@@ -169,7 +169,7 @@ class SecurityConfigTest {
         // 검증
                     .andExpect(status().isOk());
 
-            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+            BDDMockito.then(syncGoogleSheetUseCase).should().synchronizePoints();
         }
     }
 
@@ -183,9 +183,9 @@ class SecurityConfigTest {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(get("/favorite/list"))
+            mockMvc.perform(get("/points/list"))
                     .andExpect(status().isFound())
-                    .andExpect(header().string("Location", "/local/test-login?redirect=%2Ffavorite%2Flist"));
+                    .andExpect(header().string("Location", "/local/test-login?redirect=%2Fpoints%2Flist"));
         }
     }
 
@@ -223,7 +223,7 @@ class SecurityConfigTest {
         // 검증
                     .andExpect(status().isOk());
 
-            BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+            BDDMockito.then(syncGoogleSheetUseCase).should().synchronizePoints();
         }
     }
 
@@ -282,20 +282,20 @@ class SecurityConfigTest {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(get("/overlay/roulette/events/next"))
+            mockMvc.perform(get("/overlay/roulette/jobs/next"))
                     .andExpect(status().isNotFound());
         }
     }
 
     @Test
-    void otherOverlayEventPostRejectsMissingCsrfToken() throws Exception {
+    void overlayJobPostAllowsBearerAuthenticatedRequestWithoutCsrfToken() throws Exception {
         // 준비
         try (AnnotationConfigWebApplicationContext context = createWebContext()) {
             MockMvc mockMvc = createMockMvc(context);
 
         // 실행 및 검증
-            mockMvc.perform(post("/overlay/roulette/events/1/replay"))
-                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/overlay/roulette/jobs/1/displayed"))
+                    .andExpect(status().isNotFound());
         }
     }
 

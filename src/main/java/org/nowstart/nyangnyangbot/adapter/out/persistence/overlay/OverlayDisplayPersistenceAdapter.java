@@ -1,113 +1,155 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayJob;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayJobRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRun;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.DisplayRoundProjection;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
 public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
-    private final OverlayDisplayEventRepository overlayDisplayEventRepository;
-    private final RouletteEventRepository rouletteEventRepository;
-    private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private static final int MAX_DISPLAY_ROUNDS = 5;
+
+    private final OverlayDisplayJobRepository overlayDisplayJobRepository;
+    private final RouletteRoundRepository rouletteRoundRepository;
+    private final RouletteRunRepository rouletteRunRepository;
     private final OutboundContractValidator contractValidator;
 
     @Override
-    public void enqueueRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
-        RouletteEvent rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        overlayDisplayEventRepository.save(OverlayDisplayEvent.builder()
-                .rouletteEvent(rouletteEvent)
-                .status(OverlayDisplayStatus.PENDING)
-                .expiresAt(expiresAt)
-                .build());
+    @Transactional
+    public DisplayJobResult enqueue(
+            Long rouletteRunId,
+            String idempotencyKey,
+            Instant expiresAt,
+            Instant createdAt
+    ) {
+        RouletteRun run = requireRunForUpdate(rouletteRunId);
+        return overlayDisplayJobRepository.findByIdempotencyKey(idempotencyKey)
+                .map(this::displayJobResult)
+                .orElseGet(() -> createJob(run, null, idempotencyKey, expiresAt, createdAt));
     }
 
     @Override
-    public DisplayEventResult replayRouletteEvent(Long rouletteEventId, LocalDateTime expiresAt) {
-        RouletteEvent rouletteEvent = rouletteEventRepository.findById(rouletteEventId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette event not found"));
-        Long replayOf = overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(rouletteEventId)
+    @Transactional
+    public DisplayJobResult replay(
+            Long rouletteRunId,
+            String idempotencyKey,
+            Instant expiresAt,
+            Instant createdAt
+    ) {
+        RouletteRun run = requireRunForUpdate(rouletteRunId);
+        OverlayDisplayJob replayOf = overlayDisplayJobRepository
+                .findFirstByRouletteRun_DonationIdOrderByCreatedAtDescIdDesc(rouletteRunId)
+                .orElseThrow(() -> new IllegalArgumentException("overlay display job not found"));
+        return createJob(run, replayOf, idempotencyKey, expiresAt, createdAt);
+    }
+
+    @Override
+    @Transactional
+    public void markExpiredMissed(Instant current) {
+        overlayDisplayJobRepository.markExpiredMissed(
+                current,
+                OverlayDisplayStatus.MISSED,
+                List.of(OverlayDisplayStatus.PENDING, OverlayDisplayStatus.DISPLAYING)
+        );
+    }
+
+    @Override
+    @Transactional
+    public Optional<DisplayJobResult> claimNext(Instant current, String claimToken, Instant claimExpiresAt) {
+        return overlayDisplayJobRepository.findClaimableForUpdate(
+                        current,
+                        OverlayDisplayStatus.PENDING,
+                        OverlayDisplayStatus.DISPLAYING,
+                        PageRequest.of(0, 1)
+                )
                 .stream()
                 .findFirst()
-                .map(OverlayDisplayEvent::getId)
-                .orElse(null);
-        OverlayDisplayEvent saved = overlayDisplayEventRepository.save(OverlayDisplayEvent.builder()
-                .rouletteEvent(rouletteEvent)
-                .replayOfDisplayEventId(replayOf)
-                .status(OverlayDisplayStatus.PENDING)
-                .expiresAt(expiresAt)
-                .build());
-        return toModel(saved);
-    }
-
-    @Override
-    public void markPendingExpiredBefore(LocalDateTime current) {
-        overlayDisplayEventRepository.findByStatusAndExpiresAtBefore(OverlayDisplayStatus.PENDING, current)
-                .forEach(OverlayDisplayEvent::markMissed);
-    }
-
-    @Override
-    public Optional<DisplayEventResult> claimNextPending(LocalDateTime current) {
-        return overlayDisplayEventRepository.findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
-                        OverlayDisplayStatus.PENDING,
-                        current
-                )
-                .map(displayEvent -> {
-                    displayEvent.markDisplaying(current);
-                    return toModel(displayEvent);
+                .map(job -> {
+                    job.claim(claimToken, current, claimExpiresAt);
+                    overlayDisplayJobRepository.flush();
+                    return displayJobResult(job);
                 });
     }
 
     @Override
-    public void markDisplayed(Long displayEventId, LocalDateTime displayedAt) {
-        OverlayDisplayEvent displayEvent = overlayDisplayEventRepository.findById(displayEventId)
-                .orElseThrow(() -> new IllegalArgumentException("overlay display event not found"));
-        displayEvent.markDisplayed(displayedAt);
+    @Transactional
+    public void markDisplayed(Long displayJobId, String claimToken, Instant displayedAt) {
+        OverlayDisplayJob job = overlayDisplayJobRepository.findByIdForUpdate(displayJobId)
+                .orElseThrow(() -> new IllegalArgumentException("overlay display job not found"));
+        job.markDisplayed(claimToken, displayedAt);
     }
 
-    private DisplayEventResult toModel(OverlayDisplayEvent displayEvent) {
-        RouletteEvent event = displayEvent.getRouletteEvent();
-        List<DisplayRoundResult> rounds = rouletteRoundResultRepository
-                .findByRouletteEventIdOrderByRoundNoAsc(event.getId())
+    private DisplayJobResult createJob(
+            RouletteRun run,
+            OverlayDisplayJob replayOf,
+            String idempotencyKey,
+            Instant expiresAt,
+            Instant createdAt
+    ) {
+        if (!expiresAt.isAfter(createdAt)) {
+            throw new IllegalArgumentException("overlay display expiry must be after creation");
+        }
+        OverlayDisplayJob saved = overlayDisplayJobRepository.save(OverlayDisplayJob.builder()
+                .rouletteRun(run)
+                .replayOfJob(replayOf)
+                .idempotencyKey(idempotencyKey)
+                .status(OverlayDisplayStatus.PENDING)
+                .expiresAt(expiresAt)
+                .createdAt(createdAt)
+                .updatedAt(createdAt)
+                .build());
+        return displayJobResult(saved);
+    }
+
+    private RouletteRun requireRunForUpdate(Long rouletteRunId) {
+        return rouletteRunRepository.findByIdForUpdate(rouletteRunId)
+                .orElseThrow(() -> new IllegalArgumentException("roulette run not found"));
+    }
+
+    private DisplayJobResult displayJobResult(OverlayDisplayJob job) {
+        RouletteRun run = job.getRouletteRun();
+        long roundCount = rouletteRoundRepository.countByRouletteRun_DonationId(run.getDonationId());
+        List<DisplayRoundResult> rounds = rouletteRoundRepository
+                .findDisplayRoundsByRunId(run.getDonationId(), PageRequest.of(0, MAX_DISPLAY_ROUNDS))
                 .stream()
-                .map(this::displayRoundResult)
+                .map(this::roundResult)
                 .toList();
-        return contractValidator.persistenceResult("overlay.displayEventResult", new DisplayEventResult(
-                displayEvent.getId(),
-                event.getId(),
-                event.getNickNameSnapshot(),
-                event.getRoundCount(),
-                displayEvent.getExpiresAt(),
+        return contractValidator.persistenceResult("overlay.displayJob", new DisplayJobResult(
+                job.getId(),
+                run.getDonationId(),
+                run.getDonation().getDonorDisplayName(),
+                job.getClaimToken(),
+                job.getExpiresAt(),
+                roundCount,
                 rounds
         ));
     }
 
-    private DisplayRoundResult displayRoundResult(RouletteRoundResult entity) {
-        return contractValidator.persistenceResult("overlay.displayRoundResult", new DisplayRoundResult(
-                entity.getId(),
-                entity.getRoundNo(),
-                entity.getItemLabel(),
-                entity.isLosingItem(),
-                entity.getRewardType(),
-                entity.getConversionMode(),
-                entity.getExchangeFavoriteValue(),
-                entity.getStatus(),
-                entity.getLedgerId(),
-                entity.getUserUpboId(),
-                entity.getFailureReason()
+    private DisplayRoundResult roundResult(DisplayRoundProjection round) {
+        return contractValidator.persistenceResult("overlay.displayRound", new DisplayRoundResult(
+                round.getId(),
+                round.getRoundNo(),
+                round.getOptionLabel(),
+                round.getLosing(),
+                round.getRewardType(),
+                round.getConversionMode(),
+                round.getPointDelta(),
+                round.getStatus(),
+                round.getFailureReason()
         ));
     }
 }

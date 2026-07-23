@@ -1,365 +1,120 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.doReturn;
+import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ApprovedCommand;
+import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ExecuteCommand;
+import org.nowstart.nyangnyangbot.application.port.in.presence.RecordPresenceChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.timer.RecordTimerChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteBalanceQueryPort;
-import org.nowstart.nyangnyangbot.application.service.attendance.AttendanceService;
-import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
-import org.nowstart.nyangnyangbot.application.service.command.CommandVariableRegistry;
-import org.nowstart.nyangnyangbot.application.service.command.CoreCommandVariableContributor;
-import org.nowstart.nyangnyangbot.application.service.command.FavoriteCommandVariableContributor;
-import org.nowstart.nyangnyangbot.application.service.weeklychat.WeeklyChatRankService;
-import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
 
-    private final CommandTemplateRenderer templateRenderer = new CommandTemplateRenderer();
-
     @Mock
-    private AttendanceService attendanceService;
-
+    private RecordPresenceChatUseCase presenceChatUseCase;
     @Mock
-    private WeeklyChatRankService weeklyChatRankService;
-
+    private RecordWeeklyChatUseCase weeklyChatUseCase;
     @Mock
-    private RecordTimerChatUseCase recordTimerChatUseCase;
-
+    private RecordTimerChatUseCase timerChatUseCase;
+    @Mock
+    private ExecuteCommandUseCase executeCommandUseCase;
     @Mock
     private CommandPort commandPort;
-
     @Mock
     private ChzzkClientPort chzzkClientPort;
 
-    @Mock
-    private FavoriteBalanceQueryPort favoriteBalanceQueryPort;
-
-    private ChatService chatService;
+    private ChatService service;
 
     @BeforeEach
     void setUp() {
-        chatService = service();
-    }
-
-    @Test
-    void handle_ShouldRecordAttendanceAndWeeklyChatRank() {
-        // 준비
-        ChatReceived chatDto = chat("안녕", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(attendanceService).should().recordChatUser(any(ChatReceived.class));
-        BDDMockito.then(weeklyChatRankService).should().recordChat(any(ChatReceived.class));
-        BDDMockito.then(recordTimerChatUseCase).should().recordChatActivity();
-        BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    void handle_ShouldNotCountChatWithoutSenderForTimer() {
-        ChatReceived chatDto = new ChatReceived("channel-1", null, null, "안녕", null, 1711111111L);
-
-        chatService.handle(chatDto);
-
-        BDDMockito.then(recordTimerChatUseCase).shouldHaveNoInteractions();
-    }
-
-    @Test
-    void handle_ShouldNotCountOrExecuteBroadcasterSelfMessage() {
-        ChatReceived chatDto = new ChatReceived("channel-1", "channel-1", null, "치하", null, 1711111111L);
-
-        chatService.handle(chatDto);
-
-        BDDMockito.then(recordTimerChatUseCase).shouldHaveNoInteractions();
-        BDDMockito.then(commandPort).shouldHaveNoInteractions();
-        BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    void handle_ShouldSuppressSameUserCommandWithinCooldown() {
-        // 준비
-        chatService = BDDMockito.spy(service());
-        doReturn(1_000L, 2_000L, 32_000L).when(chatService).currentTimeMillis();
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!호감도", command(
-                        10L,
-                        "!호감도",
-                        "{viewer.nickname}",
-                        30
-                )));
-        ChatReceived chatDto = chat("!호감도", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-        chatService.handle(chatDto);
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(chzzkClientPort)
-                .should(BDDMockito.times(2))
-                .sendMessage(new MessageCommand("치즈냥"));
-    }
-
-    @Test
-    void handle_ShouldExecuteBareTrigger() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("치하", command(
-                        11L,
-                        "치하",
-                        "안녕하세요 {viewer.nickname}님!",
-                        30
-                )));
-        ChatReceived chatDto = chat("치하", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("안녕하세요 치즈냥님!"));
-    }
-
-    @Test
-    void handle_ShouldLogExecutedCommandForDashboard() {
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("치하", command(
-                        11L,
-                        "치하",
-                        "안녕하세요 {viewer.nickname}님!",
-                        30
-                )));
-        Logger logger = (Logger) LoggerFactory.getLogger(ChatService.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            chatService.handle(chat("치하", "치즈냥"));
-        } finally {
-            logger.detachAppender(appender);
-            appender.stop();
-        }
-
-        ILoggingEvent event = appender.list.stream()
-                .filter(logEvent -> logEvent.getFormattedMessage().startsWith("event=command.executed"))
-                .findFirst()
-                .orElseThrow();
-        Map<String, Object> attributes = event.getKeyValuePairs().stream()
-                .collect(Collectors.toMap(pair -> pair.key, pair -> pair.value));
-        assertThat(event.getFormattedMessage())
-                .isEqualTo("event=command.executed commandId=11 trigger=치하 nickname=치즈냥");
-        assertThat(attributes)
-                .containsEntry("event", "command.executed")
-                .containsEntry("command_id", 11L)
-                .containsEntry("command_trigger", "치하")
-                .containsEntry("user_nickname", "치즈냥");
-    }
-
-    @Test
-    void handle_ShouldRenderNamespacedViewerAndInvocationVariables() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!인사", command(
-                        20L,
-                        "!인사",
-                        "{viewer.nickname} {invocation.command} {invocation.args} "
-                                + "{invocation.arg1} {invocation.arg2}",
-                        30
-                )));
-        ChatReceived chatDto = chat("!인사 첫번째 두번째", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand(
-                "치즈냥 !인사 첫번째 두번째 첫번째 두번째"
-        ));
-    }
-
-    @Test
-    void handle_ShouldNotResolveVariablesAgainWhenCommandIsSuppressedByCooldown() {
-        // 준비
-        chatService = BDDMockito.spy(service());
-        doReturn(1_000L, 2_000L).when(chatService).currentTimeMillis();
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!호감도", command(
-                        25L,
-                        "!호감도",
-                        "{favorite.balance}",
-                        30
-                )));
-        given(favoriteBalanceQueryPort.findBalanceByUserId("user-1")).willReturn(Optional.of(100));
-        ChatReceived chatDto = chat("!호감도", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(favoriteBalanceQueryPort).should(BDDMockito.times(1))
-                .findBalanceByUserId("user-1");
-        BDDMockito.then(chzzkClientPort).should(BDDMockito.times(1))
-                .sendMessage(new MessageCommand("100"));
-    }
-
-    @Test
-    void handle_ShouldSkipBlankRenderedResponse() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!인자", command(
-                        26L,
-                        "!인자",
-                        "{invocation.args}",
-                        30
-                )));
-        ChatReceived chatDto = chat("!인자", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(chzzkClientPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    void handle_ShouldRenderZeroWhenFavoriteDoesNotExistUsingReadOnlyQuery() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!호감도", command(
-                        30L,
-                        "!호감도",
-                        "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
-                        30
-                )));
-        given(favoriteBalanceQueryPort.findBalanceByUserId("user-1")).willReturn(Optional.empty());
-        ChatReceived chatDto = chat("!호감도", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(favoriteBalanceQueryPort).should().findBalanceByUserId("user-1");
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand(
-                "치즈냥님의 호감도는 0 입니다.💛"
-        ));
-    }
-
-    @Test
-    void handle_ShouldNotQueryUnusedFavoriteContributor() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!인사", command(
-                        40L,
-                        "!인사",
-                        "안녕하세요 {viewer.nickname}님!",
-                        30
-                )));
-        ChatReceived chatDto = chat("!인사", "치즈냥");
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(favoriteBalanceQueryPort).shouldHaveNoInteractions();
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand(
-                "안녕하세요 치즈냥님!"
-        ));
-    }
-
-    @Test
-    void handle_ShouldUseSenderIdWhenProfileMissing() {
-        // 준비
-        given(commandPort.findActiveCommandsByTrigger())
-                .willReturn(Map.of("!인사", command(
-                        50L,
-                        "!인사",
-                        "{viewer.nickname}",
-                        30
-                )));
-        ChatReceived chatDto = new ChatReceived(
-                "channel-1",
-                "user-1",
-                null,
-                "!인사",
-                null,
-                1711111111L
-        );
-
-        // 실행
-        chatService.handle(chatDto);
-
-        // 검증
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("user-1"));
-    }
-
-    private ChatService service() {
-        CommandVariableRegistry variableRegistry = new CommandVariableRegistry(List.of(
-                new CoreCommandVariableContributor(),
-                new FavoriteCommandVariableContributor(favoriteBalanceQueryPort)
-        ));
-        return new ChatService(
-                attendanceService,
-                weeklyChatRankService,
-                recordTimerChatUseCase,
+        service = new ChatService(
+                presenceChatUseCase,
+                weeklyChatUseCase,
+                timerChatUseCase,
+                executeCommandUseCase,
                 commandPort,
-                chzzkClientPort,
-                templateRenderer,
-                variableRegistry
+                chzzkClientPort
         );
     }
 
-    private ChatReceived chat(String content, String nickname) {
+    @Test
+    void handle_PrefiltersOrdinaryChatWithoutStartingCommandTransaction() {
+        ChatReceived chat = chat("그냥 채팅");
+        given(commandPort.findActiveCommandsByTrigger()).willReturn(Map.of());
+
+        service.handle(chat);
+
+        verify(presenceChatUseCase).recordChatUser(chat);
+        verify(weeklyChatUseCase).recordChat(chat);
+        verify(timerChatUseCase).recordChatActivity();
+        verify(executeCommandUseCase, never()).execute(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void handle_SendsOnlyAfterApprovedCommandReturnsFromTransactionalUseCase() {
+        ChatReceived chat = chat("!인사 첫번째 두번째");
+        given(commandPort.findActiveCommandsByTrigger()).willReturn(Map.of("!인사", org.mockito.Mockito.mock(
+                CommandRecord.class
+        )));
+        given(executeCommandUseCase.execute(org.mockito.ArgumentMatchers.any())).willReturn(Optional.of(
+                new ApprovedCommand(7L, "!인사", "안녕하세요", 10, 3, 0, 0)
+        ));
+
+        service.handle(chat);
+
+        ArgumentCaptor<ExecuteCommand> captor = ArgumentCaptor.forClass(ExecuteCommand.class);
+        verify(executeCommandUseCase).execute(captor.capture());
+        then(captor.getValue().args()).isEqualTo("첫번째 두번째");
+        then(captor.getValue().arg1()).isEqualTo("첫번째");
+        then(captor.getValue().arg2()).isEqualTo("두번째");
+        verify(chzzkClientPort).sendMessage(new MessageCommand("안녕하세요"));
+    }
+
+    @Test
+    void handle_AuxiliaryAggregationFailureDoesNotDropCommand() {
+        ChatReceived chat = chat("!인사");
+        doThrow(new IllegalStateException("weekly unavailable")).when(weeklyChatUseCase).recordChat(chat);
+        doThrow(new IllegalStateException("timer unavailable")).when(timerChatUseCase).recordChatActivity();
+        given(commandPort.findActiveCommandsByTrigger()).willReturn(Map.of(
+                "!인사", org.mockito.Mockito.mock(CommandRecord.class)
+        ));
+        given(executeCommandUseCase.execute(org.mockito.ArgumentMatchers.any())).willReturn(Optional.of(
+                new ApprovedCommand(7L, "!인사", "안녕하세요", 1, 1, 0, 0)
+        ));
+
+        service.handle(chat);
+
+        verify(executeCommandUseCase).execute(org.mockito.ArgumentMatchers.any());
+        verify(chzzkClientPort).sendMessage(new MessageCommand("안녕하세요"));
+    }
+
+    private ChatReceived chat(String content) {
         return new ChatReceived(
                 "channel-1",
                 "user-1",
-                new ChatReceived.Profile(nickname, null, true),
+                new ChatReceived.Profile("치즈냥", null, true),
                 content,
                 null,
                 1711111111L
-        );
-    }
-
-    private CommandRecord command(
-            Long id,
-            String trigger,
-            String messageTemplate,
-            Integer cooldownSeconds
-    ) {
-        return new CommandRecord(
-                id,
-                trigger,
-                messageTemplate,
-                true,
-                cooldownSeconds,
-                "system",
-                "system",
-                LocalDateTime.now(),
-                LocalDateTime.now()
         );
     }
 }

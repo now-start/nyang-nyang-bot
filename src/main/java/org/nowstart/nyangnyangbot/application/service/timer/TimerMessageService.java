@@ -1,6 +1,8 @@
 package org.nowstart.nyangnyangbot.application.service.timer;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class TimerMessageService implements ManageTimerMessageUseCase, RecordTimerChatUseCase, RunTimerMessagesUseCase {
 
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final int DEFAULT_INTERVAL_MINUTES = 30;
     private static final int DEFAULT_MIN_CHAT_COUNT = 10;
     private static final int MIN_INTERVAL_MINUTES = 5;
@@ -99,7 +102,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         if (request == null) {
             throw new IllegalArgumentException("timerMessage is required");
         }
-        TimerMessageRecord current = timerMessagePort.findById(timerMessageId)
+        TimerMessageRecord current = timerMessagePort.findByIdForUpdate(timerMessageId)
                 .orElseThrow(() -> new IllegalArgumentException("timer message not found"));
         String template = request.messageTemplate() == null ? current.messageTemplate() : request.messageTemplate();
         Integer interval = request.intervalMinutes() == null ? current.intervalMinutes() : request.intervalMinutes();
@@ -175,6 +178,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     @Override
+    @Transactional
     public void recordChatActivity() {
         timerMessagePort.incrementActiveChatCounts();
     }
@@ -295,8 +299,11 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         return key != null && key.startsWith("time.");
     }
 
-    private CommandVariableContext timerContext(LocalDateTime now) {
-        return new CommandVariableContext(null, null, null, null, null, null, now);
+    private CommandVariableContext timerContext(LocalDateTime utcNow) {
+        LocalDateTime seoulNow = utcNow.atZone(ZoneOffset.UTC)
+                .withZoneSameInstant(SEOUL)
+                .toLocalDateTime();
+        return new CommandVariableContext(null, null, null, null, null, null, seoulNow);
     }
 
     private TimerMessageResult result(TimerMessageRecord record) {
@@ -307,12 +314,12 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 record.minChatCount(),
                 record.active(),
                 record.chatCountSinceLastSend(),
-                record.lastSentAt(),
-                record.nextRunAt(),
+                toSeoul(record.lastSentAt()),
+                toSeoul(record.nextRunAt()),
                 record.createdBy(),
                 record.updatedBy(),
-                record.createDate(),
-                record.modifyDate()
+                toSeoul(record.createDate()),
+                toSeoul(record.modifyDate())
         );
     }
 
@@ -321,11 +328,17 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     private String actor(String value) {
-        return value == null || value.isBlank() ? "system" : value;
+        return value == null || value.isBlank() || "system".equals(value) ? null : value;
+    }
+
+    private LocalDateTime toSeoul(LocalDateTime utc) {
+        return utc == null
+                ? null
+                : utc.atZone(ZoneOffset.UTC).withZoneSameInstant(SEOUL).toLocalDateTime();
     }
 
     LocalDateTime currentDateTime() {
-        return LocalDateTime.now();
+        return LocalDateTime.now(ZoneOffset.UTC);
     }
 
     String newClaimToken() {

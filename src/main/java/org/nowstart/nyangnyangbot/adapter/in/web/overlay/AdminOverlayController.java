@@ -44,30 +44,30 @@ public class AdminOverlayController {
     }
 
     @Operation(summary = "룰렛 오버레이 재송출")
-    @PostMapping("/events/replay")
+    @PostMapping("/runs/replay")
     public String replayFromForm(
-            @RequestParam(required = false) Long rouletteEventId,
+            @RequestParam(required = false) Long rouletteRunId,
             Model model
     ) {
-        return replayInternal(rouletteEventId, model);
+        return replayInternal(rouletteRunId, model);
     }
 
     @Operation(summary = "룰렛 오버레이 재송출")
-    @PostMapping("/events/{rouletteEventId}/replay")
+    @PostMapping("/runs/{rouletteRunId}/replay")
     public String replay(
-            @PathVariable Long rouletteEventId,
+            @PathVariable Long rouletteRunId,
             Model model
     ) {
-        return replayInternal(rouletteEventId, model);
+        return replayInternal(rouletteRunId, model);
     }
 
-    private String replayInternal(Long rouletteEventId, Model model) {
+    private String replayInternal(Long rouletteRunId, Model model) {
         try {
-            manageOverlayDisplayUseCase.replayRouletteEvent(rouletteEventId);
+            manageOverlayDisplayUseCase.replayRouletteRun(rouletteRunId);
             model.addAttribute("message", "오버레이 재송출 대기열에 추가했습니다.");
             model.addAttribute("tone", "success");
-        } catch (RuntimeException e) {
-            log.warn("Failed to replay roulette overlay event. rouletteEventId={}", rouletteEventId, e);
+        } catch (RuntimeException exception) {
+            log.warn("Failed to replay roulette overlay run. rouletteRunId={}", rouletteRunId, exception);
             model.addAttribute("message", "오버레이 재송출에 실패했습니다.");
             model.addAttribute("tone", "danger");
         }

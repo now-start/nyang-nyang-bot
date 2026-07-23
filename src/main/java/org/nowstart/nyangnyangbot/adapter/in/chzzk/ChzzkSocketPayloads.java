@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.in.chzzk;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.List;
 import java.util.Map;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
@@ -66,8 +65,6 @@ final class ChzzkSocketPayloads {
     }
 
     record DonationPayload(
-            @JsonAlias({"donationId", "eventId", "id"})
-            String donationEventId,
             String donationType,
             String channelId,
             String donatorChannelId,
@@ -77,9 +74,9 @@ final class ChzzkSocketPayloads {
             Map<String, String> emojis
     ) {
 
-        DonationReceived toEvent() {
+        DonationReceived toEvent(String ingestionKey) {
             return new DonationReceived(
-                    donationEventId,
+                    ingestionKey,
                     donationType,
                     channelId,
                     donatorChannelId,

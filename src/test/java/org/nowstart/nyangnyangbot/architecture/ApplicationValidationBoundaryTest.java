@@ -7,20 +7,19 @@ import jakarta.validation.constraints.NotNull;
 import java.lang.reflect.Method;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.application.port.in.attendance.ManageAttendanceUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.CorrectFavoriteLedgerUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.GrantFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.ManageFavoriteAdjustmentUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.point.CorrectPointLedgerUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.point.ReconcilePointBalanceUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.upbo.ManageUpboUseCase;
-import org.nowstart.nyangnyangbot.application.service.attendance.AttendanceService;
 import org.nowstart.nyangnyangbot.application.service.command.CommandService;
-import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteAdjustmentService;
-import org.nowstart.nyangnyangbot.application.service.favorite.FavoriteLedgerService;
+import org.nowstart.nyangnyangbot.application.service.point.PointAdjustmentPresetService;
+import org.nowstart.nyangnyangbot.application.service.point.PointLedgerService;
+import org.nowstart.nyangnyangbot.application.service.presence.PresenceRewardService;
 import org.nowstart.nyangnyangbot.application.service.roulette.ManageRouletteService;
-import org.nowstart.nyangnyangbot.application.service.upbo.ManageUpboService;
 import org.springframework.validation.annotation.Validated;
 
 class ApplicationValidationBoundaryTest {
@@ -28,12 +27,11 @@ class ApplicationValidationBoundaryTest {
     @Test
     void commandHandlingServices_ShouldEnableMethodValidation() {
         List<Class<?>> services = List.of(
-                AttendanceService.class,
+                PresenceRewardService.class,
                 CommandService.class,
-                FavoriteAdjustmentService.class,
-                FavoriteLedgerService.class,
-                ManageRouletteService.class,
-                ManageUpboService.class
+                PointAdjustmentPresetService.class,
+                PointLedgerService.class,
+                ManageRouletteService.class
         );
 
         then(services).allSatisfy(service ->
@@ -44,32 +42,30 @@ class ApplicationValidationBoundaryTest {
 
     @Test
     void commandParameters_ShouldDeclareCascadedValidation() throws NoSuchMethodException {
-        thenValidCommand(ManageAttendanceUseCase.class, "applyAttendance", 0,
-                ManageAttendanceUseCase.AttendanceApplyCommand.class);
+        thenValidCommand(ManagePresenceRewardUseCase.class, "applyPresenceReward", 0,
+                ManagePresenceRewardUseCase.PresenceApplyCommand.class);
         thenValidCommand(ManageCommandUseCase.class, "createCommand", 0,
                 ManageCommandUseCase.CreateCommand.class);
         thenValidCommand(ManageCommandUseCase.class, "updateCommand", 1,
                 Long.class, ManageCommandUseCase.UpdateCommand.class);
         thenValidCommand(ManageCommandUseCase.class, "preview", 0,
                 ManageCommandUseCase.PreviewCommand.class);
-        thenValidCommand(AdjustFavoriteUseCase.class, "adjust", 0,
-                AdjustFavoriteUseCase.AdjustFavoriteCommand.class);
-        thenValidCommand(GrantFavoriteUseCase.class, "grant", 0,
-                AdjustFavoriteUseCase.AdjustFavoriteCommand.class);
-        thenValidCommand(CorrectFavoriteLedgerUseCase.class, "correct", 0,
-                AdjustFavoriteUseCase.AdjustFavoriteCommand.class);
-        thenValidCommand(ManageFavoriteAdjustmentUseCase.class, "createAdjustment", 0,
-                ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentCreateCommand.class);
-        thenValidCommand(ManageFavoriteAdjustmentUseCase.class, "applyAdjustments", 0,
-                ManageFavoriteAdjustmentUseCase.FavoriteAdjustmentApplyCommand.class);
-        thenValidCommand(ManageRouletteUseCase.class, "createTable", 0,
-                ManageRouletteUseCase.CreateRouletteTableCommand.class);
-        thenValidCommand(ManageRouletteUseCase.class, "addItem", 0,
-                ManageRouletteUseCase.AddRouletteItemCommand.class);
-        thenValidCommand(ManageUpboUseCase.class, "createTemplate", 0,
-                ManageUpboUseCase.UpboTemplateCreateCommand.class);
-        thenValidCommand(ManageUpboUseCase.class, "applyUpbo", 0,
-                ManageUpboUseCase.UpboApplyCommand.class, String.class);
+        thenValidCommand(AdjustPointUseCase.class, "adjust", 0,
+                AdjustPointUseCase.AdjustPointCommand.class);
+        thenValidCommand(GrantPointUseCase.class, "grant", 0,
+                AdjustPointUseCase.AdjustPointCommand.class);
+        thenValidCommand(CorrectPointLedgerUseCase.class, "correct", 0,
+                AdjustPointUseCase.AdjustPointCommand.class);
+        thenValidCommand(ReconcilePointBalanceUseCase.class, "reconcileToBalance", 0,
+                ReconcilePointBalanceUseCase.ReconcilePointBalanceCommand.class);
+        thenValidCommand(ManagePointAdjustmentPresetUseCase.class, "createPreset", 0,
+                ManagePointAdjustmentPresetUseCase.CreatePointAdjustmentPreset.class);
+        thenValidCommand(ManagePointAdjustmentPresetUseCase.class, "applyAdjustments", 0,
+                ManagePointAdjustmentPresetUseCase.ApplyPointAdjustments.class);
+        thenValidCommand(ManageRouletteUseCase.class, "createConfig", 0,
+                ManageRouletteUseCase.CreateRouletteConfigCommand.class);
+        thenValidCommand(ManageRouletteUseCase.class, "addOption", 0,
+                ManageRouletteUseCase.AddRouletteOptionCommand.class);
     }
 
     private void thenValidCommand(

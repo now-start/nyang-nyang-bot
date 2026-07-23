@@ -27,7 +27,7 @@ class SystemServiceTest {
     private ChzzkClientPort chzzkClientPort;
 
     @Test
-    void handle_ShouldSubscribeChatAndTrackConnectedSession() {
+    void handle_ShouldSubscribeChatAndDonationAndTrackConnectedSession() {
         SystemService service = new SystemService(chzzkConfigurationPort, chzzkClientPort);
         given(chzzkConfigurationPort.clientId()).willReturn("client");
         given(chzzkConfigurationPort.clientSecret()).willReturn("secret");
@@ -44,6 +44,7 @@ class SystemServiceTest {
         ));
 
         BDDMockito.then(chzzkClientPort).should().subscribeChatEvent("session-1");
+        BDDMockito.then(chzzkClientPort).should().subscribeDonationEvent("session-1");
         then(service.isConnected()).isTrue();
     }
 
@@ -57,6 +58,7 @@ class SystemServiceTest {
         ));
 
         BDDMockito.then(chzzkClientPort).should(never()).subscribeChatEvent(org.mockito.ArgumentMatchers.any());
+        BDDMockito.then(chzzkClientPort).should(never()).subscribeDonationEvent(org.mockito.ArgumentMatchers.any());
         then(service.isConnected()).isFalse();
     }
 

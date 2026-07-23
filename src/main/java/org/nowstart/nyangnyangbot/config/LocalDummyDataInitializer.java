@@ -1,43 +1,37 @@
 package org.nowstart.nyangnyangbot.config;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.entity.AuthorizationAccount;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.authorization.repository.AuthorizationRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAccount;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteHistory;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteHistoryRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointAdjustmentPreset;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointLedgerEntry;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointAdjustmentPresetRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointLedgerEntryRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteConfig;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteOption;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteConfigRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteOptionRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UserUpbo;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatRank;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatRankRepository;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.OAuthCredential;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.OAuthCredentialRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatCount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatCountRepository;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
+import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
-import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
-import org.nowstart.nyangnyangbot.domain.type.UpboStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -52,195 +46,169 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(prefix = "nyang.local-dummy-data", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class LocalDummyDataInitializer implements ApplicationRunner {
 
-    private static final List<FavoriteSeed> FAVORITE_SEEDS = List.of(
-            new FavoriteSeed(LocalTestAccounts.ADMIN_USER_ID, "로컬 관리자", 9999),
-            new FavoriteSeed(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", 875),
-            new FavoriteSeed("user-001", "치즈냥", 8720),
-            new FavoriteSeed("user-002", "새벽라떼", 7430),
-            new FavoriteSeed("user-003", "민트초코", 6180),
-            new FavoriteSeed("user-004", "고구마", 5050),
-            new FavoriteSeed("user-005", "달토끼", 3920),
-            new FavoriteSeed(LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", -12),
-            new FavoriteSeed("user-007", "파란별", 1410),
-            new FavoriteSeed("user-008", "츄르도둑", 1240),
-            new FavoriteSeed("user-009", "우주고양이", 986),
-            new FavoriteSeed("user-010", "밤톨이", 642),
-            new FavoriteSeed("user-011", "시금치파스타", 431),
-            new FavoriteSeed("user-012", "감자탕수육", 333),
-            new FavoriteSeed("user-013", "솜사탕", 310),
-            new FavoriteSeed("user-014", "유자차", 286),
-            new FavoriteSeed("user-015", "별사탕", 255),
-            new FavoriteSeed("user-016", "모찌", 220),
-            new FavoriteSeed("user-017", "초코칩", 197),
-            new FavoriteSeed("user-018", "귤냥이", 166),
-            new FavoriteSeed("user-019", "보리차", 144),
-            new FavoriteSeed("user-020", "라임소다", 121),
-            new FavoriteSeed("user-021", "홍차라떼", 108),
-            new FavoriteSeed("user-022", "아침햇살", 96),
-            new FavoriteSeed("user-023", "캣닢", 84),
-            new FavoriteSeed("user-024", "바닐라", 72),
-            new FavoriteSeed("user-025", "복숭아", 61),
-            new FavoriteSeed("user-026", "구름빵", 48),
-            new FavoriteSeed("user-027", "레몬밤", 37),
-            new FavoriteSeed("user-028", "콩떡", 29),
-            new FavoriteSeed("user-029", "밤하늘", 22),
-            new FavoriteSeed("user-030", "민들레", 17),
-            new FavoriteSeed("user-031", "새싹", 9),
-            new FavoriteSeed("user-032", "먼지", 0)
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
+    private static final List<PointSeed> POINT_SEEDS = List.of(
+            new PointSeed(LocalTestAccounts.ADMIN_USER_ID, "로컬 관리자", true, 9_999),
+            new PointSeed(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", false, 875),
+            new PointSeed("user-001", "치즈냥", false, 8_720),
+            new PointSeed("user-002", "새벽라떼", false, 7_430),
+            new PointSeed("user-003", "민트초코", false, 6_180),
+            new PointSeed("user-004", "고구마", false, 5_050),
+            new PointSeed("user-005", "달토끼", false, 3_920),
+            new PointSeed(LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", false, -12),
+            new PointSeed("user-007", "파란별", false, 1_410),
+            new PointSeed("user-008", "츄르도둑", false, 1_240),
+            new PointSeed("user-009", "우주고양이", false, 986),
+            new PointSeed("user-010", "밤톨이", false, 642),
+            new PointSeed("user-011", "시금치파스타", false, 431),
+            new PointSeed("user-012", "감자탕수육", false, 333),
+            new PointSeed("user-013", "솜사탕", false, 310),
+            new PointSeed("user-014", "유자차", false, 286),
+            new PointSeed("user-015", "별사탕", false, 255),
+            new PointSeed("user-016", "모찌", false, 220),
+            new PointSeed("user-017", "초코칩", false, 197),
+            new PointSeed("user-018", "귤냥이", false, 166),
+            new PointSeed("user-019", "보리차", false, 144),
+            new PointSeed("user-020", "라임소다", false, 121),
+            new PointSeed("user-021", "홍차라떼", false, 108),
+            new PointSeed("user-022", "아침햇살", false, 96),
+            new PointSeed("user-023", "캣닢", false, 84),
+            new PointSeed("user-024", "바닐라", false, 72),
+            new PointSeed("user-025", "복숭아", false, 61),
+            new PointSeed("user-026", "구름빵", false, 48),
+            new PointSeed("user-027", "레몬밤", false, 37),
+            new PointSeed("user-028", "콩떡", false, 29),
+            new PointSeed("user-029", "밤하늘", false, 22),
+            new PointSeed("user-030", "민들레", false, 17),
+            new PointSeed("user-031", "새싹", false, 9),
+            new PointSeed("user-032", "먼지", false, 0)
     );
 
-    private final AuthorizationRepository authorizationRepository;
-    private final FavoriteRepository favoriteRepository;
-    private final FavoriteHistoryRepository favoriteHistoryRepository;
-    private final FavoriteAdjustmentRepository favoriteAdjustmentRepository;
-    private final WeeklyChatRankRepository weeklyChatRankRepository;
-    private final RouletteTableRepository rouletteTableRepository;
-    private final RouletteItemRepository rouletteItemRepository;
-    private final RouletteEventRepository rouletteEventRepository;
-    private final RouletteRoundResultRepository rouletteRoundResultRepository;
+    private final UserAccountRepository userAccountRepository;
+    private final OAuthCredentialRepository oauthCredentialRepository;
+    private final CommandRepository commandRepository;
+    private final PointLedgerEntryRepository pointLedgerEntryRepository;
+    private final PointAdjustmentPresetRepository pointAdjustmentPresetRepository;
+    private final WeeklyChatCountRepository weeklyChatCountRepository;
     private final TimerMessageRepository timerMessageRepository;
-    private final UpboTemplateRepository upboTemplateRepository;
-    private final UserUpboRepository userUpboRepository;
+    private final RouletteConfigRepository rouletteConfigRepository;
+    private final RouletteOptionRepository rouletteOptionRepository;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        List<FavoriteAccount> favorites = seedFavorites();
-        seedLocalAuthorization();
-        seedFavoriteHistories(favorites);
-        seedWeeklyChatRanks();
-        RouletteTable rouletteTable = seedRouletteTable();
-        seedRouletteEvents(rouletteTable);
-        seedTimerMessages();
-        seedUpboTemplates();
-        seedUserUpbos();
-        seedFavoriteAdjustments();
-        log.info("Local dummy data is ready");
+        List<UserAccount> users = seedUsers();
+        UserAccount admin = requireUser(users, LocalTestAccounts.ADMIN_USER_ID);
+        seedOAuthCredentials(users);
+        seedPointLedger(users, admin);
+        seedPointAdjustmentPresets();
+        seedWeeklyChatCounts(users);
+        seedCommands(admin);
+        seedTimerMessages(admin);
+        seedRouletteConfig();
+        log.info("Local canonical dummy data is ready");
     }
 
-    private List<FavoriteAccount> seedFavorites() {
-        List<FavoriteAccount> favorites = FAVORITE_SEEDS.stream()
-                .map(seed -> favorite(seed.userId(), seed.nickName(), seed.favorite()))
-                .toList();
-        favorites.stream()
-                .filter(favorite -> !favoriteRepository.existsById(favorite.getUserId()))
-                .forEach(favoriteRepository::save);
-        return favoriteRepository.findAllById(favorites.stream()
-                .map(FavoriteAccount::getUserId)
-                .toList());
+    private List<UserAccount> seedUsers() {
+        POINT_SEEDS.stream()
+                .filter(seed -> !userAccountRepository.existsById(seed.userId()))
+                .map(seed -> UserAccount.builder()
+                        .userId(seed.userId())
+                        .displayName(seed.displayName())
+                        .admin(seed.admin())
+                        .build())
+                .forEach(userAccountRepository::save);
+        userAccountRepository.flush();
+        return userAccountRepository.findAllById(POINT_SEEDS.stream().map(PointSeed::userId).toList());
     }
 
-    private void seedLocalAuthorization() {
-        LocalTestAccounts.accounts().stream()
-                .filter(account -> !authorizationRepository.existsById(account.userId()))
-                .map(account -> authorizationAccount(account.userId(), account.nickName(), account.admin()))
-                .forEach(authorizationRepository::save);
+    private void seedOAuthCredentials(List<UserAccount> users) {
+        Instant expiresAt = Instant.now().plus(Duration.ofDays(1));
+        users.stream()
+                .filter(user -> LocalTestAccounts.find(user.getUserId()).isPresent())
+                .filter(user -> !oauthCredentialRepository.existsById(user.getUserId()))
+                .map(user -> OAuthCredential.builder()
+                        .userAccount(user)
+                        .accessToken("local-access-token-" + user.getUserId())
+                        .refreshToken("local-refresh-token-" + user.getUserId())
+                        .tokenType("Bearer")
+                        .scope("local")
+                        .accessTokenExpiresAt(expiresAt)
+                        .build())
+                .forEach(oauthCredentialRepository::save);
     }
 
-    private void seedFavoriteHistories(List<FavoriteAccount> favorites) {
-        if (favoriteHistoryRepository.count() > 0) {
+    private void seedPointLedger(List<UserAccount> users, UserAccount admin) {
+        POINT_SEEDS.stream()
+                .filter(seed -> seed.point() != 0)
+                .filter(seed -> !pointLedgerEntryRepository.existsByIdempotencyKey("local-opening-" + seed.userId()))
+                .forEach(seed -> pointLedgerEntryRepository.save(PointLedgerEntry.builder()
+                        .userAccount(requireUser(users, seed.userId()))
+                        .delta(seed.point())
+                        .sourceType(PointSourceType.SHEET_MIGRATION)
+                        .sourceReference("local-dummy")
+                        .description("로컬 초기 포인트")
+                        .privateNote("canonical local fixture")
+                        .actorUser(admin)
+                        .idempotencyKey("local-opening-" + seed.userId())
+                        .build()));
+    }
+
+    private void seedPointAdjustmentPresets() {
+        if (pointAdjustmentPresetRepository.count() > 0) {
             return;
         }
-        favoriteHistoryRepository.saveAll(favorites.stream()
-                .flatMap(favorite -> favoriteHistories(favorite).stream())
-                .toList());
+        pointAdjustmentPresetRepository.saveAll(List.of(
+                preset(100, "호감도 보너스"),
+                preset(10, "소소한 보너스"),
+                preset(-5, "업보 차감"),
+                preset(-50, "경고 차감"),
+                preset(1, "정정 +1")
+        ));
     }
 
-    private void seedWeeklyChatRanks() {
-        if (weeklyChatRankRepository.count() > 0) {
+    private void seedWeeklyChatCounts(List<UserAccount> users) {
+        if (weeklyChatCountRepository.count() > 0) {
             return;
         }
-        LocalDate weekStartDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        weeklyChatRankRepository.saveAll(List.of(
-                weeklyRank(weekStartDate, "user-001", "치즈냥", 421),
-                weeklyRank(weekStartDate, "user-002", "새벽라떼", 387),
-                weeklyRank(weekStartDate, "user-003", "민트초코", 244),
-                weeklyRank(weekStartDate, "user-004", "고구마", 199),
-                weeklyRank(weekStartDate, "user-005", "달토끼", 153),
-                weeklyRank(weekStartDate, LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", 128),
-                weeklyRank(weekStartDate, "user-008", "츄르도둑", 114),
-                weeklyRank(weekStartDate, "user-009", "우주고양이", 96),
-                weeklyRank(weekStartDate, "user-010", "밤톨이", 83),
-                weeklyRank(weekStartDate, "user-011", "시금치파스타", 75),
-                weeklyRank(weekStartDate, LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", 48),
-                weeklyRank(weekStartDate, "user-012", "감자탕수육", 31)
+        LocalDate weekStart = LocalDate.now(SEOUL).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        weeklyChatCountRepository.saveAll(List.of(
+                weeklyCount(weekStart, requireUser(users, "user-001"), 421),
+                weeklyCount(weekStart, requireUser(users, "user-002"), 387),
+                weeklyCount(weekStart, requireUser(users, "user-003"), 244),
+                weeklyCount(weekStart, requireUser(users, "user-004"), 199),
+                weeklyCount(weekStart, requireUser(users, "user-005"), 153),
+                weeklyCount(weekStart, requireUser(users, LocalTestAccounts.VIEWER_USER_ID), 128)
         ));
     }
 
-    private RouletteTable seedRouletteTable() {
-        if (rouletteTableRepository.count() > 0) {
-            return rouletteTableRepository.findAll().stream().findFirst().orElse(null);
-        }
-        RouletteTable table = rouletteTableRepository.save(RouletteTable.builder()
-                .title("로컬 테스트 룰렛")
-                .command("!룰렛")
-                .pricePerRound(1000L)
-                .active(true)
-                .version(1)
-                .highRoundThreshold(50)
-                .build());
-        rouletteItemRepository.saveAll(List.of(
-                rouletteItem(table, "호감도 +500", 300, false, RewardType.FAVORITE, ConversionMode.AUTO, 500, 1),
-                rouletteItem(table, "호감도 +300", 700, false, RewardType.FAVORITE, ConversionMode.AUTO, 300, 2),
-                rouletteItem(table, "호감도 +100", 1800, false, RewardType.FAVORITE, ConversionMode.AUTO, 100, 3),
-                rouletteItem(table, "호감도 +30", 2600, false, RewardType.FAVORITE, ConversionMode.AUTO, 30, 4),
-                rouletteItem(table, "미션권", 900, false, RewardType.MISSION, ConversionMode.MANUAL, null, 5),
-                rouletteItem(table, "쿠폰", 700, false, RewardType.COUPON, ConversionMode.MANUAL, null, 6),
-                rouletteItem(table, "다음 기회에", 3000, true, RewardType.CUSTOM, ConversionMode.NONE, 0, 7)
-        ));
-        return table;
-    }
-
-    private void seedRouletteEvents(RouletteTable table) {
-        if (table == null || rouletteEventRepository.count() > 0) {
+    private void seedCommands(UserAccount admin) {
+        if (commandRepository.count() > 0) {
             return;
         }
-        RouletteEvent applied = rouletteEventRepository.save(rouletteEvent(
-                table,
-                "local-donation-001",
-                "user-001",
-                "치즈냥",
-                11_000L,
-                "!룰렛 11회",
-                11,
-                RouletteEventStatus.APPLIED
+        commandRepository.saveAll(List.of(
+                Command.builder()
+                        .triggerToken("!출석")
+                        .messageTemplate("{viewer.nickname}님, {streak.current}일 연속 출석! 오늘은 {count.user}번째 출석입니다.")
+                        .active(true)
+                        .executionPolicy(CommandExecutionPolicy.USER_CALENDAR_DAY)
+                        .createdByUser(admin)
+                        .updatedByUser(admin)
+                        .build(),
+                Command.builder()
+                        .triggerToken("!인성")
+                        .messageTemplate("{viewer.nickname}님의 {count.user}번째 인성질 · 전체 {count.total}회")
+                        .active(true)
+                        .executionPolicy(CommandExecutionPolicy.USER_INTERVAL)
+                        .userCooldownSeconds(30)
+                        .createdByUser(admin)
+                        .updatedByUser(admin)
+                        .build()
         ));
-        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 11)
-                .mapToObj(roundNo -> rouletteRound(applied, roundNo, roundNo % 4 == 0 ? "다음 기회에" : "호감도 +100",
-                        roundNo % 4 == 0, RouletteRoundStatus.APPLIED))
-                .toList());
-
-        RouletteEvent failed = rouletteEventRepository.save(rouletteEvent(
-                table,
-                "local-donation-002",
-                "user-010",
-                "밤톨이",
-                3_000L,
-                "!룰렛 테스트 실패 케이스",
-                3,
-                RouletteEventStatus.FAILED
-        ));
-        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 3)
-                .mapToObj(roundNo -> rouletteRound(failed, roundNo, "미션권", false, RouletteRoundStatus.FAILED))
-                .toList());
-
-        RouletteEvent partial = rouletteEventRepository.save(rouletteEvent(
-                table,
-                "local-donation-003",
-                "user-012",
-                "감자탕수육",
-                5_000L,
-                "!룰렛 부분 반영 케이스",
-                5,
-                RouletteEventStatus.PARTIALLY_APPLIED
-        ));
-        rouletteRoundResultRepository.saveAll(IntStream.rangeClosed(1, 5)
-                .mapToObj(roundNo -> rouletteRound(partial, roundNo, roundNo == 5 ? "쿠폰" : "호감도 +30",
-                        false, roundNo == 5 ? RouletteRoundStatus.CONFIRMED : RouletteRoundStatus.APPLIED))
-                .toList());
     }
 
-    private void seedTimerMessages() {
+    private void seedTimerMessages(UserAccount admin) {
         if (timerMessageRepository.count() > 0) {
             return;
         }
@@ -251,258 +219,78 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .active(false)
                 .chatCountSinceLastSend(0)
                 .claimedChatCount(0)
-                .createdBy("local")
-                .updatedBy("local")
+                .createdByUser(admin)
+                .updatedByUser(admin)
                 .build());
     }
 
-    private void seedUpboTemplates() {
-        if (upboTemplateRepository.count() > 0) {
+    private void seedRouletteConfig() {
+        if (rouletteConfigRepository.count() > 0) {
             return;
         }
-        upboTemplateRepository.saveAll(List.of(
-                upboTemplate("호감도 +100", "즉시 호감도 100 지급", 100, RewardType.FAVORITE, ConversionMode.AUTO, 1),
-                upboTemplate("호감도 +300", "고액 룰렛 보상 테스트", 300, RewardType.FAVORITE, ConversionMode.AUTO, 2),
-                upboTemplate("미션 패스권", "미션 보상 테스트용 업보권", null, RewardType.MISSION, ConversionMode.MANUAL, 3),
-                upboTemplate("참여 우선권", "이벤트 참여 우선권 테스트", null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, 4),
-                upboTemplate("쿠폰 수동 지급", "쿠폰 지급 플로우 확인용", null, RewardType.COUPON, ConversionMode.MANUAL, 5),
-                upboTemplate("꽝 표시", "반영 없는 결과 표시 확인용", 0, RewardType.CUSTOM, ConversionMode.NONE, 6)
+        Instant now = Instant.now();
+        RouletteConfig config = rouletteConfigRepository.saveAndFlush(RouletteConfig.builder()
+                .title("로컬 테스트 룰렛")
+                .triggerToken("!룰렛")
+                .pricePerRound(1_000L)
+                .highRoundThreshold(50)
+                .status(RouletteConfigStatus.DRAFT)
+                .createdAt(now)
+                .updatedAt(now)
+                .build());
+        rouletteOptionRepository.saveAll(List.of(
+                option(config, "호감도 +100", 5_000, false, RewardType.POINT, ConversionMode.AUTO, 100L, 1, now),
+                option(config, "미션권", 2_000, false, RewardType.MISSION, ConversionMode.MANUAL, null, 2, now),
+                option(config, "다음 기회에", 3_000, true, RewardType.CUSTOM, ConversionMode.NONE, null, 3, now)
         ));
+        rouletteOptionRepository.flush();
+        config.activate(Instant.now());
+        rouletteConfigRepository.saveAndFlush(config);
     }
 
-    private void seedUserUpbos() {
-        if (userUpboRepository.count() > 0) {
-            return;
-        }
-        userUpboRepository.saveAll(List.of(
-                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "업보 차감권", UpboStatus.OWNED,
-                        null, RewardType.COUPON, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
-                        "업보 차감권 보유", "local owned coupon"),
-                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "호감도 +100", UpboStatus.CONVERTED,
-                        100, RewardType.FAVORITE, ConversionMode.AUTO, FavoriteSourceType.UPBO_ROULETTE, 101L,
-                        "룰렛 보상 호감도 반영", "local converted reward"),
-                userUpbo(LocalTestAccounts.VIEWER_USER_ID, "일반 시청자", "미션 패스권", UpboStatus.OWNED,
-                        null, RewardType.MISSION, ConversionMode.MANUAL, FavoriteSourceType.UPBO_ROULETTE, null,
-                        "방송 미션 패스권", "local mission reward"),
-                userUpbo("user-001", "치즈냥", "참여 우선권", UpboStatus.USED,
-                        null, RewardType.PARTICIPATION_PRIORITY, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
-                        "이벤트 참여 우선권 사용 완료", "local used reward"),
-                userUpbo(LocalTestAccounts.NEGATIVE_USER_ID, "이불밖은위험해", "매너 채팅 업보", UpboStatus.OWNED,
-                        -5, RewardType.CUSTOM, ConversionMode.MANUAL, FavoriteSourceType.UPBO_MANUAL, null,
-                        "매너 채팅 주의 업보", "local negative upbo")
-        ));
+    private PointAdjustmentPreset preset(long amount, String label) {
+        return PointAdjustmentPreset.builder().amount(amount).label(label).build();
     }
 
-    private void seedFavoriteAdjustments() {
-        if (favoriteAdjustmentRepository.count() > 0) {
-            return;
-        }
-        favoriteAdjustmentRepository.saveAll(List.of(
-                favoriteAdjustment(100, "호감도 보너스"),
-                favoriteAdjustment(10, "소소한 보너스"),
-                favoriteAdjustment(-5, "업보 차감"),
-                favoriteAdjustment(-50, "경고 차감"),
-                favoriteAdjustment(1, "정정 +1")
-        ));
-    }
-
-    private AuthorizationAccount authorizationAccount(String userId, String nickName, boolean admin) {
-        return AuthorizationAccount.builder()
-                .channelId(userId)
-                .channelName(nickName)
-                .accessToken("local-access-token-" + userId)
-                .refreshToken("local-refresh-token-" + userId)
-                .tokenType("Bearer")
-                .expiresIn(3600)
-                .scope("local")
-                .lastLoginAt(LocalDateTime.now().minusDays(1))
-                .admin(admin)
+    private WeeklyChatCount weeklyCount(LocalDate weekStart, UserAccount user, long count) {
+        return WeeklyChatCount.builder()
+                .weekStartDate(weekStart)
+                .userAccount(user)
+                .chatCount(count)
                 .build();
     }
 
-    private FavoriteAccount favorite(String userId, String nickName, Integer favorite) {
-        return FavoriteAccount.builder()
-                .userId(userId)
-                .nickName(nickName)
-                .favorite(favorite)
-                .build();
-    }
-
-    private List<FavoriteHistory> favoriteHistories(FavoriteAccount favorite) {
-        int current = favorite.getFavorite() == null ? 0 : favorite.getFavorite();
-        int adminDelta = LocalTestAccounts.NEGATIVE_USER_ID.equals(favorite.getUserId()) ? -300 : 250;
-        return List.of(
-                history(favorite, FavoriteSourceType.ADMIN_ADJUSTMENT, adminDelta, current,
-                        "운영자 조정", "local-admin-adjustment", "ADMIN"),
-                history(favorite, FavoriteSourceType.ATTENDANCE, 100, current - adminDelta,
-                        "출석 보너스", "local-attendance", "ATTENDANCE"),
-                history(favorite, FavoriteSourceType.UPBO_ROULETTE, 30, current - adminDelta - 100,
-                        "룰렛 보상", "local-roulette", "ROULETTE")
-        );
-    }
-
-    private FavoriteHistory history(
-            FavoriteAccount favorite,
-            FavoriteSourceType sourceType,
-            Integer delta,
-            Integer balanceAfter,
-            String description,
-            String sourceId,
-            String displayCategory
-    ) {
-        return FavoriteHistory.builder()
-                .favoriteAccount(favorite)
-                .history(description)
-                .favorite(balanceAfter)
-                .delta(delta)
-                .balanceAfter(balanceAfter)
-                .sourceType(sourceType)
-                .sourceId(sourceId)
-                .displayCategory(displayCategory)
-                .publicDescription(description)
-                .privateMemo("local dummy data")
-                .actorId(LocalTestAccounts.ADMIN_USER_ID)
-                .idempotencyKey("local-dummy-" + favorite.getUserId() + "-" + sourceId)
-                .nickNameSnapshot(favorite.getNickName())
-                .build();
-    }
-
-    private WeeklyChatRank weeklyRank(LocalDate weekStartDate, String userId, String nickName, long chatCount) {
-        return WeeklyChatRank.builder()
-                .weekStartDate(weekStartDate)
-                .userId(userId)
-                .nickName(nickName)
-                .chatCount(chatCount)
-                .build();
-    }
-
-    private RouletteItem rouletteItem(
-            RouletteTable table,
+    private RouletteOption option(
+            RouletteConfig config,
             String label,
-            Integer probabilityBasisPoints,
-            boolean losingItem,
+            int probability,
+            boolean losing,
             RewardType rewardType,
             ConversionMode conversionMode,
-            Integer exchangeFavoriteValue,
-            Integer displayOrder
+            Long pointDelta,
+            int displayOrder,
+            Instant createdAt
     ) {
-        return RouletteItem.builder()
-                .rouletteTable(table)
+        return RouletteOption.builder()
+                .rouletteConfig(config)
                 .label(label)
-                .probabilityBasisPoints(probabilityBasisPoints)
-                .losingItem(losingItem)
+                .probabilityBasisPoints(probability)
+                .losing(losing)
                 .rewardType(rewardType)
                 .conversionMode(conversionMode)
-                .exchangeFavoriteValue(exchangeFavoriteValue)
-                .active(true)
+                .pointDelta(pointDelta)
                 .displayOrder(displayOrder)
+                .createdAt(createdAt)
                 .build();
     }
 
-    private RouletteEvent rouletteEvent(
-            RouletteTable table,
-            String donationEventId,
-            String userId,
-            String nickName,
-            Long donationAmount,
-            String donationText,
-            Integer roundCount,
-            RouletteEventStatus status
-    ) {
-        return RouletteEvent.builder()
-                .donationEventId(donationEventId)
-                .idempotencyKey("local-" + donationEventId)
-                .userId(userId)
-                .nickNameSnapshot(nickName)
-                .donationAmount(donationAmount)
-                .donationText(donationText)
-                .rouletteTableId(table.getId())
-                .rouletteTableVersion(table.getVersion())
-                .command(table.getCommand())
-                .pricePerRound(table.getPricePerRound())
-                .roundCount(roundCount)
-                .itemsSnapshotJson("[]")
-                .status(status)
-                .build();
+    private UserAccount requireUser(List<UserAccount> users, String userId) {
+        return users.stream()
+                .filter(user -> user.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("local user not found: " + userId));
     }
 
-    private RouletteRoundResult rouletteRound(
-            RouletteEvent event,
-            int roundNo,
-            String itemLabel,
-            boolean losingItem,
-            RouletteRoundStatus status
-    ) {
-        return RouletteRoundResult.builder()
-                .rouletteEvent(event)
-                .roundNo(roundNo)
-                .itemLabel(itemLabel)
-                .probabilityBasisPoints(losingItem ? 3000 : 1800)
-                .losingItem(losingItem)
-                .rewardType(losingItem ? RewardType.CUSTOM : RewardType.FAVORITE)
-                .conversionMode(losingItem ? ConversionMode.NONE : ConversionMode.AUTO)
-                .exchangeFavoriteValue(losingItem ? 0 : 100)
-                .status(status)
-                .failureReason(status == RouletteRoundStatus.FAILED ? "로컬 실패 케이스" : null)
-                .ticket(roundNo)
-                .build();
-    }
-
-    private UpboTemplate upboTemplate(
-            String label,
-            String description,
-            Integer exchangeFavoriteValue,
-            RewardType rewardType,
-            ConversionMode conversionMode,
-            Integer displayOrder
-    ) {
-        return UpboTemplate.builder()
-                .label(label)
-                .description(description)
-                .active(true)
-                .displayOrder(displayOrder)
-                .exchangeFavoriteValue(exchangeFavoriteValue)
-                .rewardType(rewardType)
-                .conversionMode(conversionMode)
-                .build();
-    }
-
-    private UserUpbo userUpbo(
-            String userId,
-            String nickName,
-            String label,
-            UpboStatus status,
-            Integer exchangeFavoriteValue,
-            RewardType rewardType,
-            ConversionMode conversionMode,
-            FavoriteSourceType sourceType,
-            Long ledgerId,
-            String publicDescription,
-            String privateMemo
-    ) {
-        return UserUpbo.builder()
-                .userId(userId)
-                .nickNameSnapshot(nickName)
-                .label(label)
-                .status(status)
-                .exchangeFavoriteValue(exchangeFavoriteValue)
-                .rewardType(rewardType)
-                .conversionMode(conversionMode)
-                .sourceType(sourceType)
-                .ledgerId(ledgerId)
-                .publicDescription(publicDescription)
-                .privateMemo(privateMemo)
-                .actorId(LocalTestAccounts.ADMIN_USER_ID)
-                .build();
-    }
-
-    private FavoriteAdjustment favoriteAdjustment(Integer amount, String label) {
-        return FavoriteAdjustment.builder()
-                .amount(amount)
-                .label(label)
-                .build();
-    }
-
-    private record FavoriteSeed(String userId, String nickName, Integer favorite) {
+    private record PointSeed(String userId, String displayName, boolean admin, long point) {
     }
 }

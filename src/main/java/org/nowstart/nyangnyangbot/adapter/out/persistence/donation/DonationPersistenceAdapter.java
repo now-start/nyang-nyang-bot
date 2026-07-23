@@ -1,58 +1,64 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.donation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
-import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
 public class DonationPersistenceAdapter implements DonationPort {
 
     private final DonationRepository donationRepository;
-    private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
     private final OutboundContractValidator contractValidator;
 
     @Override
-    public boolean existsByDonationEventId(String donationEventId) {
-        return donationRepository.existsByDonationEventId(donationEventId);
+    @Transactional(readOnly = true)
+    public Optional<DonationResult> findByIngestionKey(String ingestionKey) {
+        return donationRepository.findByIngestionKey(ingestionKey).map(this::donationResult);
     }
 
     @Override
-    public void save(SaveDonationCommand command) {
+    @Transactional
+    public DonationResult save(SaveDonationCommand command) {
         contractValidator.request("donation.save", command);
-        donationRepository.save(Donation.builder()
-                .donationEventId(normalizeDonationEventId(command.donationEventId()))
+        Donation donation = Donation.builder()
+                .ingestionKey(command.ingestionKey())
                 .donationType(command.donationType())
-                .channelId(command.channelId())
-                .donatorChannelId(command.donatorChannelId())
-                .donatorNickname(command.donatorNickname())
-                .payAmount(command.payAmount())
-                .donationText(command.donationText())
-                .emojisJson(toJson(command.emojis()))
-                .build());
+                .recipientUserAccount(userReference(command.recipientUserId()))
+                .donorUserAccount(userReference(command.donorUserId()))
+                .donorDisplayName(command.donorDisplayName())
+                .amount(command.amount())
+                .message(command.message())
+                .receivedAt(command.receivedAt())
+                .build();
+        return donationResult(donationRepository.save(donation));
     }
 
-    private String toJson(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("failed to serialize donation emojis", ex);
-        }
+    private UserAccount userReference(String userId) {
+        return userId == null || userId.isBlank()
+                ? null
+                : entityManager.getReference(UserAccount.class, userId);
     }
 
-    private String normalizeDonationEventId(String donationEventId) {
-        if (donationEventId == null || donationEventId.isBlank()) {
-            return null;
-        }
-        return donationEventId;
+    private DonationResult donationResult(Donation donation) {
+        return contractValidator.persistenceResult("donation.result", new DonationResult(
+                donation.getId(),
+                donation.getIngestionKey(),
+                donation.getDonationType(),
+                donation.getRecipientUserAccount().getUserId(),
+                donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
+                donation.getDonorDisplayName(),
+                donation.getAmount(),
+                donation.getMessage(),
+                donation.getReceivedAt()
+        ));
     }
 }

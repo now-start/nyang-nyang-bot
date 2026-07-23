@@ -6,39 +6,25 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.CommandPersistenceAdapter;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.FavoriteAdjustmentPersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.entity.FavoriteAdjustment;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.favorite.repository.FavoriteAdjustmentRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.RoulettePersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteItem;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteTable;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteItemRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteTableRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.UpboPersistenceAdapter;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.entity.UpboTemplate;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UpboTemplateRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.upbo.repository.UserUpboRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.PointAdjustmentPresetPersistenceAdapter;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointAdjustmentPreset;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointAdjustmentPresetRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteAdjustmentPort;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
-import org.nowstart.nyangnyangbot.application.port.out.upbo.UpboPort;
+import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheConfig;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
-import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
-import org.nowstart.nyangnyangbot.domain.type.RewardType;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.cache.CacheManager;
@@ -55,28 +41,13 @@ class LocalCacheBehaviorTest {
     private CacheManager cacheManager;
 
     @Autowired
-    private FavoriteAdjustmentPort favoriteAdjustmentPort;
-
-    @Autowired
-    private UpboPort upboPort;
-
-    @Autowired
-    private RoulettePort roulettePort;
+    private PointAdjustmentPresetPort pointAdjustmentPresetPort;
 
     @Autowired
     private CommandPort commandPort;
 
     @Autowired
-    private FavoriteAdjustmentRepository favoriteAdjustmentRepository;
-
-    @Autowired
-    private UpboTemplateRepository upboTemplateRepository;
-
-    @Autowired
-    private RouletteTableRepository rouletteTableRepository;
-
-    @Autowired
-    private RouletteItemRepository rouletteItemRepository;
+    private PointAdjustmentPresetRepository pointAdjustmentPresetRepository;
 
     @Autowired
     private CommandRepository commandRepository;
@@ -85,13 +56,7 @@ class LocalCacheBehaviorTest {
     void setUp() {
         cacheManager.getCacheNames()
                 .forEach(name -> Objects.requireNonNull(cacheManager.getCache(name)).clear());
-        BDDMockito.reset(
-                favoriteAdjustmentRepository,
-                upboTemplateRepository,
-                rouletteTableRepository,
-                rouletteItemRepository,
-                commandRepository
-        );
+        BDDMockito.reset(pointAdjustmentPresetRepository, commandRepository);
     }
 
     @Test
@@ -109,94 +74,22 @@ class LocalCacheBehaviorTest {
     }
 
     @Test
-    void favoriteAdjustments_ShouldCacheListAndEvictWhenSaved() {
-        FavoriteAdjustment first = adjustment(1L, 10, "보너스");
-        FavoriteAdjustment second = adjustment(2L, 20, "추가 보너스");
-        given(favoriteAdjustmentRepository.findAll())
+    void pointAdjustmentPresets_ShouldCacheListAndEvictWhenSaved() {
+        PointAdjustmentPreset first = preset(1L, 10, "보너스");
+        PointAdjustmentPreset second = preset(2L, 20, "추가 보너스");
+        given(pointAdjustmentPresetRepository.findAll())
                 .willReturn(List.of(first))
                 .willReturn(List.of(second));
-        given(favoriteAdjustmentRepository.save(any(FavoriteAdjustment.class))).willReturn(second);
+        given(pointAdjustmentPresetRepository.save(any(PointAdjustmentPreset.class))).willReturn(second);
 
-        then(favoriteAdjustmentPort.findAll().getFirst().id()).isEqualTo(1L);
-        then(favoriteAdjustmentPort.findAll().getFirst().id()).isEqualTo(1L);
-        BDDMockito.then(favoriteAdjustmentRepository).should(times(1)).findAll();
+        then(pointAdjustmentPresetPort.findAll().getFirst().id()).isEqualTo(1L);
+        then(pointAdjustmentPresetPort.findAll().getFirst().id()).isEqualTo(1L);
+        BDDMockito.then(pointAdjustmentPresetRepository).should(times(1)).findAll();
 
-        favoriteAdjustmentPort.save(20, "추가 보너스");
+        pointAdjustmentPresetPort.save(20, "추가 보너스");
 
-        then(favoriteAdjustmentPort.findAll().getFirst().id()).isEqualTo(2L);
-        BDDMockito.then(favoriteAdjustmentRepository).should(times(2)).findAll();
-    }
-
-    @Test
-    void upboTemplates_ShouldCacheActiveTemplatesAndEvictWhenCreated() {
-        UpboTemplate first = template(1L, "호감도 +100");
-        UpboTemplate second = template(2L, "호감도 +200");
-        given(upboTemplateRepository.findByActiveTrueOrderByDisplayOrderAscIdAsc())
-                .willReturn(List.of(first))
-                .willReturn(List.of(second));
-        given(upboTemplateRepository.save(any(UpboTemplate.class))).willReturn(second);
-
-        then(upboPort.findActiveTemplates().getFirst().id()).isEqualTo(1L);
-        then(upboPort.findActiveTemplates().getFirst().id()).isEqualTo(1L);
-        BDDMockito.then(upboTemplateRepository).should(times(1)).findByActiveTrueOrderByDisplayOrderAscIdAsc();
-
-        upboPort.createTemplate("호감도 +200", "설명", 2, 200, RewardType.FAVORITE, ConversionMode.AUTO);
-
-        then(upboPort.findActiveTemplates().getFirst().id()).isEqualTo(2L);
-        BDDMockito.then(upboTemplateRepository).should(times(2)).findByActiveTrueOrderByDisplayOrderAscIdAsc();
-    }
-
-    @Test
-    void rouletteActiveConfiguration_ShouldCacheAndEvictOnItemChange() {
-        RouletteTable table = table(1L, true);
-        RouletteItem first = item(10L, table, "꽝");
-        RouletteItem second = item(11L, table, "당첨");
-        given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(table));
-        given(rouletteItemRepository.findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L))
-                .willReturn(List.of(first))
-                .willReturn(List.of(second));
-        given(rouletteItemRepository.save(any(RouletteItem.class))).willReturn(second);
-
-        then(roulettePort.findActiveItemsByTableId(1L).getFirst().id()).isEqualTo(10L);
-        then(roulettePort.findActiveItemsByTableId(1L).getFirst().id()).isEqualTo(10L);
-        BDDMockito.then(rouletteItemRepository)
-                .should(times(1))
-                .findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L);
-
-        roulettePort.addItem(1L, "당첨", 9_000, false, RewardType.FAVORITE, ConversionMode.AUTO, 100, 2);
-
-        then(roulettePort.findActiveItemsByTableId(1L).getFirst().id()).isEqualTo(11L);
-        BDDMockito.then(rouletteItemRepository)
-                .should(times(2))
-                .findByRouletteTableIdAndActiveTrueOrderByDisplayOrderAscIdAsc(1L);
-    }
-
-    @Test
-    void rouletteTableById_ShouldNotCacheMissingTable() {
-        given(rouletteTableRepository.findById(1L)).willReturn(Optional.empty());
-
-        then(roulettePort.findTableById(1L)).isEmpty();
-        then(roulettePort.findTableById(1L)).isEmpty();
-        BDDMockito.then(rouletteTableRepository).should(times(2)).findById(1L);
-    }
-
-    @Test
-    void rouletteLatestActiveTable_ShouldCacheAndEvictWhenActivationChanges() {
-        RouletteTable table = table(1L, false);
-        given(rouletteTableRepository.findFirstByActiveTrueOrderByIdDesc())
-                .willReturn(Optional.of(table));
-        given(rouletteTableRepository.findById(1L)).willReturn(Optional.of(table));
-        given(rouletteTableRepository.findByActiveTrue()).willReturn(List.of(table));
-        given(rouletteTableRepository.save(table)).willReturn(table);
-
-        then(roulettePort.findLatestActiveTable()).isPresent();
-        then(roulettePort.findLatestActiveTable()).isPresent();
-        BDDMockito.then(rouletteTableRepository).should(times(1)).findFirstByActiveTrueOrderByIdDesc();
-
-        roulettePort.activateTable(1L);
-
-        then(roulettePort.findLatestActiveTable()).isPresent();
-        BDDMockito.then(rouletteTableRepository).should(times(2)).findFirstByActiveTrueOrderByIdDesc();
+        then(pointAdjustmentPresetPort.findAll().getFirst().id()).isEqualTo(2L);
+        BDDMockito.then(pointAdjustmentPresetRepository).should(times(2)).findAll();
     }
 
     @Test
@@ -206,7 +99,7 @@ class LocalCacheBehaviorTest {
         given(commandRepository.findByActiveTrue())
                 .willReturn(List.of(first))
                 .willReturn(List.of(second));
-        given(commandRepository.findById(1L)).willReturn(Optional.of(first));
+        given(commandRepository.findByIdForUpdate(1L)).willReturn(Optional.of(first));
 
         then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(1L);
         then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(1L);
@@ -215,10 +108,10 @@ class LocalCacheBehaviorTest {
         commandPort.update(new CommandPort.UpdateData(
                 1L,
                 "!호감도",
-                "{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛",
+                "{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛",
                 true,
                 30,
-                "admin"
+                "system"
         ));
 
         then(commandPort.findActiveCommandsByTrigger().get("!호감도").id()).isEqualTo(2L);
@@ -234,51 +127,11 @@ class LocalCacheBehaviorTest {
         BDDMockito.then(commandRepository).should(times(1)).findByActiveTrue();
     }
 
-    private FavoriteAdjustment adjustment(Long id, Integer amount, String label) {
-        return FavoriteAdjustment.builder()
+    private PointAdjustmentPreset preset(Long id, long amount, String label) {
+        return PointAdjustmentPreset.builder()
                 .id(id)
                 .amount(amount)
                 .label(label)
-                .build();
-    }
-
-    private UpboTemplate template(Long id, String label) {
-        return UpboTemplate.builder()
-                .id(id)
-                .label(label)
-                .description("설명")
-                .active(true)
-                .displayOrder(1)
-                .exchangeFavoriteValue(100)
-                .rewardType(RewardType.FAVORITE)
-                .conversionMode(ConversionMode.AUTO)
-                .build();
-    }
-
-    private RouletteTable table(Long id, boolean active) {
-        return RouletteTable.builder()
-                .id(id)
-                .title("기본 룰렛")
-                .command("!룰렛")
-                .pricePerRound(1_000L)
-                .active(active)
-                .version(0)
-                .highRoundThreshold(100)
-                .build();
-    }
-
-    private RouletteItem item(Long id, RouletteTable table, String label) {
-        return RouletteItem.builder()
-                .id(id)
-                .rouletteTable(table)
-                .label(label)
-                .probabilityBasisPoints(10_000)
-                .losingItem(false)
-                .rewardType(RewardType.FAVORITE)
-                .conversionMode(ConversionMode.AUTO)
-                .exchangeFavoriteValue(100)
-                .active(true)
-                .displayOrder(1)
                 .build();
     }
 
@@ -286,11 +139,10 @@ class LocalCacheBehaviorTest {
         return Command.builder()
                 .id(id)
                 .triggerToken(trigger)
-                .messageTemplate("{viewer.nickname}님의 호감도는 {favorite.balance} 입니다.💛")
+                .messageTemplate("{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛")
                 .active(true)
+                .executionPolicy(CommandExecutionPolicy.USER_INTERVAL)
                 .userCooldownSeconds(30)
-                .createdBy("system")
-                .updatedBy("system")
                 .build();
     }
 
@@ -305,79 +157,17 @@ class LocalCacheBehaviorTest {
         @Bean
         CommandPort commandPort(
                 CommandRepository commandRepository,
+                UserAccountRepository userAccountRepository,
                 OutboundContractValidator contractValidator
         ) {
-            return new CommandPersistenceAdapter(commandRepository, contractValidator);
+            return new CommandPersistenceAdapter(commandRepository, userAccountRepository, contractValidator);
         }
 
         @Bean
-        FavoriteAdjustmentPort favoriteAdjustmentPort(
-                FavoriteAdjustmentRepository favoriteAdjustmentRepository,
-                OutboundContractValidator contractValidator
+        PointAdjustmentPresetPort pointAdjustmentPresetPort(
+                PointAdjustmentPresetRepository pointAdjustmentPresetRepository
         ) {
-            return new FavoriteAdjustmentPersistenceAdapter(favoriteAdjustmentRepository, contractValidator);
-        }
-
-        @Bean
-        UpboPort upboPort(
-                UpboTemplateRepository upboTemplateRepository,
-                UserUpboRepository userUpboRepository,
-                OutboundContractValidator contractValidator
-        ) {
-            return new UpboPersistenceAdapter(upboTemplateRepository, userUpboRepository, contractValidator);
-        }
-
-        @Bean
-        RoulettePort roulettePort(
-                RouletteTableRepository rouletteTableRepository,
-                RouletteItemRepository rouletteItemRepository,
-                RouletteEventRepository rouletteEventRepository,
-                RouletteRoundResultRepository rouletteRoundResultRepository,
-                OutboundContractValidator contractValidator
-        ) {
-            return new RoulettePersistenceAdapter(
-                    rouletteTableRepository,
-                    rouletteItemRepository,
-                    rouletteEventRepository,
-                    rouletteRoundResultRepository,
-                    new ObjectMapper(),
-                    contractValidator
-            );
-        }
-
-        @Bean
-        FavoriteAdjustmentRepository favoriteAdjustmentRepository() {
-            return BDDMockito.mock(FavoriteAdjustmentRepository.class);
-        }
-
-        @Bean
-        UpboTemplateRepository upboTemplateRepository() {
-            return BDDMockito.mock(UpboTemplateRepository.class);
-        }
-
-        @Bean
-        UserUpboRepository userUpboRepository() {
-            return BDDMockito.mock(UserUpboRepository.class);
-        }
-
-        @Bean
-        RouletteTableRepository rouletteTableRepository() {
-            return BDDMockito.mock(RouletteTableRepository.class);
-        }
-
-        @Bean
-        RouletteItemRepository rouletteItemRepository() {
-            return BDDMockito.mock(RouletteItemRepository.class);
-        }
-
-        @Bean
-        RouletteEventRepository rouletteEventRepository() {
-            return BDDMockito.mock(RouletteEventRepository.class);
-        }
-
-        @Bean
-        RouletteRoundResultRepository rouletteRoundResultRepository() {
-            return BDDMockito.mock(RouletteRoundResultRepository.class);
+            return new PointAdjustmentPresetPersistenceAdapter(pointAdjustmentPresetRepository);
         }
 
         @Bean
@@ -385,5 +175,14 @@ class LocalCacheBehaviorTest {
             return BDDMockito.mock(CommandRepository.class);
         }
 
+        @Bean
+        UserAccountRepository userAccountRepository() {
+            return BDDMockito.mock(UserAccountRepository.class);
+        }
+
+        @Bean
+        PointAdjustmentPresetRepository pointAdjustmentPresetRepository() {
+            return BDDMockito.mock(PointAdjustmentPresetRepository.class);
+        }
     }
 }

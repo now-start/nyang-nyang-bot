@@ -228,7 +228,7 @@ CREATE TABLE weekly_chat_count
 CREATE TABLE donation
 (
     id                 BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '후원 식별자',
-    external_event_id  VARCHAR(128) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT 'CHZZK 후원 이벤트 식별자',
+    ingestion_key      VARCHAR(255) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '수신 프레임별 애플리케이션 생성 식별자 또는 이관된 레거시 이벤트 키',
     donation_type      VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT 'CHZZK 후원 이벤트 유형',
     recipient_user_id  VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '후원을 수신한 방송 사용자 식별자',
     donor_user_id      VARCHAR(64) COLLATE utf8mb4_nopad_bin  NULL COMMENT '후원 사용자 식별자; 익명 또는 미식별이면 NULL',
@@ -237,7 +237,7 @@ CREATE TABLE donation
     message            LONGTEXT                         NULL COMMENT '후원 메시지 원문',
     received_at        DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '후원 이벤트 수신 시각',
     PRIMARY KEY (id),
-    CONSTRAINT uk_donation__external_event UNIQUE (external_event_id),
+    CONSTRAINT uk_donation__ingestion_key UNIQUE (ingestion_key),
     CONSTRAINT fk_donation__recipient_user
         FOREIGN KEY (recipient_user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_donation__donor_user

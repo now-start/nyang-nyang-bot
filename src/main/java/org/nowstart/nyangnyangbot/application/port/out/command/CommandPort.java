@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 
 public interface CommandPort {
 
     List<CommandRecord> findAllOrderByIdDesc();
 
     Optional<CommandRecord> findById(Long commandId);
+
+    Optional<CommandRecord> findByIdForUpdate(Long commandId);
 
     Optional<CommandRecord> findByTrigger(String trigger);
 
@@ -32,16 +35,28 @@ public interface CommandPort {
             @NotBlank(message = "messageTemplate is required")
             String messageTemplate,
             boolean active,
-            @NotNull(message = "userCooldownSeconds is required")
-            @Positive(message = "userCooldownSeconds must be positive")
+            @NotNull(message = "executionPolicy is required")
+            CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
-            @NotBlank(message = "createdBy is required")
             String createdBy,
-            @NotBlank(message = "updatedBy is required")
             String updatedBy,
             LocalDateTime createDate,
             LocalDateTime modifyDate
     ) {
+        public CommandRecord(
+                Long id,
+                String trigger,
+                String messageTemplate,
+                boolean active,
+                Integer userCooldownSeconds,
+                String createdBy,
+                String updatedBy,
+                LocalDateTime createDate,
+                LocalDateTime modifyDate
+        ) {
+            this(id, trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
+                    userCooldownSeconds, createdBy, updatedBy, createDate, modifyDate);
+        }
     }
 
     record CreateData(
@@ -50,14 +65,23 @@ public interface CommandPort {
             @NotBlank(message = "messageTemplate is required")
             String messageTemplate,
             boolean active,
-            @NotNull(message = "userCooldownSeconds is required")
-            @Positive(message = "userCooldownSeconds must be positive")
+            @NotNull(message = "executionPolicy is required")
+            CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
-            @NotBlank(message = "createdBy is required")
             String createdBy,
-            @NotBlank(message = "updatedBy is required")
             String updatedBy
     ) {
+        public CreateData(
+                String trigger,
+                String messageTemplate,
+                boolean active,
+                Integer userCooldownSeconds,
+                String createdBy,
+                String updatedBy
+        ) {
+            this(trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
+                    userCooldownSeconds, createdBy, updatedBy);
+        }
     }
 
     record UpdateData(
@@ -69,11 +93,21 @@ public interface CommandPort {
             @NotBlank(message = "messageTemplate is required")
             String messageTemplate,
             boolean active,
-            @NotNull(message = "userCooldownSeconds is required")
-            @Positive(message = "userCooldownSeconds must be positive")
+            @NotNull(message = "executionPolicy is required")
+            CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
-            @NotBlank(message = "updatedBy is required")
             String updatedBy
     ) {
+        public UpdateData(
+                Long id,
+                String trigger,
+                String messageTemplate,
+                boolean active,
+                Integer userCooldownSeconds,
+                String updatedBy
+        ) {
+            this(id, trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
+                    userCooldownSeconds, updatedBy);
+        }
     }
 }

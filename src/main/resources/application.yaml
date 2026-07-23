@@ -1,6 +1,25 @@
 spring:
   application:
     name: nyang-nyang-bot
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    time-zone: UTC
+  task:
+    scheduling:
+      pool:
+        size: 3
+      thread-name-prefix: nyang-scheduler-
+  cloud:
+    openfeign:
+      client:
+        config:
+          ChzzkOpenApiClient:
+            connectTimeout: 3000
+            readTimeout: 5000
 
 otel:
   instrumentation:
@@ -15,3 +34,6 @@ spring:
     activate:
       on-profile: "!local"
     import: ${SPRING_CONFIG_IMPORT:configserver:https://spring.nowstart.org/config}
+  datasource:
+    hikari:
+      connection-init-sql: "SET time_zone = '+00:00'"

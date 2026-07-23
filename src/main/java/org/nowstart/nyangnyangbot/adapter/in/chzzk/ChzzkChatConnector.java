@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import java.net.URISyntaxException;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatSocketUseCase;
@@ -49,6 +50,7 @@ public class ChzzkChatConnector implements ConnectChzzkChatSocketUseCase {
 
         socket.on(SYSTEM_EVENT_NAME, this::handleSystemEvent);
         socket.on(CHAT_EVENT_NAME, this::handleChatEvent);
+        socket.on(DONATION_EVENT_NAME, this::handleDonationEvent);
         socket.connect();
     }
 
@@ -86,10 +88,14 @@ public class ChzzkChatConnector implements ConnectChzzkChatSocketUseCase {
             return;
         }
         try {
-            handleChzzkEventUseCase.handleDonationEvent(payload.toEvent());
+            handleChzzkEventUseCase.handleDonationEvent(payload.toEvent(nextDonationIngestionKey()));
         } catch (RuntimeException ex) {
             log.error("[ChzzkChat][DONATION] event handling failed", ex);
         }
+    }
+
+    String nextDonationIngestionKey() {
+        return "chzzk-received:" + UUID.randomUUID();
     }
 
     private <T> T readPayload(String eventName, Object[] objects, Class<T> payloadType) {

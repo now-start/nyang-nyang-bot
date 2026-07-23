@@ -6,11 +6,11 @@ import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResu
 
 public interface ProcessRouletteDonationUseCase {
 
-    RouletteRunResult processDonation(DonationReceived donation);
+    RouletteRunResult processDonation(Long donationId, DonationReceived donation);
 
     record RouletteRunResult(
             Status status,
-            Long eventId,
+            Long runId,
             String reason,
             Integer roundCount,
             List<RouletteRoundResult> rounds
@@ -20,16 +20,16 @@ public interface ProcessRouletteDonationUseCase {
             return new RouletteRunResult(Status.IGNORED, null, reason, 0, List.of());
         }
 
-        public static RouletteRunResult duplicate() {
-            return new RouletteRunResult(Status.DUPLICATE, null, "duplicate donation event", 0, List.of());
+        public static RouletteRunResult duplicate(Long runId, List<RouletteRoundResult> rounds) {
+            return new RouletteRunResult(Status.DUPLICATE, runId, "duplicate donation event", rounds.size(), rounds);
         }
 
-        public static RouletteRunResult confirmed(Long eventId, Integer roundCount, List<RouletteRoundResult> rounds) {
-            return new RouletteRunResult(Status.CONFIRMED, eventId, null, roundCount, rounds);
+        public static RouletteRunResult ready(Long runId, List<RouletteRoundResult> rounds) {
+            return new RouletteRunResult(Status.READY, runId, null, rounds.size(), rounds);
         }
 
         public enum Status {
-            CONFIRMED,
+            READY,
             IGNORED,
             DUPLICATE
         }

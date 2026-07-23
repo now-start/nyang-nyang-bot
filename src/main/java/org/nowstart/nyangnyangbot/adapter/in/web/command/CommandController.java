@@ -145,6 +145,8 @@ public class CommandController {
         model.addAttribute("commandVariableGroups", List.of(
                         variableGroup("viewer", "시청자", variables),
                         variableGroup("invocation", "명령 입력", variables),
+                        variableGroup("count", "실행 횟수", variables),
+                        variableGroup("streak", "연속 실행", variables),
                         variableGroup("time", "시간", variables),
                         integrationVariableGroup(variables)
                 ).stream()
@@ -169,6 +171,8 @@ public class CommandController {
                 variables.stream()
                         .filter(variable -> !variable.key().startsWith("viewer."))
                         .filter(variable -> !variable.key().startsWith("invocation."))
+                        .filter(variable -> !variable.key().startsWith("count."))
+                        .filter(variable -> !variable.key().startsWith("streak."))
                         .filter(variable -> !variable.key().startsWith("time."))
                         .toList()
         );
@@ -200,6 +204,7 @@ public class CommandController {
                 form.trigger(),
                 form.messageTemplate(),
                 form.active(),
+                ManageCommandUseCase.executionPolicy(form.executionPolicy()),
                 form.userCooldownSeconds(),
                 actor
         );
@@ -210,6 +215,7 @@ public class CommandController {
                 form.trigger(),
                 form.messageTemplate(),
                 form.active(),
+                ManageCommandUseCase.executionPolicy(form.executionPolicy()),
                 form.userCooldownSeconds(),
                 actor
         );
@@ -220,6 +226,7 @@ public class CommandController {
                 form.commandId(),
                 form.trigger(),
                 form.messageTemplate(),
+                ManageCommandUseCase.executionPolicy(form.executionPolicy()),
                 form.userCooldownSeconds()
         );
     }
@@ -236,11 +243,23 @@ public class CommandController {
             String trigger,
             String messageTemplate,
             Boolean active,
+            String executionPolicy,
             Integer userCooldownSeconds
     ) {
 
+        public CommandForm(
+                Long commandId,
+                String trigger,
+                String messageTemplate,
+                Boolean active,
+                Integer userCooldownSeconds
+        ) {
+            this(commandId, trigger, messageTemplate, active, "USER_INTERVAL",
+                    userCooldownSeconds);
+        }
+
         static CommandForm empty() {
-            return new CommandForm(null, "", "", false, 30);
+            return new CommandForm(null, "", "", false, "USER_INTERVAL", 30);
         }
 
         static CommandForm from(CommandResult result) {
@@ -249,6 +268,7 @@ public class CommandController {
                     result.trigger(),
                     result.messageTemplate(),
                     result.active(),
+                    result.executionPolicy().name(),
                     result.userCooldownSeconds()
             ).withDefaults();
         }
@@ -259,6 +279,7 @@ public class CommandController {
                     trigger,
                     messageTemplate,
                     false,
+                    executionPolicy,
                     userCooldownSeconds
             ).withDefaults();
         }
@@ -269,6 +290,7 @@ public class CommandController {
                     trigger,
                     messageTemplate,
                     active,
+                    executionPolicy,
                     userCooldownSeconds
             ).withDefaults();
         }
@@ -279,7 +301,10 @@ public class CommandController {
                     trigger == null ? "" : trigger,
                     messageTemplate == null ? "" : messageTemplate,
                     active != null && active,
-                    userCooldownSeconds == null ? 30 : userCooldownSeconds
+                    executionPolicy == null ? "USER_INTERVAL" : executionPolicy,
+                    "USER_CALENDAR_DAY".equals(executionPolicy)
+                            ? null
+                            : userCooldownSeconds == null ? 30 : userCooldownSeconds
             );
         }
     }
@@ -308,7 +333,9 @@ public class CommandController {
                     messageSummary,
                     result.active(),
                     result.active() ? "활성" : "비활성",
-                    result.userCooldownSeconds() == null ? "-" : result.userCooldownSeconds() + "초",
+                    "USER_CALENDAR_DAY".equals(result.executionPolicy().name())
+                            ? "하루 1회"
+                            : result.userCooldownSeconds() + "초",
                     defaultString(result.updatedBy(), defaultString(result.createdBy(), "-"))
             );
         }

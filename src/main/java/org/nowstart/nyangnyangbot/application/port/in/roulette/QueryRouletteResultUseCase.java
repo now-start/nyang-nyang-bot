@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,47 +9,45 @@ public interface QueryRouletteResultUseCase {
 
     List<RouletteRoundResult> getRecentRounds(String userId, int limit);
 
-    List<RouletteEventResult> getUserEvents(String userId);
+    List<RouletteRunResult> getUserRuns(String userId);
 
-    Page<RouletteEventSummaryResult> getRecentEvents(Pageable pageable);
+    Page<RouletteRunSummaryResult> getRecentRuns(Pageable pageable);
 
     record RouletteRoundResult(
             Long id,
             Integer roundNo,
-            String itemLabel,
-            Boolean losingItem,
+            String optionLabel,
+            Boolean losing,
             String rewardType,
             String conversionMode,
-            Integer exchangeFavoriteValue,
+            Long pointDelta,
             String status,
-            Long ledgerId,
-            Long userUpboId,
             String failureReason
     ) {
     }
 
-    record RouletteEventResult(
-            Long eventId,
-            String donationEventId,
+    record RouletteRunResult(
+            Long runId,
+            String ingestionKey,
             String userId,
-            String nickNameSnapshot,
+            String donorDisplayName,
             Long donationAmount,
             Integer roundCount,
             String status,
-            LocalDateTime createdAt,
+            Instant createdAt,
             List<RouletteRoundResult> rounds
     ) {
     }
 
-    record RouletteEventSummaryResult(
-            Long eventId,
-            String donationEventId,
+    record RouletteRunSummaryResult(
+            Long runId,
+            String ingestionKey,
             String userId,
-            String nickNameSnapshot,
+            String donorDisplayName,
             Long donationAmount,
             Integer roundCount,
             String status,
-            LocalDateTime createdAt
+            Instant createdAt
     ) {
     }
 }

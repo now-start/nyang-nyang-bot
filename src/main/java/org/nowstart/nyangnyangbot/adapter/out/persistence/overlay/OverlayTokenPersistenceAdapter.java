@@ -1,35 +1,44 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayToken;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayTokenRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayAccessToken;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayAccessTokenRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
 public class OverlayTokenPersistenceAdapter implements OverlayTokenPort {
 
-    private final OverlayTokenRepository overlayTokenRepository;
+    private final OverlayAccessTokenRepository overlayAccessTokenRepository;
+    private final EntityManager entityManager;
 
     @Override
-    public void revokeActive(LocalDateTime revokedAt) {
-        overlayTokenRepository.findByActiveTrue().forEach(token -> token.revoke(revokedAt));
+    @Transactional
+    public void revokeActiveAndFlush(Instant revokedAt) {
+        overlayAccessTokenRepository.revokeActive(revokedAt);
+        overlayAccessTokenRepository.flush();
     }
 
     @Override
-    public Long saveIssuedToken(String tokenHash, String actorId) {
-        OverlayToken saved = overlayTokenRepository.save(OverlayToken.builder()
+    @Transactional
+    public Long saveIssuedToken(String tokenHash, String actorUserId, Instant issuedAt) {
+        UserAccount issuer = actorUserId == null || actorUserId.isBlank()
+                ? null
+                : entityManager.getReference(UserAccount.class, actorUserId);
+        return overlayAccessTokenRepository.saveAndFlush(OverlayAccessToken.builder()
                 .tokenHash(tokenHash)
-                .active(true)
-                .issuedBy(actorId)
-                .build());
-        return saved.getId();
+                .issuedByUserAccount(issuer)
+                .issuedAt(issuedAt)
+                .build()).getId();
     }
 
     @Override
     public boolean existsActiveTokenHash(String tokenHash) {
-        return overlayTokenRepository.existsByTokenHashAndActiveTrue(tokenHash);
+        return overlayAccessTokenRepository.existsByTokenHashAndRevokedAtIsNull(tokenHash);
     }
 }

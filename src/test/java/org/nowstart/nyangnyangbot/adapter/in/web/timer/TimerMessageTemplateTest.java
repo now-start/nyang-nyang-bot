@@ -116,7 +116,7 @@ class TimerMessageTemplateTest {
 
     private WebContext webContext(String contextPath) {
         MockServletContext servletContext = new MockServletContext();
-        MockHttpServletRequest request = new MockHttpServletRequest(servletContext, "GET", "/favorite/list");
+        MockHttpServletRequest request = new MockHttpServletRequest(servletContext, "GET", "/points/list");
         request.setContextPath(contextPath);
         MockHttpServletResponse response = new MockHttpServletResponse();
         return new WebContext(

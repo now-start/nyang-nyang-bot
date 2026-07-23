@@ -19,8 +19,6 @@ class TimerMessageTest {
                 .claimedChatCount(10)
                 .claimToken("claim-1")
                 .claimExpiresAt(claimExpiresAt)
-                .createdBy("admin")
-                .updatedBy("admin")
                 .build();
 
         timer.update(
@@ -30,7 +28,7 @@ class TimerMessageTest {
                 true,
                 LocalDateTime.of(2026, 7, 16, 21, 30),
                 false,
-                "editor"
+                null
         );
 
         then(timer.getClaimToken()).isEqualTo("claim-1");

@@ -1,81 +1,49 @@
 package org.nowstart.nyangnyangbot.application.service.google;
 
 import io.micrometer.common.util.StringUtils;
-import jakarta.transaction.Transactional;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.favorite.AdjustFavoriteUseCase.AdjustFavoriteCommand;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort;
-import org.nowstart.nyangnyangbot.application.port.out.favorite.FavoriteQueryPort.SummaryResult;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort.GoogleSheetRow;
-import org.nowstart.nyangnyangbot.domain.favorite.FavoriteSourceType;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class GoogleSheetService implements SyncGoogleSheetUseCase {
 
-    private final FavoriteQueryPort favoriteQueryPort;
-    private final AdjustFavoriteUseCase adjustFavoriteUseCase;
+    private final GoogleSheetPointBatchApplier pointBatchApplier;
     private final GoogleSheetPort googleSheetPort;
 
-    // 스케줄러(매일 04:00)와 수동 동기화 API가 동시에 실행되면 같은 delta가 두 번 적용되어
-    // 호감도 원장이 이중 기록될 수 있으므로 단일 실행을 보장한다.
-    // 단일 인스턴스 운영을 전제로 하며, 다중 인스턴스로 확장 시 분산 락(ShedLock 등)으로 대체해야 한다.
+    // 한 인스턴스에서 스케줄러와 수동 API가 같은 시트를 중복 조회하지 않도록 실행을 합친다.
+    // 사용자별 정합성은 DB 잠금 기반 reconcile이 보장하며, 이 플래그는 다중 인스턴스 singleton은 아니다.
     private final AtomicBoolean syncing = new AtomicBoolean(false);
 
     @Override
-    public void updateFavorite() {
+    public void synchronizePoints() {
         if (!syncing.compareAndSet(false, true)) {
             log.warn("[DBSync] 이미 동기화가 진행 중이어서 이번 실행을 건너뜁니다.");
             return;
         }
         try {
             List<GoogleSheetRow> googleSheetRows = getSheetValues();
-
-            for (GoogleSheetRow row : googleSheetRows) {
-                SummaryResult favorite = favoriteQueryPort.getOrCreate(row.userId(), row.nickName());
-
-                if (!Objects.equals(favorite.nickName(), row.nickName())) {
-                    favoriteQueryPort.updateNickName(row.userId(), row.nickName());
-                }
-
-                if (!Objects.equals(favorite.favorite(), row.favorite())) {
-                    int before = favorite.favorite() == null ? 0 : favorite.favorite();
-                    adjustFavoriteUseCase.adjust(AdjustFavoriteCommand.builder()
-                            .userId(row.userId())
-                            .nickName(row.nickName())
-                            .delta(row.favorite() - before)
-                            .sourceType(FavoriteSourceType.SHEET_MIGRATION)
-                            .sourceId("google-sheet")
-                            .displayCategory("MIGRATION")
-                            .publicDescription("데이터 동기화")
-                            .allowNegativeBalance(true)
-                            .createIfMissing(true)
-                            .build());
-                }
-            }
+            pointBatchApplier.apply(googleSheetRows);
         } finally {
             syncing.set(false);
         }
     }
 
     List<GoogleSheetRow> getSheetValues() {
-        return normalizeRows(googleSheetPort.readFavoriteRows());
+        return normalizeRows(googleSheetPort.readPointRows());
     }
 
     List<GoogleSheetRow> normalizeRows(List<GoogleSheetRow> rows) {
         return rows.stream()
-                .filter(row -> row != null && !StringUtils.isBlank(row.userId()) && row.favorite() != null)
+                .filter(row -> row != null && !StringUtils.isBlank(row.userId()) && row.point() != null)
                 .collect(Collectors.toMap(
                         GoogleSheetRow::userId,
                         row -> row,

@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -41,15 +41,15 @@ class OverlayControllerTest {
 
     @Test
     @DisplayName("대기 이벤트가 없으면 오버레이 대기 fragment를 반환한다")
-    void nextEvent_ShouldReturnWaitFragmentWhenQueueIsEmpty() {
+    void nextJob_ShouldReturnWaitFragmentWhenQueueIsEmpty() {
         // 준비
         ManageOverlayDisplayUseCase useCase = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
-        given(useCase.claimNextEvent("Bearer token")).willReturn(Optional.empty());
+        given(useCase.claimNextJob("Bearer token")).willReturn(Optional.empty());
         OverlayController controller = new OverlayController(useCase);
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.nextEvent("Bearer token", model);
+        String view = controller.nextJob("Bearer token", model);
 
         // 검증
         then(view).isEqualTo("features/overlay/roulette :: overlay-wait");
@@ -57,41 +57,56 @@ class OverlayControllerTest {
     }
 
     @Test
-    @DisplayName("대기 이벤트가 있으면 이벤트 fragment를 반환하고 표시 완료 처리한다")
-    void nextEvent_ShouldReturnEventFragmentAndMarkDisplayed() {
+    @DisplayName("대기 작업이 있으면 claim token이 포함된 표시 fragment를 반환한다")
+    void nextJob_ShouldReturnClaimedJobFragment() {
         // 준비
         ManageOverlayDisplayUseCase useCase = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
         OverlayDisplayResult event = new OverlayDisplayResult(
                 1L,
                 20L,
                 "치즈냥",
+                "claim-1",
                 1,
                 5,
-                LocalDateTime.of(2026, 5, 9, 12, 2),
+                Instant.parse("2026-05-09T03:02:00Z"),
                 List.of()
         );
-        given(useCase.claimNextEvent("Bearer token")).willReturn(Optional.of(event));
+        given(useCase.claimNextJob("Bearer token")).willReturn(Optional.of(event));
         OverlayController controller = new OverlayController(useCase);
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.nextEvent("Bearer token", model);
+        String view = controller.nextJob("Bearer token", model);
 
         // 검증
         then(view).isEqualTo("features/overlay/roulette :: overlay-event");
         then(model.getAttribute("event")).isEqualTo(event);
-        BDDMockito.then(useCase).should().markDisplayed(1L, "Bearer token");
+        BDDMockito.then(useCase).should().claimNextJob("Bearer token");
+    }
+
+    @Test
+    @DisplayName("표시 완료 요청은 작업 ID와 claim token을 검증하는 유스케이스에 위임한다")
+    void markDisplayed_ShouldCompleteClaimedJob() {
+        ManageOverlayDisplayUseCase useCase = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
+        OverlayController controller = new OverlayController(useCase);
+        ConcurrentModel model = new ConcurrentModel();
+
+        String view = controller.markDisplayed(1L, "claim-1", "Bearer token", model);
+
+        then(view).isEqualTo("features/overlay/roulette :: overlay-wait");
+        then(model.asMap()).isEmpty();
+        BDDMockito.then(useCase).should().markDisplayed(1L, "claim-1", "Bearer token");
     }
 
     @Test
     @DisplayName("유효하지 않은 토큰이면 오류 fragment를 반환한다")
-    void nextEvent_ShouldReturnErrorFragmentForInvalidToken() {
+    void nextJob_ShouldReturnErrorFragmentForInvalidToken() {
         // 준비
         OverlayController controller = new OverlayController(BDDMockito.mock(ManageOverlayDisplayUseCase.class));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.nextEvent("", model);
+        String view = controller.nextJob("", model);
 
         // 검증
         then(view).isEqualTo("features/overlay/roulette :: overlay-error");
@@ -109,9 +124,10 @@ class OverlayControllerTest {
                 1L,
                 20L,
                 "치즈냥",
+                "claim-1",
                 1,
                 5,
-                LocalDateTime.of(2026, 5, 9, 12, 2),
+                Instant.parse("2026-05-09T03:02:00Z"),
                 List.of()
         ));
 
@@ -122,7 +138,10 @@ class OverlayControllerTest {
         then(html).contains("hx-trigger=\"load\"");
         then(html).contains("hx-trigger=\"every 2s\"");
         then(html).contains("hx-trigger=\"load delay:5s\"");
-        then(html).contains("hx-get=\"/overlay/roulette/events/next\"");
+        then(html).contains("hx-get=\"/overlay/roulette/jobs/next\"");
+        then(html).contains("hx-post=\"/overlay/roulette/jobs/1/displayed\"");
+        then(html).contains("name=\"claimToken\"");
+        then(html).contains("value=\"claim-1\"");
         then(html).contains("hx-headers");
         then(html).contains("Authorization");
         then(html).contains("URLSearchParams(location.hash.slice(1))");

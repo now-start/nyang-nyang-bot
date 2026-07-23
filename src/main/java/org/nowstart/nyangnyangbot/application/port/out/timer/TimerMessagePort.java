@@ -16,6 +16,8 @@ public interface TimerMessagePort {
 
     Optional<TimerMessageRecord> findById(Long timerMessageId);
 
+    Optional<TimerMessageRecord> findByIdForUpdate(Long timerMessageId);
+
     TimerMessageRecord create(CreateData data);
 
     TimerMessageRecord update(UpdateData data);
@@ -67,9 +69,7 @@ public interface TimerMessagePort {
             long chatCountSinceLastSend,
             LocalDateTime lastSentAt,
             LocalDateTime nextRunAt,
-            @NotBlank(message = "createdBy is required")
             String createdBy,
-            @NotBlank(message = "updatedBy is required")
             String updatedBy,
             LocalDateTime createDate,
             LocalDateTime modifyDate
@@ -82,8 +82,8 @@ public interface TimerMessagePort {
             @NotNull(message = "minChatCount is required") Integer minChatCount,
             boolean active,
             LocalDateTime nextRunAt,
-            @NotBlank(message = "createdBy is required") String createdBy,
-            @NotBlank(message = "updatedBy is required") String updatedBy
+            String createdBy,
+            String updatedBy
     ) {
     }
 
@@ -95,7 +95,7 @@ public interface TimerMessagePort {
             boolean active,
             LocalDateTime nextRunAt,
             boolean resetSchedule,
-            @NotBlank(message = "updatedBy is required") String updatedBy
+            String updatedBy
     ) {
     }
 

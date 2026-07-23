@@ -7,73 +7,74 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
-import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteProcessingStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 public class RoulettePolicy {
 
     public static final int TOTAL_PROBABILITY = 10_000;
     public static final int DEFAULT_HIGH_ROUND_THRESHOLD = 100;
+    public static final int MAX_ROUNDS_PER_DONATION = 1_000;
 
     public RouletteActivationValidation validateActivation(
-            TableCandidate table,
-            List<? extends ItemCandidate> items
+            ConfigCandidate config,
+            List<? extends OptionCandidate> options
     ) {
         List<String> reasons = new ArrayList<>();
-        if (isBlank(table.command())) {
-            reasons.add("command is required");
+        if (isBlank(config.triggerToken())) {
+            reasons.add("triggerToken is required");
         }
-        if (table.pricePerRound() == null || table.pricePerRound() <= 0) {
+        if (config.pricePerRound() == null || config.pricePerRound() <= 0) {
             reasons.add("pricePerRound is required");
         }
-        int probabilityTotal = items.stream()
-                .map(ItemCandidate::probabilityBasisPoints)
+        int probabilityTotal = options.stream()
+                .map(OptionCandidate::probabilityBasisPoints)
                 .filter(value -> value != null)
                 .mapToInt(Integer::intValue)
                 .sum();
         if (probabilityTotal != TOTAL_PROBABILITY) {
             reasons.add("probability total must be 10000");
         }
-        boolean hasLosingItem = items.stream().anyMatch(item ->
-                item.losingItem()
-                        && item.probabilityBasisPoints() != null
-                        && item.probabilityBasisPoints() > 0
+        boolean hasLosingOption = options.stream().anyMatch(option ->
+                option.losing()
+                        && option.probabilityBasisPoints() != null
+                        && option.probabilityBasisPoints() > 0
         );
-        if (!hasLosingItem) {
-            reasons.add("losing item is required");
+        if (!hasLosingOption) {
+            reasons.add("losing option is required");
         }
         return new RouletteActivationValidation(
                 reasons.isEmpty(),
                 reasons,
                 probabilityTotal,
-                hasLosingItem
+                hasLosingOption
         );
     }
 
-    public <T extends ItemCandidate> T selectItem(List<T> items) {
-        return selectItem(items, nextTicket(TOTAL_PROBABILITY));
+    public <T extends OptionCandidate> T selectOption(List<T> options) {
+        return selectOption(options, nextTicket(TOTAL_PROBABILITY));
     }
 
-    public <T extends ItemCandidate> T selectItem(List<T> items, int ticket) {
+    public <T extends OptionCandidate> T selectOption(List<T> options, int ticket) {
         int cumulative = 0;
-        for (T item : items) {
-            cumulative += item.probabilityBasisPoints();
+        for (T option : options) {
+            cumulative += option.probabilityBasisPoints();
             if (ticket <= cumulative) {
-                return item;
+                return option;
             }
         }
-        return items.get(items.size() - 1);
+        return options.getLast();
     }
 
     public int nextTicket(int totalProbability) {
         return ThreadLocalRandom.current().nextInt(1, totalProbability + 1);
     }
 
-    public boolean containsCommand(String donationText, String command) {
-        if (isBlank(donationText) || isBlank(command)) {
+    public boolean containsTriggerToken(String donationText, String triggerToken) {
+        if (isBlank(donationText) || isBlank(triggerToken)) {
             return false;
         }
-        String normalizedCommand = CommandTrigger.normalize(command);
+        String normalizedCommand = CommandTrigger.normalize(triggerToken);
         return Arrays.stream(donationText.trim().split("\\s+"))
                 .map(CommandTrigger::normalize)
                 .anyMatch(normalizedCommand::equals);
@@ -84,44 +85,52 @@ public class RoulettePolicy {
             return 0;
         }
         long roundCount = amount / pricePerRound;
-        if (roundCount > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("roundCount is too large");
+        if (roundCount > MAX_ROUNDS_PER_DONATION) {
+            throw new IllegalArgumentException("roundCount exceeds maximum " + MAX_ROUNDS_PER_DONATION);
         }
         return (int) roundCount;
     }
 
-    public int highRoundThreshold(TableCandidate table) {
-        return table.highRoundThreshold() == null
+    public int highRoundThreshold(ConfigCandidate config) {
+        return config.highRoundThreshold() == null
                 ? DEFAULT_HIGH_ROUND_THRESHOLD
-                : table.highRoundThreshold();
+                : config.highRoundThreshold();
     }
 
-    public void validateTableInput(String title, String command, Long pricePerRound) {
+    public void validateConfigInput(String title, String triggerToken, Long pricePerRound) {
         if (isBlank(title)) {
             throw new IllegalArgumentException("title is required");
         }
-        if (isBlank(command)) {
-            throw new IllegalArgumentException("command is required");
+        if (isBlank(triggerToken)) {
+            throw new IllegalArgumentException("triggerToken is required");
         }
-        if (!command.trim().startsWith("!")) {
-            throw new IllegalArgumentException("command must start with !");
+        String trimmedTrigger = triggerToken.trim();
+        CommandTrigger.validate(trimmedTrigger);
+        if (!trimmedTrigger.startsWith("!")) {
+            throw new IllegalArgumentException("triggerToken must start with !");
+        }
+        if (trimmedTrigger.length() < 2 || trimmedTrigger.length() > 20) {
+            throw new IllegalArgumentException("triggerToken length must be between 2 and 20");
         }
         if (pricePerRound == null || pricePerRound <= 0) {
             throw new IllegalArgumentException("pricePerRound is required");
         }
     }
 
-    public void validateItemInput(
+    public void validateOptionInput(
             String label,
             Integer probabilityBasisPoints,
+            boolean losing,
             RewardType rewardType,
             ConversionMode conversionMode,
-            Integer exchangeFavoriteValue
+            Long pointDelta
     ) {
         if (isBlank(label)) {
             throw new IllegalArgumentException("label is required");
         }
-        if (probabilityBasisPoints == null || probabilityBasisPoints < 0) {
+        if (probabilityBasisPoints == null
+                || probabilityBasisPoints < 0
+                || probabilityBasisPoints > TOTAL_PROBABILITY) {
             throw new IllegalArgumentException("probabilityBasisPoints is required");
         }
         if (rewardType == null) {
@@ -131,8 +140,14 @@ public class RoulettePolicy {
             throw new IllegalArgumentException("conversionMode is required");
         }
         if (conversionMode == ConversionMode.AUTO
-                && (exchangeFavoriteValue == null || exchangeFavoriteValue == 0)) {
-            throw new IllegalArgumentException("exchangeFavoriteValue is required for AUTO conversion");
+                && (pointDelta == null || pointDelta == 0)) {
+            throw new IllegalArgumentException("pointDelta is required for AUTO conversion");
+        }
+        if (conversionMode == ConversionMode.NONE && pointDelta != null) {
+            throw new IllegalArgumentException("pointDelta must be null for NONE conversion");
+        }
+        if (losing && conversionMode != ConversionMode.NONE) {
+            throw new IllegalArgumentException("losing option must use NONE conversion");
         }
     }
 
@@ -159,44 +174,36 @@ public class RoulettePolicy {
         }
     }
 
-    public RouletteEventStatus eventStatus(List<? extends RoundStatusCandidate> rounds) {
-        long applied = rounds.stream()
-                .filter(round -> round.status() == RouletteRoundStatus.APPLIED)
-                .count();
-        long failed = rounds.stream()
-                .filter(round -> round.status() == RouletteRoundStatus.FAILED)
-                .count();
-        if (applied == rounds.size()) {
-            return RouletteEventStatus.APPLIED;
+    public RouletteProcessingStatus processingStatus(List<RouletteRoundStatus> statuses) {
+        long applied = statuses.stream().filter(status -> status == RouletteRoundStatus.APPLIED).count();
+        long failed = statuses.stream().filter(status -> status == RouletteRoundStatus.FAILED).count();
+        if (!statuses.isEmpty() && applied == statuses.size()) {
+            return RouletteProcessingStatus.APPLIED;
         }
-        if (failed == rounds.size()) {
-            return RouletteEventStatus.FAILED;
+        if (!statuses.isEmpty() && failed == statuses.size()) {
+            return RouletteProcessingStatus.FAILED;
         }
         if (applied > 0 || failed > 0) {
-            return RouletteEventStatus.PARTIALLY_APPLIED;
+            return RouletteProcessingStatus.PARTIALLY_APPLIED;
         }
-        return RouletteEventStatus.CONFIRMED;
+        return RouletteProcessingStatus.CONFIRMED;
     }
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
 
-    public interface TableCandidate {
-        String command();
+    public interface ConfigCandidate {
+        String triggerToken();
 
         Long pricePerRound();
 
         Integer highRoundThreshold();
     }
 
-    public interface ItemCandidate {
+    public interface OptionCandidate {
         Integer probabilityBasisPoints();
 
-        boolean losingItem();
-    }
-
-    public interface RoundStatusCandidate {
-        RouletteRoundStatus status();
+        boolean losing();
     }
 }

@@ -1,25 +1,26 @@
 package org.nowstart.nyangnyangbot.application.port.in.overlay;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 
 public interface ManageOverlayDisplayUseCase {
 
-    OverlayDisplayResult replayRouletteEvent(Long rouletteEventId);
+    OverlayDisplayResult replayRouletteRun(Long rouletteRunId);
 
-    Optional<OverlayDisplayResult> claimNextEvent(String authorizationHeader);
+    Optional<OverlayDisplayResult> claimNextJob(String authorizationHeader);
 
-    void markDisplayed(Long displayEventId, String authorizationHeader);
+    void markDisplayed(Long displayJobId, String claimToken, String authorizationHeader);
 
     record OverlayDisplayResult(
-            Long displayEventId,
-            Long rouletteEventId,
-            String nickName,
+            Long displayJobId,
+            Long rouletteRunId,
+            String donorDisplayName,
+            String claimToken,
             Integer roundCount,
             Integer maxAnimatedRounds,
-            LocalDateTime expiresAt,
+            Instant expiresAt,
             List<RouletteRoundResult> rounds
     ) {
     }

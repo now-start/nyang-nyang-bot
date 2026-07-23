@@ -13,13 +13,13 @@ import org.springframework.web.servlet.ModelAndView;
 public class RootController {
 
     private static final String LANDING_VIEW = "index";
-    private static final String FAVORITE_LIST_REDIRECT = "redirect:/favorite/list";
+    private static final String POINT_LIST_REDIRECT = "redirect:/points/list";
 
     @Operation(summary = "기본 페이지", description = "미인증 사용자는 랜딩 화면을, 인증 사용자는 호감도 보드로 이동합니다.")
     @GetMapping({"", "/"})
     public ModelAndView index(Authentication authentication) {
         if (isAuthenticated(authentication)) {
-            return new ModelAndView(FAVORITE_LIST_REDIRECT);
+            return new ModelAndView(POINT_LIST_REDIRECT);
         }
         return new ModelAndView(LANDING_VIEW, "landingMode", true);
     }

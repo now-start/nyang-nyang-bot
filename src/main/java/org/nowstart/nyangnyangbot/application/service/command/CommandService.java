@@ -10,6 +10,7 @@ import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -59,6 +60,7 @@ public class CommandService implements ManageCommandUseCase {
                 state.trigger(),
                 state.messageTemplate(),
                 Boolean.TRUE.equals(request.active()),
+                state.executionPolicy(),
                 state.userCooldownSeconds(),
                 actor,
                 actor
@@ -74,19 +76,21 @@ public class CommandService implements ManageCommandUseCase {
         if (request == null) {
             throw new IllegalArgumentException("command is required");
         }
-        CommandRecord current = commandPort.findById(commandId)
+        CommandRecord current = commandPort.findByIdForUpdate(commandId)
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
         String trigger = request.trigger() == null ? current.trigger() : request.trigger();
         String template = request.messageTemplate() == null
                 ? current.messageTemplate()
                 : request.messageTemplate();
-        Integer cooldown = request.userCooldownSeconds() == null
-                ? current.userCooldownSeconds()
-                : request.userCooldownSeconds();
+        CommandExecutionPolicy executionPolicy = request.executionPolicy() == null
+                ? current.executionPolicy()
+                : request.executionPolicy();
+        Integer cooldown = resolveUpdateCooldown(request, current, executionPolicy);
         ValidationState state = validationForRequest(
                 commandId,
                 trigger,
                 template,
+                executionPolicy,
                 cooldown,
                 useCaseValidator.errors(request)
         );
@@ -96,6 +100,7 @@ public class CommandService implements ManageCommandUseCase {
                 state.trigger(),
                 state.messageTemplate(),
                 request.active() == null ? current.active() : request.active(),
+                state.executionPolicy(),
                 state.userCooldownSeconds(),
                 actor(request.actorId())
         ));
@@ -130,6 +135,7 @@ public class CommandService implements ManageCommandUseCase {
                 request.commandId(),
                 request.trigger(),
                 request.messageTemplate(),
+                request.executionPolicy(),
                 request.userCooldownSeconds(),
                 useCaseValidator.errors(request)
         );
@@ -144,6 +150,7 @@ public class CommandService implements ManageCommandUseCase {
                 null,
                 request.trigger(),
                 request.messageTemplate(),
+                request.executionPolicy(),
                 request.userCooldownSeconds(),
                 useCaseValidator.errors(request)
         );
@@ -153,19 +160,24 @@ public class CommandService implements ManageCommandUseCase {
             Long commandId,
             String triggerValue,
             String messageTemplateValue,
+            CommandExecutionPolicy executionPolicyValue,
             Integer userCooldownSecondsValue,
             List<String> initialErrors
     ) {
         List<String> errors = new ArrayList<>(initialErrors);
         String trigger = CommandTrigger.normalize(triggerValue);
         String template = cleanTemplate(messageTemplateValue);
-        Integer cooldown = userCooldownSecondsValue == null
-                ? DEFAULT_USER_COOLDOWN_SECONDS
-                : userCooldownSecondsValue;
+        CommandExecutionPolicy executionPolicy = executionPolicyValue == null
+                ? CommandExecutionPolicy.USER_INTERVAL
+                : executionPolicyValue;
+        Integer cooldown = executionPolicy == CommandExecutionPolicy.USER_CALENDAR_DAY
+                ? null
+                : userCooldownSecondsValue == null ? DEFAULT_USER_COOLDOWN_SECONDS : userCooldownSecondsValue;
 
         errors.addAll(CommandTrigger.validationErrors(trigger));
         errors.addAll(templateErrors(template));
-        if (cooldown < MIN_USER_COOLDOWN_SECONDS || cooldown > MAX_USER_COOLDOWN_SECONDS) {
+        if (executionPolicy == CommandExecutionPolicy.USER_INTERVAL
+                && (cooldown < MIN_USER_COOLDOWN_SECONDS || cooldown > MAX_USER_COOLDOWN_SECONDS)) {
             errors.add("userCooldownSeconds must be between 5 and 3600");
         }
         if (trigger != null) {
@@ -175,7 +187,7 @@ public class CommandService implements ManageCommandUseCase {
                 }
             });
         }
-        return new ValidationState(trigger, template, cooldown, errors.stream().distinct().toList());
+        return new ValidationState(trigger, template, executionPolicy, cooldown, errors.stream().distinct().toList());
     }
 
     private List<String> templateErrors(String template) {
@@ -211,6 +223,7 @@ public class CommandService implements ManageCommandUseCase {
                 command.trigger(),
                 command.messageTemplate(),
                 command.active(),
+                command.executionPolicy(),
                 command.userCooldownSeconds(),
                 command.createdBy(),
                 command.updatedBy(),
@@ -224,12 +237,29 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private String actor(String value) {
-        return value == null || value.isBlank() ? "system" : value;
+        return value == null || value.isBlank() || "system".equals(value) ? null : value;
+    }
+
+    private Integer resolveUpdateCooldown(
+            UpdateCommand request,
+            CommandRecord current,
+            CommandExecutionPolicy executionPolicy
+    ) {
+        if (executionPolicy == CommandExecutionPolicy.USER_CALENDAR_DAY) {
+            return null;
+        }
+        if (request.userCooldownSeconds() != null) {
+            return request.userCooldownSeconds();
+        }
+        return current.userCooldownSeconds() == null
+                ? DEFAULT_USER_COOLDOWN_SECONDS
+                : current.userCooldownSeconds();
     }
 
     private record ValidationState(
             String trigger,
             String messageTemplate,
+            CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
             List<String> errors
     ) {

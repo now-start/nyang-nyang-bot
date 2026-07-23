@@ -40,8 +40,8 @@ class GoogleControllerTest {
         then(view).isEqualTo("components/feedback :: alert");
         then(model.get("message")).isEqualTo("데이터 동기화 완료");
         then(model.get("tone")).isEqualTo("success");
-        then(response.getHeader("HX-Trigger")).isEqualTo("favorite-board-refresh");
-        BDDMockito.then(syncGoogleSheetUseCase).should().updateFavorite();
+        then(response.getHeader("HX-Trigger")).isEqualTo("point-board-refresh");
+        BDDMockito.then(syncGoogleSheetUseCase).should().synchronizePoints();
     }
 
     @Test
@@ -50,7 +50,7 @@ class GoogleControllerTest {
         // 준비
         BDDMockito.willThrow(new IllegalStateException("sync failed"))
                 .given(syncGoogleSheetUseCase)
-                .updateFavorite();
+                .synchronizePoints();
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
 

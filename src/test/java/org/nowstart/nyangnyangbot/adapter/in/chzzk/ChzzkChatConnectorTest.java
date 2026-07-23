@@ -118,7 +118,7 @@ class ChzzkChatConnectorTest {
     }
 
     @Test
-    @DisplayName("소켓 연결 시 활성화된 시스템과 채팅 이벤트를 구독한다")
+    @DisplayName("소켓 연결 시 시스템과 채팅 및 후원 이벤트를 구독한다")
     void connect_ShouldSubscribeSocketEvents_WhenSocketConnects() throws URISyntaxException {
         // 준비
         ChzzkChatConnector connector = createConnector();
@@ -131,7 +131,7 @@ class ChzzkChatConnectorTest {
         // 검증
         BDDMockito.then(socket).should().on(eq("SYSTEM"), any(Emitter.Listener.class));
         BDDMockito.then(socket).should().on(eq("CHAT"), any(Emitter.Listener.class));
-        BDDMockito.then(socket).should(never()).on(eq("DONATION"), any(Emitter.Listener.class));
+        BDDMockito.then(socket).should().on(eq("DONATION"), any(Emitter.Listener.class));
     }
 
     @Test
@@ -162,6 +162,37 @@ class ChzzkChatConnectorTest {
                 event.senderChannelId().equals("user-1")
                         && event.profile().nickname().equals("치즈냥")
                         && event.content().equals("안녕")
+        ));
+    }
+
+    @Test
+    @DisplayName("공식 후원 소켓 JSON에 수신 키를 부여해 애플리케이션으로 전달한다")
+    void connect_ShouldDispatchOfficialDonationPayloadWithGeneratedIngestionKey() throws URISyntaxException {
+        ChzzkChatConnector connector = createConnector();
+        given(connectChzzkChatUseCase.isConnected()).willReturn(false);
+        given(connectChzzkChatUseCase.getSession()).willReturn("https://example.com");
+        doReturn("chzzk-received:test").when(connector).nextDonationIngestionKey();
+        connector.connect();
+        ArgumentCaptor<Emitter.Listener> listenerCaptor = ArgumentCaptor.forClass(Emitter.Listener.class);
+        BDDMockito.then(socket).should().on(eq("DONATION"), listenerCaptor.capture());
+
+        listenerCaptor.getValue().call("""
+                {
+                  "donationType": "CHAT",
+                  "channelId": "streamer-1",
+                  "donatorChannelId": "viewer-1",
+                  "donatorNickname": "치즈냥",
+                  "payAmount": "10,000",
+                  "donationText": "!룰렛",
+                  "emojis": {}
+                }
+                """);
+
+        BDDMockito.then(handleChzzkEventUseCase).should().handleDonationEvent(BDDMockito.argThat(event ->
+                "chzzk-received:test".equals(event.ingestionKey())
+                        && "streamer-1".equals(event.channelId())
+                        && "viewer-1".equals(event.donatorChannelId())
+                        && "10,000".equals(event.payAmount())
         ));
     }
 

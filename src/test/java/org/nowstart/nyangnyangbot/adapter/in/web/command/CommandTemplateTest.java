@@ -160,7 +160,7 @@ class CommandTemplateTest {
                 )),
                 new VariableGroupView("integration", "연동 데이터", List.of(
                         new VariableResult(
-                                "favorite.balance",
+                                "point.balance",
                                 "호감도",
                                 "명령어를 호출한 시청자의 현재 호감도",
                                 "100"
@@ -190,7 +190,7 @@ class CommandTemplateTest {
 
     private WebContext webContext(String contextPath) {
         MockServletContext servletContext = new MockServletContext();
-        MockHttpServletRequest request = new MockHttpServletRequest(servletContext, "GET", "/favorite/list");
+        MockHttpServletRequest request = new MockHttpServletRequest(servletContext, "GET", "/points/list");
         request.setContextPath(contextPath);
         MockHttpServletResponse response = new MockHttpServletResponse();
         return new WebContext(

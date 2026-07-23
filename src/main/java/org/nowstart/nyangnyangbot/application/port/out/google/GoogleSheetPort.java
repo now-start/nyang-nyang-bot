@@ -6,12 +6,12 @@ import java.util.List;
 
 public interface GoogleSheetPort {
 
-    List<GoogleSheetRow> readFavoriteRows();
+    List<GoogleSheetRow> readPointRows();
 
     record GoogleSheetRow(
-            @NotBlank(message = "nickName is required") String nickName,
+            @NotBlank(message = "displayName is required") String displayName,
             @NotBlank(message = "userId is required") String userId,
-            @NotNull(message = "favorite is required") Integer favorite
+            @NotNull(message = "point is required") Long point
     ) {
     }
 }

@@ -36,7 +36,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class SecurityConfig {
 
     private static final String OAUTH2_AUTHORIZATION_ENDPOINT = "/oauth2/authorization/chzzk";
-    private static final String OAUTH2_SUCCESS_LOCATION = "/favorite/list";
+    private static final String OAUTH2_SUCCESS_LOCATION = "/points/list";
     private final ChzzkOAuth2AuthorizationRequestResolver chzzkOAuth2AuthorizationRequestResolver;
     private final ChzzkOAuth2AccessTokenResponseClient chzzkOAuth2AccessTokenResponseClient;
     private final ChzzkOAuth2UserService chzzkOAuth2UserService;
@@ -55,6 +55,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .csrf(csrf -> {
+                    csrf.ignoringRequestMatchers("/overlay/roulette/jobs/**");
                     if (h2ConsoleEnabled) {
                         csrf.ignoringRequestMatchers("/h2-console/**");
                     }
@@ -65,7 +66,7 @@ public class SecurityConfig {
                             .requestMatchers("/assets/**", "/images/**", "/css/**", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/**", "/v3/api-docs").permitAll()
                             .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
-                            .requestMatchers("/overlay/roulette", "/overlay/roulette/events/**").permitAll();
+                            .requestMatchers("/overlay/roulette", "/overlay/roulette/jobs/**").permitAll();
                     if (h2ConsoleEnabled) {
                         auth.requestMatchers("/h2-console/**").permitAll();
                     }
@@ -164,7 +165,7 @@ public class SecurityConfig {
                 || path.startsWith("/oauth2/authorization/")
                 || path.startsWith("/login/oauth2/code/")
                 || path.equals("/overlay/roulette")
-                || path.startsWith("/overlay/roulette/events/");
+                || path.startsWith("/overlay/roulette/jobs/");
     }
 
     private String localLoginRedirect(HttpServletRequest request) {

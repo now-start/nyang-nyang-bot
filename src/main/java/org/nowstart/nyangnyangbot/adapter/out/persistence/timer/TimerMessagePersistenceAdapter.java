@@ -3,9 +3,12 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.timer;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TimerMessagePersistenceAdapter implements TimerMessagePort {
 
     private final TimerMessageRepository timerMessageRepository;
+    private final UserAccountRepository userAccountRepository;
     private final OutboundContractValidator contractValidator;
 
     @Override
@@ -33,6 +37,11 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     }
 
     @Override
+    public Optional<TimerMessageRecord> findByIdForUpdate(Long timerMessageId) {
+        return timerMessageRepository.findByIdForUpdate(timerMessageId).map(this::record);
+    }
+
+    @Override
     public TimerMessageRecord create(CreateData data) {
         contractValidator.request("timerMessage.create", data);
         TimerMessage saved = timerMessageRepository.save(TimerMessage.builder()
@@ -43,8 +52,8 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
                 .nextRunAt(data.nextRunAt())
                 .chatCountSinceLastSend(0)
                 .claimedChatCount(0)
-                .createdBy(data.createdBy())
-                .updatedBy(data.updatedBy())
+                .createdByUser(actor(data.createdBy()))
+                .updatedByUser(actor(data.updatedBy()))
                 .build());
         return record(saved);
     }
@@ -52,7 +61,7 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     @Override
     public TimerMessageRecord update(UpdateData data) {
         contractValidator.request("timerMessage.update", data);
-        TimerMessage timer = timerMessageRepository.findById(data.id())
+        TimerMessage timer = timerMessageRepository.findByIdForUpdate(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("timer message not found"));
         timer.update(
                 data.messageTemplate(),
@@ -61,7 +70,7 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
                 data.active(),
                 data.nextRunAt(),
                 data.resetSchedule(),
-                data.updatedBy()
+                actor(data.updatedBy())
         );
         return record(timer);
     }
@@ -146,10 +155,25 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
                 timer.getChatCountSinceLastSend(),
                 timer.getLastSentAt(),
                 timer.getNextRunAt(),
-                timer.getCreatedBy(),
-                timer.getUpdatedBy(),
-                timer.getCreateDate(),
-                timer.getModifyDate()
+                userId(timer.getCreatedByUser()),
+                userId(timer.getUpdatedByUser()),
+                localDateTime(timer.getCreatedAt()),
+                localDateTime(timer.getUpdatedAt())
         ));
+    }
+
+    private UserAccount actor(String userId) {
+        if (userId == null || userId.isBlank() || "system".equals(userId)) {
+            return null;
+        }
+        return userAccountRepository.getReferenceById(userId);
+    }
+
+    private String userId(UserAccount user) {
+        return user == null ? null : user.getUserId();
+    }
+
+    private LocalDateTime localDateTime(java.time.Instant instant) {
+        return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }

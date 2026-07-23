@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +18,7 @@ import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResu
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.data.domain.Page;
 
 @ExtendWith(MockitoExtension.class)
 class AdminRouletteControllerValidationTest {
@@ -33,7 +33,7 @@ class AdminRouletteControllerValidationTest {
 
     @BeforeEach
     void setUp() {
-        given(manageRouletteUseCase.getTables()).willReturn(List.of());
+        given(manageRouletteUseCase.getConfigs(any())).willReturn(Page.empty());
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders
@@ -43,38 +43,38 @@ class AdminRouletteControllerValidationTest {
     }
 
     @Test
-    void createTable_ShouldRejectInvalidFormBeforeUseCase() throws Exception {
-        mockMvc.perform(post("/admin/roulette/tables")
+    void createConfig_ShouldRejectInvalidFormBeforeUseCase() throws Exception {
+        mockMvc.perform(post("/admin/roulette/configs")
                         .param("title", " ")
-                        .param("command", "command")
+                        .param("triggerToken", "command")
                         .param("pricePerRound", "0"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("features/roulette/components :: roulette-config-region"));
 
-        verify(manageRouletteUseCase, never()).createTable(any());
+        verify(manageRouletteUseCase, never()).createConfig(any());
     }
 
     @Test
-    void addItem_ShouldRejectNonNumericProbabilityBeforeUseCase() throws Exception {
-        mockMvc.perform(post("/admin/roulette/items")
-                        .param("tableId", "1")
+    void addOption_ShouldRejectNonNumericProbabilityBeforeUseCase() throws Exception {
+        mockMvc.perform(post("/admin/roulette/options")
+                        .param("configId", "1")
                         .param("label", "꽝")
                         .param("probabilityPercent", "not-a-number"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("features/roulette/components :: roulette-config-region"));
 
-        verify(manageRouletteUseCase, never()).addItem(any());
+        verify(manageRouletteUseCase, never()).addOption(any());
     }
 
     @Test
-    void addItem_ShouldRejectProbabilityOverOneHundredBeforeUseCase() throws Exception {
-        mockMvc.perform(post("/admin/roulette/items")
-                        .param("tableId", "1")
+    void addOption_ShouldRejectProbabilityOverOneHundredBeforeUseCase() throws Exception {
+        mockMvc.perform(post("/admin/roulette/options")
+                        .param("configId", "1")
                         .param("label", "꽝")
                         .param("probabilityPercent", "100.01"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("features/roulette/components :: roulette-config-region"));
 
-        verify(manageRouletteUseCase, never()).addItem(any());
+        verify(manageRouletteUseCase, never()).addOption(any());
     }
 }

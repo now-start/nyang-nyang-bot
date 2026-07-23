@@ -8,86 +8,82 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.time.Instant;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ManageRouletteUseCase {
 
-    RouletteTableResult createTable(
-            @Valid @NotNull(message = "command is required") CreateRouletteTableCommand command
-    );
+    RouletteConfigResult createConfig(@Valid @NotNull CreateRouletteConfigCommand command);
 
-    RouletteItemResult addItem(
-            @Valid @NotNull(message = "command is required") AddRouletteItemCommand command
-    );
+    RouletteOptionResult addOption(@Valid @NotNull AddRouletteOptionCommand command);
 
-    List<RouletteTableResult> getTables();
+    Page<RouletteConfigSummaryResult> getConfigs(Pageable pageable);
 
-    RouletteValidationResult validateTable(Long tableId);
+    RouletteConfigResult getConfig(Long configId);
 
-    RouletteTableResult activateTable(Long tableId);
+    RouletteValidationResult validateConfig(Long configId);
 
-    RouletteTableResult deactivateTable(Long tableId);
+    RouletteConfigResult activateConfig(Long configId);
 
-    RouletteSimulationResult simulate(Long tableId, int iterations);
+    RouletteConfigResult archiveConfig(Long configId);
 
-    record CreateRouletteTableCommand(
-            @NotBlank(message = "title is required")
-            @Size(max = 255, message = "title length must be 255 or less")
-            String title,
-            @NotBlank(message = "command is required")
-            @Size(max = 255, message = "command length must be 255 or less")
-            String command,
-            @NotNull(message = "pricePerRound is required")
-            @Positive(message = "pricePerRound must be positive")
-            Long pricePerRound,
-            @Positive(message = "highRoundThreshold must be positive")
-            Integer highRoundThreshold
+    RouletteSimulationResult simulate(Long configId, int iterations);
+
+    record CreateRouletteConfigCommand(
+            @NotBlank @Size(max = 100) String title,
+            @NotBlank @Size(max = 20) String triggerToken,
+            @NotNull @Positive Long pricePerRound,
+            @Positive Integer highRoundThreshold
     ) {
     }
 
-    record AddRouletteItemCommand(
-            @NotNull(message = "tableId is required")
-            @Positive(message = "tableId must be positive")
-            Long tableId,
-            @NotBlank(message = "label is required")
-            @Size(max = 255, message = "label length must be 255 or less")
-            String label,
-            @NotNull(message = "probabilityBasisPoints is required")
-            @Min(value = 0, message = "probabilityBasisPoints must be between 0 and 10000")
-            @Max(value = 10_000, message = "probabilityBasisPoints must be between 0 and 10000")
-            Integer probabilityBasisPoints,
-            Boolean losingItem,
+    record AddRouletteOptionCommand(
+            @NotNull @Positive Long configId,
+            @NotBlank @Size(max = 100) String label,
+            @NotNull @Min(0) @Max(10_000) Integer probabilityBasisPoints,
+            Boolean losing,
             String rewardType,
             String conversionMode,
-            Integer exchangeFavoriteValue,
-            @PositiveOrZero(message = "displayOrder must not be negative")
-            Integer displayOrder
+            Long pointDelta,
+            @PositiveOrZero Integer displayOrder
     ) {
     }
 
-    record RouletteTableResult(
+    record RouletteConfigResult(
             Long id,
             String title,
-            String command,
+            String triggerToken,
             Long pricePerRound,
-            Boolean active,
-            Integer version,
+            String status,
             Integer highRoundThreshold,
             RouletteValidationResult validation,
-            List<RouletteItemResult> items
+            List<RouletteOptionResult> options,
+            Instant createdAt,
+            Instant updatedAt
     ) {
     }
 
-    record RouletteItemResult(
+    record RouletteOptionResult(
             Long id,
             String label,
             Integer probabilityBasisPoints,
-            Boolean losingItem,
+            Boolean losing,
             String rewardType,
             String conversionMode,
-            Integer exchangeFavoriteValue,
-            Boolean active,
+            Long pointDelta,
             Integer displayOrder
+    ) {
+    }
+
+    record RouletteConfigSummaryResult(
+            Long id,
+            String title,
+            String triggerToken,
+            Long pricePerRound,
+            String status,
+            Instant createdAt
     ) {
     }
 
@@ -95,20 +91,13 @@ public interface ManageRouletteUseCase {
             Boolean activatable,
             List<String> reasons,
             Integer probabilityTotal,
-            Boolean hasLosingItem
+            Boolean hasLosingOption
     ) {
     }
 
-    record RouletteSimulationResult(
-            Integer iterations,
-            List<Entry> items
-    ) {
+    record RouletteSimulationResult(Integer iterations, List<Entry> options) {
 
-        public record Entry(
-                String label,
-                Integer count,
-                Double ratio
-        ) {
+        public record Entry(String label, Integer count, Double ratio) {
         }
     }
 }

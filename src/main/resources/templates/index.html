@@ -77,17 +77,17 @@
 </main>
 
 <div class="container-xl px-4 py-4 vstack gap-3" th:unless="${landingMode}">
-    <header th:replace="~{features/favorite/components :: hero(${currentNickName})}"></header>
+    <header th:replace="~{features/point/components :: hero(${currentNickName})}"></header>
 
     <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-    <div th:if="${isAdmin}" th:replace="~{features/favorite/components :: admin-tabs}"></div>
+    <div th:if="${isAdmin}" th:replace="~{features/point/components :: admin-tabs}"></div>
 
     <div class="tab-content">
-        <section th:replace="~{features/favorite/components :: favorite-tab(${favoriteList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks}, ${currentUserRank}, ${userUpbos})}"></section>
+        <section th:replace="~{features/point/components :: point-tab(${pointList}, ${nickName}, ${isAdmin}, ${weeklyChatRanks}, ${currentUserRank}, ${userRewards})}"></section>
 
-        <section aria-labelledby="attendance-tab-button" class="tab-pane fade" id="attendance-tab" role="tabpanel" th:if="${isAdmin}">
-            <div th:replace="~{features/attendance/components :: attendance-panel}"></div>
+        <section aria-labelledby="presence-tab-button" class="tab-pane fade" id="presence-tab" role="tabpanel" th:if="${isAdmin}">
+            <div th:replace="~{features/presence/components :: presence-panel}"></div>
         </section>
 
         <section aria-labelledby="roulette-tab-button" class="tab-pane fade" id="roulette-tab" role="tabpanel" th:if="${isAdmin}">
@@ -109,7 +109,7 @@
 </div>
 
 <th:block th:if="${!landingMode and isAdmin}">
-    <div th:replace="~{features/favorite/overlays :: karma-modal}"></div>
+    <div th:replace="~{features/point/overlays :: point-adjustment-modal}"></div>
 </th:block>
 </body>
 </html>

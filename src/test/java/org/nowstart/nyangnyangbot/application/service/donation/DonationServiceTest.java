@@ -1,120 +1,99 @@
 package org.nowstart.nyangnyangbot.application.service.donation;
 
-import static org.assertj.core.api.BDDAssertions.then;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
+import static org.mockito.BDDMockito.then;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
+import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
+import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.DonationResult;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
+import org.nowstart.nyangnyangbot.application.service.roulette.RouletteRunPreparedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
-@ExtendWith(MockitoExtension.class)
 class DonationServiceTest {
 
-    @Mock
-    private DonationPort donationPort;
-
-    @Mock
-    private ProcessRouletteDonationUseCase rouletteService;
+    private static final Instant NOW = Instant.parse("2026-07-23T00:00:00Z");
 
     @Test
-    void handle_ShouldPersistDonationAndRunRouletteFlow() {
-        // 준비
-        DonationService donationService = new DonationService(donationPort, rouletteService);
-        given(donationPort.existsByDonationEventId("donation-1")).willReturn(false);
+    void handleObservesUsersPersistsCanonicalDonationAndStartsRun() {
+        DonationPort donationPort = Mockito.mock(DonationPort.class);
+        ObserveUserUseCase observeUser = Mockito.mock(ObserveUserUseCase.class);
+        ProcessRouletteDonationUseCase process = Mockito.mock(ProcessRouletteDonationUseCase.class);
+        ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        DonationService service = new DonationService(donationPort, observeUser, process, eventPublisher) {
+            @Override
+            Instant now() {
+                return NOW;
+            }
+        };
+        DonationReceived donation = donation();
+        given(donationPort.findByIngestionKey("event-1")).willReturn(Optional.empty());
+        given(donationPort.save(Mockito.any())).willReturn(new DonationResult(
+                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛", NOW
+        ));
+        given(process.processDonation(Mockito.eq(7L), Mockito.any()))
+                .willReturn(RouletteRunResult.ready(7L, List.of()));
 
-        // 실행
-        donationService.handle(donation("donation-1", "1,000", Map.of()));
+        service.handle(donation);
 
-        // 검증
-        ArgumentCaptor<SaveDonationCommand> captor = ArgumentCaptor.forClass(SaveDonationCommand.class);
-        BDDMockito.then(donationPort).should().save(captor.capture());
-        then(captor.getValue().payAmount()).isEqualTo(1_000L);
-        BDDMockito.then(rouletteService).should().processDonation(any(DonationReceived.class));
+        then(observeUser).should().observeUser("streamer-1", null);
+        then(observeUser).should().observeUser("viewer-1", "시청자");
+        ArgumentCaptor<SaveDonationCommand> command = ArgumentCaptor.forClass(SaveDonationCommand.class);
+        then(donationPort).should().save(command.capture());
+        then(process).should().processDonation(7L, new DonationReceived(
+                "event-1", "CHAT", "streamer-1", "viewer-1", "시청자",
+                "10000", "!룰렛", Map.of()
+        ));
+        then(eventPublisher).should().publishEvent(new RouletteRunPreparedEvent(7L));
+        org.assertj.core.api.Assertions.assertThat(command.getValue().amount()).isEqualTo(10_000L);
+        org.assertj.core.api.Assertions.assertThat(command.getValue().receivedAt()).isEqualTo(NOW);
     }
 
     @Test
-    void handle_ShouldPersistBlankDonationEventIdWithoutDuplicateCheck() {
-        // 준비
-        DonationService donationService = new DonationService(donationPort, rouletteService);
+    void duplicateEventReusesDonationInsteadOfInsertingAgain() {
+        DonationPort donationPort = Mockito.mock(DonationPort.class);
+        ObserveUserUseCase observeUser = Mockito.mock(ObserveUserUseCase.class);
+        ProcessRouletteDonationUseCase process = Mockito.mock(ProcessRouletteDonationUseCase.class);
+        ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        DonationService service = new DonationService(donationPort, observeUser, process, eventPublisher);
+        DonationResult existing = new DonationResult(
+                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛", NOW
+        );
+        given(donationPort.findByIngestionKey("event-1")).willReturn(Optional.of(existing));
+        given(process.processDonation(Mockito.eq(7L), Mockito.any()))
+                .willReturn(RouletteRunResult.duplicate(7L, List.of()));
 
-        // 실행
-        donationService.handle(donation(" ", "", null));
+        service.handle(donation());
 
-        // 검증
-        ArgumentCaptor<SaveDonationCommand> captor = ArgumentCaptor.forClass(SaveDonationCommand.class);
-        BDDMockito.then(donationPort).should(never()).existsByDonationEventId(anyString());
-        BDDMockito.then(donationPort).should().save(captor.capture());
-        then(captor.getValue().payAmount()).isZero();
-        then(captor.getValue().emojis()).isNull();
-        BDDMockito.then(rouletteService).should().processDonation(any(DonationReceived.class));
+        then(donationPort).should().findByIngestionKey("event-1");
+        then(donationPort).shouldHaveNoMoreInteractions();
+        then(process).should().processDonation(7L, new DonationReceived(
+                "event-1", "CHAT", "streamer-1", "viewer-1", "시청자",
+                "10000", "!룰렛", Map.of()
+        ));
+        then(eventPublisher).should().publishEvent(new RouletteRunPreparedEvent(7L));
     }
 
-    @Test
-    void handle_ShouldFallbackInvalidAmountToZeroAndKeepEmojis() {
-        // 준비
-        DonationService donationService = new DonationService(donationPort, rouletteService);
-        given(donationPort.existsByDonationEventId("donation-2")).willReturn(false);
-
-        // 실행
-        donationService.handle(donation("donation-2", "후원", Map.of("nyang", "cat")));
-
-        // 검증
-        ArgumentCaptor<SaveDonationCommand> captor = ArgumentCaptor.forClass(SaveDonationCommand.class);
-        BDDMockito.then(donationPort).should().save(captor.capture());
-        then(captor.getValue().payAmount()).isZero();
-        then(captor.getValue().emojis()).containsEntry("nyang", "cat");
-    }
-
-    @Test
-    void handle_ShouldFallbackOverflowAmountToZero() {
-        // 준비
-        DonationService donationService = new DonationService(donationPort, rouletteService);
-        given(donationPort.existsByDonationEventId("donation-3")).willReturn(false);
-
-        // 실행
-        donationService.handle(donation("donation-3", "999999999999999999999999원", null));
-
-        // 검증
-        ArgumentCaptor<SaveDonationCommand> captor = ArgumentCaptor.forClass(SaveDonationCommand.class);
-        BDDMockito.then(donationPort).should().save(captor.capture());
-        then(captor.getValue().payAmount()).isZero();
-    }
-
-    @Test
-    void handle_ShouldNotPersistDuplicateDonationButStillDelegateIdempotencyToRoulette() {
-        // 준비
-        DonationService donationService = new DonationService(donationPort, rouletteService);
-        given(donationPort.existsByDonationEventId("donation-1")).willReturn(true);
-
-        // 실행
-        donationService.handle(donation("donation-1", "1,000", null));
-
-        // 검증
-        BDDMockito.then(donationPort).should(never()).save(any());
-        BDDMockito.then(rouletteService).should().processDonation(any(DonationReceived.class));
-    }
-
-    private DonationReceived donation(String eventId, String amount, Map<String, String> emojis) {
+    private DonationReceived donation() {
         return new DonationReceived(
-                eventId,
+                "event-1",
                 "CHAT",
-                "channel-1",
-                "user-1",
-                "치즈냥",
-                amount,
+                "streamer-1",
+                "viewer-1",
+                "시청자",
+                "10,000 치즈",
                 "!룰렛",
-                emojis
+                Map.of()
         );
     }
 }

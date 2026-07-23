@@ -35,7 +35,7 @@ import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 @ExtendWith(MockitoExtension.class)
 class TimerMessageServiceTest {
 
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 16, 21, 0);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 16, 12, 0);
 
     @Mock
     private TimerMessagePort timerMessagePort;
@@ -85,7 +85,7 @@ class TimerMessageServiceTest {
     @Test
     void updateTimerMessage_ShouldResetScheduleWhenActivating() {
         TimerMessageService service = spyService();
-        given(timerMessagePort.findById(1L)).willReturn(Optional.of(
+        given(timerMessagePort.findByIdForUpdate(1L)).willReturn(Optional.of(
                 record(1L, "공지", 10, 5, false, 7, null, null)
         ));
         given(timerMessagePort.update(any(UpdateData.class))).willAnswer(invocation -> {
@@ -134,6 +134,21 @@ class TimerMessageServiceTest {
         var result = service.preview(new PreviewTimerMessage("지금은 {time.datetime}"));
 
         then(result.message()).isEqualTo("지금은 2026-07-16 21:00");
+    }
+
+    @Test
+    void getTimerMessages_ShouldConvertStoredUtcTimesToSeoulForDisplay() {
+        TimerMessageService service = spyService();
+        given(timerMessagePort.findAllOrderByIdDesc()).willReturn(List.of(
+                record(1L, "공지", 10, 5, true, 0, NOW.minusMinutes(5), NOW.plusMinutes(10))
+        ));
+
+        var result = service.getTimerMessages().getFirst();
+
+        then(result.lastSentAt()).isEqualTo(NOW.minusMinutes(5).plusHours(9));
+        then(result.nextRunAt()).isEqualTo(NOW.plusMinutes(10).plusHours(9));
+        then(result.createdAt()).isEqualTo(NOW.minusDays(1).plusHours(9));
+        then(result.updatedAt()).isEqualTo(NOW.minusDays(1).plusHours(9));
     }
 
     @Test

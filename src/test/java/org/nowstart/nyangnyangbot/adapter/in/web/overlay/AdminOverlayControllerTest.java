@@ -64,6 +64,6 @@ class AdminOverlayControllerTest {
         // 검증
         then(view).isEqualTo("components/feedback :: alert");
         then(model.getAttribute("tone")).isEqualTo("success");
-        BDDMockito.then(overlayDisplayService).should().replayRouletteEvent(10L);
+        BDDMockito.then(overlayDisplayService).should().replayRouletteRun(10L);
     }
 }

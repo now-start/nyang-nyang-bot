@@ -43,6 +43,24 @@ LEFT JOIN information_schema.columns actual
  AND actual.column_name = expected.column_name
 WHERE actual.column_name IS NULL;
 
+-- REQUIRED MANUAL EVIDENCE: V8 copies legacy DATETIME wall-clock values unchanged and
+-- the canonical application interprets them as UTC. Before setting
+-- NYANG_LEGACY_DATETIME_UTC_APPROVED=true, retain evidence that both the legacy JVM
+-- default zone and every application DB session wrote UTC. The current DB session alone
+-- cannot prove how historical JVM-created timer values were produced.
+SELECT @@system_time_zone AS database_system_time_zone,
+       @@session.time_zone AS current_session_time_zone,
+       @@session.tx_isolation AS current_transaction_isolation,
+       CURRENT_TIMESTAMP(6) AS current_session_time,
+       UTC_TIMESTAMP(6) AS current_utc_time;
+
+SELECT id, next_run_at, claim_expires_at, last_sent_at, create_date, modify_date
+FROM timer_message
+WHERE next_run_at IS NOT NULL
+   OR claim_expires_at IS NOT NULL
+   OR last_sent_at IS NOT NULL
+ORDER BY id;
+
 SELECT 'unexpected_business_table' AS check_name, COUNT(*) AS problem_count
 FROM information_schema.tables
 WHERE table_schema = DATABASE()
@@ -502,7 +520,7 @@ SELECT 'donation_required_value' AS check_name, COUNT(*) AS problem_count
 FROM donation
 WHERE donation_event_id IS NULL
    OR TRIM(donation_event_id) = ''
-   OR CHAR_LENGTH(donation_event_id) > 128
+   OR CHAR_LENGTH(donation_event_id) > 255
    OR donation_type IS NULL
    OR TRIM(donation_type) = ''
    OR CHAR_LENGTH(donation_type) > 32
@@ -513,7 +531,7 @@ WHERE donation_event_id IS NULL
    OR CHAR_LENGTH(donator_nickname) > 100
    OR create_date IS NULL;
 
-SELECT 'donation_duplicate_external_event' AS check_name, COUNT(*) AS problem_count
+SELECT 'donation_duplicate_ingestion_key' AS check_name, COUNT(*) AS problem_count
 FROM (
     SELECT donation_event_id
     FROM donation

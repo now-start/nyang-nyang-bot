@@ -1,209 +1,80 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.overlay;
 
-import static org.assertj.core.api.BDDAssertions.then;
-import static org.assertj.core.api.BDDAssertions.thenThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
+import static org.mockito.BDDMockito.then;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayEvent;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteEvent;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRoundResult;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteEventRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundResultRepository;
-import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayEventResult;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.entity.OverlayDisplayJob;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.overlay.repository.OverlayDisplayJobRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRun;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.DisplayRoundProjection;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
+import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
-import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
-import org.nowstart.nyangnyangbot.domain.type.RouletteEventStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.springframework.data.domain.Pageable;
 
-@ExtendWith(MockitoExtension.class)
 class OverlayDisplayPersistenceAdapterTest {
 
-    @Mock
-    private OverlayDisplayEventRepository overlayDisplayEventRepository;
-
-    @Mock
-    private RouletteEventRepository rouletteEventRepository;
-
-    @Mock
-    private RouletteRoundResultRepository rouletteRoundResultRepository;
+    private static final Instant NOW = Instant.parse("2026-07-23T00:00:00Z");
 
     @Test
-    void enqueueRouletteEvent_ShouldSavePendingDisplayEvent() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        LocalDateTime expiresAt = LocalDateTime.of(2026, 5, 16, 23, 0);
-        given(rouletteEventRepository.findById(1L)).willReturn(Optional.of(event(1L)));
-
-        // 실행
-        adapter.enqueueRouletteEvent(1L, expiresAt);
-
-        // 검증
-        BDDMockito.then(overlayDisplayEventRepository).should().save(any(OverlayDisplayEvent.class));
-    }
-
-    @Test
-    void enqueueRouletteEvent_ShouldRejectMissingRouletteEvent() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        given(rouletteEventRepository.findById(404L)).willReturn(Optional.empty());
-
-        // 실행 및 검증
-        thenThrownBy(() -> adapter.enqueueRouletteEvent(404L, LocalDateTime.now()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("roulette event not found");
-    }
-
-    @Test
-    void replayRouletteEvent_ShouldLinkPreviousDisplayEventAndMapRounds() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        LocalDateTime expiresAt = LocalDateTime.of(2026, 5, 16, 23, 10);
-        RouletteEvent event = event(1L);
-        OverlayDisplayEvent previous = displayEvent(10L, event, OverlayDisplayStatus.DISPLAYED, expiresAt);
-        OverlayDisplayEvent saved = displayEvent(11L, event, OverlayDisplayStatus.PENDING, expiresAt);
-        given(rouletteEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(1L)).willReturn(List.of(previous));
-        given(overlayDisplayEventRepository.save(any(OverlayDisplayEvent.class))).willReturn(saved);
-        given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(1L))
-                .willReturn(List.of(round(20L, event)));
-
-        // 실행
-        DisplayEventResult result = adapter.replayRouletteEvent(1L, expiresAt);
-
-        // 검증
-        then(result.id()).isEqualTo(11L);
-        then(result.rouletteEventId()).isEqualTo(1L);
-        then(result.rounds()).hasSize(1);
-        then(result.rounds().getFirst().itemLabel()).isEqualTo("당첨");
-    }
-
-    @Test
-    void replayRouletteEvent_ShouldAllowFirstReplayWithoutPreviousEvent() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        LocalDateTime expiresAt = LocalDateTime.of(2026, 5, 16, 23, 20);
-        RouletteEvent event = event(1L);
-        OverlayDisplayEvent saved = displayEvent(12L, event, OverlayDisplayStatus.PENDING, expiresAt);
-        given(rouletteEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(overlayDisplayEventRepository.findByRouletteEventIdOrderByCreateDateDesc(1L)).willReturn(List.of());
-        given(overlayDisplayEventRepository.save(any(OverlayDisplayEvent.class))).willReturn(saved);
-        given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(1L)).willReturn(List.of());
-
-        // 실행
-        DisplayEventResult result = adapter.replayRouletteEvent(1L, expiresAt);
-
-        // 검증
-        then(result.id()).isEqualTo(12L);
-        then(result.rounds()).isEmpty();
-    }
-
-    @Test
-    void displayStateChanges_ShouldExpireClaimAndMarkDisplayed() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        LocalDateTime now = LocalDateTime.of(2026, 5, 16, 23, 30);
-        RouletteEvent event = event(1L);
-        OverlayDisplayEvent expired = displayEvent(13L, event, OverlayDisplayStatus.PENDING, now.minusMinutes(1));
-        OverlayDisplayEvent pending = displayEvent(14L, event, OverlayDisplayStatus.PENDING, now.plusMinutes(1));
-        given(overlayDisplayEventRepository.findByStatusAndExpiresAtBefore(OverlayDisplayStatus.PENDING, now))
-                .willReturn(List.of(expired));
-        given(overlayDisplayEventRepository.findFirstByStatusAndExpiresAtAfterOrderByCreateDateAsc(
-                OverlayDisplayStatus.PENDING,
-                now
-        )).willReturn(Optional.of(pending));
-        given(overlayDisplayEventRepository.findById(14L)).willReturn(Optional.of(pending));
-        given(rouletteRoundResultRepository.findByRouletteEventIdOrderByRoundNoAsc(1L)).willReturn(List.of());
-
-        // 실행
-        adapter.markPendingExpiredBefore(now);
-        Optional<DisplayEventResult> claimed = adapter.claimNextPending(now);
-        adapter.markDisplayed(14L, now.plusSeconds(1));
-
-        // 검증
-        then(expired.getStatus()).isEqualTo(OverlayDisplayStatus.MISSED);
-        then(claimed).isPresent();
-        then(pending.getStatus()).isEqualTo(OverlayDisplayStatus.DISPLAYED);
-    }
-
-    @Test
-    void markDisplayed_ShouldRejectMissingDisplayEvent() {
-        // 준비
-        OverlayDisplayPersistenceAdapter adapter = adapter();
-        given(overlayDisplayEventRepository.findById(404L)).willReturn(Optional.empty());
-
-        // 실행 및 검증
-        thenThrownBy(() -> adapter.markDisplayed(404L, LocalDateTime.now()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("overlay display event not found");
-    }
-
-    private OverlayDisplayPersistenceAdapter adapter() {
-        return new OverlayDisplayPersistenceAdapter(
-                overlayDisplayEventRepository,
-                rouletteEventRepository,
-                rouletteRoundResultRepository,
-                outboundContractValidator()
+    void displayJobLoadsOnlyFiveRoundsWhilePreservingTotalCount() {
+        OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
+        RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
+        RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
+        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
+        RouletteRun run = Mockito.mock(RouletteRun.class);
+        Donation donation = Mockito.mock(Donation.class);
+        OverlayDisplayJob job = Mockito.mock(OverlayDisplayJob.class);
+        List<DisplayRoundProjection> displayedRounds =
+                List.of(round(1), round(2), round(3), round(4), round(5));
+        given(run.getDonationId()).willReturn(9L);
+        given(run.getDonation()).willReturn(donation);
+        given(donation.getDonorDisplayName()).willReturn("후원자");
+        given(job.getId()).willReturn(1L);
+        given(job.getRouletteRun()).willReturn(run);
+        given(job.getExpiresAt()).willReturn(NOW.plusSeconds(120));
+        given(runRepository.findByIdForUpdate(9L)).willReturn(Optional.of(run));
+        given(jobRepository.findByIdempotencyKey("roulette-run:9")).willReturn(Optional.of(job));
+        given(roundRepository.countByRouletteRun_DonationId(9L)).willReturn(1000L);
+        given(roundRepository.findDisplayRoundsByRunId(Mockito.eq(9L), Mockito.any(Pageable.class)))
+                .willReturn(displayedRounds);
+        given(validator.persistenceResult(Mockito.anyString(), Mockito.any()))
+                .willAnswer(invocation -> invocation.getArgument(1));
+        OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
+                jobRepository, roundRepository, runRepository, validator
         );
+
+        var result = adapter.enqueue(9L, "roulette-run:9", NOW.plusSeconds(120), NOW);
+
+        assertThat(result.roundCount()).isEqualTo(1000);
+        assertThat(result.rounds()).hasSize(5);
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        then(roundRepository).should().findDisplayRoundsByRunId(Mockito.eq(9L), pageable.capture());
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(5);
+        then(roundRepository).should(Mockito.never())
+                .findByRouletteRun_DonationIdOrderByRoundNoAsc(Mockito.anyLong());
     }
 
-    private RouletteEvent event(Long id) {
-        return RouletteEvent.builder()
-                .id(id)
-                .donationEventId("donation-1")
-                .idempotencyKey("donation-1")
-                .userId("user-1")
-                .nickNameSnapshot("치즈냥")
-                .donationAmount(1_000L)
-                .donationText("!룰렛")
-                .rouletteTableId(1L)
-                .rouletteTableVersion(1)
-                .command("!룰렛")
-                .pricePerRound(1_000L)
-                .roundCount(1)
-                .itemsSnapshotJson("[]")
-                .status(RouletteEventStatus.CONFIRMED)
-                .build();
-    }
-
-    private OverlayDisplayEvent displayEvent(
-            Long id,
-            RouletteEvent event,
-            OverlayDisplayStatus status,
-            LocalDateTime expiresAt
-    ) {
-        return OverlayDisplayEvent.builder()
-                .id(id)
-                .rouletteEvent(event)
-                .status(status)
-                .expiresAt(expiresAt)
-                .build();
-    }
-
-    private RouletteRoundResult round(Long id, RouletteEvent event) {
-        return RouletteRoundResult.builder()
-                .id(id)
-                .rouletteEvent(event)
-                .roundNo(1)
-                .itemLabel("당첨")
-                .probabilityBasisPoints(10_000)
-                .losingItem(false)
-                .rewardType(RewardType.FAVORITE)
-                .conversionMode(ConversionMode.AUTO)
-                .exchangeFavoriteValue(100)
-                .status(RouletteRoundStatus.CONFIRMED)
-                .ticket(777)
-                .build();
+    private DisplayRoundProjection round(int roundNo) {
+        DisplayRoundProjection round = Mockito.mock(DisplayRoundProjection.class);
+        given(round.getId()).willReturn((long) roundNo);
+        given(round.getRoundNo()).willReturn(roundNo);
+        given(round.getOptionLabel()).willReturn("포인트");
+        given(round.getRewardType()).willReturn(RewardType.POINT);
+        given(round.getConversionMode()).willReturn(ConversionMode.AUTO);
+        given(round.getPointDelta()).willReturn(100L);
+        given(round.getStatus()).willReturn(RouletteRoundStatus.APPLIED);
+        return round;
     }
 }

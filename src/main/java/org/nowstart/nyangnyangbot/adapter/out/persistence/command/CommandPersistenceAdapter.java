@@ -6,9 +6,13 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class CommandPersistenceAdapter implements CommandPort {
 
     private final CommandRepository commandRepository;
+    private final UserAccountRepository userAccountRepository;
     private final OutboundContractValidator contractValidator;
 
     @Override
@@ -33,6 +38,11 @@ public class CommandPersistenceAdapter implements CommandPort {
     @Override
     public Optional<CommandRecord> findById(Long commandId) {
         return commandRepository.findById(commandId).map(this::commandRecord);
+    }
+
+    @Override
+    public Optional<CommandRecord> findByIdForUpdate(Long commandId) {
+        return commandRepository.findByIdForUpdate(commandId).map(this::commandRecord);
     }
 
     @Override
@@ -56,9 +66,10 @@ public class CommandPersistenceAdapter implements CommandPort {
                 .triggerToken(data.trigger())
                 .messageTemplate(data.messageTemplate())
                 .active(data.active())
+                .executionPolicy(data.executionPolicy())
                 .userCooldownSeconds(data.userCooldownSeconds())
-                .createdBy(data.createdBy())
-                .updatedBy(data.updatedBy())
+                .createdByUser(actorReference(data.createdBy()))
+                .updatedByUser(actorReference(data.updatedBy()))
                 .build());
         return commandRecord(saved);
     }
@@ -67,14 +78,15 @@ public class CommandPersistenceAdapter implements CommandPort {
     @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, allEntries = true)
     public CommandRecord update(UpdateData data) {
         contractValidator.request("command.update", data);
-        Command command = commandRepository.findById(data.id())
+        Command command = commandRepository.findByIdForUpdate(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
         command.update(
                 data.trigger(),
                 data.messageTemplate(),
                 data.active(),
+                data.executionPolicy(),
                 data.userCooldownSeconds(),
-                data.updatedBy()
+                actorReference(data.updatedBy())
         );
         return commandRecord(command);
     }
@@ -85,11 +97,27 @@ public class CommandPersistenceAdapter implements CommandPort {
                 entity.getTriggerToken(),
                 entity.getMessageTemplate(),
                 entity.isActive(),
+                entity.getExecutionPolicy(),
                 entity.getUserCooldownSeconds(),
-                entity.getCreatedBy(),
-                entity.getUpdatedBy(),
-                entity.getCreateDate(),
-                entity.getModifyDate()
+                userId(entity.getCreatedByUser()),
+                userId(entity.getUpdatedByUser()),
+                localDateTime(entity.getCreatedAt()),
+                localDateTime(entity.getUpdatedAt())
         ));
+    }
+
+    private UserAccount actorReference(String userId) {
+        if (userId == null || userId.isBlank() || "system".equals(userId)) {
+            return null;
+        }
+        return userAccountRepository.getReferenceById(userId);
+    }
+
+    private String userId(UserAccount account) {
+        return account == null ? null : account.getUserId();
+    }
+
+    private LocalDateTime localDateTime(java.time.Instant instant) {
+        return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }
