@@ -43,9 +43,8 @@ class PresenceRewardServiceTest {
                 1L
         ));
 
-        var result = service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L));
+        service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L));
 
-        then(result.count()).isEqualTo(1);
         ArgumentCaptor<AdjustPointCommand> captor = ArgumentCaptor.forClass(AdjustPointCommand.class);
         verify(grantPointUseCase).grant(captor.capture());
         then(captor.getValue().sourceType()).isEqualTo(PointSourceType.PRESENCE_REWARD);
@@ -107,7 +106,7 @@ class PresenceRewardServiceTest {
         }).given(grantPointUseCase).grant(org.mockito.ArgumentMatchers.any());
 
         try (var executor = Executors.newSingleThreadExecutor()) {
-            CompletableFuture<?> applying = CompletableFuture.supplyAsync(
+            CompletableFuture<?> applying = CompletableFuture.runAsync(
                     () -> service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L)),
                     executor
             );

@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.application.service.timer;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +29,6 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class TimerMessageService implements ManageTimerMessageUseCase, RecordTimerChatUseCase, RunTimerMessagesUseCase {
 
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final int DEFAULT_INTERVAL_MINUTES = 30;
     private static final int DEFAULT_MIN_CHAT_COUNT = 10;
     private static final int MIN_INTERVAL_MINUTES = 5;
@@ -141,7 +139,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PreviewResult preview(PreviewTimerMessage request) {
         if (request == null) {
             throw new IllegalArgumentException("preview is required");
@@ -162,7 +159,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ValidationResult validate(ValidateTimerMessage request) {
         if (request == null) {
             return new ValidationResult(false, List.of("timerMessage is required"));
@@ -328,7 +324,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     LocalDateTime currentDateTime() {
-        return LocalDateTime.now(SEOUL);
+        return LocalDateTime.now();
     }
 
     String newClaimToken() {

@@ -38,11 +38,6 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     @Override
-    public Optional<CommandRecord> findById(Long commandId) {
-        return commandRepository.findById(commandId).map(this::commandRecord);
-    }
-
-    @Override
     public Optional<CommandRecord> findByIdForUpdate(Long commandId) {
         return commandRepository.findByIdForUpdate(commandId).map(this::commandRecord);
     }

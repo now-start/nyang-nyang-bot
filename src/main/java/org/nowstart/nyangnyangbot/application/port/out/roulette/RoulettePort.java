@@ -34,8 +34,6 @@ public interface RoulettePort {
 
     RunResult createReadyRun(CreateRunCommand command);
 
-    Optional<RunResult> findRunById(Long runId);
-
     Page<RunResult> findRecentRuns(Pageable pageable);
 
     List<RunRoundSummaryResult> summarizeRuns(List<Long> runIds);

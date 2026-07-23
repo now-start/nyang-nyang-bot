@@ -190,12 +190,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RunResult> findRunById(Long runId) {
-        return rouletteRunRepository.findById(runId).map(this::runResult);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Page<RunResult> findRecentRuns(Pageable pageable) {
         return rouletteRunRepository.findAllByOrderByCreatedAtDescDonationIdDesc(pageable).map(this::runResult);
     }

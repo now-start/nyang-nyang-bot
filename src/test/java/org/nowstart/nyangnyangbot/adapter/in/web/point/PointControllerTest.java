@@ -125,8 +125,6 @@ class PointControllerTest {
         given(queryRewardUseCase.getUserRewards("user1", null, 20)).willReturn(List.of(
                 new RewardResult(
                         3L,
-                        "user1",
-                        null,
                         9L,
                         "업보 차감권",
                         "COUPON",
@@ -134,7 +132,6 @@ class PointControllerTest {
                         null,
                         "OWNED",
                         "보유 보상",
-                        "reward:user1:3",
                         Instant.parse("2026-07-09T10:30:00Z")
                 )
         ));

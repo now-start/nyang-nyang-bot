@@ -4,7 +4,6 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +44,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "nyang.local-dummy-data", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class LocalDummyDataInitializer implements ApplicationRunner {
-
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private static final List<PointSeed> POINT_SEEDS = List.of(
             new PointSeed(LocalTestAccounts.ADMIN_USER_ID, "로컬 관리자", true, 9_999),
@@ -172,7 +169,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         if (weeklyChatCountRepository.count() > 0) {
             return;
         }
-        LocalDate weekStart = LocalDate.now(SEOUL).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         weeklyChatCountRepository.saveAll(List.of(
                 weeklyCount(weekStart, requireUser(users, "user-001"), 421),
                 weeklyCount(weekStart, requireUser(users, "user-002"), 387),

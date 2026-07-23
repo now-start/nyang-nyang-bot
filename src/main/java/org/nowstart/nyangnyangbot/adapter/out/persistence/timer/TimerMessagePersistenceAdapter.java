@@ -34,11 +34,6 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     }
 
     @Override
-    public Optional<TimerMessageRecord> findById(Long timerMessageId) {
-        return timerMessageRepository.findById(timerMessageId).map(this::record);
-    }
-
-    @Override
     public Optional<TimerMessageRecord> findByIdForUpdate(Long timerMessageId) {
         return timerMessageRepository.findByIdForUpdate(timerMessageId).map(this::record);
     }

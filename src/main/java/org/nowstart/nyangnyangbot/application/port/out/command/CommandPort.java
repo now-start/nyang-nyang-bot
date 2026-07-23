@@ -14,8 +14,6 @@ public interface CommandPort {
 
     List<CommandRecord> findAllOrderByIdDesc();
 
-    Optional<CommandRecord> findById(Long commandId);
-
     Optional<CommandRecord> findByIdForUpdate(Long commandId);
 
     Optional<CommandRecord> findByTrigger(String trigger);

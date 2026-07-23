@@ -143,10 +143,9 @@
                           th:text="${reward.pointDelta != null ? '호감도 ' + (reward.pointDelta > 0 ? '+' + reward.pointDelta : reward.pointDelta) : reward.rewardType}">COUPON</span>
                 </div>
                 <div class="small text-secondary mt-1" th:text="${reward.description != null ? reward.description : reward.conversionMode}">운영 메모</div>
-                <a class="small text-success text-decoration-none"
-                   th:href="${'#ledger-' + reward.pointLedgerEntryId}"
-                   th:if="${reward.pointLedgerEntryId != null}"
-                   th:text="${'원장 #' + reward.pointLedgerEntryId}">원장 #1</a>
+                <span class="small text-success"
+                      th:if="${reward.pointLedgerEntryId != null}"
+                      th:text="${'원장 #' + reward.pointLedgerEntryId}">원장 #1</span>
             </div>
         </div>
     </div>

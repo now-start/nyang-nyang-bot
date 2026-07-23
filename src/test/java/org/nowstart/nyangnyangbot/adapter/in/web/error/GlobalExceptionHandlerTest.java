@@ -109,7 +109,7 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/test/data-integrity")
         String dataIntegrity() {
-            throw new DataIntegrityViolationException("duplicate key uk_favorite_history_idempotency_key");
+            throw new DataIntegrityViolationException("duplicate key uk_point_ledger_entry__idempotency");
         }
 
         @GetMapping("/test/constraint-violation")

@@ -51,8 +51,7 @@ public class PointQueryService implements QueryPointUseCase {
 
     @Override
     public Optional<String> getCurrentDisplayName(String userId) {
-        return userAccountPort.findById(userId)
-                .map(UserAccountPort.UserAccountRecord::displayName)
+        return userAccountPort.findDisplayNameById(userId)
                 .filter(name -> !name.isBlank());
     }
 

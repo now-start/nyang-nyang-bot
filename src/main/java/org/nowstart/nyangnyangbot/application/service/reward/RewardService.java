@@ -29,10 +29,10 @@ public class RewardService implements QueryRewardUseCase {
     private final GrantPointUseCase grantPointUseCase;
 
     @Transactional
-    public RewardRecord grantRoulette(RouletteRewardCommand command) {
+    public void grantRoulette(RouletteRewardCommand command) {
         RewardRecord existing = rewardPort.findByRouletteRoundId(command.roundId()).orElse(null);
         if (existing != null) {
-            return existing;
+            return;
         }
         String idempotencyKey = "roulette-round:" + command.roundId();
         requireAutoPointDelta(command.conversionMode(), command.pointDelta());
@@ -63,7 +63,7 @@ public class RewardService implements QueryRewardUseCase {
                 null,
                 idempotencyKey
         );
-        return rewardPort.createGrant(new CreateRewardCommand(
+        rewardPort.createGrant(new CreateRewardCommand(
                 command.userId(),
                 command.roundId(),
                 ledgerEntryId,
@@ -134,8 +134,6 @@ public class RewardService implements QueryRewardUseCase {
     private QueryRewardUseCase.RewardResult rewardResult(RewardRecord reward) {
         return new QueryRewardUseCase.RewardResult(
                 reward.id(),
-                reward.userId(),
-                reward.rouletteRoundId(),
                 reward.pointLedgerEntryId(),
                 reward.label(),
                 reward.rewardType().name(),
@@ -143,7 +141,6 @@ public class RewardService implements QueryRewardUseCase {
                 reward.pointDelta(),
                 reward.status().name(),
                 reward.description(),
-                reward.idempotencyKey(),
                 reward.createdAt()
         );
     }

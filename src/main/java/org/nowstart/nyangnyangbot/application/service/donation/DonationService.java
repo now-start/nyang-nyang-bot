@@ -2,16 +2,16 @@ package org.nowstart.nyangnyangbot.application.service.donation;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
-import org.nowstart.nyangnyangbot.application.service.roulette.RouletteRunPreparedEvent;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.DonationResult;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.SaveDonationCommand;
+import org.nowstart.nyangnyangbot.application.service.roulette.RouletteRunPreparedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,10 +78,8 @@ public class DonationService {
         );
     }
 
-    private void publishPreparedRun(RouletteRunResult result) {
-        if (result.runId() != null) {
-            eventPublisher.publishEvent(new RouletteRunPreparedEvent(result.runId()));
-        }
+    private void publishPreparedRun(Optional<Long> runId) {
+        runId.ifPresent(id -> eventPublisher.publishEvent(new RouletteRunPreparedEvent(id)));
     }
 
     private String normalizeType(String value) {

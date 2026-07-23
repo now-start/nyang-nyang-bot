@@ -95,12 +95,6 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
     }
 
     private ExecutionRecord executionRecord(CommandExecution execution) {
-        return new ExecutionRecord(
-                execution.getId(),
-                execution.getExecutedAt(),
-                execution.getExecutionPolicySnapshot(),
-                execution.getCooldownSecondsSnapshot(),
-                execution.getCalendarDate()
-        );
+        return new ExecutionRecord(execution.getExecutedAt());
     }
 }

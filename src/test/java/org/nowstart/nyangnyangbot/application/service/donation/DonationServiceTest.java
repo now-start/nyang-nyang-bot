@@ -4,7 +4,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase.RouletteRunResult;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort.DonationResult;
@@ -42,7 +40,7 @@ class DonationServiceTest {
                 7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛", NOW
         ));
         given(process.processDonation(Mockito.eq(7L), Mockito.any()))
-                .willReturn(RouletteRunResult.ready(7L, List.of()));
+                .willReturn(Optional.of(7L));
 
         service.handle(donation);
 
@@ -71,7 +69,7 @@ class DonationServiceTest {
         );
         given(donationPort.findByIngestionKey("event-1")).willReturn(Optional.of(existing));
         given(process.processDonation(Mockito.eq(7L), Mockito.any()))
-                .willReturn(RouletteRunResult.duplicate(7L, List.of()));
+                .willReturn(Optional.of(7L));
 
         service.handle(donation());
 

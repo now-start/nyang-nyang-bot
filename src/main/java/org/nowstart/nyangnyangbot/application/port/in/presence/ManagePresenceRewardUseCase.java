@@ -15,7 +15,7 @@ public interface ManagePresenceRewardUseCase {
 
     List<PresenceUserSnapshot> getActiveUsers();
 
-    PresenceApplyResult applyPresenceReward(
+    void applyPresenceReward(
             @Valid @NotNull(message = "command is required") PresenceApplyCommand command
     );
 
@@ -25,9 +25,6 @@ public interface ManagePresenceRewardUseCase {
             @NotNull(message = "amount is required")
             @Positive(message = "amount must be positive") Long amount
     ) {
-    }
-
-    record PresenceApplyResult(long amount, int count) {
     }
 
     record PresenceUserSnapshot(String userId, String displayName, long lastMessageTime) {

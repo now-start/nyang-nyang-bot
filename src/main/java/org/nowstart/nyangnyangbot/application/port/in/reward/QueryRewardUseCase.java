@@ -9,8 +9,6 @@ public interface QueryRewardUseCase {
 
     record RewardResult(
             Long id,
-            String userId,
-            Long rouletteRoundId,
             Long pointLedgerEntryId,
             String label,
             String rewardType,
@@ -18,7 +16,6 @@ public interface QueryRewardUseCase {
             Long pointDelta,
             String status,
             String description,
-            String idempotencyKey,
             Instant createdAt
     ) {
     }

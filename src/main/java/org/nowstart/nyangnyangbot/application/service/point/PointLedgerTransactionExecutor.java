@@ -9,7 +9,6 @@ import org.nowstart.nyangnyangbot.application.port.out.point.PointLedgerPort.App
 import org.nowstart.nyangnyangbot.application.port.out.point.PointLedgerPort.LedgerEntryRecord;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
@@ -18,7 +17,7 @@ public class PointLedgerTransactionExecutor {
 
     private final PointLedgerPort pointLedgerPort;
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional
     public PointLedgerResult execute(WriteRequest request) {
         boolean userExists = pointLedgerPort.lockUser(
                 request.userId(),
@@ -61,7 +60,7 @@ public class PointLedgerTransactionExecutor {
         );
     }
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public Optional<PointLedgerResult> resolveDuplicate(WriteRequest request) {
         return pointLedgerPort.findByIdempotencyKey(request.idempotencyKey())
                 .map(existing -> {
@@ -74,7 +73,7 @@ public class PointLedgerTransactionExecutor {
                 });
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional
     public PointLedgerResult reconcile(ReconcileRequest request) {
         boolean userExists = pointLedgerPort.lockUser(
                 request.userId(),

@@ -40,7 +40,7 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
     }
 
     @Override
-    public PointAdjustmentApplyResult applyAdjustments(ApplyPointAdjustments command) {
+    public void applyAdjustments(ApplyPointAdjustments command) {
         List<PresetRecord> presets = selectedPresets(command.presetIds());
         long delta = 0;
         for (PresetRecord preset : presets) {
@@ -50,7 +50,7 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
             delta = Math.addExact(delta, command.manualAmount());
         }
         String description = description(presets, command.manualAmount(), command.manualDescription());
-        var ledger = adjustPointUseCase.adjust(AdjustPointUseCase.AdjustPointCommand.builder()
+        adjustPointUseCase.adjust(AdjustPointUseCase.AdjustPointCommand.builder()
                 .userId(command.userId())
                 .delta(delta)
                 .sourceType(PointSourceType.ADMIN_ADJUSTMENT)
@@ -59,13 +59,6 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
                 .allowNegativeBalance(true)
                 .createIfMissing(false)
                 .build());
-        return new PointAdjustmentApplyResult(
-                command.userId(),
-                ledger.beforeBalance(),
-                ledger.delta(),
-                ledger.afterBalance(),
-                description
-        );
     }
 
     private List<PresetRecord> selectedPresets(List<Long> ids) {

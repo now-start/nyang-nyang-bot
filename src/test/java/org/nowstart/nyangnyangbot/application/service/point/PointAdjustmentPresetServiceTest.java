@@ -10,7 +10,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
-import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.PointLedgerResult;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.ApplyPointAdjustments;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort.PresetRecord;
@@ -26,18 +25,13 @@ class PointAdjustmentPresetServiceTest {
                 new PresetRecord(1L, 10L, "첫째"),
                 new PresetRecord(2L, 20L, "둘째")
         ));
-        given(adjustPointUseCase.adjust(Mockito.any())).willReturn(new PointLedgerResult(
-                "user-1", 100, 35, 135, "조정", false, 7L
-        ));
-
-        var result = service.applyAdjustments(new ApplyPointAdjustments(
+        service.applyAdjustments(new ApplyPointAdjustments(
                 "user-1", List.of(1L, 2L), 5L, "추가", "admin-1"
         ));
 
         ArgumentCaptor<AdjustPointCommand> captor = ArgumentCaptor.forClass(AdjustPointCommand.class);
         Mockito.verify(adjustPointUseCase).adjust(captor.capture());
         then(captor.getValue().delta()).isEqualTo(35L);
-        then(result.delta()).isEqualTo(35L);
     }
 
     @Test

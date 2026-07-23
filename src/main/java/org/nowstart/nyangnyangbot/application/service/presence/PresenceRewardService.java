@@ -98,7 +98,7 @@ public class PresenceRewardService implements ManagePresenceRewardUseCase, Recor
 
     @Override
     @Transactional
-    public PresenceApplyResult applyPresenceReward(PresenceApplyCommand command) {
+    public void applyPresenceReward(PresenceApplyCommand command) {
         ApplyingCycle applying = beginApply(command.userIds());
         boolean synchronizedCompletion = registerTransactionCompletion(applying.cycleId());
         try {
@@ -118,7 +118,6 @@ public class PresenceRewardService implements ManagePresenceRewardUseCase, Recor
             if (!synchronizedCompletion) {
                 completeApply(applying.cycleId(), true);
             }
-            return new PresenceApplyResult(command.amount(), applying.users().size());
         } catch (RuntimeException | Error failure) {
             if (!synchronizedCompletion) {
                 completeApply(applying.cycleId(), false);

@@ -76,7 +76,7 @@ class ChatServiceTest {
                 CommandRecord.class
         )));
         given(executeCommandUseCase.execute(org.mockito.ArgumentMatchers.any())).willReturn(Optional.of(
-                new ApprovedCommand(7L, "!인사", "안녕하세요", 10, 3, 0, 0)
+                new ApprovedCommand(7L, "!인사", "안녕하세요")
         ));
 
         service.handle(chat);
@@ -98,7 +98,7 @@ class ChatServiceTest {
                 "!인사", org.mockito.Mockito.mock(CommandRecord.class)
         ));
         given(executeCommandUseCase.execute(org.mockito.ArgumentMatchers.any())).willReturn(Optional.of(
-                new ApprovedCommand(7L, "!인사", "안녕하세요", 1, 1, 0, 0)
+                new ApprovedCommand(7L, "!인사", "안녕하세요")
         ));
 
         service.handle(chat);

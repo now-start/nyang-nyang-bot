@@ -36,11 +36,7 @@ public interface CommandExecutionPort {
     }
 
     record ExecutionRecord(
-            long id,
-            Instant executedAt,
-            CommandExecutionPolicy executionPolicy,
-            Integer cooldownSeconds,
-            LocalDate calendarDate
+            Instant executedAt
     ) {
     }
 

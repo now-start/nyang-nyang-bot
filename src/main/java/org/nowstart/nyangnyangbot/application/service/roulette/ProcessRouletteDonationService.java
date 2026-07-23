@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.application.service.roulette;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
@@ -11,13 +12,11 @@ import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseC
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ConfigResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRoundCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRunCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.OptionResult;
-import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RunResult;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
@@ -41,22 +40,22 @@ public class ProcessRouletteDonationService
 
     @Override
     @Transactional
-    public RouletteRunResult processDonation(Long donationId, DonationReceived donation) {
+    public Optional<Long> processDonation(Long donationId, DonationReceived donation) {
         if (donationId == null || donation == null) {
-            return RouletteRunResult.ignored("donation is required");
+            return Optional.empty();
         }
         if (isBlank(donation.donatorChannelId())) {
-            return RouletteRunResult.ignored("identified donor is required");
+            return Optional.empty();
         }
         if (roulettePort.existsRun(donationId)) {
-            return preparedExistingRun(donationId);
+            return Optional.of(donationId);
         }
         ConfigResult config = roulettePort.findActiveConfigForUpdate().orElse(null);
         if (config == null) {
-            return RouletteRunResult.ignored("active roulette config not found");
+            return Optional.empty();
         }
         if (!roulettePolicy.containsTriggerToken(donation.donationText(), config.triggerToken())) {
-            return RouletteRunResult.ignored("roulette trigger token not found");
+            return Optional.empty();
         }
         long amount = roulettePolicy.parseDonationAmount(donation.payAmount());
         int roundCount;
@@ -64,10 +63,10 @@ public class ProcessRouletteDonationService
             roundCount = roulettePolicy.calculateRoundCount(amount, config.pricePerRound());
         } catch (IllegalArgumentException tooManyRounds) {
             log.warn("action=roulette.rejected donationId={} reason={}", donationId, tooManyRounds.getMessage());
-            return RouletteRunResult.ignored(tooManyRounds.getMessage());
+            return Optional.empty();
         }
         if (roundCount < 1) {
-            return RouletteRunResult.ignored("donation amount is less than roulette price");
+            return Optional.empty();
         }
         if (roundCount > roulettePolicy.highRoundThreshold(config)) {
             log.info("action=roulette.high_round donationId={} roundCount={}", donationId, roundCount);
@@ -76,7 +75,7 @@ public class ProcessRouletteDonationService
         List<OptionResult> options = roulettePort.findOptionsByConfigId(config.id());
         RouletteActivationValidation validation = roulettePolicy.validateActivation(config, options);
         if (!validation.activatable()) {
-            return RouletteRunResult.ignored("active roulette config is invalid");
+            return Optional.empty();
         }
         Instant createdAt = now();
         RunResult run;
@@ -89,15 +88,11 @@ public class ProcessRouletteDonationService
             ));
         } catch (IllegalStateException conflict) {
             if (roulettePort.existsRun(donationId)) {
-                return preparedExistingRun(donationId);
+                return Optional.of(donationId);
             }
             throw conflict;
         }
-        List<RouletteRoundResult> rounds = roulettePort.findRoundsByRunId(run.id())
-                .stream()
-                .map(this::roundResult)
-                .toList();
-        return RouletteRunResult.ready(run.id(), rounds);
+        return Optional.of(run.id());
     }
 
     Instant now() {
@@ -106,7 +101,7 @@ public class ProcessRouletteDonationService
 
     @Override
     public void recoverRun(Long runId) {
-        if (runId == null || roulettePort.findRunById(runId).isEmpty()) {
+        if (runId == null || !roulettePort.existsRun(runId)) {
             return;
         }
         resumeExistingRun(runId);
@@ -153,20 +148,6 @@ public class ProcessRouletteDonationService
         return rounds;
     }
 
-    private RouletteRoundResult roundResult(RoundResult round) {
-        return new RouletteRoundResult(
-                round.id(),
-                round.roundNo(),
-                round.optionLabel(),
-                round.losing(),
-                round.rewardType().name(),
-                round.conversionMode().name(),
-                round.pointDelta(),
-                round.status().name(),
-                round.failureReason()
-        );
-    }
-
     private void applyRound(Long roundId) {
         try {
             rouletteRoundApplyService.applyRound(roundId);
@@ -192,20 +173,9 @@ public class ProcessRouletteDonationService
         return false;
     }
 
-    private RouletteRunResult resumeExistingRun(Long runId) {
+    private void resumeExistingRun(Long runId) {
         roulettePort.findRoundsByRunId(runId).forEach(round -> applyRound(round.id()));
         queueOverlayDisplayUseCase.enqueueRouletteRun(runId);
-        List<RouletteRoundResult> rounds = roulettePort.findRoundsByRunId(runId).stream()
-                .map(this::roundResult)
-                .toList();
-        return RouletteRunResult.duplicate(runId, rounds);
-    }
-
-    private RouletteRunResult preparedExistingRun(Long runId) {
-        List<RouletteRoundResult> rounds = roulettePort.findRoundsByRunId(runId).stream()
-                .map(this::roundResult)
-                .toList();
-        return RouletteRunResult.duplicate(runId, rounds);
     }
 
     private boolean isBlank(String value) {

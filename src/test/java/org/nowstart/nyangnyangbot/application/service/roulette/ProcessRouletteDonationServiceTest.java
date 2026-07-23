@@ -57,20 +57,17 @@ class ProcessRouletteDonationServiceTest {
                 option(1L, 7_000, false),
                 option(2L, 3_000, true)
         );
-        RoundResult confirmed = round(RouletteRoundStatus.CONFIRMED);
         given(port.findActiveConfigForUpdate()).willReturn(Optional.of(config));
         given(port.findOptionsByConfigId(1L)).willReturn(options);
         given(port.createReadyRun(Mockito.any())).willReturn(new RunResult(
                 7L, 1L, "event-1", "user-1", "시청자", 1_000L, RouletteRunStatus.READY, NOW, NOW
         ));
-        given(port.findRoundsByRunId(7L)).willReturn(List.of(confirmed));
 
         var result = service.processDonation(7L, donation());
 
         then(applyService).shouldHaveNoInteractions();
         then(overlay).shouldHaveNoInteractions();
-        assertThat(result.status().name()).isEqualTo("READY");
-        assertThat(result.rounds().getFirst().status()).isEqualTo("CONFIRMED");
+        assertThat(result).contains(7L);
     }
 
     @Test
@@ -79,10 +76,8 @@ class ProcessRouletteDonationServiceTest {
         RouletteRoundApplyService applyService = Mockito.mock(RouletteRoundApplyService.class);
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
         ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay);
-        given(port.findRunById(7L)).willReturn(Optional.of(run()));
-        given(port.findRoundsByRunId(7L))
-                .willReturn(List.of(round(RouletteRoundStatus.CONFIRMED)))
-                .willReturn(List.of(round(RouletteRoundStatus.APPLIED)));
+        given(port.existsRun(7L)).willReturn(true);
+        given(port.findRoundsByRunId(7L)).willReturn(List.of(round(RouletteRoundStatus.CONFIRMED)));
 
         service.recoverRun(7L);
 
@@ -104,7 +99,7 @@ class ProcessRouletteDonationServiceTest {
 
         var result = service.processDonation(7L, anonymous);
 
-        assertThat(result.reason()).isEqualTo("identified donor is required");
+        assertThat(result).isEmpty();
         then(port).shouldHaveNoInteractions();
     }
 
@@ -115,11 +110,10 @@ class ProcessRouletteDonationServiceTest {
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
         ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay);
         given(port.existsRun(7L)).willReturn(true);
-        given(port.findRoundsByRunId(7L)).willReturn(List.of(round(RouletteRoundStatus.CONFIRMED)));
 
         var result = service.processDonation(7L, donation());
 
-        assertThat(result.status().name()).isEqualTo("DUPLICATE");
+        assertThat(result).contains(7L);
         then(applyService).shouldHaveNoInteractions();
         then(overlay).shouldHaveNoInteractions();
     }
@@ -166,9 +160,4 @@ class ProcessRouletteDonationServiceTest {
         );
     }
 
-    private RunResult run() {
-        return new RunResult(
-                7L, 1L, "event-1", "user-1", "시청자", 1_000L, RouletteRunStatus.READY, NOW, NOW
-        );
-    }
 }

@@ -16,7 +16,7 @@ public interface ManagePointAdjustmentPresetUseCase {
             @Valid @NotNull(message = "command is required") CreatePointAdjustmentPreset command
     );
 
-    PointAdjustmentApplyResult applyAdjustments(
+    void applyAdjustments(
             @Valid @NotNull(message = "command is required") ApplyPointAdjustments command
     );
 
@@ -43,15 +43,6 @@ public interface ManagePointAdjustmentPresetUseCase {
             return (presetIds != null && !presetIds.isEmpty())
                     || (manualAmount != null && manualAmount != 0);
         }
-    }
-
-    record PointAdjustmentApplyResult(
-            String userId,
-            long beforePoint,
-            long delta,
-            long afterPoint,
-            String description
-    ) {
     }
 
     record PointAdjustmentPresetResult(long id, long amount, String label) {

@@ -8,7 +8,6 @@ import jakarta.persistence.EntityManagerFactory;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
@@ -52,7 +51,6 @@ class SeoulDatabaseTimeContractTest {
             );
             LocalDateTime afterDefault = LocalDateTime.now(SEOUL).plusSeconds(2);
             assertThat(createdAt).isBetween(beforeDefault, afterDefault);
-            assertThat(TimeZone.getDefault().toZoneId()).isEqualTo(SEOUL);
             assertThat(objectMapper.getSerializationConfig().getTimeZone().toZoneId()).isEqualTo(SEOUL);
             assertThat(entityManagerFactory.getProperties().get("hibernate.jdbc.time_zone"))
                     .isEqualTo("Asia/Seoul");

@@ -102,7 +102,7 @@ class PointLedgerTransactionExecutorTest {
     }
 
     @Test
-    void writesJoinAggregateTransactionWhileRaceResolutionUsesCleanTransaction() throws Exception {
+    void ledgerOperationsUseDefaultPropagationAndDuplicateResolutionIsReadOnly() throws Exception {
         Transactional write = PointLedgerTransactionExecutor.class
                 .getMethod("execute", WriteRequest.class)
                 .getAnnotation(Transactional.class);
@@ -115,7 +115,7 @@ class PointLedgerTransactionExecutorTest {
 
         then(write.propagation()).isEqualTo(Propagation.REQUIRED);
         then(reconcile.propagation()).isEqualTo(Propagation.REQUIRED);
-        then(resolution.propagation()).isEqualTo(Propagation.REQUIRES_NEW);
+        then(resolution.propagation()).isEqualTo(Propagation.REQUIRED);
         then(resolution.readOnly()).isTrue();
     }
 

@@ -46,12 +46,12 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
         // 모든 writer의 잠금 순서는 command -> user_account 이다.
         executionPort.observeAndLockUser(request.userId(), request.displayName());
         Instant approvedAt = executionPort.currentDatabaseTime();
+        LocalDate today = approvedAt.atZone(SEOUL).toLocalDate();
         LocalDate calendarDate = command.executionPolicy() == CommandExecutionPolicy.USER_CALENDAR_DAY
-                ? approvedAt.atZone(SEOUL).toLocalDate()
+                ? today
                 : null;
 
-        Optional<ExecutionRecord> latest = executionPort.findLatestForUpdate(command.id(), request.userId());
-        if (!isAllowed(command, latest, request.userId(), approvedAt, calendarDate)) {
+        if (!isAllowed(command, request.userId(), approvedAt, calendarDate)) {
             return Optional.empty();
         }
 
@@ -66,8 +66,7 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
 
         long totalCount = executionPort.countAll(command.id());
         long userCount = executionPort.countForUser(command.id(), request.userId());
-        Streaks streaks = streaks(executionPort.findExecutionDates(command.id(), request.userId()),
-                approvedAt.atZone(SEOUL).toLocalDate());
+        Streaks streaks = streaks(executionPort.findExecutionDates(command.id(), request.userId()), today);
         LocalDateTime localNow = LocalDateTime.ofInstant(approvedAt, SEOUL);
         CommandVariableContext context = new CommandVariableContext(
                 request.userId(),
@@ -93,17 +92,12 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
         return Optional.of(new ApprovedCommand(
                 command.id(),
                 command.trigger(),
-                rendered,
-                totalCount,
-                userCount,
-                streaks.current(),
-                streaks.longest()
+                rendered
         ));
     }
 
     private boolean isAllowed(
             LockedCommand command,
-            Optional<ExecutionRecord> latest,
             String userId,
             Instant approvedAt,
             LocalDate calendarDate
@@ -115,6 +109,7 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
         if (cooldownSeconds == null) {
             throw new IllegalStateException("Interval command requires userCooldownSeconds");
         }
+        Optional<ExecutionRecord> latest = executionPort.findLatestForUpdate(command.id(), userId);
         return latest.isEmpty()
                 || !approvedAt.isBefore(latest.get().executedAt().plusSeconds(cooldownSeconds));
     }

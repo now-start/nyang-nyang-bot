@@ -110,7 +110,6 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PreviewResult preview(PreviewCommand request) {
         if (request == null) {
             throw new IllegalArgumentException("preview is required");

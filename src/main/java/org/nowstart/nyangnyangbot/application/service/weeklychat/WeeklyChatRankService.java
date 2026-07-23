@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.application.service.weeklychat;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, RecordWeeklyChatUseCase {
-
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final WeeklyChatCountPort weeklyChatCountPort;
     private final ObserveUserUseCase observeUserUseCase;
@@ -45,7 +42,7 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
     }
 
     LocalDate currentDate() {
-        return LocalDate.now(SEOUL);
+        return LocalDate.now();
     }
 
     private LocalDate currentWeekStartDate() {

@@ -22,16 +22,7 @@ public class UserAccountPersistenceAdapter implements UserAccountPort {
     }
 
     @Override
-    public Optional<UserAccountRecord> findById(String userId) {
-        return userAccountRepository.findById(userId).map(this::record);
-    }
-
-    private UserAccountRecord record(UserAccount account) {
-        return new UserAccountRecord(
-                account.getUserId(),
-                account.getDisplayName(),
-                account.isAdmin(),
-                account.getLastLoginAt()
-        );
+    public Optional<String> findDisplayNameById(String userId) {
+        return userAccountRepository.findById(userId).map(UserAccount::getDisplayName);
     }
 }

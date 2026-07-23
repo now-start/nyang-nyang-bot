@@ -19,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.ApplyPointAdjustments;
-import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.PointAdjustmentApplyResult;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.PointAdjustmentPresetResult;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -74,8 +73,6 @@ class PointAdjustmentControllerTest {
 
     @Test
     void applyAdjustments_ShouldPassActorAndReturnPointRefreshTrigger() {
-        given(managePointAdjustmentPresetUseCase.applyAdjustments(any(ApplyPointAdjustments.class)))
-                .willReturn(new PointAdjustmentApplyResult("user1", 10, 5, 15, "보너스"));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
         PointAdjustmentController.PointAdjustmentApplyForm form =
@@ -111,8 +108,9 @@ class PointAdjustmentControllerTest {
 
     @Test
     void applyAdjustments_ShouldReturnFailureWithoutRefresh_WhenUseCaseFails() {
-        given(managePointAdjustmentPresetUseCase.applyAdjustments(any(ApplyPointAdjustments.class)))
-                .willThrow(new IllegalArgumentException("invalid"));
+        BDDMockito.willThrow(new IllegalArgumentException("invalid"))
+                .given(managePointAdjustmentPresetUseCase)
+                .applyAdjustments(any(ApplyPointAdjustments.class));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
         PointAdjustmentController.PointAdjustmentApplyForm form =

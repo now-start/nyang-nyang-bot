@@ -14,8 +14,6 @@ public interface TimerMessagePort {
 
     List<TimerMessageRecord> findAllOrderByIdDesc();
 
-    Optional<TimerMessageRecord> findById(Long timerMessageId);
-
     Optional<TimerMessageRecord> findByIdForUpdate(Long timerMessageId);
 
     TimerMessageRecord create(CreateData data);

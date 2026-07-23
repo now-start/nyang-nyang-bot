@@ -20,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceApplyCommand;
-import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceApplyResult;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceUserSnapshot;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -110,8 +109,6 @@ class PresenceRewardControllerTest {
 
     @Test
     void applyPresenceReward_ShouldUseSelectedUsersAndRefreshPointBoard() {
-        given(managePresenceRewardUseCase.applyPresenceReward(any(PresenceApplyCommand.class)))
-                .willReturn(new PresenceApplyResult(5, 1));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
         PresenceRewardController.PresenceRewardApplyForm form =
@@ -132,8 +129,9 @@ class PresenceRewardControllerTest {
 
     @Test
     void applyPresenceReward_ShouldKeepSelection_WhenUseCaseFails() {
-        given(managePresenceRewardUseCase.applyPresenceReward(any(PresenceApplyCommand.class)))
-                .willThrow(new IllegalArgumentException("presence targets are required"));
+        BDDMockito.willThrow(new IllegalArgumentException("presence targets are required"))
+                .given(managePresenceRewardUseCase)
+                .applyPresenceReward(any(PresenceApplyCommand.class));
         MockHttpServletResponse response = new MockHttpServletResponse();
         ExtendedModelMap model = new ExtendedModelMap();
         PresenceRewardController.PresenceRewardApplyForm form =

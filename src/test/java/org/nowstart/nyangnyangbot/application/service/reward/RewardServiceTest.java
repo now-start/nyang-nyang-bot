@@ -37,7 +37,7 @@ class RewardServiceTest {
         ));
         given(rewardPort.createGrant(Mockito.any())).willReturn(reward(30L, 10L, 20L));
 
-        RewardRecord result = service.grantRoulette(new RouletteRewardCommand(
+        service.grantRoulette(new RouletteRewardCommand(
                 10L,
                 "user-1",
                 "시청자",
@@ -57,7 +57,6 @@ class RewardServiceTest {
         assertThat(point.getValue().sourceType()).isEqualTo(PointSourceType.REWARD_ROULETTE);
         assertThat(point.getValue().idempotencyKey()).isEqualTo("roulette-round:10");
         assertThat(grant.getValue().idempotencyKey()).isEqualTo("roulette-round:10");
-        assertThat(result.id()).isEqualTo(30L);
     }
 
     @Test

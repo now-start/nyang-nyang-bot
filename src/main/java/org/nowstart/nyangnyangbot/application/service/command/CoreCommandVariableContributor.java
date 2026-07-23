@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CoreCommandVariableContributor implements CommandVariableContributor {
 
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -38,7 +36,7 @@ public class CoreCommandVariableContributor implements CommandVariableContributo
 
     @Override
     public Map<String, String> resolve(Set<String> requestedKeys, CommandVariableContext context) {
-        LocalDateTime now = context.now() == null ? LocalDateTime.now(SEOUL) : context.now();
+        LocalDateTime now = context.now() == null ? LocalDateTime.now() : context.now();
         Map<String, String> values = new LinkedHashMap<>();
         for (String key : requestedKeys) {
             values.put(key, switch (key) {

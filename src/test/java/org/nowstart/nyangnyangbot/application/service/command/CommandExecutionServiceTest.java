@@ -52,7 +52,6 @@ class CommandExecutionServiceTest {
         LocalDate today = LocalDate.of(2026, 7, 23);
         given(executionPort.lockActiveCommand("!출석")).willReturn(Optional.of(command));
         given(executionPort.currentDatabaseTime()).willReturn(APPROVED_AT);
-        given(executionPort.findLatestForUpdate(7L, "user-1")).willReturn(Optional.empty());
         given(executionPort.existsCalendarDate(7L, "user-1", today)).willReturn(false);
         given(executionPort.countAll(7L)).willReturn(10L);
         given(executionPort.countForUser(7L, "user-1")).willReturn(3L);
@@ -67,7 +66,6 @@ class CommandExecutionServiceTest {
         order.verify(executionPort).lockActiveCommand("!출석");
         order.verify(executionPort).observeAndLockUser("user-1", "냥이");
         order.verify(executionPort).currentDatabaseTime();
-        order.verify(executionPort).findLatestForUpdate(7L, "user-1");
         order.verify(executionPort).existsCalendarDate(7L, "user-1", today);
         order.verify(executionPort).append(new ExecutionData(
                 7L,
@@ -90,13 +88,8 @@ class CommandExecutionServiceTest {
         );
         given(executionPort.lockActiveCommand("!카운트")).willReturn(Optional.of(command));
         given(executionPort.currentDatabaseTime()).willReturn(APPROVED_AT);
-        given(executionPort.findLatestForUpdate(9L, "user-1")).willReturn(Optional.of(new ExecutionRecord(
-                1L,
-                APPROVED_AT.minusSeconds(29),
-                CommandExecutionPolicy.USER_INTERVAL,
-                30,
-                null
-        )));
+        given(executionPort.findLatestForUpdate(9L, "user-1"))
+                .willReturn(Optional.of(new ExecutionRecord(APPROVED_AT.minusSeconds(29))));
 
         var result = service.execute(new ExecuteCommand("!카운트", "user-1", "냥이", "", "", ""));
 
@@ -115,13 +108,8 @@ class CommandExecutionServiceTest {
         );
         given(executionPort.lockActiveCommand("!카운트")).willReturn(Optional.of(command));
         given(executionPort.currentDatabaseTime()).willReturn(APPROVED_AT);
-        given(executionPort.findLatestForUpdate(9L, "user-1")).willReturn(Optional.of(new ExecutionRecord(
-                1L,
-                APPROVED_AT.minusSeconds(30),
-                CommandExecutionPolicy.USER_INTERVAL,
-                30,
-                null
-        )));
+        given(executionPort.findLatestForUpdate(9L, "user-1"))
+                .willReturn(Optional.of(new ExecutionRecord(APPROVED_AT.minusSeconds(30))));
         given(executionPort.countAll(9L)).willReturn(2L);
         given(executionPort.countForUser(9L, "user-1")).willReturn(2L);
         given(executionPort.findExecutionDates(9L, "user-1")).willReturn(List.of());
@@ -141,7 +129,7 @@ class CommandExecutionServiceTest {
     }
 
     @Test
-    void execute_RejectsSecondCalendarDayExecutionEvenWhenLatestLookupChanges() {
+    void execute_RejectsSecondCalendarDayExecutionWithoutLatestLookup() {
         LocalDate today = LocalDate.of(2026, 7, 23);
         LockedCommand command = new LockedCommand(
                 7L,
@@ -152,12 +140,12 @@ class CommandExecutionServiceTest {
         );
         given(executionPort.lockActiveCommand("!출석")).willReturn(Optional.of(command));
         given(executionPort.currentDatabaseTime()).willReturn(APPROVED_AT);
-        given(executionPort.findLatestForUpdate(7L, "user-1")).willReturn(Optional.empty());
         given(executionPort.existsCalendarDate(7L, "user-1", today)).willReturn(true);
 
         var result = service.execute(new ExecuteCommand("!출석", "user-1", "냥이", "", "", ""));
 
         then(result).isEmpty();
+        verify(executionPort, never()).findLatestForUpdate(7L, "user-1");
         verify(executionPort, never()).append(org.mockito.ArgumentMatchers.any());
     }
 }

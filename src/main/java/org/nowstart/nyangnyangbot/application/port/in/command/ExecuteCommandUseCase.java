@@ -19,11 +19,7 @@ public interface ExecuteCommandUseCase {
     record ApprovedCommand(
             long commandId,
             String trigger,
-            String renderedMessage,
-            long totalCount,
-            long userCount,
-            int currentStreak,
-            int longestStreak
+            String renderedMessage
     ) {
     }
 }
