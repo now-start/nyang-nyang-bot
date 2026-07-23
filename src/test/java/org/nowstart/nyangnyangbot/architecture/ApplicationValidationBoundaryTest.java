@@ -9,7 +9,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.point.CorrectPointLedgerUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ReconcilePointBalanceUseCase;
@@ -53,8 +52,6 @@ class ApplicationValidationBoundaryTest {
         thenValidCommand(AdjustPointUseCase.class, "adjust", 0,
                 AdjustPointUseCase.AdjustPointCommand.class);
         thenValidCommand(GrantPointUseCase.class, "grant", 0,
-                AdjustPointUseCase.AdjustPointCommand.class);
-        thenValidCommand(CorrectPointLedgerUseCase.class, "correct", 0,
                 AdjustPointUseCase.AdjustPointCommand.class);
         thenValidCommand(ReconcilePointBalanceUseCase.class, "reconcileToBalance", 0,
                 ReconcilePointBalanceUseCase.ReconcilePointBalanceCommand.class);

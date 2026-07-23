@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot;
 
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class NyangNyangBotApplication {
 
     static {
-        TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
+        TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Asia/Seoul")));
     }
 
     public static void main(String[] args) {

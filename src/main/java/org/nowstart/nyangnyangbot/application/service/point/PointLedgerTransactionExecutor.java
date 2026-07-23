@@ -94,7 +94,7 @@ public class PointLedgerTransactionExecutor {
         LedgerEntryRecord saved = pointLedgerPort.append(new AppendPointEntry(
                 request.userId(),
                 delta,
-                PointSourceType.SHEET_MIGRATION,
+                PointSourceType.GOOGLE_SHEET_SYNC,
                 request.sourceReference(),
                 request.description(),
                 request.privateNote(),

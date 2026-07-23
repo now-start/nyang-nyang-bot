@@ -48,13 +48,4 @@ public class OverlayAccessToken {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    public void revoke(Instant revocationTime) {
-        if (revokedAt != null) {
-            throw new IllegalStateException("overlay access token is already revoked");
-        }
-        if (revocationTime.isBefore(issuedAt)) {
-            throw new IllegalArgumentException("revocation time must not precede issuance");
-        }
-        revokedAt = revocationTime;
-    }
 }

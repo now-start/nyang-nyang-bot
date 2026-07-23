@@ -4,10 +4,12 @@ spring:
   jpa:
     properties:
       hibernate:
+        type:
+          preferred_instant_jdbc_type: TIMESTAMP
         jdbc:
-          time_zone: UTC
-  jackson:
-    time-zone: UTC
+          time_zone: Asia/Seoul
+  jackson2:
+    time-zone: Asia/Seoul
   task:
     scheduling:
       pool:
@@ -36,4 +38,4 @@ spring:
     import: ${SPRING_CONFIG_IMPORT:configserver:https://spring.nowstart.org/config}
   datasource:
     hikari:
-      connection-init-sql: "SET time_zone = '+00:00'"
+      connection-init-sql: "SET time_zone = '+09:00', explicit_defaults_for_timestamp = ON"

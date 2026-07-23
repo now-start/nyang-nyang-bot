@@ -83,6 +83,7 @@ tasks.register('mariaDbMigrationTest', Test) {
     useJUnitPlatform()
     filter {
         includeTestsMatching 'org.nowstart.nyangnyangbot.config.MariaDbCanonicalMigrationTest'
+        includeTestsMatching 'org.nowstart.nyangnyangbot.config.MariaDbTimestampJpaContractTest'
     }
     systemProperty 'nyang.test.require-mariadb', 'true'
 }

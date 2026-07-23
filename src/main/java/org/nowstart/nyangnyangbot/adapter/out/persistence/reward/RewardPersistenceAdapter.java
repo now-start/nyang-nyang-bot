@@ -9,7 +9,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.entity.RewardGr
 import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.repository.RewardGrantRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRound;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
@@ -22,15 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class RewardPersistenceAdapter implements RewardPort {
 
     private final RewardGrantRepository rewardGrantRepository;
-    private final UserAccountRepository userAccountRepository;
     private final EntityManager entityManager;
     private final OutboundContractValidator contractValidator;
-
-    @Override
-    @Transactional
-    public boolean lockUser(String userId) {
-        return userAccountRepository.findByIdForUpdate(userId).isPresent();
-    }
 
     @Override
     @Transactional
@@ -52,12 +44,6 @@ public class RewardPersistenceAdapter implements RewardPort {
                 .updatedAt(command.createdAt())
                 .build();
         return rewardRecord(rewardGrantRepository.save(grant));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<RewardRecord> findByIdempotencyKey(String idempotencyKey) {
-        return rewardGrantRepository.findByIdempotencyKey(idempotencyKey).map(this::rewardRecord);
     }
 
     @Override

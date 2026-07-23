@@ -9,11 +9,7 @@ import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
 public interface RewardPort {
 
-    boolean lockUser(String userId);
-
     RewardRecord createGrant(CreateRewardCommand command);
-
-    Optional<RewardRecord> findByIdempotencyKey(String idempotencyKey);
 
     Optional<RewardRecord> findByRouletteRoundId(Long rouletteRoundId);
 

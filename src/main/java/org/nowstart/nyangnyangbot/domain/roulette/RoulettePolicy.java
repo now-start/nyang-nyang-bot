@@ -151,10 +151,6 @@ public class RoulettePolicy {
         }
     }
 
-    public int safeRecentRoundLimit(int limit) {
-        return Math.max(1, Math.min(limit, 50));
-    }
-
     public int safeSimulationIterations(int iterations) {
         return Math.max(1, Math.min(iterations, 10_000));
     }

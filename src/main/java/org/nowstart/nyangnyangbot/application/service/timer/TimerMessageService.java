@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.application.service.timer;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -299,10 +298,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         return key != null && key.startsWith("time.");
     }
 
-    private CommandVariableContext timerContext(LocalDateTime utcNow) {
-        LocalDateTime seoulNow = utcNow.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(SEOUL)
-                .toLocalDateTime();
+    private CommandVariableContext timerContext(LocalDateTime seoulNow) {
         return new CommandVariableContext(null, null, null, null, null, null, seoulNow);
     }
 
@@ -314,12 +310,12 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 record.minChatCount(),
                 record.active(),
                 record.chatCountSinceLastSend(),
-                toSeoul(record.lastSentAt()),
-                toSeoul(record.nextRunAt()),
+                record.lastSentAt(),
+                record.nextRunAt(),
                 record.createdBy(),
                 record.updatedBy(),
-                toSeoul(record.createDate()),
-                toSeoul(record.modifyDate())
+                record.createDate(),
+                record.modifyDate()
         );
     }
 
@@ -331,14 +327,8 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         return value == null || value.isBlank() || "system".equals(value) ? null : value;
     }
 
-    private LocalDateTime toSeoul(LocalDateTime utc) {
-        return utc == null
-                ? null
-                : utc.atZone(ZoneOffset.UTC).withZoneSameInstant(SEOUL).toLocalDateTime();
-    }
-
     LocalDateTime currentDateTime() {
-        return LocalDateTime.now(ZoneOffset.UTC);
+        return LocalDateTime.now(SEOUL);
     }
 
     String newClaimToken() {

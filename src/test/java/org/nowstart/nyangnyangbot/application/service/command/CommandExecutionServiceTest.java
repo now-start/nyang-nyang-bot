@@ -26,7 +26,7 @@ import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 @ExtendWith(MockitoExtension.class)
 class CommandExecutionServiceTest {
 
-    private static final Instant APPROVED_AT = Instant.parse("2026-07-23T00:00:00Z");
+    private static final Instant APPROVED_AT = Instant.parse("2026-07-22T15:00:00Z");
 
     @Mock
     private CommandExecutionPort executionPort;

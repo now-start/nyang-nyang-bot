@@ -1,9 +1,9 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.timer;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class TimerMessagePersistenceAdapter implements TimerMessagePort {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final TimerMessageRepository timerMessageRepository;
     private final UserAccountRepository userAccountRepository;
@@ -174,6 +176,6 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     }
 
     private LocalDateTime localDateTime(java.time.Instant instant) {
-        return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+        return instant == null ? null : LocalDateTime.ofInstant(instant, SEOUL);
     }
 }

@@ -3,11 +3,11 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.command;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CommandPersistenceAdapter implements CommandPort {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final CommandRepository commandRepository;
     private final UserAccountRepository userAccountRepository;
@@ -118,6 +120,6 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     private LocalDateTime localDateTime(java.time.Instant instant) {
-        return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+        return instant == null ? null : LocalDateTime.ofInstant(instant, SEOUL);
     }
 }

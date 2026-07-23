@@ -7,7 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +27,7 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
     public void migrate(Context context) throws Exception {
         Connection connection = context.getConnection();
         if (CanonicalMigrationSupport.isMariaDb(context)) {
+            CanonicalMigrationSupport.requireAsiaSeoulSession(connection);
             prepareMariaDbRestart(connection);
         }
         createBridgeTables(connection);
@@ -399,8 +399,8 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
             statement.setString(3, triggerToken);
             statement.setLong(4, pricePerRound);
             statement.setInt(5, threshold);
-            statement.setTimestamp(6, Timestamp.valueOf(createdAt));
-            statement.setTimestamp(7, Timestamp.valueOf(updatedAt == null ? createdAt : updatedAt));
+            statement.setObject(6, createdAt);
+            statement.setObject(7, updatedAt == null ? createdAt : updatedAt);
             statement.executeUpdate();
         }
     }
@@ -432,7 +432,7 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
                 statement.setLong(8, option.pointDelta());
             }
             statement.setInt(9, option.displayOrder());
-            statement.setTimestamp(10, Timestamp.valueOf(createdAt));
+            statement.setObject(10, createdAt);
             statement.executeUpdate();
         }
     }
@@ -452,8 +452,8 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, donationId);
             statement.setLong(2, configId);
-            statement.setTimestamp(3, Timestamp.valueOf(createdAt));
-            statement.setTimestamp(4, Timestamp.valueOf(updatedAt == null ? createdAt : updatedAt));
+            statement.setObject(3, createdAt);
+            statement.setObject(4, updatedAt == null ? createdAt : updatedAt);
             statement.executeUpdate();
         }
     }
@@ -478,9 +478,8 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
             statement.setLong(4, optionId);
             statement.setInt(5, round.roundNo());
             statement.setInt(6, round.ticket());
-            statement.setTimestamp(7, Timestamp.valueOf(round.createdAt()));
-            statement.setTimestamp(8, Timestamp.valueOf(
-                    round.updatedAt() == null ? round.createdAt() : round.updatedAt()));
+            statement.setObject(7, round.createdAt());
+            statement.setObject(8, round.updatedAt() == null ? round.createdAt() : round.updatedAt());
             statement.executeUpdate();
         }
     }
@@ -631,8 +630,7 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
     }
 
     private static LocalDateTime nullableDateTime(ResultSet row, String column) throws SQLException {
-        Timestamp timestamp = row.getTimestamp(column);
-        return timestamp == null ? null : timestamp.toLocalDateTime();
+        return row.getObject(column, LocalDateTime.class);
     }
 
     private static Long normalizePointDelta(String conversionMode, Long value) throws SQLException {

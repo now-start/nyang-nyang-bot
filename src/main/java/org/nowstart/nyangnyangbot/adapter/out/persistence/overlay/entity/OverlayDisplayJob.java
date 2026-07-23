@@ -109,17 +109,6 @@ public class OverlayDisplayJob {
         updatedAt = completionTime;
     }
 
-    public void markMissed(Instant missedAt) {
-        if (status == OverlayDisplayStatus.DISPLAYED || status == OverlayDisplayStatus.MISSED) {
-            return;
-        }
-        status = OverlayDisplayStatus.MISSED;
-        claimToken = null;
-        claimExpiresAt = null;
-        displayedAt = null;
-        updatedAt = missedAt;
-    }
-
     public boolean claimableAt(Instant now) {
         if (!expiresAt.isAfter(now)) {
             return false;

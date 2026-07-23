@@ -146,7 +146,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                 .forEach(seed -> pointLedgerEntryRepository.save(PointLedgerEntry.builder()
                         .userAccount(requireUser(users, seed.userId()))
                         .delta(seed.point())
-                        .sourceType(PointSourceType.SHEET_MIGRATION)
+                        .sourceType(PointSourceType.ADMIN_ADJUSTMENT)
                         .sourceReference("local-dummy")
                         .description("로컬 초기 포인트")
                         .privateNote("canonical local fixture")

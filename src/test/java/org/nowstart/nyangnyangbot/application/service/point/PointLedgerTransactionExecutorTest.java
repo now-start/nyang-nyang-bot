@@ -126,7 +126,8 @@ class PointLedgerTransactionExecutorTest {
         given(port.lockUser("user-1", "냥이", true)).willReturn(true);
         given(port.balance("user-1")).willReturn(50L);
         given(port.append(org.mockito.ArgumentMatchers.any())).willReturn(entry(
-                "user-1", 20, PointSourceType.SHEET_MIGRATION, "google-sheet", "데이터 동기화", null, null, null
+                "user-1", 20, PointSourceType.GOOGLE_SHEET_SYNC, "google-sheet", "구글 시트 동기화",
+                null, null, null
         ));
 
         var result = executor.reconcile(reconcileRequest(70L));
@@ -137,6 +138,7 @@ class PointLedgerTransactionExecutorTest {
         ArgumentCaptor<AppendPointEntry> captor = ArgumentCaptor.forClass(AppendPointEntry.class);
         order.verify(port).append(captor.capture());
         then(captor.getValue().delta()).isEqualTo(20L);
+        then(captor.getValue().sourceType()).isEqualTo(PointSourceType.GOOGLE_SHEET_SYNC);
         then(result.afterBalance()).isEqualTo(70L);
     }
 
@@ -217,7 +219,7 @@ class PointLedgerTransactionExecutorTest {
 
     private ReconcileRequest reconcileRequest(long targetBalance) {
         return new ReconcileRequest(
-                "user-1", "냥이", targetBalance, "google-sheet", "데이터 동기화", null, null,
+                "user-1", "냥이", targetBalance, "google-sheet", "구글 시트 동기화", null, null,
                 "point:random", true
         );
     }

@@ -10,7 +10,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 class TimerMessageFlywayMigrationTest {
 
     private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
+            ";MODE=MariaDB;TIME ZONE=Asia/Seoul;"
+                    + "INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
 
     @Test
     void flywayMigration_ShouldCreateDuplicateSafeTimerMessageSchema() {

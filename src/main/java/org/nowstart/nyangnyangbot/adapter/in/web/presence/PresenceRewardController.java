@@ -50,7 +50,7 @@ public class PresenceRewardController {
         return PRESENCE_LIST_FRAGMENT;
     }
 
-    @Operation(summary = "출석체크 수집 시작")
+    @Operation(summary = "생존자 수집 시작")
     @PostMapping("/start")
     public String startCapture(HttpServletResponse response, Model model) {
         managePresenceRewardUseCase.startCapture();
@@ -61,7 +61,7 @@ public class PresenceRewardController {
         return FEEDBACK_FRAGMENT;
     }
 
-    @Operation(summary = "출석체크 수집 종료")
+    @Operation(summary = "생존자 수집 종료")
     @PostMapping("/stop")
     public String stopCapture(Model model) {
         managePresenceRewardUseCase.stopCapture();

@@ -1,9 +1,11 @@
 spring:
+  jackson2:
+    time-zone: Asia/Seoul
   cloud:
     config:
       enabled: false
   datasource:
-    url: "jdbc:h2:mem:nyangnyangbot-test;MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1"
+    url: "jdbc:h2:mem:nyangnyangbot-test;MODE=MariaDB;TIME ZONE=Asia/Seoul;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS CLOB;DB_CLOSE_DELAY=-1"
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -18,6 +20,10 @@ spring:
       hibernate:
         format_sql: true
         highlight_sql: true
+        type:
+          preferred_instant_jdbc_type: TIMESTAMP
+        jdbc:
+          time_zone: Asia/Seoul
 
 logging:
   level:

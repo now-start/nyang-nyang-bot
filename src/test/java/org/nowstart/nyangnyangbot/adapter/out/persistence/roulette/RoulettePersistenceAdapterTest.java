@@ -91,8 +91,6 @@ class RoulettePersistenceAdapterTest {
             assertThat(round.roundNo()).isEqualTo(3);
             assertThat(round.itemLabel()).isEqualTo("포인트");
         });
-        Mockito.verify(roundRepository, Mockito.never())
-                .findByRouletteRun_Donation_DonorUserAccount_UserIdOrderByCreatedAtDescIdDesc(Mockito.anyString());
     }
 
     @Test

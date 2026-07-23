@@ -13,6 +13,9 @@ public final class V7_1__install_canonical_shadow_invariants extends BaseJavaMig
     @Override
     public void migrate(Context context) throws Exception {
         if (CanonicalMigrationSupport.isMariaDb(context)) {
+            CanonicalMigrationSupport.requireAsiaSeoulSession(context.getConnection());
+            CanonicalMigrationSupport.requireCanonicalTimestampColumns(
+                    context.getConnection(), true);
             CanonicalMigrationSupport.dropInvariants(context.getConnection(), true);
             CanonicalMigrationSupport.installInvariants(context.getConnection(), true);
         }

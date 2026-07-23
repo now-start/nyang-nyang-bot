@@ -59,6 +59,7 @@ public final class V10__cutover_canonical_schema extends BaseJavaMigration {
             return;
         }
 
+        CanonicalMigrationSupport.requireAsiaSeoulSession(connection);
         CanonicalMigrationSupport.requireCutoverApproval();
         switch (detectState(connection)) {
             case PRE_RENAME -> migratePreRename(connection);
@@ -471,6 +472,7 @@ public final class V10__cutover_canonical_schema extends BaseJavaMigration {
         }
 
         if (mariaDb) {
+            CanonicalMigrationSupport.requireCanonicalTimestampColumns(connection, false);
             long commentedTables = queryLong(connection, """
                     SELECT COUNT(*)
                       FROM information_schema.tables

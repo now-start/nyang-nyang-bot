@@ -1,19 +1,14 @@
 package db.migration;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +45,8 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
         Connection connection = context.getConnection();
         boolean mariaDb = CanonicalMigrationSupport.isMariaDb(context);
         if (mariaDb) {
+            CanonicalMigrationSupport.requireAsiaSeoulSession(connection);
+            CanonicalMigrationSupport.requireCanonicalTimestampColumns(connection, true);
             CanonicalMigrationSupport.requireStableSnapshotIsolation(connection);
         }
         validateLegacySnapshotUnchanged(connection);
@@ -599,6 +596,7 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
                         SELECT id, favorite_account_user_id, delta,
                                CASE source_type
                                    WHEN 'ATTENDANCE' THEN 'PRESENCE_REWARD'
+                                   WHEN 'SHEET_MIGRATION' THEN 'GOOGLE_SHEET_SYNC'
                                    WHEN 'UPBO_MANUAL' THEN 'REWARD_MANUAL'
                                    WHEN 'UPBO_ROULETTE' THEN 'REWARD_ROULETTE'
                                    ELSE source_type
@@ -671,6 +669,19 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
         if (sourcePresence != targetPresence) {
             throw new SQLException("ATTENDANCE to PRESENCE_REWARD conversion count mismatch");
         }
+
+        long sourceGoogleSheet = queryLong(connection,
+                "SELECT COUNT(*) FROM favorite_history WHERE source_type = 'SHEET_MIGRATION'");
+        long targetGoogleSheet = queryLong(connection, """
+                SELECT COUNT(*)
+                  FROM next_point_ledger_entry target
+                  JOIN favorite_history source ON source.id = target.id
+                 WHERE source.source_type = 'SHEET_MIGRATION'
+                   AND target.source_type = 'GOOGLE_SHEET_SYNC'
+                """);
+        if (sourceGoogleSheet != targetGoogleSheet) {
+            throw new SQLException("SHEET_MIGRATION to GOOGLE_SHEET_SYNC conversion count mismatch");
+        }
     }
 
     private void validateOauthExpiry(Connection connection) throws SQLException {
@@ -689,17 +700,21 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
                 """;
         try (Statement statement = connection.createStatement();
              ResultSet rows = statement.executeQuery(query)) {
+            ResultSetMetaData metadata = rows.getMetaData();
             while (rows.next()) {
-                LocalDateTime modified = rows.getTimestamp(2).toLocalDateTime();
+                LocalDateTime modified = rows.getObject(2, LocalDateTime.class);
                 int expiresIn = rows.getInt(3);
                 LocalDateTime expectedExpiry = modified.plusSeconds(expiresIn);
-                LocalDateTime targetExpiry = rows.getTimestamp(4).toLocalDateTime();
+                LocalDateTime targetExpiry = rows.getObject(4, LocalDateTime.class);
                 if (!expectedExpiry.equals(targetExpiry)) {
                     throw new SQLException("OAuth expiry mismatch for " + rows.getString(1));
                 }
                 for (int sourceIndex = 5; sourceIndex <= 15; sourceIndex += 2) {
-                    if (!Objects.equals(canonicalValue(rows.getObject(sourceIndex)),
-                            canonicalValue(rows.getObject(sourceIndex + 1)))) {
+                    if (!Objects.equals(
+                            CanonicalMigrationSupport.canonicalColumnValue(
+                                    rows, metadata, sourceIndex),
+                            CanonicalMigrationSupport.canonicalColumnValue(
+                                    rows, metadata, sourceIndex + 1))) {
                         throw new SQLException("OAuth value mismatch for " + rows.getString(1));
                     }
                 }
@@ -807,8 +822,10 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
              Statement targetStatement = connection.createStatement();
              ResultSet source = sourceStatement.executeQuery(sourceSql);
              ResultSet target = targetStatement.executeQuery(targetSql)) {
-            int sourceColumns = source.getMetaData().getColumnCount();
-            int targetColumns = target.getMetaData().getColumnCount();
+            ResultSetMetaData sourceMetadata = source.getMetaData();
+            ResultSetMetaData targetMetadata = target.getMetaData();
+            int sourceColumns = sourceMetadata.getColumnCount();
+            int targetColumns = targetMetadata.getColumnCount();
             if (sourceColumns != targetColumns) {
                 throw new SQLException(label + " projection column count differs");
             }
@@ -824,8 +841,10 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
                 }
                 row++;
                 for (int column = 1; column <= sourceColumns; column++) {
-                    String sourceValue = canonicalValue(source.getObject(column));
-                    String targetValue = canonicalValue(target.getObject(column));
+                    String sourceValue = CanonicalMigrationSupport.canonicalColumnValue(
+                            source, sourceMetadata, column);
+                    String targetValue = CanonicalMigrationSupport.canonicalColumnValue(
+                            target, targetMetadata, column);
                     if (!Objects.equals(sourceValue, targetValue)) {
                         throw new SQLException(label + " differs at row " + row
                                 + ", column " + column);
@@ -833,38 +852,6 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
                 }
             }
         }
-    }
-
-    private static String canonicalValue(Object value) throws SQLException {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof byte[] bytes) {
-            return HexFormat.of().formatHex(bytes);
-        }
-        if (value instanceof Clob clob) {
-            return clob.getSubString(1, Math.toIntExact(clob.length()));
-        }
-        if (value instanceof Blob blob) {
-            return HexFormat.of().formatHex(blob.getBytes(1, Math.toIntExact(blob.length())));
-        }
-        if (value instanceof Timestamp timestamp) {
-            return timestamp.toLocalDateTime().toString();
-        }
-        if (value instanceof Date date) {
-            return date.toLocalDate().toString();
-        }
-        if (value instanceof Boolean booleanValue) {
-            return booleanValue ? "1" : "0";
-        }
-        if (value instanceof Number number) {
-            try {
-                return new BigDecimal(number.toString()).stripTrailingZeros().toPlainString();
-            } catch (NumberFormatException ignored) {
-                return number.toString();
-            }
-        }
-        return value.toString();
     }
 
     private Set<String> queryStringSet(Connection connection, String sql) throws SQLException {

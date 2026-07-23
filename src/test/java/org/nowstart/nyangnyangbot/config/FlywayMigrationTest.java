@@ -15,7 +15,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 class FlywayMigrationTest {
 
     private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
+            ";MODE=MariaDB;TIME ZONE=Asia/Seoul;"
+                    + "INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
 
     @Test
     @DisplayName("Flyway SQL 마이그레이션을 신규 DB에 적용할 수 있다")
@@ -104,7 +105,7 @@ class FlywayMigrationTest {
                 String.class
         );
 
-        assertThat(migrationCount).isEqualTo(13);
+        assertThat(migrationCount).isEqualTo(14);
         assertThat(businessTableCount).isEqualTo(16);
         assertThat(canonicalTableCount).isEqualTo(16);
         assertThat(legacyTableCount).isZero();

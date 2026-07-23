@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.domain.point;
 public enum PointSourceType {
     ADMIN_ADJUSTMENT,
     PRESENCE_REWARD,
-    SHEET_MIGRATION,
+    GOOGLE_SHEET_SYNC,
     REWARD_MANUAL,
     REWARD_ROULETTE,
     CORRECTION

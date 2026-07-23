@@ -6,7 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -26,9 +25,11 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
     public void migrate(Context context) throws Exception {
         Connection connection = context.getConnection();
         if (CanonicalMigrationSupport.isMariaDb(context)) {
-            CanonicalMigrationSupport.requireCutoverApproval();
-            CanonicalMigrationSupport.requireLegacyDateTimeUtcApproval();
+            CanonicalMigrationSupport.requireAsiaSeoulSession(connection);
+            CanonicalMigrationSupport.requireBackfillApproval();
+            CanonicalMigrationSupport.requireLegacyDateTimeZone();
             CanonicalMigrationSupport.requireStableSnapshotIsolation(connection);
+            CanonicalMigrationSupport.requireLegacyTimestampRange(connection);
         }
         String sourceSnapshotChecksum = CanonicalMigrationSupport.databaseChecksum(
                 connection, CanonicalMigrationSupport.legacyTables(), "source");
@@ -47,7 +48,7 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO migration_cutover_metadata "
                         + "(singleton_id, cutover_at, source_checksum) VALUES (1, ?, ?)")) {
-            statement.setTimestamp(1, Timestamp.valueOf(cutoverAt));
+            statement.setObject(1, cutoverAt);
             statement.setString(2, sourceSnapshotChecksum);
             statement.executeUpdate();
         }
@@ -123,8 +124,8 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                 UserAggregate aggregate = user.getValue();
                 statement.setString(1, user.getKey());
                 statement.setString(2, aggregate.displayName());
-                statement.setTimestamp(3, Timestamp.valueOf(aggregate.createdAt(cutoverAt)));
-                statement.setTimestamp(4, Timestamp.valueOf(aggregate.updatedAt(cutoverAt)));
+                statement.setObject(3, aggregate.createdAt(cutoverAt));
+                statement.setObject(4, aggregate.updatedAt(cutoverAt));
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -180,9 +181,9 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                 statement.setString(3, requiredText(rows, "refresh_token"));
                 statement.setString(4, requiredText(rows, "token_type"));
                 statement.setString(5, rows.getString("scope"));
-                statement.setTimestamp(6, Timestamp.valueOf(updatedAt.plusSeconds(expiresIn)));
-                statement.setTimestamp(7, Timestamp.valueOf(createdAt));
-                statement.setTimestamp(8, Timestamp.valueOf(updatedAt));
+                statement.setObject(6, updatedAt.plusSeconds(expiresIn));
+                statement.setObject(7, createdAt);
+                statement.setObject(8, updatedAt);
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -235,6 +236,7 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                 SELECT id, favorite_account_user_id, delta,
                        CASE source_type
                            WHEN 'ATTENDANCE' THEN 'PRESENCE_REWARD'
+                           WHEN 'SHEET_MIGRATION' THEN 'GOOGLE_SHEET_SYNC'
                            WHEN 'UPBO_MANUAL' THEN 'REWARD_MANUAL'
                            WHEN 'UPBO_ROULETTE' THEN 'REWARD_ROULETTE'
                            ELSE source_type
@@ -312,8 +314,7 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
     }
 
     private LocalDateTime localDateTime(ResultSet resultSet, String column) throws SQLException {
-        Timestamp timestamp = resultSet.getTimestamp(column);
-        return timestamp == null ? null : timestamp.toLocalDateTime();
+        return resultSet.getObject(column, LocalDateTime.class);
     }
 
     private LocalDateTime requiredDateTime(ResultSet resultSet, String column) throws SQLException {

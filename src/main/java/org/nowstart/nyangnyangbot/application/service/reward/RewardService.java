@@ -5,7 +5,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.reward.QueryRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
@@ -22,77 +21,12 @@ import org.springframework.validation.annotation.Validated;
 @Service
 @Validated
 @RequiredArgsConstructor
-public class RewardService implements GrantRewardUseCase, QueryRewardUseCase {
+public class RewardService implements QueryRewardUseCase {
 
     private static final int MAX_REWARD_QUERY_LIMIT = 100;
     private final RewardPolicy rewardPolicy = new RewardPolicy();
     private final RewardPort rewardPort;
     private final GrantPointUseCase grantPointUseCase;
-
-    @Override
-    @Transactional
-    public QueryRewardUseCase.RewardResult grantManual(
-            GrantManualRewardCommand command,
-            String actorUserId
-    ) {
-        if (actorUserId == null || actorUserId.isBlank()) {
-            throw new IllegalArgumentException("actorUserId is required");
-        }
-        if (!rewardPort.lockUser(command.userId())) {
-            throw new IllegalArgumentException("reward user not found");
-        }
-        String idempotencyKey = manualIdempotencyKey(command.idempotencyKey());
-        RewardRecord existing = rewardPort.findByIdempotencyKey(idempotencyKey).orElse(null);
-        if (existing != null) {
-            validateManualReplay(existing, command, actorUserId);
-            return rewardResult(existing);
-        }
-        RewardType rewardType = RewardType.valueOf(command.rewardType().trim());
-        ConversionMode conversionMode = ConversionMode.valueOf(command.conversionMode().trim());
-        requireAutoPointDelta(conversionMode, command.pointDelta());
-        Long ledgerEntryId = grantPoints(
-                command.userId(),
-                null,
-                command.pointDelta(),
-                PointSourceType.REWARD_MANUAL,
-                null,
-                command.description(),
-                command.privateNote(),
-                actorUserId,
-                idempotencyKey,
-                conversionMode,
-                false
-        );
-        RewardGrantStatus status = rewardPolicy.initialStatus(conversionMode);
-        rewardPolicy.validateGrant(
-                command.userId(),
-                null,
-                ledgerEntryId,
-                command.label(),
-                rewardType,
-                conversionMode,
-                command.pointDelta(),
-                status,
-                command.description(),
-                actorUserId,
-                idempotencyKey
-        );
-        return rewardResult(rewardPort.createGrant(new CreateRewardCommand(
-                command.userId(),
-                null,
-                ledgerEntryId,
-                command.label().trim(),
-                rewardType,
-                conversionMode,
-                command.pointDelta(),
-                status,
-                command.description().trim(),
-                trimToNull(command.privateNote()),
-                actorUserId,
-                idempotencyKey,
-                now()
-        )));
-    }
 
     @Transactional
     public RewardRecord grantRoulette(RouletteRewardCommand command) {
@@ -214,35 +148,9 @@ public class RewardService implements GrantRewardUseCase, QueryRewardUseCase {
         );
     }
 
-    private String trimToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
-
     private void requireAutoPointDelta(ConversionMode conversionMode, Long pointDelta) {
         if (conversionMode == ConversionMode.AUTO && (pointDelta == null || pointDelta == 0)) {
             throw new IllegalArgumentException("AUTO reward requires non-zero pointDelta");
-        }
-    }
-
-    private String manualIdempotencyKey(String value) {
-        return "reward-manual:" + value.trim();
-    }
-
-    private void validateManualReplay(
-            RewardRecord existing,
-            GrantManualRewardCommand command,
-            String actorUserId
-    ) {
-        if (!existing.userId().equals(command.userId())
-                || existing.rouletteRoundId() != null
-                || !existing.label().equals(command.label().trim())
-                || existing.rewardType() != RewardType.valueOf(command.rewardType().trim())
-                || existing.conversionMode() != ConversionMode.valueOf(command.conversionMode().trim())
-                || !java.util.Objects.equals(existing.pointDelta(), command.pointDelta())
-                || !existing.description().equals(command.description().trim())
-                || !java.util.Objects.equals(existing.privateNote(), trimToNull(command.privateNote()))
-                || !java.util.Objects.equals(existing.actorUserId(), actorUserId)) {
-            throw new IllegalArgumentException("reward idempotency key conflicts with existing grant");
         }
     }
 

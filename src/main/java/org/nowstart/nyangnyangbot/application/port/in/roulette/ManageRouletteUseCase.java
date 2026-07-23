@@ -23,8 +23,6 @@ public interface ManageRouletteUseCase {
 
     RouletteConfigResult getConfig(Long configId);
 
-    RouletteValidationResult validateConfig(Long configId);
-
     RouletteConfigResult activateConfig(Long configId);
 
     RouletteConfigResult archiveConfig(Long configId);

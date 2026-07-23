@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
@@ -21,6 +20,9 @@ public final class V8_2__backfill_roulette_dependents extends BaseJavaMigration 
     @Override
     public void migrate(Context context) throws Exception {
         Connection connection = context.getConnection();
+        if (CanonicalMigrationSupport.isMariaDb(context)) {
+            CanonicalMigrationSupport.requireAsiaSeoulSession(connection);
+        }
         backfillRewardGrants(connection);
         restoreRoundStatuses(connection);
         backfillOverlayDisplayJobs(connection);
@@ -110,9 +112,8 @@ public final class V8_2__backfill_roulette_dependents extends BaseJavaMigration 
             statement.setString(11, reward.privateNote());
             statement.setString(12, manual ? normalizedActor : null);
             statement.setString(13, "legacy-reward-grant:" + reward.id());
-            statement.setTimestamp(14, Timestamp.valueOf(reward.createdAt()));
-            statement.setTimestamp(15, Timestamp.valueOf(
-                    reward.updatedAt() == null ? reward.createdAt() : reward.updatedAt()));
+            statement.setObject(14, reward.createdAt());
+            statement.setObject(15, reward.updatedAt() == null ? reward.createdAt() : reward.updatedAt());
             statement.executeUpdate();
         }
     }
@@ -205,15 +206,14 @@ public final class V8_2__backfill_roulette_dependents extends BaseJavaMigration 
             setNullableLong(statement, 3, job.replayOfJobId());
             statement.setString(4, "legacy-overlay-display:" + job.id());
             statement.setString(5, job.status());
-            statement.setTimestamp(6, Timestamp.valueOf(job.expiresAt()));
+            statement.setObject(6, job.expiresAt());
             if (job.displayedAt() == null) {
                 statement.setNull(7, java.sql.Types.TIMESTAMP);
             } else {
-                statement.setTimestamp(7, Timestamp.valueOf(job.displayedAt()));
+                statement.setObject(7, job.displayedAt());
             }
-            statement.setTimestamp(8, Timestamp.valueOf(job.createdAt()));
-            statement.setTimestamp(9, Timestamp.valueOf(
-                    job.updatedAt() == null ? job.createdAt() : job.updatedAt()));
+            statement.setObject(8, job.createdAt());
+            statement.setObject(9, job.updatedAt() == null ? job.createdAt() : job.updatedAt());
             statement.executeUpdate();
         }
     }
@@ -290,16 +290,15 @@ public final class V8_2__backfill_roulette_dependents extends BaseJavaMigration 
             String table,
             long id
     ) throws SQLException {
-        Timestamp timestamp = row.getTimestamp(column);
-        if (timestamp == null) {
+        LocalDateTime value = row.getObject(column, LocalDateTime.class);
+        if (value == null) {
             throw new SQLException(table + "." + column + " is required for id " + id);
         }
-        return timestamp.toLocalDateTime();
+        return value;
     }
 
     private static LocalDateTime nullableDateTime(ResultSet row, String column) throws SQLException {
-        Timestamp timestamp = row.getTimestamp(column);
-        return timestamp == null ? null : timestamp.toLocalDateTime();
+        return row.getObject(column, LocalDateTime.class);
     }
 
     private record LegacyReward(

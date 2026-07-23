@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.repository.RewardGrantRepository;
-import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
 import org.springframework.data.domain.Pageable;
@@ -60,7 +59,6 @@ class RewardPersistenceAdapterTest {
     private RewardPersistenceAdapter adapter(RewardGrantRepository repository) {
         return new RewardPersistenceAdapter(
                 repository,
-                Mockito.mock(UserAccountRepository.class),
                 Mockito.mock(EntityManager.class),
                 Mockito.mock(OutboundContractValidator.class)
         );

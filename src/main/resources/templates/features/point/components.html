@@ -72,7 +72,7 @@
         <div class="card-body d-flex flex-column flex-sm-row gap-3 align-items-sm-center justify-content-between py-3">
             <div>
                 <h2 class="small text-secondary fw-normal mb-1" id="my-point-heading">내 호감도</h2>
-                <p class="mb-0 text-secondary">내 계정의 호감도, 실제 순위, 보유 업보만 표시합니다.</p>
+                <p class="mb-0 text-secondary">내 계정의 호감도, 실제 순위, 보유 리워드만 표시합니다.</p>
             </div>
             <div class="text-sm-end" th:if="${currentUserRank != null}">
                 <span class="d-block small text-secondary">전체 순위</span>
@@ -117,21 +117,21 @@
     <div class="card-body vstack gap-3">
         <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center justify-content-between">
             <div>
-                <h2 class="h6 fw-bold text-white mb-1" id="reward-list-heading">보유 업보 · 쿠폰 · 리워드</h2>
+                <h2 class="h6 fw-bold text-white mb-1" id="reward-list-heading">보유 리워드 · 쿠폰</h2>
                 <p class="small text-secondary mb-0">내 계정에 남아 있는 운영 보상과 처리 상태입니다.</p>
             </div>
             <span class="badge rounded-pill bg-secondary-subtle text-secondary tabular-nums"
                   th:text="${userRewards == null ? '0개' : #lists.size(userRewards) + '개'}">0개</span>
         </div>
         <div class="text-secondary small"
-             th:if="${userRewards == null or #lists.isEmpty(userRewards)}">보유 업보·쿠폰·리워드가 없습니다.</div>
+             th:if="${userRewards == null or #lists.isEmpty(userRewards)}">보유 리워드·쿠폰이 없습니다.</div>
         <div class="vstack gap-2" th:if="${userRewards != null and !#lists.isEmpty(userRewards)}">
             <div class="border rounded-3 p-3"
                  th:each="reward : ${userRewards}">
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="small text-secondary tabular-nums"
                           th:text="${reward.date != null ? reward.date : '-'}">2026-07-09 19:30</span>
-                    <strong class="text-white" th:text="${reward.label}">업보 차감권</strong>
+                    <strong class="text-white" th:text="${reward.label}">호감도 차감권</strong>
                     <span class="badge rounded-pill"
                           th:classappend="${reward.status == 'OWNED'} ? ' bg-success-subtle text-success' :
                             (${reward.status == 'CONVERTED'} ? ' bg-secondary-subtle text-secondary' :
@@ -241,7 +241,7 @@
         <div class="d-flex flex-wrap align-items-center gap-3" th:each="history : ${histories}">
             <span class="text-secondary tabular-nums flex-shrink-0"
                   th:text="${history.date != null ? history.date : '-'}">2026-03-22 14:30</span>
-            <span class="flex-grow-1" th:text="${history.description != null ? history.description : '-'}">출석체크(+1)</span>
+            <span class="flex-grow-1" th:text="${history.description != null ? history.description : '-'}">생존자 보상(+1)</span>
             <span class="text-end fw-semibold tabular-nums flex-shrink-0"
                   th:text="${'반영 후 ' + history.balanceAfter + ' (' + (history.delta > 0 ? '+' + history.delta : history.delta) + ')'}">반영 후 12 (+1)</span>
         </div>

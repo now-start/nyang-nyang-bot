@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.Connection;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assumptions;
@@ -17,8 +19,8 @@ import org.testcontainers.mariadb.MariaDBContainer;
 class MariaDbCanonicalMigrationTest {
 
     private static final String CUTOVER_PROPERTY = "nyang.migration.canonical-cutover-approved";
-    private static final String LEGACY_DATETIME_UTC_PROPERTY =
-            "nyang.migration.legacy-datetime-utc-approved";
+    private static final String BACKFILL_PROPERTY = "nyang.migration.canonical-backfill-approved";
+    private static final String LEGACY_DATETIME_ZONE_PROPERTY = "nyang.migration.legacy-datetime-zone";
 
     @Test
     void v6RepresentativeFixture_ShouldCutOverWithoutLegacyDataLoss() throws Exception {
@@ -27,9 +29,11 @@ class MariaDbCanonicalMigrationTest {
         MariaDBContainer container = new MariaDBContainer("mariadb:10.11")
                 .withDatabaseName("nyang_migration")
                 .withUsername("nyang")
-                .withPassword("nyang");
-        String originalApproval = System.getProperty(CUTOVER_PROPERTY);
-        String originalLegacyDateTimeApproval = System.getProperty(LEGACY_DATETIME_UTC_PROPERTY);
+                .withPassword("nyang")
+                .withCommand("--default-time-zone=+09:00");
+        String originalCutoverApproval = System.getProperty(CUTOVER_PROPERTY);
+        String originalBackfillApproval = System.getProperty(BACKFILL_PROPERTY);
+        String originalLegacyDateTimeZone = System.getProperty(LEGACY_DATETIME_ZONE_PROPERTY);
         try {
             container.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(
@@ -37,17 +41,37 @@ class MariaDbCanonicalMigrationTest {
                     container.getUsername(),
                     container.getPassword()
             );
+            assertRuntimeSessionInitializationSql(dataSource);
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            assertThat(jdbc.queryForObject(
+                    "SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(6), CURRENT_TIMESTAMP(6))",
+                    Integer.class
+            )).isEqualTo(9 * 60 * 60);
 
             migrate(dataSource, "6").migrate();
             insertRepresentativeV6Fixture(jdbc);
 
+            assertAsiaSeoulSessionRequired(dataSource, "6.1");
+            assertExplicitTimestampDefaultsRequired(dataSource, "6.1");
+            assertMaxDbSqlModeRejected(dataSource, "6.1");
+            assertThat(tableExists(jdbc, "next_user_account")).isFalse();
+            migrate(dataSource, "7").migrate();
+            assertAsiaSeoulSessionRequired(dataSource, "7.1");
+            assertExplicitTimestampDefaultsRequired(dataSource, "7.1");
             migrate(dataSource, "7.1").migrate();
             assertThat(jdbc.queryForObject("""
                     SELECT COUNT(*) FROM information_schema.triggers
                      WHERE trigger_schema = DATABASE()
                        AND trigger_name LIKE 'trg_next!_%' ESCAPE '!'
                     """, Integer.class)).isEqualTo(24);
+            assertThat(jdbc.queryForObject("""
+                    SELECT COUNT(*) FROM information_schema.columns
+                     WHERE table_schema = DATABASE()
+                       AND (table_name LIKE 'next!_%' ESCAPE '!'
+                            OR table_name = 'migration_cutover_metadata')
+                       AND data_type = 'timestamp'
+                       AND datetime_precision = 6
+                    """, Integer.class)).isEqualTo(34);
             assertThatThrownBy(() -> jdbc.update("""
                     INSERT INTO next_roulette_config
                         (title, trigger_token, price_per_round, high_round_threshold, status)
@@ -58,17 +82,82 @@ class MariaDbCanonicalMigrationTest {
 
             Flyway throughV9 = migrate(dataSource, "9");
             System.clearProperty(CUTOVER_PROPERTY);
-            System.clearProperty(LEGACY_DATETIME_UTC_PROPERTY);
+            System.clearProperty(BACKFILL_PROPERTY);
+            System.clearProperty(LEGACY_DATETIME_ZONE_PROPERTY);
             assertThatThrownBy(throughV9::migrate)
-                    .hasMessageContaining("requires explicit approval");
+                    .hasMessageContaining("backfill requires explicit approval");
             throughV9.repair();
-            System.setProperty(CUTOVER_PROPERTY, "true");
+            System.setProperty(BACKFILL_PROPERTY, "true");
             assertThatThrownBy(throughV9::migrate)
-                    .hasMessageContaining("all legacy DATETIME values are UTC");
+                    .hasMessageContaining("legacy DATETIME zone");
             throughV9.repair();
-            System.setProperty(LEGACY_DATETIME_UTC_PROPERTY, "true");
+            System.setProperty(LEGACY_DATETIME_ZONE_PROPERTY, "UTC");
+            assertThatThrownBy(throughV9::migrate)
+                    .hasMessageContaining("legacy DATETIME zone");
+            throughV9.repair();
+            System.setProperty(LEGACY_DATETIME_ZONE_PROPERTY, "Asia/Seoul");
+            jdbc.update("""
+                    UPDATE authorization_account
+                       SET last_login_at = '2038-01-19 12:14:08.000000'
+                     WHERE channel_id = 'streamer'
+                    """);
+            assertThatThrownBy(throughV9::migrate)
+                    .hasMessageContaining("outside the MariaDB 10.11 TIMESTAMP range");
+            throughV9.repair();
+            jdbc.update("""
+                    UPDATE authorization_account
+                       SET last_login_at = '2026-01-02 00:30:00.123456'
+                     WHERE channel_id = 'streamer'
+                    """);
+            jdbc.update("""
+                    UPDATE authorization_account
+                       SET modify_date = '2038-01-19 11:14:08.000000'
+                     WHERE channel_id = 'streamer'
+                    """);
+            assertThatThrownBy(throughV9::migrate)
+                    .hasMessageContaining("OAuth expiry calculation")
+                    .hasMessageContaining("outside the MariaDB 10.11 TIMESTAMP range");
+            throughV9.repair();
+            jdbc.update("""
+                    UPDATE authorization_account
+                       SET modify_date = '2026-01-02 00:00:00.000000'
+                     WHERE channel_id = 'streamer'
+                    """);
+            jdbc.update("""
+                    UPDATE overlay_token
+                       SET active = FALSE,
+                           revoked_at = NULL,
+                           modify_date = '2038-01-19 12:14:08.000000'
+                     WHERE id = 80
+                    """);
+            assertThatThrownBy(throughV9::migrate)
+                    .hasMessageContaining("overlay_token revoked-at mapping")
+                    .hasMessageContaining("outside the MariaDB 10.11 TIMESTAMP range");
+            throughV9.repair();
+            jdbc.update("""
+                    UPDATE overlay_token
+                       SET active = TRUE,
+                           modify_date = '2026-01-01 00:00:00.000000'
+                     WHERE id = 80
+                    """);
             assertStableSnapshotIsolationRequired(dataSource, "8");
+            Instant beforeBackfillInstant = Instant.now().minusSeconds(2);
+            LocalDateTime beforeBackfill = jdbc.queryForObject(
+                    "SELECT CURRENT_TIMESTAMP(6)", LocalDateTime.class);
             migrate(dataSource, "8.2").migrate();
+            LocalDateTime cutoverAt = jdbc.queryForObject(
+                    "SELECT cutover_at FROM migration_cutover_metadata WHERE singleton_id = 1",
+                    LocalDateTime.class);
+            LocalDateTime afterBackfill = jdbc.queryForObject(
+                    "SELECT CURRENT_TIMESTAMP(6)", LocalDateTime.class);
+            Instant afterBackfillInstant = Instant.now().plusSeconds(2);
+            assertThat(cutoverAt).isBetween(beforeBackfill, afterBackfill);
+            long cutoverEpoch = jdbc.queryForObject(
+                    "SELECT UNIX_TIMESTAMP(cutover_at) FROM migration_cutover_metadata "
+                            + "WHERE singleton_id = 1",
+                    Long.class);
+            assertThat(Instant.ofEpochSecond(cutoverEpoch))
+                    .isBetween(beforeBackfillInstant, afterBackfillInstant);
             assertStableSnapshotIsolationRequired(dataSource, "9");
             migrate(dataSource, "9").migrate();
 
@@ -116,32 +205,28 @@ class MariaDbCanonicalMigrationTest {
             cutover.migrate();
             assertFinalCanonicalSchema(jdbc);
             assertRepresentativeData(jdbc);
+            assertTimestampSessionConversion(dataSource);
             assertCanonicalTriggers(jdbc);
         } finally {
-            if (originalApproval == null) {
-                System.clearProperty(CUTOVER_PROPERTY);
-            } else {
-                System.setProperty(CUTOVER_PROPERTY, originalApproval);
-            }
-            if (originalLegacyDateTimeApproval == null) {
-                System.clearProperty(LEGACY_DATETIME_UTC_PROPERTY);
-            } else {
-                System.setProperty(LEGACY_DATETIME_UTC_PROPERTY, originalLegacyDateTimeApproval);
-            }
+            restoreProperty(CUTOVER_PROPERTY, originalCutoverApproval);
+            restoreProperty(BACKFILL_PROPERTY, originalBackfillApproval);
+            restoreProperty(LEGACY_DATETIME_ZONE_PROPERTY, originalLegacyDateTimeZone);
             container.stop();
         }
     }
 
     @Test
-    void partialShadowBuildPhases_ShouldRecoverAfterRepairAndRerun() {
+    void partialShadowBuildPhases_ShouldRecoverAfterRepairAndRerun() throws Exception {
         requireDocker();
 
         MariaDBContainer container = new MariaDBContainer("mariadb:10.11")
                 .withDatabaseName("nyang_build_retry")
                 .withUsername("nyang")
-                .withPassword("nyang");
-        String originalApproval = System.getProperty(CUTOVER_PROPERTY);
-        String originalLegacyDateTimeApproval = System.getProperty(LEGACY_DATETIME_UTC_PROPERTY);
+                .withPassword("nyang")
+                .withCommand("--default-time-zone=+09:00");
+        String originalCutoverApproval = System.getProperty(CUTOVER_PROPERTY);
+        String originalBackfillApproval = System.getProperty(BACKFILL_PROPERTY);
+        String originalLegacyDateTimeZone = System.getProperty(LEGACY_DATETIME_ZONE_PROPERTY);
         try {
             container.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(
@@ -149,7 +234,12 @@ class MariaDbCanonicalMigrationTest {
                     container.getUsername(),
                     container.getPassword()
             );
+            assertRuntimeSessionInitializationSql(dataSource);
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            assertThat(jdbc.queryForObject(
+                    "SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(6), CURRENT_TIMESTAMP(6))",
+                    Integer.class
+            )).isEqualTo(9 * 60 * 60);
 
             migrate(dataSource, "6").migrate();
             insertRepresentativeV6Fixture(jdbc);
@@ -180,8 +270,13 @@ class MariaDbCanonicalMigrationTest {
                        AND trigger_name LIKE 'trg_next!_%' ESCAPE '!'
                     """, Integer.class)).isEqualTo(24);
 
-            System.setProperty(CUTOVER_PROPERTY, "true");
-            System.setProperty(LEGACY_DATETIME_UTC_PROPERTY, "true");
+            System.setProperty(BACKFILL_PROPERTY, "true");
+            System.setProperty(LEGACY_DATETIME_ZONE_PROPERTY, "Asia/Seoul");
+            jdbc.update("""
+                    UPDATE authorization_account
+                       SET last_login_at = '2038-01-19 12:14:07.999999'
+                     WHERE channel_id = 'streamer'
+                    """);
             migrate(dataSource, "8").migrate();
             String originalItems = jdbc.queryForObject(
                     "SELECT items_snapshot_json FROM roulette_event WHERE id = 50", String.class);
@@ -225,17 +320,18 @@ class MariaDbCanonicalMigrationTest {
                        AND target_checksum IS NOT NULL
                     """, Integer.class)).isOne();
         } finally {
-            if (originalApproval == null) {
-                System.clearProperty(CUTOVER_PROPERTY);
-            } else {
-                System.setProperty(CUTOVER_PROPERTY, originalApproval);
-            }
-            if (originalLegacyDateTimeApproval == null) {
-                System.clearProperty(LEGACY_DATETIME_UTC_PROPERTY);
-            } else {
-                System.setProperty(LEGACY_DATETIME_UTC_PROPERTY, originalLegacyDateTimeApproval);
-            }
+            restoreProperty(CUTOVER_PROPERTY, originalCutoverApproval);
+            restoreProperty(BACKFILL_PROPERTY, originalBackfillApproval);
+            restoreProperty(LEGACY_DATETIME_ZONE_PROPERTY, originalLegacyDateTimeZone);
             container.stop();
+        }
+    }
+
+    private void restoreProperty(String key, String originalValue) {
+        if (originalValue == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, originalValue);
         }
     }
 
@@ -256,6 +352,62 @@ class MariaDbCanonicalMigrationTest {
             assertThatThrownBy(migration::migrate)
                     .hasMessageContaining("requires REPEATABLE READ or SERIALIZABLE");
             migration.repair();
+        }
+    }
+
+    private void assertAsiaSeoulSessionRequired(DataSource dataSource, String target) throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("SET time_zone = '+00:00'");
+            }
+            SingleConnectionDataSource utcSession = new SingleConnectionDataSource(connection, true);
+            Flyway migration = migrate(utcSession, target);
+            assertThatThrownBy(migration::migrate)
+                    .hasMessageContaining("requires an Asia/Seoul (+09:00) DB session");
+            migration.repair();
+        }
+    }
+
+    private void assertExplicitTimestampDefaultsRequired(DataSource dataSource, String target)
+            throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("SET time_zone = '+09:00', explicit_defaults_for_timestamp = OFF");
+            }
+            SingleConnectionDataSource legacyTimestampDefaults =
+                    new SingleConnectionDataSource(connection, true);
+            Flyway migration = migrate(legacyTimestampDefaults, target);
+            assertThatThrownBy(migration::migrate)
+                    .hasMessageContaining("explicit_defaults_for_timestamp=ON");
+            migration.repair();
+        }
+    }
+
+    private void assertMaxDbSqlModeRejected(DataSource dataSource, String target) throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("SET sql_mode = 'MAXDB'");
+            }
+            SingleConnectionDataSource maxDbSession = new SingleConnectionDataSource(connection, true);
+            Flyway migration = migrate(maxDbSession, target);
+            assertThatThrownBy(migration::migrate)
+                    .hasMessageContaining("cannot run with SQL_MODE=MAXDB");
+            migration.repair();
+        }
+    }
+
+    private void assertRuntimeSessionInitializationSql(DataSource dataSource) throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             var statement = connection.createStatement()) {
+            statement.execute("SET time_zone = '+09:00', explicit_defaults_for_timestamp = ON");
+            try (var result = statement.executeQuery("""
+                    SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(6), CURRENT_TIMESTAMP(6)),
+                           @@session.explicit_defaults_for_timestamp
+                    """)) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getInt(1)).isEqualTo(9 * 60 * 60);
+                assertThat(result.getBoolean(2)).isTrue();
+            }
         }
     }
 
@@ -288,7 +440,7 @@ class MariaDbCanonicalMigrationTest {
                     ('a', '2026-01-01 00:00:00.000000',
                      '2026-01-02 00:00:00.000000', 'lower-a',
                      'access-a', 'refresh-a', 'Bearer', 3600, 'chat',
-                     FALSE, '2026-01-02 00:00:00.000000'),
+                     FALSE, '2026-01-02 00:30:00.123456'),
                     ('B', '2026-01-01 00:00:00.000000',
                      '2026-01-02 00:00:00.000000', 'upper-b',
                      'access-b', 'refresh-b', 'Bearer', 3600, 'chat',
@@ -298,7 +450,7 @@ class MariaDbCanonicalMigrationTest {
                 INSERT INTO favorite_account
                     (user_id, create_date, modify_date, nick_name, favorite)
                 VALUES ('viewer', '2026-01-01 01:00:00.000000',
-                        '2026-01-02 01:00:00.000000', '시청자', 150)
+                        '2026-01-02 01:00:00.000000', '시청자', 175)
                 """);
         jdbc.update("""
                 INSERT INTO favorite_history
@@ -315,7 +467,11 @@ class MariaDbCanonicalMigrationTest {
                     (11, '2026-01-04 00:00:00.000000', '2026-01-04 00:00:00.000000',
                      '룰렛 포인트', 150, 'viewer', 'system', 150, NULL, 50,
                      'REWARD', 'roulette-ledger:11', '시청자', '자동 지급', '룰렛 포인트',
-                     'UPBO_ROULETTE', 'roulette-round:60')
+                     'UPBO_ROULETTE', 'roulette-round:60'),
+                    (12, '2026-01-05 00:00:00.000000', '2026-01-05 00:00:00.000000',
+                     '구글 시트 동기화', 175, 'viewer', 'system', 175, NULL, 25,
+                     'MIGRATION', 'google-sheet-sync:12', '시청자', NULL, '구글 시트 동기화',
+                     'SHEET_MIGRATION', 'google-sheet')
                 """);
         jdbc.update("""
                 INSERT INTO favorite_adjustment (id, create_date, modify_date, amount, label)
@@ -447,7 +603,20 @@ class MariaDbCanonicalMigrationTest {
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM flyway_schema_history
                  WHERE success = TRUE AND version IS NOT NULL
-                """, Integer.class)).isEqualTo(13);
+                """, Integer.class)).isEqualTo(14);
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name <> 'flyway_schema_history'
+                   AND data_type = 'timestamp'
+                   AND datetime_precision = 6
+                """, Integer.class)).isEqualTo(33);
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name <> 'flyway_schema_history'
+                   AND data_type = 'datetime'
+                """, Integer.class)).isZero();
     }
 
     private void assertRepresentativeData(JdbcTemplate jdbc) {
@@ -469,9 +638,13 @@ class MariaDbCanonicalMigrationTest {
                 String.class
         )).isEqualTo("PRESENCE_REWARD");
         assertThat(jdbc.queryForObject(
+                "SELECT source_type FROM point_ledger_entry WHERE id = 12",
+                String.class
+        )).isEqualTo("GOOGLE_SHEET_SYNC");
+        assertThat(jdbc.queryForObject(
                 "SELECT SUM(delta) FROM point_ledger_entry WHERE user_id = 'viewer'",
                 Long.class
-        )).isEqualTo(150L);
+        )).isEqualTo(175L);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM roulette_config", Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM roulette_config WHERE id = 30",
@@ -501,6 +674,26 @@ class MariaDbCanonicalMigrationTest {
                 "SELECT idempotency_key FROM overlay_display_job WHERE id = 90",
                 String.class
         )).isEqualTo("legacy-overlay-display:90");
+        assertWallClock(jdbc, "user_account", "user_id", "streamer", "last_login_at",
+                "2026-01-02 00:30:00.123456");
+        assertWallClock(jdbc, "oauth_credential", "user_id", "streamer", "access_token_expires_at",
+                "2026-01-02 01:00:00.000000");
+        assertWallClock(jdbc, "point_ledger_entry", "id", 10L, "created_at",
+                "2026-01-03 00:00:00.000000");
+        assertWallClock(jdbc, "donation", "id", 20L, "received_at",
+                "2026-01-06 00:00:00.000000");
+        assertWallClock(jdbc, "timer_message", "id", 120L, "created_at",
+                "2026-01-01 00:00:00.000000");
+        assertWallClock(jdbc, "roulette_config", "id", 30L, "created_at",
+                "2026-01-01 00:00:00.000000");
+        assertWallClock(jdbc, "roulette_run", "donation_id", 20L, "created_at",
+                "2026-01-06 00:00:00.000000");
+        assertWallClock(jdbc, "roulette_round", "id", 60L, "created_at",
+                "2026-01-06 00:00:10.000000");
+        assertWallClock(jdbc, "reward_grant", "id", 70L, "created_at",
+                "2026-01-06 00:00:20.000000");
+        assertWallClock(jdbc, "overlay_display_job", "id", 90L, "created_at",
+                "2026-01-06 00:00:30.000000");
     }
 
     private void assertCanonicalTriggers(JdbcTemplate jdbc) {
@@ -513,12 +706,67 @@ class MariaDbCanonicalMigrationTest {
                 "UPDATE point_ledger_entry SET delta = 999 WHERE id = 10"))
                 .isInstanceOf(Exception.class)
                 .hasMessageContaining("insert-only");
+        Long commandId = jdbc.queryForObject(
+                "SELECT id FROM command WHERE trigger_token = '!호감도'", Long.class);
+        jdbc.update("""
+                INSERT INTO command_execution
+                    (command_id, user_id, executed_at, execution_policy_snapshot,
+                     cooldown_seconds_snapshot, calendar_date)
+                VALUES (?, 'viewer', '2026-01-02 00:30:00.000000',
+                        'USER_CALENDAR_DAY', NULL, '2026-01-02')
+                """, commandId);
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM command_execution WHERE command_id = ? AND user_id = 'viewer'",
+                Integer.class,
+                commandId
+        )).isOne();
+        jdbc.update("DELETE FROM command_execution WHERE command_id = ? AND user_id = 'viewer'", commandId);
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO command_execution
+                    (command_id, user_id, executed_at, execution_policy_snapshot,
+                     cooldown_seconds_snapshot, calendar_date)
+                VALUES (?, 'viewer', '2026-01-02 00:30:00.000000',
+                        'USER_CALENDAR_DAY', NULL, '2026-01-01')
+                """, commandId))
+                .isInstanceOf(Exception.class)
+                .hasMessageContaining("Asia/Seoul approval time");
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.columns
                  WHERE table_schema = DATABASE()
                    AND table_name <> 'flyway_schema_history'
                    AND column_comment = ''
                 """, Integer.class)).isZero();
+    }
+
+    private void assertTimestampSessionConversion(DataSource dataSource) throws Exception {
+        try (Connection connection = dataSource.getConnection()) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("SET time_zone = '+00:00'");
+            }
+            JdbcTemplate utc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
+            assertThat(utc.queryForObject("""
+                    SELECT DATE_FORMAT(last_login_at, '%Y-%m-%d %H:%i:%s.%f')
+                      FROM user_account
+                     WHERE user_id = 'streamer'
+                    """, String.class)).isEqualTo("2026-01-01 15:30:00.123456");
+        }
+    }
+
+    private void assertWallClock(
+            JdbcTemplate jdbc,
+            String table,
+            String idColumn,
+            Object id,
+            String dateTimeColumn,
+            String expected
+    ) {
+        String actual = jdbc.queryForObject(
+                "SELECT DATE_FORMAT(" + dateTimeColumn + ", '%Y-%m-%d %H:%i:%s.%f') FROM "
+                        + table + " WHERE " + idColumn + " = ?",
+                String.class,
+                id
+        );
+        assertThat(actual).isEqualTo(expected);
     }
 
     private boolean tableExists(JdbcTemplate jdbc, String tableName) {

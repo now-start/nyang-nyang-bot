@@ -13,7 +13,6 @@ import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.PointLedgerResult;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRewardUseCase.GrantManualRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.RewardRecord;
@@ -59,39 +58,6 @@ class RewardServiceTest {
         assertThat(point.getValue().idempotencyKey()).isEqualTo("roulette-round:10");
         assertThat(grant.getValue().idempotencyKey()).isEqualTo("roulette-round:10");
         assertThat(result.id()).isEqualTo(30L);
-    }
-
-    @Test
-    void manualNonConvertedRewardDoesNotWritePointLedger() {
-        RewardPort rewardPort = Mockito.mock(RewardPort.class);
-        GrantPointUseCase pointUseCase = Mockito.mock(GrantPointUseCase.class);
-        RewardService service = service(rewardPort, pointUseCase);
-        given(rewardPort.lockUser("user-1")).willReturn(true);
-        given(rewardPort.findByIdempotencyKey("reward-manual:manual-1")).willReturn(Optional.empty());
-        given(rewardPort.createGrant(Mockito.any())).willReturn(new RewardRecord(
-                31L,
-                "user-1",
-                null,
-                null,
-                "쿠폰",
-                RewardType.COUPON,
-                ConversionMode.NONE,
-                null,
-                RewardGrantStatus.OWNED,
-                "수동 지급",
-                null,
-                "admin-1",
-                "reward-manual:manual-1",
-                NOW,
-                NOW
-        ));
-
-        var result = service.grantManual(new GrantManualRewardCommand(
-                "user-1", "쿠폰", "COUPON", "NONE", null, "수동 지급", null, "manual-1"
-        ), "admin-1");
-
-        then(pointUseCase).shouldHaveNoInteractions();
-        assertThat(result.status()).isEqualTo("OWNED");
     }
 
     @Test

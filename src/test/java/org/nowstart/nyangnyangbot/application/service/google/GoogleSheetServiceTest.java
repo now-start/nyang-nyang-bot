@@ -81,6 +81,7 @@ class GoogleSheetServiceTest {
         verify(reconcile).reconcileToBalance(captor.capture());
         then(captor.getValue().targetBalance()).isEqualTo(70);
         then(captor.getValue().sourceReference()).isEqualTo("google-sheet");
+        then(captor.getValue().description()).isEqualTo("구글 시트 동기화");
         then(captor.getValue().createIfMissing()).isTrue();
         then(GoogleSheetPointBatchApplier.class.getMethod("apply", List.class)
                 .getAnnotation(Transactional.class)).isNotNull();

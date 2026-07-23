@@ -82,12 +82,6 @@ public class ManageRouletteService implements ManageRouletteUseCase {
     }
 
     @Override
-    public RouletteValidationResult validateConfig(Long configId) {
-        ConfigResult config = requireConfig(configId);
-        return validation(roulettePolicy.validateActivation(config, roulettePort.findOptionsByConfigId(configId)));
-    }
-
-    @Override
     public RouletteConfigResult activateConfig(Long configId) {
         ConfigResult config = requireConfig(configId);
         List<OptionResult> options = roulettePort.findOptionsByConfigId(configId);

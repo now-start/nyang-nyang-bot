@@ -43,16 +43,104 @@ LEFT JOIN information_schema.columns actual
  AND actual.column_name = expected.column_name
 WHERE actual.column_name IS NULL;
 
--- REQUIRED MANUAL EVIDENCE: V8 copies legacy DATETIME wall-clock values unchanged and
--- the canonical application interprets them as UTC. Before setting
--- NYANG_LEGACY_DATETIME_UTC_APPROVED=true, retain evidence that both the legacy JVM
--- default zone and every application DB session wrote UTC. The current DB session alone
--- cannot prove how historical JVM-created timer values were produced.
+-- REQUIRED MANUAL EVIDENCE: V8 reads legacy DATETIME values as Asia/Seoul wall-clock and
+-- writes the corresponding instant to canonical TIMESTAMP(6) under a +09:00 session.
+-- It does not apply a manual +9/-9 adjustment. Before setting
+-- NYANG_LEGACY_DATETIME_ZONE=Asia/Seoul, retain evidence that the legacy JVM default zone
+-- and application DB sessions wrote Seoul wall-clock values. SYSTEM/KST is acceptable when
+-- its effective offset is +09:00. The current session alone cannot prove historical settings.
 SELECT @@system_time_zone AS database_system_time_zone,
+       @@global.time_zone AS database_global_time_zone,
        @@session.time_zone AS current_session_time_zone,
+       @@session.explicit_defaults_for_timestamp AS explicit_timestamp_defaults,
+       @@session.sql_mode AS current_session_sql_mode,
        @@session.tx_isolation AS current_transaction_isolation,
        CURRENT_TIMESTAMP(6) AS current_session_time,
-       UTC_TIMESTAMP(6) AS current_utc_time;
+       UTC_TIMESTAMP(6) AS current_utc_time,
+       TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(6), CURRENT_TIMESTAMP(6)) AS session_offset_seconds;
+
+SELECT 'database_session_not_asia_seoul' AS check_name,
+       CASE
+           WHEN TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(6), CURRENT_TIMESTAMP(6)) = 32400 THEN 0
+           ELSE 1
+       END AS problem_count;
+
+SELECT 'explicit_timestamp_defaults_disabled' AS check_name,
+       CASE
+           WHEN @@session.explicit_defaults_for_timestamp = 1 THEN 0
+           ELSE 1
+       END AS problem_count;
+
+SELECT 'maxdb_sql_mode_enabled' AS check_name,
+       CASE
+           WHEN FIND_IN_SET('MAXDB', UPPER(COALESCE(@@session.sql_mode, ''))) = 0 THEN 0
+           ELSE 1
+       END AS problem_count;
+
+-- MariaDB 10.11 TIMESTAMP represents UTC instants from 1970-01-01 00:00:01 through
+-- 2038-01-19 03:14:07. Under the required +09:00 session, every legacy wall-clock or
+-- calculated candidate written to a canonical TIMESTAMP(6) must therefore be in the
+-- half-open range [1970-01-01 09:00:01, 2038-01-19 12:14:08).
+-- This inventory mirrors every legacy timestamp column consumed by V8/V8.1/V8.2 and also
+-- includes the two calculated target candidates: OAuth expiry and inactive-token revoked_at.
+WITH legacy_timestamp_candidate AS (
+    SELECT 'authorization_account.create_date' AS source_name, create_date AS candidate_at FROM authorization_account
+    UNION ALL SELECT 'authorization_account.modify_date', modify_date FROM authorization_account
+    UNION ALL SELECT 'authorization_account.last_login_at', last_login_at FROM authorization_account
+    UNION ALL SELECT 'command.create_date', create_date FROM command
+    UNION ALL SELECT 'command.modify_date', modify_date FROM command
+    UNION ALL SELECT 'donation.create_date', create_date FROM donation
+    UNION ALL SELECT 'donation.modify_date', modify_date FROM donation
+    UNION ALL SELECT 'favorite_account.create_date', create_date FROM favorite_account
+    UNION ALL SELECT 'favorite_account.modify_date', modify_date FROM favorite_account
+    UNION ALL SELECT 'favorite_adjustment.create_date', create_date FROM favorite_adjustment
+    UNION ALL SELECT 'favorite_history.create_date', create_date FROM favorite_history
+    UNION ALL SELECT 'favorite_history.modify_date', modify_date FROM favorite_history
+    UNION ALL SELECT 'overlay_display_event.expires_at', expires_at FROM overlay_display_event
+    UNION ALL SELECT 'overlay_display_event.displayed_at', displayed_at FROM overlay_display_event
+    UNION ALL SELECT 'overlay_display_event.create_date', create_date FROM overlay_display_event
+    UNION ALL SELECT 'overlay_display_event.modify_date', modify_date FROM overlay_display_event
+    UNION ALL SELECT 'overlay_token.create_date', create_date FROM overlay_token
+    UNION ALL SELECT 'roulette_event.create_date', create_date FROM roulette_event
+    UNION ALL SELECT 'roulette_event.modify_date', modify_date FROM roulette_event
+    UNION ALL SELECT 'roulette_item.create_date', create_date FROM roulette_item
+    UNION ALL SELECT 'roulette_round_result.create_date', create_date FROM roulette_round_result
+    UNION ALL SELECT 'roulette_round_result.modify_date', modify_date FROM roulette_round_result
+    UNION ALL SELECT 'roulette_table.create_date', create_date FROM roulette_table
+    UNION ALL SELECT 'roulette_table.modify_date', modify_date FROM roulette_table
+    UNION ALL SELECT 'timer_message.next_run_at', next_run_at FROM timer_message
+    UNION ALL SELECT 'timer_message.claim_expires_at', claim_expires_at FROM timer_message
+    UNION ALL SELECT 'timer_message.last_sent_at', last_sent_at FROM timer_message
+    UNION ALL SELECT 'timer_message.create_date', create_date FROM timer_message
+    UNION ALL SELECT 'timer_message.modify_date', modify_date FROM timer_message
+    UNION ALL SELECT 'user_upbo.create_date', create_date FROM user_upbo
+    UNION ALL SELECT 'user_upbo.modify_date', modify_date FROM user_upbo
+    UNION ALL SELECT 'weekly_chat_rank.create_date', create_date FROM weekly_chat_rank
+    UNION ALL SELECT 'weekly_chat_rank.modify_date', modify_date FROM weekly_chat_rank
+    UNION ALL
+    SELECT 'authorization_account.modify_date_plus_expires_in',
+           DATE_ADD(modify_date, INTERVAL expires_in SECOND)
+    FROM authorization_account
+    WHERE modify_date IS NOT NULL
+      AND expires_in IS NOT NULL
+    UNION ALL
+    SELECT 'overlay_token.inactive_revoked_at',
+           CASE
+               WHEN active = FALSE THEN COALESCE(revoked_at, modify_date, create_date)
+               ELSE NULL
+           END
+    FROM overlay_token
+)
+SELECT 'legacy_timestamp_candidate_out_of_range' AS check_name,
+       COUNT(*) AS problem_count
+FROM legacy_timestamp_candidate
+WHERE candidate_at IS NOT NULL
+  AND (candidate_at < '1970-01-01 09:00:01.000000'
+       OR candidate_at >= '2038-01-19 12:14:08.000000');
+
+-- OPERATIONAL REQUIREMENT: upgrade production to MariaDB 11.5 or newer, whose TIMESTAMP
+-- upper bound is extended, well before 2038. Passing this 10.11 preflight is not a reason
+-- to defer that upgrade until the boundary is near.
 
 SELECT id, next_run_at, claim_expires_at, last_sent_at, create_date, modify_date
 FROM timer_message

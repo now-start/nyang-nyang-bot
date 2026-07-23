@@ -1,5 +1,7 @@
 -- nyang-nyang-bot target schema specification
 -- Dialect: MariaDB / InnoDB / utf8mb4
+-- Time contract: TIMESTAMP(6) stores an absolute instant in UTC internally and is
+-- read/written through a required Asia/Seoul (+09:00) database session.
 -- This file describes the post-cutover schema. It is not a Flyway migration.
 
 CREATE TABLE user_account
@@ -7,9 +9,9 @@ CREATE TABLE user_account
     user_id       VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT 'CHZZK 사용자 식별자',
     display_name  VARCHAR(100)                    NULL COMMENT '현재 표시 이름',
     is_admin      BOOLEAN                         NOT NULL DEFAULT FALSE COMMENT '서비스 관리자 여부',
-    last_login_at DATETIME(6)                     NULL COMMENT '마지막 OAuth 로그인 성공 시각',
-    created_at    DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
-    updated_at    DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    last_login_at TIMESTAMP(6)                     NULL COMMENT '마지막 OAuth 로그인 성공 시각',
+    created_at    TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
+    updated_at    TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 변경 시각',
     PRIMARY KEY (user_id),
     CONSTRAINT ck_user_account__user_id
@@ -29,10 +31,10 @@ CREATE TABLE oauth_credential
     refresh_token           TEXT                            NOT NULL COMMENT 'OAuth refresh token 원문; 로그와 응답에 노출하지 않음',
     token_type              VARCHAR(32)                     NOT NULL COMMENT 'OAuth 토큰 유형',
     scope                   TEXT                            NULL COMMENT '승인된 OAuth scope 문자열',
-    access_token_expires_at DATETIME(6)                     NOT NULL COMMENT 'access token 만료 시각',
+    access_token_expires_at TIMESTAMP(6)                     NOT NULL COMMENT 'access token 만료 시각',
     credential_version      BIGINT                          NOT NULL DEFAULT 0 COMMENT '동시 토큰 갱신 충돌 방지 버전',
-    created_at              DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '최초 발급 시각',
-    updated_at              DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at              TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '최초 발급 시각',
+    updated_at              TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 갱신 시각',
     PRIMARY KEY (user_id),
     CONSTRAINT fk_oauth_credential__user_account
@@ -55,8 +57,8 @@ CREATE TABLE command
     user_cooldown_seconds INTEGER                         NULL DEFAULT 30 COMMENT '사용자별 재실행 제한 시간(초); 달력일 기준이면 NULL',
     created_by_user_id    VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '생성 사용자; NULL은 시스템 생성',
     updated_by_user_id    VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '최종 변경 사용자; NULL은 시스템 변경',
-    created_at            DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
-    updated_at            DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at            TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
+    updated_at            TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_command__trigger_token UNIQUE (trigger_token),
@@ -84,7 +86,7 @@ CREATE TABLE command_execution
     id                        BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '명령 실행 이벤트 식별자',
     command_id                BIGINT                          NOT NULL COMMENT '실행한 명령어 식별자',
     user_id                   VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '명령을 실행한 사용자 식별자',
-    executed_at               DATETIME(6)                     NOT NULL COMMENT 'UTC 기준 명령 실행 확정 시각; 애플리케이션이 승인 Instant를 명시 저장',
+    executed_at               TIMESTAMP(6)                     NOT NULL COMMENT '명령 실행 확정 절대시각; Asia/Seoul 세션에서 달력일을 판정',
     execution_policy_snapshot VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '실행 시점의 사용자별 재실행 제한 기준 스냅샷',
     cooldown_seconds_snapshot INTEGER                         NULL COMMENT '실행 시점의 사용자별 재실행 제한 초 스냅샷; 달력일 기준이면 NULL',
     calendar_date             DATE                            NULL COMMENT 'Asia/Seoul 기준 명령 실행 일자; 달력일 기준에서만 저장',
@@ -115,16 +117,16 @@ CREATE TABLE timer_message
     interval_minutes           INTEGER                         NOT NULL COMMENT '전송 주기(분)',
     min_chat_count             INTEGER                         NOT NULL COMMENT '전송에 필요한 최소 채팅 수',
     is_active                  BOOLEAN                         NOT NULL DEFAULT FALSE COMMENT '타이머 활성 여부',
-    next_run_at                DATETIME(6)                     NULL COMMENT '다음 전송 대상 시각',
+    next_run_at                TIMESTAMP(6)                     NULL COMMENT '다음 전송 대상 시각',
     chat_count_since_last_send BIGINT                          NOT NULL DEFAULT 0 COMMENT '마지막 성공 전송 이후 채팅 수',
     claimed_chat_count         BIGINT                          NOT NULL DEFAULT 0 COMMENT '현재 선점 시점의 채팅 수',
     claim_token                VARCHAR(36) COLLATE utf8mb4_nopad_bin NULL COMMENT '실행 선점 UUID',
-    claim_expires_at           DATETIME(6)                     NULL COMMENT '실행 선점 만료 시각',
-    last_sent_at               DATETIME(6)                     NULL COMMENT '마지막 성공 전송 시각',
+    claim_expires_at           TIMESTAMP(6)                     NULL COMMENT '실행 선점 만료 시각',
+    last_sent_at               TIMESTAMP(6)                     NULL COMMENT '마지막 성공 전송 시각',
     created_by_user_id         VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '생성 사용자; NULL은 시스템 생성',
     updated_by_user_id         VARCHAR(64) COLLATE utf8mb4_nopad_bin NULL COMMENT '최종 변경 사용자; NULL은 시스템 변경',
-    created_at                 DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
-    updated_at                 DATETIME(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at                 TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
+    updated_at                 TIMESTAMP(6)                     NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT fk_timer_message__created_by_user
@@ -162,7 +164,7 @@ CREATE TABLE point_ledger_entry
     correction_of_entry_id BIGINT                           NULL COMMENT '정정 대상 원장 항목 식별자',
     actor_user_id          VARCHAR(64) COLLATE utf8mb4_nopad_bin  NULL COMMENT '변경 수행 사용자; NULL은 시스템 수행',
     idempotency_key        VARCHAR(191) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '중복 반영 방지 키',
-    created_at             DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '거래 생성 시각',
+    created_at             TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '거래 생성 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_point_ledger_entry__id_user UNIQUE (id, user_id),
     CONSTRAINT uk_point_ledger_entry__idempotency UNIQUE (idempotency_key),
@@ -178,7 +180,7 @@ CREATE TABLE point_ledger_entry
         CHECK (delta <> 0),
     CONSTRAINT ck_point_ledger_entry__source
         CHECK (source_type IN (
-                               'ADMIN_ADJUSTMENT', 'PRESENCE_REWARD', 'SHEET_MIGRATION',
+                               'ADMIN_ADJUSTMENT', 'PRESENCE_REWARD', 'GOOGLE_SHEET_SYNC',
                                'REWARD_MANUAL', 'REWARD_ROULETTE', 'CORRECTION'
             )),
     CONSTRAINT ck_point_ledger_entry__correction_source
@@ -195,7 +197,7 @@ CREATE TABLE point_adjustment_preset
     id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '포인트 조정 프리셋 식별자',
     label      VARCHAR(100) NOT NULL COMMENT '관리 화면에 표시할 조정 사유',
     amount     BIGINT       NOT NULL COMMENT '프리셋 선택 시 적용할 증감량',
-    created_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
+    created_at TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '생성 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_point_adjustment_preset__label_amount UNIQUE (label, amount),
     CONSTRAINT ck_point_adjustment_preset__amount
@@ -235,7 +237,7 @@ CREATE TABLE donation
     donor_display_name VARCHAR(100)                     NULL COMMENT '후원 시점에 수신한 후원자 표시 이름',
     amount             BIGINT                           NOT NULL COMMENT '후원 금액',
     message            LONGTEXT                         NULL COMMENT '후원 메시지 원문',
-    received_at        DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '후원 이벤트 수신 시각',
+    received_at        TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '후원 이벤트 수신 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_donation__ingestion_key UNIQUE (ingestion_key),
     CONSTRAINT fk_donation__recipient_user
@@ -262,8 +264,8 @@ CREATE TABLE roulette_config
     active_slot          TINYINT GENERATED ALWAYS AS (
         CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END
         ) COMMENT '활성 설정을 하나로 제한하는 생성 컬럼',
-    created_at           DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '설정 버전 생성 시각',
-    updated_at           DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at           TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '설정 버전 생성 시각',
+    updated_at           TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT 'DRAFT 또는 상태 최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_roulette_config__single_active UNIQUE (active_slot),
@@ -292,7 +294,7 @@ CREATE TABLE roulette_option
     conversion_mode          VARCHAR(16) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '포인트 변환 처리 방식',
     point_delta              BIGINT       NULL COMMENT '포인트 변환 시 적용할 증감량',
     display_order            INTEGER      NOT NULL DEFAULT 0 COMMENT '선택 및 관리 화면 표시 순서',
-    created_at               DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '옵션 생성 시각',
+    created_at               TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '옵션 생성 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_roulette_option__id_config UNIQUE (id, roulette_config_id),
     CONSTRAINT fk_roulette_option__roulette_config
@@ -324,8 +326,8 @@ CREATE TABLE roulette_run
     donation_id        BIGINT      NOT NULL COMMENT '룰렛을 시작한 후원 식별자',
     roulette_config_id BIGINT      NOT NULL COMMENT '실행에 사용한 불변 룰렛 설정 식별자',
     status             VARCHAR(16) NOT NULL DEFAULT 'BUILDING' COLLATE utf8mb4_nopad_bin COMMENT '회차 구성 생명주기; BUILDING에서 READY로 한 번만 전환',
-    created_at         DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '룰렛 실행 생성 시각',
-    updated_at         DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '룰렛 실행 생성 시각',
+    updated_at         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '회차 구성이 READY로 확정된 시각을 포함한 최종 변경 시각',
     PRIMARY KEY (donation_id),
     CONSTRAINT uk_roulette_run__id_config UNIQUE (donation_id, roulette_config_id),
@@ -351,8 +353,8 @@ CREATE TABLE roulette_round
     ticket             INTEGER      NOT NULL COMMENT '1부터 10000 사이의 난수 추첨값',
     status             VARCHAR(16) NOT NULL DEFAULT 'CONFIRMED' COLLATE utf8mb4_nopad_bin COMMENT '회차 보상 처리 상태',
     failure_reason     VARCHAR(500) NULL COMMENT '회차 처리 실패 사유',
-    created_at         DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '회차 생성 시각',
-    updated_at         DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '회차 생성 시각',
+    updated_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '회차 상태 최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_roulette_round__run_round UNIQUE (roulette_run_id, round_no),
@@ -391,8 +393,8 @@ CREATE TABLE reward_grant
     private_note          VARCHAR(500)                     NULL COMMENT '관리자 전용 내부 메모',
     actor_user_id         VARCHAR(64) COLLATE utf8mb4_nopad_bin  NULL COMMENT '수동 지급 사용자; NULL은 시스템 지급',
     idempotency_key       VARCHAR(191) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '중복 지급 방지 키',
-    created_at            DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '지급 시각',
-    updated_at            DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    created_at            TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '지급 시각',
+    updated_at            TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '상태 최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_reward_grant__round UNIQUE (roulette_round_id),
@@ -436,8 +438,8 @@ CREATE TABLE overlay_access_token
     id                BIGINT                                         NOT NULL AUTO_INCREMENT COMMENT '오버레이 접근 토큰 식별자',
     token_hash        CHAR(43) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '원문 토큰 SHA-256 해시의 Base64URL 문자열',
     issued_by_user_id VARCHAR(64) COLLATE utf8mb4_nopad_bin                NULL COMMENT '토큰 발급 사용자; NULL은 시스템 발급',
-    issued_at         DATETIME(6)                                    NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '발급 시각',
-    revoked_at        DATETIME(6)                                    NULL COMMENT '명시적 폐기 시각',
+    issued_at         TIMESTAMP(6)                                    NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '발급 시각',
+    revoked_at        TIMESTAMP(6)                                    NULL COMMENT '명시적 폐기 시각',
     active_slot       TINYINT GENERATED ALWAYS AS (
         CASE WHEN revoked_at IS NULL THEN 1 ELSE NULL END
         ) COMMENT '폐기되지 않은 토큰을 하나로 제한하는 생성 컬럼',
@@ -463,12 +465,12 @@ CREATE TABLE overlay_display_job
     replay_of_job_id BIGINT                           NULL COMMENT '재표시 대상 원본 작업 식별자',
     idempotency_key  VARCHAR(191) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '중복 enqueue 방지 키',
     status           VARCHAR(16) NOT NULL DEFAULT 'PENDING' COLLATE utf8mb4_nopad_bin COMMENT '표시 작업 처리 상태',
-    expires_at       DATETIME(6)                      NOT NULL COMMENT '표시 대기 만료 시각',
+    expires_at       TIMESTAMP(6)                      NOT NULL COMMENT '표시 대기 만료 시각',
     claim_token      VARCHAR(36) COLLATE utf8mb4_nopad_bin  NULL COMMENT '표시 작업 선점 UUID',
-    claim_expires_at DATETIME(6)                      NULL COMMENT '표시 작업 선점 만료 시각',
-    displayed_at     DATETIME(6)                      NULL COMMENT '브라우저 표시 완료 시각',
-    created_at       DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '작업 생성 시각',
-    updated_at       DATETIME(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+    claim_expires_at TIMESTAMP(6)                      NULL COMMENT '표시 작업 선점 만료 시각',
+    displayed_at     TIMESTAMP(6)                      NULL COMMENT '브라우저 표시 완료 시각',
+    created_at       TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '작업 생성 시각',
+    updated_at       TIMESTAMP(6)                      NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '상태 최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT uk_overlay_display_job__idempotency UNIQUE (idempotency_key),

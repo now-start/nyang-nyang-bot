@@ -133,11 +133,11 @@ class TimerMessageServiceTest {
 
         var result = service.preview(new PreviewTimerMessage("지금은 {time.datetime}"));
 
-        then(result.message()).isEqualTo("지금은 2026-07-16 21:00");
+        then(result.message()).isEqualTo("지금은 2026-07-16 12:00");
     }
 
     @Test
-    void getTimerMessages_ShouldConvertStoredUtcTimesToSeoulForDisplay() {
+    void getTimerMessages_ShouldKeepStoredSeoulTimesForDisplay() {
         TimerMessageService service = spyService();
         given(timerMessagePort.findAllOrderByIdDesc()).willReturn(List.of(
                 record(1L, "공지", 10, 5, true, 0, NOW.minusMinutes(5), NOW.plusMinutes(10))
@@ -145,10 +145,10 @@ class TimerMessageServiceTest {
 
         var result = service.getTimerMessages().getFirst();
 
-        then(result.lastSentAt()).isEqualTo(NOW.minusMinutes(5).plusHours(9));
-        then(result.nextRunAt()).isEqualTo(NOW.plusMinutes(10).plusHours(9));
-        then(result.createdAt()).isEqualTo(NOW.minusDays(1).plusHours(9));
-        then(result.updatedAt()).isEqualTo(NOW.minusDays(1).plusHours(9));
+        then(result.lastSentAt()).isEqualTo(NOW.minusMinutes(5));
+        then(result.nextRunAt()).isEqualTo(NOW.plusMinutes(10));
+        then(result.createdAt()).isEqualTo(NOW.minusDays(1));
+        then(result.updatedAt()).isEqualTo(NOW.minusDays(1));
     }
 
     @Test
@@ -166,7 +166,7 @@ class TimerMessageServiceTest {
 
         service.runDueTimerMessages();
 
-        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("현재 21:00"));
+        BDDMockito.then(chzzkClientPort).should().sendMessage(new MessageCommand("현재 12:00"));
         BDDMockito.then(timerMessagePort).should().completeClaim(
                 1L,
                 "claim-1",

@@ -196,15 +196,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
 
     @Override
     @Transactional(readOnly = true)
-    public List<RunResult> findRunsByUserId(String userId) {
-        return rouletteRunRepository.findByDonation_DonorUserAccount_UserIdOrderByCreatedAtDescDonationIdDesc(userId)
-                .stream()
-                .map(this::runResult)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Page<RunResult> findRecentRuns(Pageable pageable) {
         return rouletteRunRepository.findAllByOrderByCreatedAtDescDonationIdDesc(pageable).map(this::runResult);
     }
@@ -236,16 +227,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoundResult> findRoundsByUserId(String userId) {
-        return rouletteRoundRepository
-                .findByRouletteRun_Donation_DonorUserAccount_UserIdOrderByCreatedAtDescIdDesc(userId)
-                .stream()
-                .map(this::roundResult)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<Long> findRunIdsNeedingRecovery(long afterRunId, int limit) {
         int safeLimit = Math.min(Math.max(limit, 1), 100);
         return rouletteRunRepository.findRunIdsNeedingRecovery(afterRunId, safeLimit);
@@ -255,12 +236,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional(readOnly = true)
     public Long findMaxRunIdNeedingRecovery() {
         return rouletteRunRepository.findMaxRunIdNeedingRecovery();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<RoundResult> findRoundById(Long roundId) {
-        return rouletteRoundRepository.findById(roundId).map(this::roundResult);
     }
 
     @Override

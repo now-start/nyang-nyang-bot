@@ -105,19 +105,4 @@ public class RewardGrant {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public void markUsed(Instant usedAt) {
-        if (status != RewardGrantStatus.OWNED) {
-            throw new IllegalStateException("reward grant must be OWNED");
-        }
-        status = RewardGrantStatus.USED;
-        updatedAt = usedAt;
-    }
-
-    public void markCorrected(Instant correctedAt) {
-        if (status != RewardGrantStatus.CONVERTED) {
-            throw new IllegalStateException("reward grant must be CONVERTED");
-        }
-        status = RewardGrantStatus.CORRECTED;
-        updatedAt = correctedAt;
-    }
 }

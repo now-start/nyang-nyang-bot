@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RewardGrantRepository extends JpaRepository<RewardGrant, Long> {
 
-    Optional<RewardGrant> findByIdempotencyKey(String idempotencyKey);
-
     Optional<RewardGrant> findByRouletteRound_Id(Long rouletteRoundId);
 
     List<RewardGrant> findByUserAccount_UserIdOrderByCreatedAtDescIdDesc(String userId, Pageable pageable);

@@ -36,21 +36,15 @@ public interface RoulettePort {
 
     Optional<RunResult> findRunById(Long runId);
 
-    List<RunResult> findRunsByUserId(String userId);
-
     Page<RunResult> findRecentRuns(Pageable pageable);
 
     List<RunRoundSummaryResult> summarizeRuns(List<Long> runIds);
 
     List<RoundResult> findRoundsByRunId(Long runId);
 
-    List<RoundResult> findRoundsByUserId(String userId);
-
     List<Long> findRunIdsNeedingRecovery(long afterRunId, int limit);
 
     Long findMaxRunIdNeedingRecovery();
-
-    Optional<RoundResult> findRoundById(Long roundId);
 
     Optional<RoundResult> findRoundByIdForUpdate(Long roundId);
 

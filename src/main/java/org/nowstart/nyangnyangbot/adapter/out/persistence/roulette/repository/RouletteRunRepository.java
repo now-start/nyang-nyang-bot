@@ -17,8 +17,6 @@ public interface RouletteRunRepository extends JpaRepository<RouletteRun, Long> 
     @Query("select run from RouletteRun run where run.donationId = :id")
     Optional<RouletteRun> findByIdForUpdate(@Param("id") Long id);
 
-    List<RouletteRun> findByDonation_DonorUserAccount_UserIdOrderByCreatedAtDescDonationIdDesc(String userId);
-
     Page<RouletteRun> findAllByOrderByCreatedAtDescDonationIdDesc(Pageable pageable);
 
     @Query(value = """

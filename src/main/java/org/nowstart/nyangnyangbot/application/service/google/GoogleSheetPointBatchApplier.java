@@ -22,7 +22,7 @@ public class GoogleSheetPointBatchApplier {
                     .displayName(row.displayName())
                     .targetBalance(row.point())
                     .sourceReference("google-sheet")
-                    .description("데이터 동기화")
+                    .description("구글 시트 동기화")
                     .createIfMissing(true)
                     .build());
         }

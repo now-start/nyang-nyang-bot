@@ -14,8 +14,6 @@ public interface RouletteRoundRepository extends JpaRepository<RouletteRound, Lo
 
     List<RouletteRound> findByRouletteRun_DonationIdOrderByRoundNoAsc(Long rouletteRunId);
 
-    List<RouletteRound> findByRouletteRun_Donation_DonorUserAccount_UserIdOrderByCreatedAtDescIdDesc(String userId);
-
     @Query(value = """
             SELECT round_result.roulette_run_id AS runId,
                    COUNT(*) AS roundCount,
