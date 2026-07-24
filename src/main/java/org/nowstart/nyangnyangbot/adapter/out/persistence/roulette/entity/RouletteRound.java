@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity;
 
+import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.MAX_FAILURE_REASON_LENGTH;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
@@ -64,7 +66,7 @@ public class RouletteRound {
     @Column(nullable = false, length = 16)
     private RouletteRoundStatus status;
 
-    @Column(name = "failure_reason", length = 500)
+    @Column(name = "failure_reason", length = MAX_FAILURE_REASON_LENGTH)
     private String failureReason;
 
     @Column(name = "created_at", nullable = false, updatable = false)

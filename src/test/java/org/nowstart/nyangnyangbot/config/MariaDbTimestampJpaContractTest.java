@@ -3,7 +3,6 @@ package org.nowstart.nyangnyangbot.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -36,9 +35,7 @@ import org.testcontainers.mariadb.MariaDBContainer;
                 "spring.flyway.enabled=false",
                 "eureka.client.enabled=false",
                 "spring.jpa.hibernate.ddl-auto=validate",
-                "spring.jpa.properties.hibernate.jdbc.time_zone=Asia/Seoul",
-                "spring.datasource.hikari.connection-init-sql="
-                        + "SET time_zone = '+09:00', explicit_defaults_for_timestamp = ON"
+                "spring.jpa.properties.hibernate.type.preferred_instant_jdbc_type=TIMESTAMP"
         }
 )
 class MariaDbTimestampJpaContractTest {
@@ -66,9 +63,6 @@ class MariaDbTimestampJpaContractTest {
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private EntityManagerFactory entityManagerFactory;
 
     @Autowired
     private DataSource dataSource;
@@ -118,9 +112,6 @@ class MariaDbTimestampJpaContractTest {
 
     @Test
     void instantRoundTripsWithoutNineHourShiftAcrossJpaAndJdbcSessions() throws SQLException {
-        assertThat(entityManagerFactory.getProperties())
-                .containsEntry("hibernate.type.preferred_instant_jdbc_type", "TIMESTAMP");
-
         UserAccount account = UserAccount.builder()
                 .userId("timestamp-contract-user")
                 .displayName("timestamp-contract")

@@ -19,9 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OverlayDisplayService implements ManageOverlayDisplayUseCase, QueueOverlayDisplayUseCase {
 
-    private static final int DEFAULT_DISPLAY_TTL_SECONDS = 120;
-    private static final int DEFAULT_CLAIM_LEASE_SECONDS = 30;
-    private static final int DEFAULT_MAX_ANIMATED_ROUNDS = 5;
+    private static final int DISPLAY_TTL_SECONDS = 120;
+    private static final int CLAIM_LEASE_SECONDS = 30;
 
     private final OverlayTokenService overlayTokenService;
     private final OverlayDisplayPort overlayDisplayPort;
@@ -33,24 +32,23 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
         overlayDisplayPort.enqueue(
                 rouletteRunId,
                 "roulette-run:" + rouletteRunId,
-                current.plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS),
+                current.plusSeconds(DISPLAY_TTL_SECONDS),
                 current
         );
     }
 
     @Override
     @Transactional
-    public OverlayDisplayResult replayRouletteRun(Long rouletteRunId) {
+    public void replayRouletteRun(Long rouletteRunId) {
         Instant current = now();
-        DisplayJobResult saved = overlayDisplayPort.replay(
+        Long displayJobId = overlayDisplayPort.replay(
                 rouletteRunId,
                 "roulette-run:" + rouletteRunId + ":replay:" + newClaimToken(),
-                current.plusSeconds(DEFAULT_DISPLAY_TTL_SECONDS),
+                current.plusSeconds(DISPLAY_TTL_SECONDS),
                 current
         );
         log.info("level=AUDIT action=overlay.replay result=success rouletteRunId={} displayJobId={}",
-                rouletteRunId, saved.id());
-        return overlayDisplayResult(saved);
+                rouletteRunId, displayJobId);
     }
 
     @Override
@@ -62,7 +60,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
         return overlayDisplayPort.claimNext(
                         current,
                         newClaimToken(),
-                        current.plusSeconds(DEFAULT_CLAIM_LEASE_SECONDS)
+                        current.plusSeconds(CLAIM_LEASE_SECONDS)
                 )
                 .map(this::overlayDisplayResult);
     }
@@ -80,12 +78,9 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     OverlayDisplayResult overlayDisplayResult(DisplayJobResult job) {
         return new OverlayDisplayResult(
                 job.id(),
-                job.rouletteRunId(),
                 job.donorDisplayName(),
                 job.claimToken(),
                 Math.toIntExact(job.roundCount()),
-                DEFAULT_MAX_ANIMATED_ROUNDS,
-                job.expiresAt(),
                 job.rounds().stream().map(this::rouletteRoundResult).toList()
         );
     }

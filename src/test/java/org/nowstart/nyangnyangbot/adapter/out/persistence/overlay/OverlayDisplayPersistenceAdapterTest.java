@@ -28,7 +28,7 @@ class OverlayDisplayPersistenceAdapterTest {
     private static final Instant NOW = Instant.parse("2026-07-23T00:00:00Z");
 
     @Test
-    void displayJobLoadsOnlyFiveRoundsWhilePreservingTotalCount() {
+    void claimNextLoadsOnlyFiveRoundsWhilePreservingTotalCount() {
         OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
         RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
         RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
@@ -44,8 +44,12 @@ class OverlayDisplayPersistenceAdapterTest {
         given(job.getId()).willReturn(1L);
         given(job.getRouletteRun()).willReturn(run);
         given(job.getExpiresAt()).willReturn(NOW.plusSeconds(120));
-        given(runRepository.findByIdForUpdate(9L)).willReturn(Optional.of(run));
-        given(jobRepository.findByIdempotencyKey("roulette-run:9")).willReturn(Optional.of(job));
+        given(jobRepository.findClaimableForUpdate(
+                Mockito.eq(NOW),
+                Mockito.any(),
+                Mockito.any(),
+                Mockito.any(Pageable.class)
+        )).willReturn(List.of(job));
         given(roundRepository.countByRouletteRun_DonationId(9L)).willReturn(1000L);
         given(roundRepository.findDisplayRoundsByRunId(Mockito.eq(9L), Mockito.any(Pageable.class)))
                 .willReturn(displayedRounds);
@@ -55,7 +59,7 @@ class OverlayDisplayPersistenceAdapterTest {
                 jobRepository, roundRepository, runRepository, validator
         );
 
-        var result = adapter.enqueue(9L, "roulette-run:9", NOW.plusSeconds(120), NOW);
+        var result = adapter.claimNext(NOW, "claim-1", NOW.plusSeconds(30)).orElseThrow();
 
         assertThat(result.roundCount()).isEqualTo(1000);
         assertThat(result.rounds()).hasSize(5);
@@ -64,6 +68,59 @@ class OverlayDisplayPersistenceAdapterTest {
         assertThat(pageable.getValue().getPageSize()).isEqualTo(5);
         then(roundRepository).should(Mockito.never())
                 .findByRouletteRun_DonationIdOrderByRoundNoAsc(Mockito.anyLong());
+    }
+
+    @Test
+    void enqueueCreatesJobWithoutBuildingDisplayPayload() {
+        OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
+        RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
+        RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
+        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
+        RouletteRun run = Mockito.mock(RouletteRun.class);
+        OverlayDisplayJob saved = Mockito.mock(OverlayDisplayJob.class);
+        given(runRepository.findByIdForUpdate(9L)).willReturn(Optional.of(run));
+        given(jobRepository.findByIdempotencyKey("roulette-run:9")).willReturn(Optional.empty());
+        given(jobRepository.save(Mockito.any())).willReturn(saved);
+        given(saved.getId()).willReturn(1L);
+        OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
+                jobRepository, roundRepository, runRepository, validator
+        );
+
+        adapter.enqueue(9L, "roulette-run:9", NOW.plusSeconds(120), NOW);
+
+        then(jobRepository).should().save(Mockito.any(OverlayDisplayJob.class));
+        then(roundRepository).shouldHaveNoInteractions();
+        then(validator).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void replayReturnsOnlyCreatedJobIdWithoutBuildingDisplayPayload() {
+        OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
+        RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
+        RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
+        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
+        RouletteRun run = Mockito.mock(RouletteRun.class);
+        OverlayDisplayJob replayOf = Mockito.mock(OverlayDisplayJob.class);
+        OverlayDisplayJob saved = Mockito.mock(OverlayDisplayJob.class);
+        given(runRepository.findByIdForUpdate(9L)).willReturn(Optional.of(run));
+        given(jobRepository.findFirstByRouletteRun_DonationIdOrderByCreatedAtDescIdDesc(9L))
+                .willReturn(Optional.of(replayOf));
+        given(jobRepository.save(Mockito.any())).willReturn(saved);
+        given(saved.getId()).willReturn(2L);
+        OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
+                jobRepository, roundRepository, runRepository, validator
+        );
+
+        Long displayJobId = adapter.replay(
+                9L,
+                "roulette-run:9:replay:claim-1",
+                NOW.plusSeconds(120),
+                NOW
+        );
+
+        assertThat(displayJobId).isEqualTo(2L);
+        then(roundRepository).shouldHaveNoInteractions();
+        then(validator).shouldHaveNoInteractions();
     }
 
     private DisplayRoundProjection round(int roundNo) {

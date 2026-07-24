@@ -12,7 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,7 +49,7 @@ public class TimerMessage {
     private boolean active;
 
     @Column(name = "next_run_at")
-    private LocalDateTime nextRunAt;
+    private Instant nextRunAt;
 
     @Column(name = "chat_count_since_last_send", nullable = false)
     private long chatCountSinceLastSend;
@@ -62,10 +61,10 @@ public class TimerMessage {
     private String claimToken;
 
     @Column(name = "claim_expires_at")
-    private LocalDateTime claimExpiresAt;
+    private Instant claimExpiresAt;
 
     @Column(name = "last_sent_at")
-    private LocalDateTime lastSentAt;
+    private Instant lastSentAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
@@ -88,7 +87,7 @@ public class TimerMessage {
             Integer newIntervalMinutes,
             Integer newMinChatCount,
             boolean newActive,
-            LocalDateTime newNextRunAt,
+            Instant newNextRunAt,
             boolean resetSchedule,
             UserAccount updater
     ) {

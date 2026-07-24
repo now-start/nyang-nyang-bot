@@ -3,7 +3,6 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -63,12 +62,9 @@ class OverlayControllerTest {
         ManageOverlayDisplayUseCase useCase = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
         OverlayDisplayResult event = new OverlayDisplayResult(
                 1L,
-                20L,
                 "치즈냥",
                 "claim-1",
                 1,
-                5,
-                Instant.parse("2026-05-09T03:02:00Z"),
                 List.of()
         );
         given(useCase.claimNextJob("Bearer token")).willReturn(Optional.of(event));
@@ -122,12 +118,9 @@ class OverlayControllerTest {
         context.setVariable("message", "오버레이 오류");
         context.setVariable("event", new OverlayDisplayResult(
                 1L,
-                20L,
                 "치즈냥",
                 "claim-1",
                 1,
-                5,
-                Instant.parse("2026-05-09T03:02:00Z"),
                 List.of()
         ));
 

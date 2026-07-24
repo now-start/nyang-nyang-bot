@@ -81,8 +81,8 @@ SELECT 'maxdb_sql_mode_enabled' AS check_name,
 -- 2038-01-19 03:14:07. Under the required +09:00 session, every legacy wall-clock or
 -- calculated candidate written to a canonical TIMESTAMP(6) must therefore be in the
 -- half-open range [1970-01-01 09:00:01, 2038-01-19 12:14:08).
--- This inventory mirrors every legacy timestamp column consumed by V8/V8.1/V8.2 and also
--- includes the two calculated target candidates: OAuth expiry and inactive-token revoked_at.
+-- This inventory mirrors every legacy temporal value consumed by V8/V8.1/V8.2 and also
+-- includes the calculated target candidates: weekly start, OAuth expiry, and inactive-token revoked_at.
 WITH legacy_timestamp_candidate AS (
     SELECT 'authorization_account.create_date' AS source_name, create_date AS candidate_at FROM authorization_account
     UNION ALL SELECT 'authorization_account.modify_date', modify_date FROM authorization_account
@@ -117,6 +117,8 @@ WITH legacy_timestamp_candidate AS (
     UNION ALL SELECT 'user_upbo.modify_date', modify_date FROM user_upbo
     UNION ALL SELECT 'weekly_chat_rank.create_date', create_date FROM weekly_chat_rank
     UNION ALL SELECT 'weekly_chat_rank.modify_date', modify_date FROM weekly_chat_rank
+    UNION ALL SELECT 'weekly_chat_rank.week_start_date', CAST(week_start_date AS DATETIME(6))
+      FROM weekly_chat_rank
     UNION ALL
     SELECT 'authorization_account.modify_date_plus_expires_in',
            DATE_ADD(modify_date, INTERVAL expires_in SECOND)
@@ -587,6 +589,8 @@ ORDER BY source_type, display_category;
 SELECT 'weekly_chat_count_invalid' AS check_name, COUNT(*) AS problem_count
 FROM weekly_chat_rank
 WHERE week_start_date IS NULL
+   OR week_start_date < '1970-01-01 09:00:01'
+   OR week_start_date >= '2038-01-19 12:14:08'
    OR DAYOFWEEK(week_start_date) <> 2
    OR user_id IS NULL
    OR TRIM(user_id) = ''

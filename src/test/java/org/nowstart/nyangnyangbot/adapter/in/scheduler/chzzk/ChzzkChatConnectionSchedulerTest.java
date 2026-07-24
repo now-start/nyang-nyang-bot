@@ -55,6 +55,7 @@ class ChzzkChatConnectionSchedulerTest {
 
         // 검증
         then(scheduled).isNotNull();
-        then(scheduled.fixedDelay()).isEqualTo(60_000L);
+        then(scheduled.fixedDelayString())
+                .isEqualTo("${nyang.chzzk.connection.scheduler-delay-millis:60000}");
     }
 }

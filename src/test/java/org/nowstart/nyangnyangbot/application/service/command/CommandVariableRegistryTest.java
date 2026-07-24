@@ -7,7 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +45,7 @@ class CommandVariableRegistryTest {
                 "첫번째 두번째",
                 "첫번째",
                 "두번째",
-                LocalDateTime.of(2026, 7, 16, 21, 0)
+                Instant.parse("2026-07-16T12:00:00Z")
         );
         Set<String> requestedKeys = Set.of("viewer.nickname", "invocation.args");
         given(requestedContributor.resolve(eq(requestedKeys), same(context)))
@@ -88,7 +88,7 @@ class CommandVariableRegistryTest {
         given(requestedContributor.definitions()).willReturn(List.of(definition("viewer.nickname")));
         CommandVariableRegistry registry = new CommandVariableRegistry(List.of(requestedContributor));
         CommandVariableContext context = new CommandVariableContext(
-                "user-1", "치즈냥", "!인사", "", "", "", LocalDateTime.now()
+                "user-1", "치즈냥", "!인사", "", "", "", Instant.now()
         );
         given(requestedContributor.resolve(Set.of("viewer.nickname"), context)).willReturn(Map.of());
 
@@ -96,6 +96,33 @@ class CommandVariableRegistryTest {
         thenThrownBy(() -> registry.resolve(Set.of("viewer.nickname"), context))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("command variable was not resolved: viewer.nickname");
+    }
+
+    @Test
+    void coreTimeVariables_ShouldFormatInstantInAsiaSeoul() {
+        CommandVariableRegistry registry = new CommandVariableRegistry(
+                List.of(new CoreCommandVariableContributor())
+        );
+        CommandVariableContext context = new CommandVariableContext(
+                "user-1",
+                "치즈냥",
+                "!시간",
+                "",
+                "",
+                "",
+                Instant.parse("2026-07-16T15:00:00Z")
+        );
+
+        Map<String, String> resolved = registry.resolve(
+                Set.of("time.date", "time.time", "time.datetime"),
+                context
+        );
+
+        then(resolved).containsExactlyInAnyOrderEntriesOf(Map.of(
+                "time.date", "2026-07-17",
+                "time.time", "00:00",
+                "time.datetime", "2026-07-17 00:00"
+        ));
     }
 
     private CommandVariableDefinition definition(String key) {

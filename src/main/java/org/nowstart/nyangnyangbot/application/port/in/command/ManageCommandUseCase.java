@@ -6,17 +6,29 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
 import java.util.List;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 
 public interface ManageCommandUseCase {
 
     int MAX_TEMPLATE_LENGTH = 1_000;
+    int MIN_TRIGGER_LENGTH = CommandTrigger.MIN_LENGTH;
+    int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
+    CommandExecutionPolicy DEFAULT_EXECUTION_POLICY = CommandExecutionPolicy.USER_INTERVAL;
+    CommandExecutionPolicy CALENDAR_DAY_EXECUTION_POLICY = CommandExecutionPolicy.USER_CALENDAR_DAY;
+    int DEFAULT_USER_COOLDOWN_SECONDS = 30;
+    int MIN_USER_COOLDOWN_SECONDS = 5;
+    int MAX_USER_COOLDOWN_SECONDS = 3_600;
+    String TEMPLATE_LENGTH_MESSAGE =
+            "messageTemplate length must be " + MAX_TEMPLATE_LENGTH + " or less";
+    String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
+    String USER_COOLDOWN_RANGE_MESSAGE = "userCooldownSeconds must be between "
+            + MIN_USER_COOLDOWN_SECONDS + " and " + MAX_USER_COOLDOWN_SECONDS;
 
     static CommandExecutionPolicy executionPolicy(String value) {
         return value == null || value.isBlank()
-                ? CommandExecutionPolicy.USER_INTERVAL
+                ? DEFAULT_EXECUTION_POLICY
                 : CommandExecutionPolicy.valueOf(value);
     }
 
@@ -37,15 +49,17 @@ public interface ManageCommandUseCase {
 
     record CreateCommand(
             @NotBlank(message = "trigger is required")
-            @Size(min = 2, max = 20, message = "trigger length must be between 2 and 20")
+            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             Boolean active,
             CommandExecutionPolicy executionPolicy,
-            @Min(value = 5, message = "userCooldownSeconds must be between 5 and 3600")
-            @Max(value = 3600, message = "userCooldownSeconds must be between 5 and 3600")
+            @Min(value = MIN_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
+            @Max(value = MAX_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
             Integer userCooldownSeconds,
             String actorId
     ) {
@@ -56,20 +70,22 @@ public interface ManageCommandUseCase {
                 Integer userCooldownSeconds,
                 String actorId
         ) {
-            this(trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
+            this(trigger, messageTemplate, active, DEFAULT_EXECUTION_POLICY,
                     userCooldownSeconds, actorId);
         }
     }
 
     record UpdateCommand(
-            @Size(min = 2, max = 20, message = "trigger length must be between 2 and 20")
+            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
             String trigger,
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             Boolean active,
             CommandExecutionPolicy executionPolicy,
-            @Min(value = 5, message = "userCooldownSeconds must be between 5 and 3600")
-            @Max(value = 3600, message = "userCooldownSeconds must be between 5 and 3600")
+            @Min(value = MIN_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
+            @Max(value = MAX_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
             Integer userCooldownSeconds,
             String actorId
     ) {
@@ -86,7 +102,7 @@ public interface ManageCommandUseCase {
 
     record PreviewCommand(
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate
     ) {
     }
@@ -94,14 +110,16 @@ public interface ManageCommandUseCase {
     record ValidateCommand(
             Long commandId,
             @NotBlank(message = "trigger is required")
-            @Size(min = 2, max = 20, message = "trigger length must be between 2 and 20")
+            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             CommandExecutionPolicy executionPolicy,
-            @Min(value = 5, message = "userCooldownSeconds must be between 5 and 3600")
-            @Max(value = 3600, message = "userCooldownSeconds must be between 5 and 3600")
+            @Min(value = MIN_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
+            @Max(value = MAX_USER_COOLDOWN_SECONDS,
+                    message = USER_COOLDOWN_RANGE_MESSAGE)
             Integer userCooldownSeconds
     ) {
         public ValidateCommand(
@@ -110,7 +128,7 @@ public interface ManageCommandUseCase {
                 String messageTemplate,
                 Integer userCooldownSeconds
         ) {
-            this(commandId, trigger, messageTemplate, CommandExecutionPolicy.USER_INTERVAL, userCooldownSeconds);
+            this(commandId, trigger, messageTemplate, DEFAULT_EXECUTION_POLICY, userCooldownSeconds);
         }
     }
 
@@ -122,9 +140,7 @@ public interface ManageCommandUseCase {
             CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
             String createdBy,
-            String updatedBy,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            String updatedBy
     ) {
         public CommandResult(
                 Long id,
@@ -133,12 +149,10 @@ public interface ManageCommandUseCase {
                 boolean active,
                 Integer userCooldownSeconds,
                 String createdBy,
-                String updatedBy,
-                LocalDateTime createdAt,
-                LocalDateTime updatedAt
+                String updatedBy
         ) {
-            this(id, trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
-                    userCooldownSeconds, createdBy, updatedBy, createdAt, updatedAt);
+            this(id, trigger, messageTemplate, active, DEFAULT_EXECUTION_POLICY,
+                    userCooldownSeconds, createdBy, updatedBy);
         }
     }
 

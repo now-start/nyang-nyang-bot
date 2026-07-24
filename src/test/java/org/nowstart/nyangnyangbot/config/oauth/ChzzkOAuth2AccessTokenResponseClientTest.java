@@ -43,8 +43,8 @@ class ChzzkOAuth2AccessTokenResponseClientTest {
         AuthorizationToken token = new AuthorizationToken("access", "refresh", "Bearer", 3600, "chat");
         UserResult user = new UserResult("channel-1", "tester", "ACTIVE");
         OAuthCredentialRecord saved = new OAuthCredentialRecord(
-                "channel-1", "tester", "access", "refresh", "Bearer", "chat", true,
-                Instant.now().plusSeconds(3600), 0, Instant.now(), Instant.now()
+                "channel-1", "tester", "access", "refresh", "Bearer", true,
+                Instant.now().plusSeconds(3600), 0
         );
         given(chzzkProperty.clientId()).willReturn("client-id");
         given(chzzkProperty.clientSecret()).willReturn("client-secret");

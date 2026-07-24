@@ -210,7 +210,7 @@
                         data-bs-toggle="collapse"
                         th:aria-controls="${'history-' + rowIndex}"
                         th:data-bs-target="${'#history-' + rowIndex}"
-                        th:hx-get="@{/points/history(userId=${pointEntry.userId},limit=10)}"
+                        th:hx-get="@{/points/history(userId=${pointEntry.userId})}"
                         th:hx-target="${'#history-content-' + rowIndex}"
                         th:if="${canViewHistory}"
                         hx-swap="innerHTML"

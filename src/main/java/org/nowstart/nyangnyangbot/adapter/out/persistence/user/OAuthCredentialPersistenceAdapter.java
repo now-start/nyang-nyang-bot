@@ -103,12 +103,9 @@ public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
                 credential.getAccessToken(),
                 credential.getRefreshToken(),
                 credential.getTokenType(),
-                credential.getScope(),
                 account.isAdmin(),
                 credential.getAccessTokenExpiresAt(),
-                credential.getCredentialVersion(),
-                credential.getUpdatedAt(),
-                account.getLastLoginAt()
+                credential.getCredentialVersion()
         ));
     }
 }

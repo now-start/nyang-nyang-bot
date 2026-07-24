@@ -1,7 +1,9 @@
 package org.nowstart.nyangnyangbot.application.service.weeklychat;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, RecordWeeklyChatUseCase {
 
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
     private final WeeklyChatCountPort weeklyChatCountPort;
     private final ObserveUserUseCase observeUserUseCase;
 
@@ -30,22 +34,26 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
 
         String userId = ChatEventSupport.senderChannelId(chat);
         String nickName = ChatEventSupport.displayName(chat);
-        LocalDate weekStartDate = currentWeekStartDate();
+        Instant weekStartedAt = currentWeekStartedAt();
         observeUserUseCase.observeUser(userId, nickName);
-        weeklyChatCountPort.increment(weekStartDate, userId);
+        weeklyChatCountPort.increment(weekStartedAt, userId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WeeklyChatRankView> getWeeklyRanks(int limit) {
-        return weeklyChatCountPort.findWeeklyRanks(currentWeekStartDate(), limit);
+        return weeklyChatCountPort.findWeeklyRanks(currentWeekStartedAt(), limit);
     }
 
-    LocalDate currentDate() {
-        return LocalDate.now();
+    Instant currentTime() {
+        return Instant.now();
     }
 
-    private LocalDate currentWeekStartDate() {
-        return currentDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    private Instant currentWeekStartedAt() {
+        LocalDate weekStartDate = currentTime()
+                .atZone(SEOUL)
+                .toLocalDate()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return weekStartDate.atStartOfDay(SEOUL).toInstant();
     }
 }

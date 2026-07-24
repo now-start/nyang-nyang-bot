@@ -27,12 +27,12 @@ public class PointLedgerTransactionExecutor {
         if (!userExists) {
             throw new IllegalArgumentException("Point user not found");
         }
-        long beforeBalance = pointLedgerPort.balance(request.userId());
         Optional<LedgerEntryRecord> existing = pointLedgerPort.findByIdempotencyKey(request.idempotencyKey());
         if (existing.isPresent()) {
-            return duplicate(request, existing.get(), beforeBalance);
+            return duplicate(request, existing.get());
         }
 
+        long beforeBalance = pointLedgerPort.balance(request.userId());
         validateCorrection(request);
         long afterBalance = Math.addExact(beforeBalance, request.delta());
         if (!request.allowNegativeBalance() && afterBalance < 0) {
@@ -49,15 +49,7 @@ public class PointLedgerTransactionExecutor {
                 request.actorUserId(),
                 request.idempotencyKey()
         ));
-        return new PointLedgerResult(
-                request.userId(),
-                beforeBalance,
-                request.delta(),
-                afterBalance,
-                request.description(),
-                false,
-                saved.id()
-        );
+        return new PointLedgerResult(saved.id());
     }
 
     @Transactional(readOnly = true)
@@ -65,11 +57,7 @@ public class PointLedgerTransactionExecutor {
         return pointLedgerPort.findByIdempotencyKey(request.idempotencyKey())
                 .map(existing -> {
                     validateReplay(request, existing);
-                    return PointLedgerResult.duplicate(
-                            request.userId(),
-                            pointLedgerPort.balance(request.userId()),
-                            existing.id()
-                    );
+                    return new PointLedgerResult(existing.id());
                 });
     }
 
@@ -86,9 +74,7 @@ public class PointLedgerTransactionExecutor {
         long beforeBalance = pointLedgerPort.balance(request.userId());
         long delta = Math.subtractExact(request.targetBalance(), beforeBalance);
         if (delta == 0) {
-            return new PointLedgerResult(
-                    request.userId(), beforeBalance, 0, beforeBalance, request.description(), false, null
-            );
+            return PointLedgerResult.noChange();
         }
         LedgerEntryRecord saved = pointLedgerPort.append(new AppendPointEntry(
                 request.userId(),
@@ -101,14 +87,12 @@ public class PointLedgerTransactionExecutor {
                 request.actorUserId(),
                 request.idempotencyKey()
         ));
-        return new PointLedgerResult(
-                request.userId(), beforeBalance, delta, request.targetBalance(), request.description(), false, saved.id()
-        );
+        return new PointLedgerResult(saved.id());
     }
 
-    private PointLedgerResult duplicate(WriteRequest request, LedgerEntryRecord existing, long balance) {
+    private PointLedgerResult duplicate(WriteRequest request, LedgerEntryRecord existing) {
         validateReplay(request, existing);
-        return PointLedgerResult.duplicate(request.userId(), balance, existing.id());
+        return new PointLedgerResult(existing.id());
     }
 
     private void validateReplay(WriteRequest request, LedgerEntryRecord existing) {

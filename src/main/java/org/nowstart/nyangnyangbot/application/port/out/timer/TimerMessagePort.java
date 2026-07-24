@@ -1,11 +1,18 @@
 package org.nowstart.nyangnyangbot.application.port.out.timer;
 
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_INTERVAL_MINUTES;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
@@ -22,30 +29,30 @@ public interface TimerMessagePort {
 
     void incrementActiveChatCounts();
 
-    List<Long> findClaimCandidateIds(LocalDateTime now, int limit);
+    List<Long> findClaimCandidateIds(Instant now, int limit);
 
     Optional<ClaimedTimerMessage> claimDue(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime now,
-            LocalDateTime claimExpiresAt
+            Instant now,
+            Instant claimExpiresAt
     );
 
     boolean completeClaim(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime claimedNextRunAt,
+            Instant claimedNextRunAt,
             Integer claimedIntervalMinutes,
-            LocalDateTime sentAt,
-            LocalDateTime nextRunAt
+            Instant sentAt,
+            Instant nextRunAt
     );
 
     boolean releaseClaim(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime claimedNextRunAt,
+            Instant claimedNextRunAt,
             Integer claimedIntervalMinutes,
-            LocalDateTime retryAt
+            Instant retryAt
     );
 
     record TimerMessageRecord(
@@ -55,22 +62,20 @@ public interface TimerMessagePort {
             @NotBlank(message = "messageTemplate is required")
             String messageTemplate,
             @NotNull(message = "intervalMinutes is required")
-            @Min(value = 5, message = "intervalMinutes must be between 5 and 1440")
-            @Max(value = 1440, message = "intervalMinutes must be between 5 and 1440")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
             Integer intervalMinutes,
             @NotNull(message = "minChatCount is required")
-            @Min(value = 1, message = "minChatCount must be between 1 and 10000")
-            @Max(value = 10000, message = "minChatCount must be between 1 and 10000")
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
             Integer minChatCount,
             boolean active,
             @Min(value = 0, message = "chatCountSinceLastSend must not be negative")
             long chatCountSinceLastSend,
-            LocalDateTime lastSentAt,
-            LocalDateTime nextRunAt,
+            Instant lastSentAt,
+            Instant nextRunAt,
             String createdBy,
-            String updatedBy,
-            LocalDateTime createDate,
-            LocalDateTime modifyDate
+            String updatedBy
     ) {
     }
 
@@ -79,7 +84,7 @@ public interface TimerMessagePort {
             @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
             @NotNull(message = "minChatCount is required") Integer minChatCount,
             boolean active,
-            LocalDateTime nextRunAt,
+            Instant nextRunAt,
             String createdBy,
             String updatedBy
     ) {
@@ -91,7 +96,7 @@ public interface TimerMessagePort {
             @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
             @NotNull(message = "minChatCount is required") Integer minChatCount,
             boolean active,
-            LocalDateTime nextRunAt,
+            Instant nextRunAt,
             boolean resetSchedule,
             String updatedBy
     ) {
@@ -101,7 +106,7 @@ public interface TimerMessagePort {
             @NotNull(message = "id is required") @Positive(message = "id must be positive") Long id,
             @NotBlank(message = "messageTemplate is required") String messageTemplate,
             @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
-            @NotNull(message = "claimedNextRunAt is required") LocalDateTime claimedNextRunAt,
+            @NotNull(message = "claimedNextRunAt is required") Instant claimedNextRunAt,
             @NotBlank(message = "claimToken is required") String claimToken
     ) {
     }

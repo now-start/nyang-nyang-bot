@@ -7,7 +7,8 @@ import static org.mockito.BDDMockito.doReturn;
 import static org.mockito.BDDMockito.given;
 
 import jakarta.validation.Validation;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 @ExtendWith(MockitoExtension.class)
 class TimerMessageServiceTest {
 
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 16, 12, 0);
+    private static final Instant NOW = Instant.parse("2026-07-16T03:00:00Z");
 
     @Mock
     private TimerMessagePort timerMessagePort;
@@ -62,7 +63,7 @@ class TimerMessageServiceTest {
 
         ArgumentCaptor<CreateData> captor = ArgumentCaptor.forClass(CreateData.class);
         BDDMockito.then(timerMessagePort).should().create(captor.capture());
-        then(captor.getValue().nextRunAt()).isEqualTo(NOW.plusMinutes(10));
+        then(captor.getValue().nextRunAt()).isEqualTo(NOW.plus(Duration.ofMinutes(10)));
         then(result.active()).isTrue();
     }
 
@@ -99,7 +100,7 @@ class TimerMessageServiceTest {
         ArgumentCaptor<UpdateData> captor = ArgumentCaptor.forClass(UpdateData.class);
         BDDMockito.then(timerMessagePort).should().update(captor.capture());
         then(captor.getValue().resetSchedule()).isTrue();
-        then(captor.getValue().nextRunAt()).isEqualTo(NOW.plusMinutes(10));
+        then(captor.getValue().nextRunAt()).isEqualTo(NOW.plus(Duration.ofMinutes(10)));
     }
 
     @Test
@@ -140,22 +141,21 @@ class TimerMessageServiceTest {
     void getTimerMessages_ShouldKeepStoredSeoulTimesForDisplay() {
         TimerMessageService service = spyService();
         given(timerMessagePort.findAllOrderByIdDesc()).willReturn(List.of(
-                record(1L, "공지", 10, 5, true, 0, NOW.minusMinutes(5), NOW.plusMinutes(10))
+                record(1L, "공지", 10, 5, true, 0,
+                        NOW.minus(Duration.ofMinutes(5)), NOW.plus(Duration.ofMinutes(10)))
         ));
 
         var result = service.getTimerMessages().getFirst();
 
-        then(result.lastSentAt()).isEqualTo(NOW.minusMinutes(5));
-        then(result.nextRunAt()).isEqualTo(NOW.plusMinutes(10));
-        then(result.createdAt()).isEqualTo(NOW.minusDays(1));
-        then(result.updatedAt()).isEqualTo(NOW.minusDays(1));
+        then(result.lastSentAt()).isEqualTo(NOW.minus(Duration.ofMinutes(5)));
+        then(result.nextRunAt()).isEqualTo(NOW.plus(Duration.ofMinutes(10)));
     }
 
     @Test
     void runDueTimerMessages_ShouldCompleteClaimAfterSending() {
         TimerMessageService service = spyService();
         given(timerMessagePort.findClaimCandidateIds(NOW, 100)).willReturn(List.of(1L));
-        given(timerMessagePort.claimDue(1L, "claim-1", NOW, NOW.plusMinutes(2)))
+        given(timerMessagePort.claimDue(1L, "claim-1", NOW, NOW.plus(Duration.ofMinutes(2))))
                 .willReturn(Optional.of(new ClaimedTimerMessage(
                         1L,
                         "현재 {time.time}",
@@ -173,7 +173,7 @@ class TimerMessageServiceTest {
                 NOW,
                 10,
                 NOW,
-                NOW.plusMinutes(10)
+                NOW.plus(Duration.ofMinutes(10))
         );
     }
 
@@ -181,9 +181,9 @@ class TimerMessageServiceTest {
     void runDueTimerMessages_ShouldReleaseFailedClaimAndContinueWithNextTimer() {
         TimerMessageService service = spyService();
         given(timerMessagePort.findClaimCandidateIds(NOW, 100)).willReturn(List.of(1L, 2L));
-        given(timerMessagePort.claimDue(1L, "claim-1", NOW, NOW.plusMinutes(2)))
+        given(timerMessagePort.claimDue(1L, "claim-1", NOW, NOW.plus(Duration.ofMinutes(2))))
                 .willReturn(Optional.of(new ClaimedTimerMessage(1L, "첫 번째", 10, NOW, "claim-1")));
-        given(timerMessagePort.claimDue(2L, "claim-2", NOW, NOW.plusMinutes(2)))
+        given(timerMessagePort.claimDue(2L, "claim-2", NOW, NOW.plus(Duration.ofMinutes(2))))
                 .willReturn(Optional.of(new ClaimedTimerMessage(2L, "두 번째", 20, NOW, "claim-2")));
         BDDMockito.willThrow(new IllegalStateException("send failed"))
                 .willDoNothing()
@@ -196,7 +196,7 @@ class TimerMessageServiceTest {
                 "claim-1",
                 NOW,
                 10,
-                NOW.plusMinutes(1)
+                NOW.plus(Duration.ofMinutes(1))
         );
         BDDMockito.then(timerMessagePort).should().completeClaim(
                 2L,
@@ -204,7 +204,7 @@ class TimerMessageServiceTest {
                 NOW,
                 20,
                 NOW,
-                NOW.plusMinutes(20)
+                NOW.plus(Duration.ofMinutes(20))
         );
     }
 
@@ -221,7 +221,7 @@ class TimerMessageServiceTest {
 
     private TimerMessageService spyService() {
         TimerMessageService service = BDDMockito.spy(service());
-        BDDMockito.lenient().doReturn(NOW).when(service).currentDateTime();
+        BDDMockito.lenient().doReturn(NOW).when(service).currentTime();
         BDDMockito.lenient().doReturn("claim-1", "claim-2").when(service).newClaimToken();
         return service;
     }
@@ -249,8 +249,8 @@ class TimerMessageServiceTest {
             Integer minChatCount,
             boolean active,
             long chatCount,
-            LocalDateTime lastSentAt,
-            LocalDateTime nextRunAt
+            Instant lastSentAt,
+            Instant nextRunAt
     ) {
         return new TimerMessageRecord(
                 id,
@@ -262,9 +262,7 @@ class TimerMessageServiceTest {
                 lastSentAt,
                 nextRunAt,
                 "system",
-                "system",
-                NOW.minusDays(1),
-                NOW.minusDays(1)
+                "system"
         );
     }
 }

@@ -2,7 +2,8 @@ package org.nowstart.nyangnyangbot.adapter.in.web.timer;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
@@ -59,8 +60,8 @@ class TimerMessageTemplateTest {
                 10,
                 true,
                 7L,
-                LocalDateTime.of(2026, 7, 16, 20, 30),
-                LocalDateTime.of(2026, 7, 16, 21, 30)
+                "2026-07-16 20:30",
+                "2026-07-16 21:30"
         ));
 
         String html = templateEngine().process("features/timer/regions", context);
@@ -83,7 +84,8 @@ class TimerMessageTemplateTest {
     }
 
     private void setVariables(WebContext context) {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 16, 21, 0);
+        context.setVariable("timerMessageConstraints", new TimerMessageModelAdvice().timerMessageConstraints());
+        Instant now = Instant.parse("2026-07-16T12:00:00Z");
         TimerMessageResult result = new TimerMessageResult(
                 1L,
                 "현재 시각은 {time.time}입니다.",
@@ -91,12 +93,10 @@ class TimerMessageTemplateTest {
                 10,
                 true,
                 7,
-                now.minusMinutes(30),
-                now.plusMinutes(30),
+                now.minus(Duration.ofMinutes(30)),
+                now.plus(Duration.ofMinutes(30)),
                 "admin",
-                "admin",
-                now.minusDays(1),
-                now
+                "admin"
         );
         context.setVariable("timerActiveOptions", List.of(
                 new OptionView("", "전체 상태"),

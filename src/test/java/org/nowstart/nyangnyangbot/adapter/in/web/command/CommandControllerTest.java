@@ -6,7 +6,6 @@ import static org.mockito.BDDMockito.given;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -316,7 +315,6 @@ class CommandControllerTest {
     }
 
     private CommandResult command(Long id, String trigger, boolean active) {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 6, 12, 0);
         return new CommandResult(
                 id,
                 trigger,
@@ -324,9 +322,7 @@ class CommandControllerTest {
                 active,
                 30,
                 "admin",
-                "admin",
-                now,
-                now
+                "admin"
         );
     }
 }

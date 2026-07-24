@@ -12,12 +12,10 @@ import org.springframework.stereotype.Component;
         matchIfMissing = true)
 public class RouletteRecoveryScheduler {
 
-    private static final int RECOVERY_BATCH_SIZE = 100;
-
     private final RecoverRouletteRunsUseCase recoverRouletteRunsUseCase;
 
     @Scheduled(fixedDelayString = "${nyang.roulette.recovery.scheduler-delay-millis:30000}")
     public void recoverPendingRuns() {
-        recoverRouletteRunsUseCase.recoverPendingRuns(RECOVERY_BATCH_SIZE);
+        recoverRouletteRunsUseCase.recoverPendingRuns(RecoverRouletteRunsUseCase.DEFAULT_BATCH_SIZE);
     }
 }

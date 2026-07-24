@@ -261,8 +261,8 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                 """);
 
         executeUpdate(connection, """
-                INSERT INTO next_weekly_chat_count (id, week_start_date, user_id, chat_count)
-                SELECT id, week_start_date, user_id, chat_count
+                INSERT INTO next_weekly_chat_count (id, week_started_at, user_id, chat_count)
+                SELECT id, CAST(week_start_date AS DATETIME(6)), user_id, chat_count
                   FROM weekly_chat_rank
                  ORDER BY id
                 """);

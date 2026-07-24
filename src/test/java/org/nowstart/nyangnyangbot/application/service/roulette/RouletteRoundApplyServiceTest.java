@@ -57,23 +57,16 @@ class RouletteRoundApplyServiceTest {
     private RoundResult round(boolean losing) {
         return new RoundResult(
                 10L,
-                7L,
-                1L,
                 "event-1",
                 "user-1",
                 "시청자",
-                losing ? 2L : 1L,
                 1,
                 losing ? "꽝" : "포인트",
                 losing,
                 losing ? RewardType.CUSTOM : RewardType.POINT,
                 losing ? ConversionMode.NONE : ConversionMode.AUTO,
                 losing ? null : 100L,
-                RouletteRoundStatus.CONFIRMED,
-                null,
-                42,
-                NOW,
-                NOW
+                RouletteRoundStatus.CONFIRMED
         );
     }
 }

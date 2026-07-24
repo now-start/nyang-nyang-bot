@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.application.service.command;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,27 +46,33 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
         executionPort.observeAndLockUser(request.userId(), request.displayName());
         Instant approvedAt = executionPort.currentDatabaseTime();
         LocalDate today = approvedAt.atZone(SEOUL).toLocalDate();
-        LocalDate calendarDate = command.executionPolicy() == CommandExecutionPolicy.USER_CALENDAR_DAY
-                ? today
+        Instant calendarDayStartedAt = command.executionPolicy() == CommandExecutionPolicy.USER_CALENDAR_DAY
+                ? today.atStartOfDay(SEOUL).toInstant()
                 : null;
 
-        if (!isAllowed(command, request.userId(), approvedAt, calendarDate)) {
+        if (!isAllowed(command, request.userId(), approvedAt, calendarDayStartedAt)) {
             return Optional.empty();
         }
 
+        Set<String> variables = templateRenderer.variables(command.messageTemplate());
         executionPort.append(new ExecutionData(
                 command.id(),
                 request.userId(),
                 approvedAt,
                 command.executionPolicy(),
                 command.userCooldownSeconds(),
-                calendarDate
+                calendarDayStartedAt
         ));
 
-        long totalCount = executionPort.countAll(command.id());
-        long userCount = executionPort.countForUser(command.id(), request.userId());
-        Streaks streaks = streaks(executionPort.findExecutionDates(command.id(), request.userId()), today);
-        LocalDateTime localNow = LocalDateTime.ofInstant(approvedAt, SEOUL);
+        long totalCount = variables.contains("count.total")
+                ? executionPort.countAll(command.id())
+                : 0;
+        long userCount = variables.contains("count.user")
+                ? executionPort.countForUser(command.id(), request.userId())
+                : 0;
+        Streaks streaks = variables.contains("streak.current") || variables.contains("streak.longest")
+                ? streaks(executionPort.findCalendarDayStarts(command.id(), request.userId()), today)
+                : Streaks.empty();
         CommandVariableContext context = new CommandVariableContext(
                 request.userId(),
                 request.displayName(),
@@ -75,13 +80,12 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
                 request.args(),
                 request.arg1(),
                 request.arg2(),
-                localNow,
+                approvedAt,
                 totalCount,
                 userCount,
                 streaks.current(),
                 streaks.longest()
         );
-        Set<String> variables = templateRenderer.variables(command.messageTemplate());
         String rendered = templateRenderer.render(
                 command.messageTemplate(),
                 variableRegistry.resolve(variables, context)
@@ -100,10 +104,10 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
             LockedCommand command,
             String userId,
             Instant approvedAt,
-            LocalDate calendarDate
+            Instant calendarDayStartedAt
     ) {
         if (command.executionPolicy() == CommandExecutionPolicy.USER_CALENDAR_DAY) {
-            return !executionPort.existsCalendarDate(command.id(), userId, calendarDate);
+            return !executionPort.existsCalendarDayStartedAt(command.id(), userId, calendarDayStartedAt);
         }
         Integer cooldownSeconds = command.userCooldownSeconds();
         if (cooldownSeconds == null) {
@@ -114,11 +118,14 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
                 || !approvedAt.isBefore(latest.get().executedAt().plusSeconds(cooldownSeconds));
     }
 
-    private Streaks streaks(List<LocalDate> executionDates, LocalDate today) {
-        List<LocalDate> dates = new ArrayList<>(executionDates.stream().distinct().toList());
+    private Streaks streaks(List<Instant> calendarDayStarts, LocalDate today) {
+        List<LocalDate> dates = new ArrayList<>(calendarDayStarts.stream()
+                .map(dayStartedAt -> dayStartedAt.atZone(SEOUL).toLocalDate())
+                .distinct()
+                .toList());
         dates.sort(Comparator.naturalOrder());
         if (dates.isEmpty()) {
-            return new Streaks(0, 0);
+            return Streaks.empty();
         }
         int longest = 1;
         int running = 1;
@@ -146,5 +153,8 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
     }
 
     private record Streaks(int current, int longest) {
+        private static Streaks empty() {
+            return new Streaks(0, 0);
+        }
     }
 }

@@ -2,16 +2,15 @@ package org.nowstart.nyangnyangbot.application.port.out.reward;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
 public interface RewardPort {
 
-    RewardRecord createGrant(CreateRewardCommand command);
+    void createGrant(CreateRewardCommand command);
 
-    Optional<RewardRecord> findByRouletteRoundId(Long rouletteRoundId);
+    boolean existsByRouletteRoundId(Long rouletteRoundId);
 
     List<RewardRecord> findByUserId(String userId, int limit);
 
@@ -36,8 +35,6 @@ public interface RewardPort {
 
     record RewardRecord(
             Long id,
-            String userId,
-            Long rouletteRoundId,
             Long pointLedgerEntryId,
             String label,
             RewardType rewardType,
@@ -45,11 +42,7 @@ public interface RewardPort {
             Long pointDelta,
             RewardGrantStatus status,
             String description,
-            String privateNote,
-            String actorUserId,
-            String idempotencyKey,
-            Instant createdAt,
-            Instant updatedAt
+            Instant createdAt
     ) {
     }
 }

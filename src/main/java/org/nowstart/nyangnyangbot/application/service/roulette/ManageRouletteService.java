@@ -64,7 +64,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
                 rewardType,
                 conversionMode,
                 command.pointDelta(),
-                command.displayOrder() == null ? 0 : command.displayOrder(),
+                command.displayOrderOrDefault(),
                 now()
         ));
         return optionResult(option);

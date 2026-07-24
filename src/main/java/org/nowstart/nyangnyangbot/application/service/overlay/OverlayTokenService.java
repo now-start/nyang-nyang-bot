@@ -26,7 +26,7 @@ public class OverlayTokenService implements IssueOverlayTokenUseCase {
         Long tokenId = overlayTokenPort.saveIssuedToken(hashToken(rawToken), actorId, now);
         log.info("level=AUDIT action=overlay_access_token.rotate result=success actor={} tokenId={}",
                 actorId, tokenId);
-        return new OverlayTokenIssueResult(tokenId, rawToken);
+        return new OverlayTokenIssueResult(rawToken);
     }
 
     @Transactional(readOnly = true)

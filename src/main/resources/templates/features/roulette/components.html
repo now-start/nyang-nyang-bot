@@ -75,7 +75,8 @@
                     </div>
                     <div>
                         <label class="form-label small text-secondary" for="roulette-trigger-token">후원 키워드</label>
-                        <input class="form-control fw-semibold text-success" id="roulette-trigger-token" maxlength="20"
+                        <input class="form-control fw-semibold text-success" id="roulette-trigger-token"
+                               th:maxlength="${rouletteTriggerMaxLength}"
                                name="triggerToken" required type="text" value="!룰렛">
                     </div>
                     <div>
@@ -83,7 +84,6 @@
                         <input class="form-control tabular-nums" id="roulette-price" min="1" name="pricePerRound"
                                required type="number" value="1000">
                     </div>
-                    <input name="highRoundThreshold" type="hidden" value="100">
                     <button class="btn btn-success" id="roulette-create" type="submit">새 설정 생성</button>
                 </form>
 
@@ -220,10 +220,11 @@
                     <div th:replace="~{features/roulette/components :: roulette-simulation}"></div>
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <button class="btn btn-outline-secondary"
-                                th:hx-get="@{/admin/roulette/configs/{id}/simulation(id=${config.id},iterations=10000)}"
+                                th:hx-get="@{/admin/roulette/configs/{id}/simulation(id=${config.id},iterations=${defaultSimulationIterations})}"
                                 hx-swap="outerHTML"
                                 hx-target="#roulette-simulation"
-                                type="button">1만 회 시뮬레이션</button>
+                                th:text="${defaultSimulationIterations + '회 시뮬레이션'}"
+                                type="button">10,000회 시뮬레이션</button>
                         <button class="btn btn-outline-secondary"
                                 hx-disabled-elt="this"
                                 th:hx-post="@{/admin/roulette/configs/{id}/archive(id=${config.id})}"

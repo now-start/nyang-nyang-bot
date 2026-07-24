@@ -29,9 +29,12 @@ public class QueryRouletteResultService implements QueryRouletteResultUseCase {
     }
 
     private RouletteRunSummaryResult runSummaryResult(RunResult run, RunRoundSummaryResult summary) {
-        long roundCount = summary == null ? 0 : summary.roundCount();
-        long appliedCount = summary == null ? 0 : summary.appliedCount();
-        long failedCount = summary == null ? 0 : summary.failedCount();
+        RunRoundSummaryResult effectiveSummary = summary == null
+                ? RunRoundSummaryResult.empty(run.id())
+                : summary;
+        long roundCount = effectiveSummary.roundCount();
+        long appliedCount = effectiveSummary.appliedCount();
+        long failedCount = effectiveSummary.failedCount();
         return new RouletteRunSummaryResult(
                 run.id(),
                 run.ingestionKey(),

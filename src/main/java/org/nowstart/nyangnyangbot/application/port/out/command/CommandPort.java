@@ -3,7 +3,6 @@ package org.nowstart.nyangnyangbot.application.port.out.command;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,9 +36,7 @@ public interface CommandPort {
             CommandExecutionPolicy executionPolicy,
             Integer userCooldownSeconds,
             String createdBy,
-            String updatedBy,
-            LocalDateTime createDate,
-            LocalDateTime modifyDate
+            String updatedBy
     ) {
         public CommandRecord(
                 Long id,
@@ -48,12 +45,10 @@ public interface CommandPort {
                 boolean active,
                 Integer userCooldownSeconds,
                 String createdBy,
-                String updatedBy,
-                LocalDateTime createDate,
-                LocalDateTime modifyDate
+                String updatedBy
         ) {
             this(id, trigger, messageTemplate, active, CommandExecutionPolicy.USER_INTERVAL,
-                    userCooldownSeconds, createdBy, updatedBy, createDate, modifyDate);
+                    userCooldownSeconds, createdBy, updatedBy);
         }
     }
 

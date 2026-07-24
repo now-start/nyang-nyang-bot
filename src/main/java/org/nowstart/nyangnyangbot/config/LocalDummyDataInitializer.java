@@ -1,9 +1,14 @@
 package org.nowstart.nyangnyangbot.config;
 
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_MIN_CHAT_COUNT;
+
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +49,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "nyang.local-dummy-data", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class LocalDummyDataInitializer implements ApplicationRunner {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private static final List<PointSeed> POINT_SEEDS = List.of(
             new PointSeed(LocalTestAccounts.ADMIN_USER_ID, "로컬 관리자", true, 9_999),
@@ -169,14 +176,16 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         if (weeklyChatCountRepository.count() > 0) {
             return;
         }
-        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart = Instant.now().atZone(SEOUL).toLocalDate()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        Instant weekStartedAt = weekStart.atStartOfDay(SEOUL).toInstant();
         weeklyChatCountRepository.saveAll(List.of(
-                weeklyCount(weekStart, requireUser(users, "user-001"), 421),
-                weeklyCount(weekStart, requireUser(users, "user-002"), 387),
-                weeklyCount(weekStart, requireUser(users, "user-003"), 244),
-                weeklyCount(weekStart, requireUser(users, "user-004"), 199),
-                weeklyCount(weekStart, requireUser(users, "user-005"), 153),
-                weeklyCount(weekStart, requireUser(users, LocalTestAccounts.VIEWER_USER_ID), 128)
+                weeklyCount(weekStartedAt, requireUser(users, "user-001"), 421),
+                weeklyCount(weekStartedAt, requireUser(users, "user-002"), 387),
+                weeklyCount(weekStartedAt, requireUser(users, "user-003"), 244),
+                weeklyCount(weekStartedAt, requireUser(users, "user-004"), 199),
+                weeklyCount(weekStartedAt, requireUser(users, "user-005"), 153),
+                weeklyCount(weekStartedAt, requireUser(users, LocalTestAccounts.VIEWER_USER_ID), 128)
         ));
     }
 
@@ -198,7 +207,7 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
                         .messageTemplate("{viewer.nickname}님의 {count.user}번째 인성질 · 전체 {count.total}회")
                         .active(true)
                         .executionPolicy(CommandExecutionPolicy.USER_INTERVAL)
-                        .userCooldownSeconds(30)
+                        .userCooldownSeconds(DEFAULT_USER_COOLDOWN_SECONDS)
                         .createdByUser(admin)
                         .updatedByUser(admin)
                         .build()
@@ -211,8 +220,8 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         }
         timerMessageRepository.save(TimerMessage.builder()
                 .messageTemplate("잠시 후 방송이 계속됩니다. 현재 시각은 {time.time}입니다.")
-                .intervalMinutes(30)
-                .minChatCount(10)
+                .intervalMinutes(DEFAULT_INTERVAL_MINUTES)
+                .minChatCount(DEFAULT_MIN_CHAT_COUNT)
                 .active(false)
                 .chatCountSinceLastSend(0)
                 .claimedChatCount(0)
@@ -249,9 +258,9 @@ public class LocalDummyDataInitializer implements ApplicationRunner {
         return PointAdjustmentPreset.builder().amount(amount).label(label).build();
     }
 
-    private WeeklyChatCount weeklyCount(LocalDate weekStart, UserAccount user, long count) {
+    private WeeklyChatCount weeklyCount(Instant weekStartedAt, UserAccount user, long count) {
         return WeeklyChatCount.builder()
-                .weekStartDate(weekStart)
+                .weekStartedAt(weekStartedAt)
                 .userAccount(user)
                 .chatCount(count)
                 .build();

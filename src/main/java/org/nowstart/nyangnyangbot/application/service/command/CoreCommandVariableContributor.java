@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class CoreCommandVariableContributor implements CommandVariableContributor {
 
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(SEOUL);
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm").withZone(SEOUL);
+    private static final DateTimeFormatter DATE_TIME_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(SEOUL);
     private static final List<CommandVariableDefinition> DEFINITIONS = List.of(
             definition("viewer.nickname", "시청자 닉네임", "명령어를 호출한 시청자의 표시 이름", "치즈냥"),
             definition("invocation.command", "호출 명령어", "채팅에서 입력된 명령어", "치하"),
@@ -36,7 +39,7 @@ public class CoreCommandVariableContributor implements CommandVariableContributo
 
     @Override
     public Map<String, String> resolve(Set<String> requestedKeys, CommandVariableContext context) {
-        LocalDateTime now = context.now() == null ? LocalDateTime.now() : context.now();
+        Instant now = context.now() == null ? Instant.now() : context.now();
         Map<String, String> values = new LinkedHashMap<>();
         for (String key : requestedKeys) {
             values.put(key, switch (key) {
@@ -49,9 +52,9 @@ public class CoreCommandVariableContributor implements CommandVariableContributo
                 case "count.user" -> String.valueOf(context.userCount());
                 case "streak.current" -> String.valueOf(context.currentStreak());
                 case "streak.longest" -> String.valueOf(context.longestStreak());
-                case "time.date" -> now.format(DATE_FORMAT);
-                case "time.time" -> now.format(TIME_FORMAT);
-                case "time.datetime" -> now.format(DATE_TIME_FORMAT);
+                case "time.date" -> DATE_FORMAT.format(now);
+                case "time.time" -> TIME_FORMAT.format(now);
+                case "time.datetime" -> DATE_TIME_FORMAT.format(now);
                 default -> throw new IllegalArgumentException("unsupported core command variable: " + key);
             });
         }

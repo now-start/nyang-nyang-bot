@@ -3,6 +3,8 @@ package org.nowstart.nyangnyangbot.application.service.roulette;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase.MAX_BATCH_SIZE;
+import static org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase.MIN_BATCH_SIZE;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +25,6 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRunStatus;
 
 class ProcessRouletteDonationServiceTest {
 
@@ -60,7 +61,7 @@ class ProcessRouletteDonationServiceTest {
         given(port.findActiveConfigForUpdate()).willReturn(Optional.of(config));
         given(port.findOptionsByConfigId(1L)).willReturn(options);
         given(port.createReadyRun(Mockito.any())).willReturn(new RunResult(
-                7L, 1L, "event-1", "user-1", "시청자", 1_000L, RouletteRunStatus.READY, NOW, NOW
+                7L, "event-1", "user-1", "시청자", 1_000L, NOW
         ));
 
         var result = service.processDonation(7L, donation());
@@ -137,6 +138,22 @@ class ProcessRouletteDonationServiceTest {
         then(overlay).shouldHaveNoInteractions();
     }
 
+    @Test
+    void recoveryNormalizesBatchLimitAtUseCaseBoundary() {
+        RoulettePort port = Mockito.mock(RoulettePort.class);
+        ProcessRouletteDonationService service = new ProcessRouletteDonationService(
+                port,
+                Mockito.mock(RouletteRoundApplyService.class),
+                Mockito.mock(QueueOverlayDisplayUseCase.class)
+        );
+
+        service.recoverPendingRuns(0);
+        service.recoverPendingRuns(MAX_BATCH_SIZE + 1);
+
+        then(port).should().findRunIdsNeedingRecovery(Mockito.anyLong(), Mockito.eq(MIN_BATCH_SIZE));
+        then(port).should().findRunIdsNeedingRecovery(Mockito.anyLong(), Mockito.eq(MAX_BATCH_SIZE));
+    }
+
     private DonationReceived donation() {
         return new DonationReceived(
                 "event-1", "CHAT", "streamer-1", "user-1", "시청자", "1000", "!룰렛", Map.of()
@@ -145,18 +162,18 @@ class ProcessRouletteDonationServiceTest {
 
     private OptionResult option(Long id, int probability, boolean losing) {
         return new OptionResult(
-                id, 1L, losing ? "꽝" : "포인트", probability, losing,
+                id, losing ? "꽝" : "포인트", probability, losing,
                 losing ? RewardType.CUSTOM : RewardType.POINT,
                 losing ? ConversionMode.NONE : ConversionMode.AUTO,
                 losing ? null : 100L,
-                id.intValue(), NOW
+                id.intValue()
         );
     }
 
     private RoundResult round(RouletteRoundStatus status) {
         return new RoundResult(
-                10L, 7L, 1L, "event-1", "user-1", "시청자", 1L, 1, "포인트", false,
-                RewardType.POINT, ConversionMode.AUTO, 100L, status, null, 42, NOW, NOW
+                10L, "event-1", "user-1", "시청자", 1, "포인트", false,
+                RewardType.POINT, ConversionMode.AUTO, 100L, status
         );
     }
 

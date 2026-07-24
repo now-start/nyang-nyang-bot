@@ -115,15 +115,13 @@ class RoulettePolicyTest {
     private OptionResult option(Long id, int probability, boolean losing) {
         return new OptionResult(
                 id,
-                1L,
                 losing ? "꽝" : "포인트",
                 probability,
                 losing,
                 losing ? RewardType.CUSTOM : RewardType.POINT,
                 losing ? ConversionMode.NONE : ConversionMode.AUTO,
                 losing ? null : 100L,
-                id.intValue(),
-                Instant.parse("2026-07-23T00:00:00Z")
+                id.intValue()
         );
     }
 }

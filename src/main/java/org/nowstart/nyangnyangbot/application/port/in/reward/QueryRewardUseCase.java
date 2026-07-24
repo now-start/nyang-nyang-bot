@@ -5,6 +5,9 @@ import java.util.List;
 
 public interface QueryRewardUseCase {
 
+    int MIN_QUERY_LIMIT = 1;
+    int MAX_QUERY_LIMIT = 100;
+
     List<RewardResult> getUserRewards(String userId, String status, int limit);
 
     record RewardResult(

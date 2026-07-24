@@ -720,8 +720,6 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
             String rewardType,
             String conversionMode,
             Long exchangeFavoriteValue,
-            String status,
-            String failureReason,
             int ticket,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
@@ -747,8 +745,6 @@ public final class V8_1__materialize_roulette_history extends BaseJavaMigration 
                     requiredText(row, "reward_type", "roulette_round_result", id),
                     requiredText(row, "conversion_mode", "roulette_round_result", id),
                     nullableExchangeValue,
-                    status,
-                    failureReason,
                     requiredInt(row, "ticket", "roulette_round_result", id),
                     requiredDateTime(row, "create_date", "roulette_round_result", id),
                     nullableDateTime(row, "modify_date")

@@ -3,7 +3,7 @@ package org.nowstart.nyangnyangbot.application.service.command;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -101,7 +101,7 @@ class RouletteCommandVariableContributorTest {
                 "",
                 "",
                 "",
-                LocalDateTime.of(2026, 7, 16, 21, 0)
+                Instant.parse("2026-07-16T12:00:00Z")
         );
     }
 }

@@ -44,7 +44,7 @@ class OutboundPortContractTest {
     @Test
     void persistedCommandResult_ShouldRequireIdentityOnlyInOutboundResultGroup() {
         then(resultMessages(new CommandRecord(
-                null, null, null, false, null, null, null, null, null
+                null, null, null, false, null, null, null
         ))).contains("id is required", "trigger is required", "messageTemplate is required");
     }
 

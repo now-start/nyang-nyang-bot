@@ -11,7 +11,6 @@ import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RunResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RunRoundSummaryResult;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRunStatus;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -45,13 +44,10 @@ class QueryRouletteResultServiceTest {
     private RunResult run(Long id) {
         return new RunResult(
                 id,
-                1L,
                 "receipt-" + id,
                 "user-1",
                 "시청자",
                 1_000L,
-                RouletteRunStatus.READY,
-                NOW,
                 NOW
         );
     }

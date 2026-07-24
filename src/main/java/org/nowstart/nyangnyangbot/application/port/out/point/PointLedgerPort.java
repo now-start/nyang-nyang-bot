@@ -39,8 +39,7 @@ public interface PointLedgerPort {
             String description,
             String privateNote,
             Long correctionOfEntryId,
-            String actorUserId,
-            String idempotencyKey
+            String actorUserId
     ) {
     }
 }

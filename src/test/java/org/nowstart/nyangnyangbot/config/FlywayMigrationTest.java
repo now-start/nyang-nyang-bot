@@ -72,7 +72,23 @@ class FlywayMigrationTest {
                 "select count(*) from information_schema.columns "
                         + "where lower(table_name) = 'command_execution' "
                         + "and lower(column_name) in ('execution_policy_snapshot', "
-                        + "'cooldown_seconds_snapshot', 'calendar_date')",
+                        + "'cooldown_seconds_snapshot', 'calendar_day_started_at')",
+                Integer.class
+        );
+        Integer instantPeriodColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(column_name) in ('calendar_day_started_at', 'week_started_at') "
+                        + "and lower(data_type) like 'timestamp%'",
+                Integer.class
+        );
+        Integer canonicalDateColumnCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.columns "
+                        + "where lower(table_name) in ('user_account', 'oauth_credential', 'command', "
+                        + "'command_execution', 'timer_message', 'point_ledger_entry', "
+                        + "'point_adjustment_preset', 'weekly_chat_count', 'donation', "
+                        + "'roulette_config', 'roulette_option', 'roulette_run', 'roulette_round', "
+                        + "'reward_grant', 'overlay_access_token', 'overlay_display_job') "
+                        + "and lower(data_type) = 'date'",
                 Integer.class
         );
         Integer lastLoginColumnCount = jdbcTemplate.queryForObject(
@@ -111,6 +127,8 @@ class FlywayMigrationTest {
         assertThat(legacyTableCount).isZero();
         assertThat(commandExecutionCount).isZero();
         assertThat(commandExecutionColumnCount).isEqualTo(3);
+        assertThat(instantPeriodColumnCount).isEqualTo(2);
+        assertThat(canonicalDateColumnCount).isZero();
         assertThat(lastLoginColumnCount).isEqualTo(1);
         assertThat(foreignKeyCount).isEqualTo(25);
         assertThat(legacyCommandColumnCount).isZero();

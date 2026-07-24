@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
@@ -144,6 +143,7 @@ class CommandTemplateTest {
     }
 
     static void setCommandOptions(WebContext context) {
+        context.setVariable("commandConstraints", new CommandModelAdvice().commandConstraints());
         context.setVariable("commandActiveOptions", List.of(
                 new OptionView("", "전체 상태"),
                 new OptionView("true", "활성"),
@@ -170,7 +170,6 @@ class CommandTemplateTest {
     }
 
     private CommandResult command() {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 6, 12, 0);
         return new CommandResult(
                 1L,
                 "!공지",
@@ -178,9 +177,7 @@ class CommandTemplateTest {
                 true,
                 30,
                 "admin",
-                "admin",
-                now,
-                now
+                "admin"
         );
     }
 

@@ -9,14 +9,16 @@ import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 public interface OverlayDisplayPort {
 
-    DisplayJobResult enqueue(
+    int MAX_DISPLAY_ROUNDS = 5;
+
+    void enqueue(
             Long rouletteRunId,
             String idempotencyKey,
             Instant expiresAt,
             Instant createdAt
     );
 
-    DisplayJobResult replay(
+    Long replay(
             Long rouletteRunId,
             String idempotencyKey,
             Instant expiresAt,
@@ -31,10 +33,8 @@ public interface OverlayDisplayPort {
 
     record DisplayJobResult(
             Long id,
-            Long rouletteRunId,
             String donorDisplayName,
             String claimToken,
-            Instant expiresAt,
             long roundCount,
             List<DisplayRoundResult> rounds
     ) {

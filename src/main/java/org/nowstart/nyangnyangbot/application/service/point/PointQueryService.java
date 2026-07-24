@@ -44,8 +44,7 @@ public class PointQueryService implements QueryPointUseCase {
                 point.userId(),
                 point.displayName(),
                 point.balance(),
-                pointQueryPort.countByBalanceGreaterThan(point.balance()) + 1,
-                getHistory(userId, 50)
+                pointQueryPort.countByBalanceGreaterThan(point.balance()) + 1
         );
     }
 

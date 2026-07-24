@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import jakarta.validation.Validation;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -359,9 +358,7 @@ class CommandServiceTest {
                 active,
                 cooldownSeconds,
                 "system",
-                "system",
-                LocalDateTime.now(),
-                LocalDateTime.now()
+                "system"
         );
     }
 }

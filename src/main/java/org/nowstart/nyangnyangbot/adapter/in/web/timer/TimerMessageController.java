@@ -1,8 +1,12 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.timer;
 
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_MIN_CHAT_COUNT;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +36,10 @@ public class TimerMessageController {
     private static final String TIMER_EDITOR_FRAGMENT = "features/timer/regions :: timer-editor-region";
     private static final String TIMER_REVIEW_FRAGMENT = "features/timer/regions :: timer-review-region";
     private static final String TIMER_LIST_REFRESH_TRIGGER = "timer-list-refresh";
-    private static final String DEFAULT_ACTOR = "system";
     private static final String TIMER_NOT_FOUND_MESSAGE = "타이머를 찾을 수 없습니다.";
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm")
+            .withZone(ZoneId.of("Asia/Seoul"));
 
     private final ManageTimerMessageUseCase manageTimerMessageUseCase;
 
@@ -189,7 +194,7 @@ public class TimerMessageController {
     }
 
     private String actor(Authentication authentication) {
-        return authentication == null ? DEFAULT_ACTOR : authentication.getName();
+        return authentication == null ? null : authentication.getName();
     }
 
     public record TimerMessageForm(
@@ -199,12 +204,21 @@ public class TimerMessageController {
             Integer minChatCount,
             Boolean active,
             Long chatCountSinceLastSend,
-            LocalDateTime lastSentAt,
-            LocalDateTime nextRunAt
+            String lastSentAtLabel,
+            String nextRunAtLabel
     ) {
 
         public static TimerMessageForm empty() {
-            return new TimerMessageForm(null, "", 30, 10, false, 0L, null, null);
+            return new TimerMessageForm(
+                    null,
+                    "",
+                    DEFAULT_INTERVAL_MINUTES,
+                    DEFAULT_MIN_CHAT_COUNT,
+                    false,
+                    0L,
+                    null,
+                    null
+            );
         }
 
         public static TimerMessageForm from(TimerMessageResult result) {
@@ -215,8 +229,8 @@ public class TimerMessageController {
                     result.minChatCount(),
                     result.active(),
                     result.chatCountSinceLastSend(),
-                    result.lastSentAt(),
-                    result.nextRunAt()
+                    formatTime(result.lastSentAt()),
+                    formatTime(result.nextRunAt())
             ).withDefaults();
         }
 
@@ -228,8 +242,8 @@ public class TimerMessageController {
                     minChatCount,
                     value,
                     chatCountSinceLastSend == null ? 0L : chatCountSinceLastSend,
-                    lastSentAt,
-                    nextRunAt
+                    lastSentAtLabel,
+                    nextRunAtLabel
             );
         }
 
@@ -237,12 +251,12 @@ public class TimerMessageController {
             return new TimerMessageForm(
                     timerMessageId,
                     messageTemplate == null ? "" : messageTemplate,
-                    intervalMinutes == null ? 30 : intervalMinutes,
-                    minChatCount == null ? 10 : minChatCount,
+                    intervalMinutes == null ? DEFAULT_INTERVAL_MINUTES : intervalMinutes,
+                    minChatCount == null ? DEFAULT_MIN_CHAT_COUNT : minChatCount,
                     active != null && active,
                     chatCountSinceLastSend == null ? 0L : chatCountSinceLastSend,
-                    lastSentAt,
-                    nextRunAt
+                    defaultLabel(lastSentAtLabel),
+                    defaultLabel(nextRunAtLabel)
             );
         }
     }
@@ -272,13 +286,9 @@ public class TimerMessageController {
                     result.active() ? "활성" : "비활성",
                     result.intervalMinutes() + "분",
                     result.chatCountSinceLastSend() + " / " + result.minChatCount(),
-                    format(result.nextRunAt()),
+                    formatTime(result.nextRunAt()),
                     defaultString(result.updatedBy(), defaultString(result.createdBy(), "-"))
             );
-        }
-
-        private static String format(LocalDateTime value) {
-            return value == null ? "-" : value.format(DATE_TIME_FORMAT);
         }
 
         private static String defaultString(String value, String fallback) {
@@ -287,5 +297,13 @@ public class TimerMessageController {
     }
 
     public record ReviewView(boolean valid, List<String> errors, String previewMessage) {
+    }
+
+    private static String formatTime(Instant value) {
+        return value == null ? "-" : DATE_TIME_FORMAT.format(value);
+    }
+
+    private static String defaultLabel(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 }

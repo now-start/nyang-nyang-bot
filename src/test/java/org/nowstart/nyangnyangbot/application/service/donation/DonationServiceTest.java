@@ -37,7 +37,7 @@ class DonationServiceTest {
         DonationReceived donation = donation();
         given(donationPort.findByIngestionKey("event-1")).willReturn(Optional.empty());
         given(donationPort.save(Mockito.any())).willReturn(new DonationResult(
-                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛", NOW
+                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛"
         ));
         given(process.processDonation(Mockito.eq(7L), Mockito.any()))
                 .willReturn(Optional.of(7L));
@@ -65,7 +65,7 @@ class DonationServiceTest {
         ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         DonationService service = new DonationService(donationPort, observeUser, process, eventPublisher);
         DonationResult existing = new DonationResult(
-                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛", NOW
+                7L, "event-1", "CHAT", "streamer-1", "viewer-1", "시청자", 10_000L, "!룰렛"
         );
         given(donationPort.findByIngestionKey("event-1")).willReturn(Optional.of(existing));
         given(process.processDonation(Mockito.eq(7L), Mockito.any()))

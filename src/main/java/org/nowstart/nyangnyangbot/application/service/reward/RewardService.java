@@ -23,15 +23,13 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class RewardService implements QueryRewardUseCase {
 
-    private static final int MAX_REWARD_QUERY_LIMIT = 100;
     private final RewardPolicy rewardPolicy = new RewardPolicy();
     private final RewardPort rewardPort;
     private final GrantPointUseCase grantPointUseCase;
 
     @Transactional
     public void grantRoulette(RouletteRewardCommand command) {
-        RewardRecord existing = rewardPort.findByRouletteRoundId(command.roundId()).orElse(null);
-        if (existing != null) {
+        if (rewardPort.existsByRouletteRoundId(command.roundId())) {
             return;
         }
         String idempotencyKey = "roulette-round:" + command.roundId();
@@ -86,8 +84,10 @@ public class RewardService implements QueryRewardUseCase {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("userId is required");
         }
-        if (limit < 1 || limit > MAX_REWARD_QUERY_LIMIT) {
-            throw new IllegalArgumentException("reward query limit must be between 1 and " + MAX_REWARD_QUERY_LIMIT);
+        if (limit < MIN_QUERY_LIMIT || limit > MAX_QUERY_LIMIT) {
+            throw new IllegalArgumentException(
+                    "reward query limit must be between " + MIN_QUERY_LIMIT + " and " + MAX_QUERY_LIMIT
+            );
         }
         List<RewardRecord> rewards = status == null || status.isBlank()
                 ? rewardPort.findByUserId(userId, limit)

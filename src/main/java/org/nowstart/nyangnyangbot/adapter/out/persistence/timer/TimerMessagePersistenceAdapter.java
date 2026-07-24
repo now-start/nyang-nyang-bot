@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.timer;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class TimerMessagePersistenceAdapter implements TimerMessagePort {
-
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final TimerMessageRepository timerMessageRepository;
     private final UserAccountRepository userAccountRepository;
@@ -78,7 +75,7 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     }
 
     @Override
-    public List<Long> findClaimCandidateIds(LocalDateTime now, int limit) {
+    public List<Long> findClaimCandidateIds(Instant now, int limit) {
         return timerMessageRepository.findClaimCandidateIds(now, PageRequest.of(0, limit));
     }
 
@@ -87,8 +84,8 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     public Optional<ClaimedTimerMessage> claimDue(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime now,
-            LocalDateTime claimExpiresAt
+            Instant now,
+            Instant claimExpiresAt
     ) {
         int claimed = timerMessageRepository.claimDue(timerMessageId, claimToken, now, claimExpiresAt);
         if (claimed != 1) {
@@ -109,10 +106,10 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     public boolean completeClaim(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime claimedNextRunAt,
+            Instant claimedNextRunAt,
             Integer claimedIntervalMinutes,
-            LocalDateTime sentAt,
-            LocalDateTime nextRunAt
+            Instant sentAt,
+            Instant nextRunAt
     ) {
         return timerMessageRepository.completeClaim(
                 timerMessageId,
@@ -129,9 +126,9 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     public boolean releaseClaim(
             Long timerMessageId,
             String claimToken,
-            LocalDateTime claimedNextRunAt,
+            Instant claimedNextRunAt,
             Integer claimedIntervalMinutes,
-            LocalDateTime retryAt
+            Instant retryAt
     ) {
         return timerMessageRepository.releaseClaim(
                 timerMessageId,
@@ -153,14 +150,12 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
                 timer.getLastSentAt(),
                 timer.getNextRunAt(),
                 userId(timer.getCreatedByUser()),
-                userId(timer.getUpdatedByUser()),
-                localDateTime(timer.getCreatedAt()),
-                localDateTime(timer.getUpdatedAt())
+                userId(timer.getUpdatedByUser())
         ));
     }
 
     private UserAccount actor(String userId) {
-        if (userId == null || userId.isBlank() || "system".equals(userId)) {
+        if (userId == null || userId.isBlank()) {
             return null;
         }
         return userAccountRepository.getReferenceById(userId);
@@ -170,7 +165,4 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
         return user == null ? null : user.getUserId();
     }
 
-    private LocalDateTime localDateTime(java.time.Instant instant) {
-        return instant == null ? null : LocalDateTime.ofInstant(instant, SEOUL);
-    }
 }

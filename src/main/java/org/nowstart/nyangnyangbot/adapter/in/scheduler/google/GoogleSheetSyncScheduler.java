@@ -15,7 +15,7 @@ public class GoogleSheetSyncScheduler {
 
     private final SyncGoogleSheetUseCase syncGoogleSheetUseCase;
 
-    @Scheduled(cron = "0 0 4 * * ?")
+    @Scheduled(cron = "${nyang.google.sync.cron:0 0 4 * * ?}")
     public void syncDatabase() {
         log.info("[DBSync][START]");
         syncGoogleSheetUseCase.synchronizePoints();

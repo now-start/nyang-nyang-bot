@@ -2,14 +2,15 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 class TimerMessageTest {
 
     @Test
     void update_ShouldPreserveInFlightClaimUntilSenderCompletesIt() {
-        LocalDateTime claimExpiresAt = LocalDateTime.of(2026, 7, 16, 21, 2);
+        Instant claimExpiresAt = Instant.parse("2026-07-16T12:02:00Z");
         TimerMessage timer = TimerMessage.builder()
                 .messageTemplate("이전 메시지")
                 .intervalMinutes(30)
@@ -26,7 +27,7 @@ class TimerMessageTest {
                 30,
                 10,
                 true,
-                LocalDateTime.of(2026, 7, 16, 21, 30),
+                claimExpiresAt.plus(Duration.ofMinutes(28)),
                 false,
                 null
         );

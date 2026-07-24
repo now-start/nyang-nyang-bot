@@ -3,8 +3,6 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.command;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +21,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CommandPersistenceAdapter implements CommandPort {
-
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final CommandRepository commandRepository;
     private final UserAccountRepository userAccountRepository;
@@ -97,14 +93,12 @@ public class CommandPersistenceAdapter implements CommandPort {
                 entity.getExecutionPolicy(),
                 entity.getUserCooldownSeconds(),
                 userId(entity.getCreatedByUser()),
-                userId(entity.getUpdatedByUser()),
-                localDateTime(entity.getCreatedAt()),
-                localDateTime(entity.getUpdatedAt())
+                userId(entity.getUpdatedByUser())
         ));
     }
 
     private UserAccount actorReference(String userId) {
-        if (userId == null || userId.isBlank() || "system".equals(userId)) {
+        if (userId == null || userId.isBlank()) {
             return null;
         }
         return userAccountRepository.getReferenceById(userId);
@@ -114,7 +108,4 @@ public class CommandPersistenceAdapter implements CommandPort {
         return account == null ? null : account.getUserId();
     }
 
-    private LocalDateTime localDateTime(java.time.Instant instant) {
-        return instant == null ? null : LocalDateTime.ofInstant(instant, SEOUL);
-    }
 }

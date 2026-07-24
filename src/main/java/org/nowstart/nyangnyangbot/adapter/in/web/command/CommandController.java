@@ -1,5 +1,9 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CALENDAR_DAY_EXECUTION_POLICY;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_EXECUTION_POLICY;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
@@ -30,7 +34,6 @@ public class CommandController {
     private static final String COMMAND_LIST_FRAGMENT = "features/command/regions :: command-list-region";
     private static final String COMMAND_EDITOR_FRAGMENT = "features/command/regions :: command-editor-region";
     private static final String COMMAND_REVIEW_FRAGMENT = "features/command/regions :: command-review-region";
-    private static final String DEFAULT_ACTOR = "system";
     private static final String COMMAND_LIST_REFRESH_TRIGGER = "command-list-refresh";
     private static final String COMMAND_NOT_FOUND_MESSAGE = "명령어를 찾을 수 없습니다.";
 
@@ -88,7 +91,7 @@ public class CommandController {
             HttpServletResponse response,
             Model model
     ) {
-        CommandForm activeForm = form.withActive(active).withDefaults();
+        CommandForm activeForm = form.withActive(active);
         addCommandVariables(model);
         try {
             CommandResult result = activeForm.commandId() == null
@@ -232,7 +235,7 @@ public class CommandController {
     }
 
     private String actor(Authentication authentication) {
-        return authentication == null ? DEFAULT_ACTOR : authentication.getName();
+        return authentication == null ? null : authentication.getName();
     }
 
     public record OptionView(String value, String label) {
@@ -254,12 +257,19 @@ public class CommandController {
                 Boolean active,
                 Integer userCooldownSeconds
         ) {
-            this(commandId, trigger, messageTemplate, active, "USER_INTERVAL",
+            this(commandId, trigger, messageTemplate, active, DEFAULT_EXECUTION_POLICY.name(),
                     userCooldownSeconds);
         }
 
         static CommandForm empty() {
-            return new CommandForm(null, "", "", false, "USER_INTERVAL", 30);
+            return new CommandForm(
+                    null,
+                    "",
+                    "",
+                    false,
+                    DEFAULT_EXECUTION_POLICY.name(),
+                    DEFAULT_USER_COOLDOWN_SECONDS
+            );
         }
 
         static CommandForm from(CommandResult result) {
@@ -270,17 +280,6 @@ public class CommandController {
                     result.active(),
                     result.executionPolicy().name(),
                     result.userCooldownSeconds()
-            ).withDefaults();
-        }
-
-        CommandForm deactivate() {
-            return new CommandForm(
-                    commandId,
-                    trigger,
-                    messageTemplate,
-                    false,
-                    executionPolicy,
-                    userCooldownSeconds
             ).withDefaults();
         }
 
@@ -296,15 +295,18 @@ public class CommandController {
         }
 
         CommandForm withDefaults() {
+            String normalizedPolicy = executionPolicy == null || executionPolicy.isBlank()
+                    ? DEFAULT_EXECUTION_POLICY.name()
+                    : executionPolicy;
             return new CommandForm(
                     commandId,
                     trigger == null ? "" : trigger,
                     messageTemplate == null ? "" : messageTemplate,
                     active != null && active,
-                    executionPolicy == null ? "USER_INTERVAL" : executionPolicy,
-                    "USER_CALENDAR_DAY".equals(executionPolicy)
+                    normalizedPolicy,
+                    CALENDAR_DAY_EXECUTION_POLICY.name().equals(normalizedPolicy)
                             ? null
-                            : userCooldownSeconds == null ? 30 : userCooldownSeconds
+                            : userCooldownSeconds == null ? DEFAULT_USER_COOLDOWN_SECONDS : userCooldownSeconds
             );
         }
     }
@@ -333,7 +335,7 @@ public class CommandController {
                     messageSummary,
                     result.active(),
                     result.active() ? "활성" : "비활성",
-                    "USER_CALENDAR_DAY".equals(result.executionPolicy().name())
+                    result.executionPolicy() == CALENDAR_DAY_EXECUTION_POLICY
                             ? "하루 1회"
                             : result.userCooldownSeconds() + "초",
                     defaultString(result.updatedBy(), defaultString(result.createdBy(), "-"))

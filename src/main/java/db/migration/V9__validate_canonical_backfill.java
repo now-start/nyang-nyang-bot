@@ -290,8 +290,9 @@ public final class V9__validate_canonical_backfill extends BaseJavaMigration {
                 "point adjustment preset mapping"
         );
         assertProjectedRowsEqual(connection,
-                "SELECT id, week_start_date, user_id, chat_count FROM weekly_chat_rank ORDER BY id",
-                "SELECT id, week_start_date, user_id, chat_count FROM next_weekly_chat_count ORDER BY id",
+                "SELECT id, CAST(week_start_date AS DATETIME(6)), user_id, chat_count "
+                        + "FROM weekly_chat_rank ORDER BY id",
+                "SELECT id, week_started_at, user_id, chat_count FROM next_weekly_chat_count ORDER BY id",
                 "weekly chat mapping"
         );
         assertProjectedRowsEqual(connection,

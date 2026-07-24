@@ -26,12 +26,9 @@ class OAuthCredentialPortTest {
                 "secret-access-token",
                 "secret-refresh-token",
                 "Bearer",
-                "scope",
                 false,
                 Instant.parse("2026-07-23T01:00:00Z"),
-                1,
-                Instant.parse("2026-07-23T00:00:00Z"),
-                null
+                1
         );
 
         then(command.toString())

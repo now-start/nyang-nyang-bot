@@ -10,10 +10,17 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
+import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ManageRouletteUseCase {
+
+    int DEFAULT_SIMULATION_ITERATIONS = RoulettePolicy.DEFAULT_SIMULATION_ITERATIONS;
+    int MIN_TRIGGER_LENGTH = CommandTrigger.MIN_LENGTH;
+    int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
+    String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
 
     RouletteConfigResult createConfig(@Valid @NotNull CreateRouletteConfigCommand command);
 
@@ -31,7 +38,9 @@ public interface ManageRouletteUseCase {
 
     record CreateRouletteConfigCommand(
             @NotBlank @Size(max = 100) String title,
-            @NotBlank @Size(max = 20) String triggerToken,
+            @NotBlank
+            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
+            String triggerToken,
             @NotNull @Positive Long pricePerRound,
             @Positive Integer highRoundThreshold
     ) {
@@ -40,13 +49,16 @@ public interface ManageRouletteUseCase {
     record AddRouletteOptionCommand(
             @NotNull @Positive Long configId,
             @NotBlank @Size(max = 100) String label,
-            @NotNull @Min(0) @Max(10_000) Integer probabilityBasisPoints,
+            @NotNull @Min(0) @Max(RoulettePolicy.TOTAL_PROBABILITY) Integer probabilityBasisPoints,
             Boolean losing,
             String rewardType,
             String conversionMode,
             Long pointDelta,
             @PositiveOrZero Integer displayOrder
     ) {
+        public int displayOrderOrDefault() {
+            return displayOrder == null ? 0 : displayOrder;
+        }
     }
 
     record RouletteConfigResult(

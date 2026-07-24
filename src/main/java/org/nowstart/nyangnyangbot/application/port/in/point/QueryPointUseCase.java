@@ -37,8 +37,7 @@ public interface QueryPointUseCase {
             String userId,
             String displayName,
             long point,
-            long rank,
-            List<PointHistoryResult> histories
+            long rank
     ) {
     }
 }

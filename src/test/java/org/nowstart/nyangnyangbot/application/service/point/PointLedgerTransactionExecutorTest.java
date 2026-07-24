@@ -34,8 +34,7 @@ class PointLedgerTransactionExecutorTest {
 
         var result = executor.execute(request());
 
-        then(result.beforeBalance()).isEqualTo(10);
-        then(result.afterBalance()).isEqualTo(17);
+        then(result.ledgerId()).isEqualTo(5L);
         ArgumentCaptor<AppendPointEntry> captor = ArgumentCaptor.forClass(AppendPointEntry.class);
         Mockito.verify(port).append(captor.capture());
         then(captor.getValue().sourceReference()).isEqualTo("source:1");
@@ -48,13 +47,12 @@ class PointLedgerTransactionExecutorTest {
         PointLedgerPort port = Mockito.mock(PointLedgerPort.class);
         PointLedgerTransactionExecutor executor = new PointLedgerTransactionExecutor(port);
         given(port.lockUser("user-1", "냥이", true)).willReturn(true);
-        given(port.balance("user-1")).willReturn(17L);
         given(port.findByIdempotencyKey("reward:1")).willReturn(Optional.of(entry()));
 
         var result = executor.execute(request());
 
-        then(result.duplicate()).isTrue();
         then(result.ledgerId()).isEqualTo(5L);
+        Mockito.verify(port, Mockito.never()).balance(Mockito.anyString());
         Mockito.verify(port, Mockito.never()).append(org.mockito.ArgumentMatchers.any());
     }
 
@@ -88,8 +86,7 @@ class PointLedgerTransactionExecutorTest {
                 "조정",
                 null,
                 null,
-                null,
-                "original:3"
+                null
         )));
 
         WriteRequest correction = new WriteRequest(
@@ -139,7 +136,7 @@ class PointLedgerTransactionExecutorTest {
         order.verify(port).append(captor.capture());
         then(captor.getValue().delta()).isEqualTo(20L);
         then(captor.getValue().sourceType()).isEqualTo(PointSourceType.GOOGLE_SHEET_SYNC);
-        then(result.afterBalance()).isEqualTo(70L);
+        then(result.ledgerId()).isEqualTo(5L);
     }
 
     @Test
@@ -151,7 +148,6 @@ class PointLedgerTransactionExecutorTest {
 
         var result = executor.reconcile(reconcileRequest(70L));
 
-        then(result.delta()).isZero();
         then(result.ledgerId()).isNull();
         Mockito.verify(port, Mockito.never()).append(org.mockito.ArgumentMatchers.any());
     }
@@ -205,8 +201,7 @@ class PointLedgerTransactionExecutorTest {
             String actorUserId
     ) {
         return new LedgerEntryRecord(
-                5L, userId, delta, sourceType, sourceReference, description, privateNote, correctionId, actorUserId,
-                "reward:1"
+                5L, userId, delta, sourceType, sourceReference, description, privateNote, correctionId, actorUserId
         );
     }
 

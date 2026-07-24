@@ -43,29 +43,22 @@ public interface OAuthCredentialPort {
             String accessToken,
             String refreshToken,
             String tokenType,
-            String scope,
             boolean admin,
             Instant accessTokenExpiresAt,
-            long credentialVersion,
-            Instant updatedAt,
-            Instant lastLoginAt
+            long credentialVersion
     ) {
 
         @Override
         public String toString() {
             return "OAuthCredentialRecord[userId=%s, displayName=%s, accessToken=<masked>, refreshToken=<masked>, "
-                    + "tokenType=%s, scope=%s, admin=%s, accessTokenExpiresAt=%s, credentialVersion=%s, "
-                    + "updatedAt=%s, lastLoginAt=%s]"
+                    + "tokenType=%s, admin=%s, accessTokenExpiresAt=%s, credentialVersion=%s]"
                     .formatted(
                             userId,
                             displayName,
                             tokenType,
-                            scope,
                             admin,
                             accessTokenExpiresAt,
-                            credentialVersion,
-                            updatedAt,
-                            lastLoginAt
+                            credentialVersion
                     );
         }
     }

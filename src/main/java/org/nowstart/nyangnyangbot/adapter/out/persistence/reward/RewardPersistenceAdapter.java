@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.reward;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointLedgerEntry;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.entity.RewardGrant;
@@ -26,7 +25,7 @@ public class RewardPersistenceAdapter implements RewardPort {
 
     @Override
     @Transactional
-    public RewardRecord createGrant(CreateRewardCommand command) {
+    public void createGrant(CreateRewardCommand command) {
         RewardGrant grant = RewardGrant.builder()
                 .userAccount(reference(UserAccount.class, command.userId()))
                 .rouletteRound(reference(RouletteRound.class, command.rouletteRoundId()))
@@ -43,13 +42,13 @@ public class RewardPersistenceAdapter implements RewardPort {
                 .createdAt(command.createdAt())
                 .updatedAt(command.createdAt())
                 .build();
-        return rewardRecord(rewardGrantRepository.save(grant));
+        rewardGrantRepository.save(grant);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RewardRecord> findByRouletteRoundId(Long rouletteRoundId) {
-        return rewardGrantRepository.findByRouletteRound_Id(rouletteRoundId).map(this::rewardRecord);
+    public boolean existsByRouletteRoundId(Long rouletteRoundId) {
+        return rewardGrantRepository.existsByRouletteRound_Id(rouletteRoundId);
     }
 
     @Override
@@ -80,8 +79,6 @@ public class RewardPersistenceAdapter implements RewardPort {
     private RewardRecord rewardRecord(RewardGrant grant) {
         return contractValidator.persistenceResult("reward.grant", new RewardRecord(
                 grant.getId(),
-                grant.getUserAccount().getUserId(),
-                grant.getRouletteRound() == null ? null : grant.getRouletteRound().getId(),
                 grant.getPointLedgerEntry() == null ? null : grant.getPointLedgerEntry().getId(),
                 grant.getLabel(),
                 grant.getRewardType(),
@@ -89,11 +86,7 @@ public class RewardPersistenceAdapter implements RewardPort {
                 grant.getPointDelta(),
                 grant.getStatus(),
                 grant.getDescription(),
-                grant.getPrivateNote(),
-                grant.getActorUserAccount() == null ? null : grant.getActorUserAccount().getUserId(),
-                grant.getIdempotencyKey(),
-                grant.getCreatedAt(),
-                grant.getUpdatedAt()
+                grant.getCreatedAt()
         ));
     }
 

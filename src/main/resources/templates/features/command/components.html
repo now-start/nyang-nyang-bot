@@ -109,7 +109,7 @@
 
 <div class="row g-3" th:fragment="editor-fields(commandForm)">
     <div class="col-12 col-md-4">
-        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!호감도 또는 치하', 20, null)}"></div>
+        <div th:replace="~{components/forms :: text-field('command-trigger', 'trigger', '채팅 호출어', ${commandForm == null ? '' : commandForm.trigger}, '!호감도 또는 치하', ${commandConstraints.maxTriggerLength}, null)}"></div>
     </div>
     <div class="col-12 col-md-4">
         <label class="form-label" for="command-execution-policy">사용자별 실행 제한</label>
@@ -121,14 +121,14 @@
         </select>
     </div>
     <div class="col-12 col-md-4">
-        <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '사용자별 쿨타임(초)', ${commandForm == null ? 30 : commandForm.userCooldownSeconds}, 5, 3600, null)}"></div>
+        <div th:replace="~{components/forms :: number-field('command-cooldown', 'userCooldownSeconds', '사용자별 쿨타임(초)', ${commandForm == null ? commandConstraints.defaultUserCooldownSeconds : commandForm.userCooldownSeconds}, ${commandConstraints.minUserCooldownSeconds}, ${commandConstraints.maxUserCooldownSeconds}, null)}"></div>
         <p class="small text-secondary mb-0">하루 1회 정책에서는 이 값이 저장되지 않습니다.</p>
     </div>
     <div class="col-12">
         <div th:replace="~{components/forms :: switch-field('command-active', 'active', '활성', ${commandForm != null and commandForm.active}, null)}"></div>
     </div>
     <div class="col-12">
-        <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '냥냥봇 응답 템플릿', ${commandForm == null ? '' : commandForm.messageTemplate}, '{viewer.nickname}님, 오늘 공지는 ...', 4, 1000, null)}"></div>
+        <div th:replace="~{components/forms :: textarea-field('command-message-template', 'messageTemplate', '냥냥봇 응답 템플릿', ${commandForm == null ? '' : commandForm.messageTemplate}, '{viewer.nickname}님, 오늘 공지는 ...', 4, ${commandConstraints.maxTemplateLength}, null)}"></div>
         <div class="dropdown mt-2" th:replace="~{features/command/components :: variable-picker(${commandVariableGroups})}"></div>
     </div>
 </div>

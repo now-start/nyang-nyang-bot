@@ -29,8 +29,7 @@ public interface DonationPort {
             String donorUserId,
             String donorDisplayName,
             long amount,
-            String message,
-            Instant receivedAt
+            String message
     ) {
     }
 }

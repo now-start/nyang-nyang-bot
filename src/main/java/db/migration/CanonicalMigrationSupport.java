@@ -77,7 +77,7 @@ final class CanonicalMigrationSupport {
             Map.entry("timer_message",
                     List.of("next_run_at", "claim_expires_at", "last_sent_at", "create_date", "modify_date")),
             Map.entry("user_upbo", List.of("create_date", "modify_date")),
-            Map.entry("weekly_chat_rank", List.of("create_date", "modify_date"))
+            Map.entry("weekly_chat_rank", List.of("create_date", "modify_date", "week_start_date"))
     );
     private static final List<String> CURRENT_TIMESTAMP_DEFAULT_COLUMNS = List.of(
             "user_account.created_at", "user_account.updated_at",
@@ -320,17 +320,12 @@ final class CanonicalMigrationSupport {
                 }
             }
         }
-        int expectedColumns = shadow ? 34 : 33;
+        int expectedColumns = shadow ? 36 : 35;
         if (temporalColumns != expectedColumns) {
             throw new SQLException("Expected " + expectedColumns + " canonical TIMESTAMP(6) columns but found "
                     + temporalColumns);
         }
 
-        List<String> expectedDates = List.of(
-                (shadow ? "next_command_execution" : "command_execution") + ".calendar_date",
-                (shadow ? "next_weekly_chat_count" : "weekly_chat_count") + ".week_start_date"
-        );
-        int dateColumns = 0;
         try (PreparedStatement columns = connection.prepareStatement("""
                 SELECT table_name, column_name
                   FROM information_schema.columns
@@ -343,16 +338,9 @@ final class CanonicalMigrationSupport {
                 if (!tables.contains(table)) {
                     continue;
                 }
-                dateColumns++;
                 String qualifiedColumn = table + "." + resultSet.getString("column_name");
-                if (!expectedDates.contains(qualifiedColumn)) {
-                    throw new SQLException("Unexpected canonical DATE column " + qualifiedColumn);
-                }
+                throw new SQLException("Unexpected canonical DATE column " + qualifiedColumn);
             }
-        }
-        if (dateColumns != expectedDates.size()) {
-            throw new SQLException("Expected canonical DATE columns " + expectedDates
-                    + " but found " + dateColumns);
         }
     }
 

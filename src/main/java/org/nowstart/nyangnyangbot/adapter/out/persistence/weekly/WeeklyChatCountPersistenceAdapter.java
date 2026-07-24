@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +17,13 @@ public class WeeklyChatCountPersistenceAdapter implements WeeklyChatCountPort {
     private final WeeklyChatCountRepository repository;
 
     @Override
-    public void increment(LocalDate weekStartDate, String userId) {
-        repository.increment(weekStartDate, userId);
+    public void increment(Instant weekStartedAt, String userId) {
+        repository.increment(weekStartedAt, userId);
     }
 
     @Override
-    public List<WeeklyChatRankView> findWeeklyRanks(LocalDate weekStartDate, int limit) {
-        var rows = repository.findWeeklyRanks(weekStartDate, PageRequest.of(0, limit));
+    public List<WeeklyChatRankView> findWeeklyRanks(Instant weekStartedAt, int limit) {
+        var rows = repository.findWeeklyRanks(weekStartedAt, PageRequest.of(0, limit));
         List<WeeklyChatRankView> ranks = new ArrayList<>(rows.size());
         int rank = 1;
         for (var row : rows) {

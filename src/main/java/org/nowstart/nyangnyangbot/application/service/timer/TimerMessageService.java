@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.timer;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -29,13 +30,9 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class TimerMessageService implements ManageTimerMessageUseCase, RecordTimerChatUseCase, RunTimerMessagesUseCase {
 
-    private static final int DEFAULT_INTERVAL_MINUTES = 30;
-    private static final int DEFAULT_MIN_CHAT_COUNT = 10;
-    private static final int MIN_INTERVAL_MINUTES = 5;
-    private static final int MAX_INTERVAL_MINUTES = 1_440;
-    private static final int MIN_CHAT_COUNT = 1;
-    private static final int MAX_CHAT_COUNT = 10_000;
     private static final int CLAIM_BATCH_SIZE = 100;
+    private static final Duration CLAIM_LEASE = Duration.ofMinutes(2);
+    private static final Duration RETRY_DELAY = Duration.ofMinutes(1);
 
     private final TimerMessagePort timerMessagePort;
     private final ChzzkClientPort chzzkClientPort;
@@ -78,7 +75,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         );
         requireValid(state);
         boolean active = Boolean.TRUE.equals(request.active());
-        LocalDateTime nextRunAt = active ? currentDateTime().plusMinutes(state.intervalMinutes()) : null;
+        Instant nextRunAt = active ? currentTime().plus(Duration.ofMinutes(state.intervalMinutes())) : null;
         String actor = actor(request.actorId());
         TimerMessageRecord saved = timerMessagePort.create(new TimerMessagePort.CreateData(
                 state.messageTemplate(),
@@ -114,12 +111,12 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         boolean active = request.active() == null ? current.active() : request.active();
         boolean resetSchedule = active != current.active()
                 || (active && !state.intervalMinutes().equals(current.intervalMinutes()));
-        LocalDateTime nextRunAt;
+        Instant nextRunAt;
         if (!active) {
             nextRunAt = null;
             resetSchedule = true;
         } else if (resetSchedule || current.nextRunAt() == null) {
-            nextRunAt = currentDateTime().plusMinutes(state.intervalMinutes());
+            nextRunAt = currentTime().plus(Duration.ofMinutes(state.intervalMinutes()));
             resetSchedule = true;
         } else {
             nextRunAt = current.nextRunAt();
@@ -153,7 +150,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         Set<String> requestedVariables = templateRenderer.variables(state.messageTemplate());
         String rendered = templateRenderer.render(
                 state.messageTemplate(),
-                variableRegistry.resolve(requestedVariables, timerContext(currentDateTime()))
+                variableRegistry.resolve(requestedVariables, timerContext(currentTime()))
         );
         return new PreviewResult(rendered);
     }
@@ -180,7 +177,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
 
     @Override
     public void runDueTimerMessages() {
-        LocalDateTime scanTime = currentDateTime();
+        Instant scanTime = currentTime();
         List<Long> candidateIds = timerMessagePort.findClaimCandidateIds(scanTime, CLAIM_BATCH_SIZE);
         for (Long candidateId : candidateIds) {
             runCandidate(candidateId);
@@ -188,13 +185,13 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     private void runCandidate(Long timerMessageId) {
-        LocalDateTime claimTime = currentDateTime();
+        Instant claimTime = currentTime();
         String claimToken = newClaimToken();
         var claimed = timerMessagePort.claimDue(
                 timerMessageId,
                 claimToken,
                 claimTime,
-                claimTime.plusMinutes(2)
+                claimTime.plus(CLAIM_LEASE)
         );
         if (claimed.isEmpty()) {
             return;
@@ -210,14 +207,14 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 throw new IllegalStateException("timer message rendered blank");
             }
             chzzkClientPort.sendMessage(new MessageCommand(message));
-            LocalDateTime sentAt = currentDateTime();
+            Instant sentAt = currentTime();
             boolean completed = timerMessagePort.completeClaim(
                     timer.id(),
                     timer.claimToken(),
                     timer.claimedNextRunAt(),
                     timer.intervalMinutes(),
                     sentAt,
-                    sentAt.plusMinutes(timer.intervalMinutes())
+                    sentAt.plus(Duration.ofMinutes(timer.intervalMinutes()))
             );
             if (!completed) {
                 log.warn("Timer message was sent but claim completion was skipped: timerMessageId={}", timer.id());
@@ -225,13 +222,13 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
             }
             log.info("level=AUDIT action=timer-message.send result=success timerMessageId={}", timer.id());
         } catch (RuntimeException e) {
-            LocalDateTime failedAt = currentDateTime();
+            Instant failedAt = currentTime();
             boolean released = timerMessagePort.releaseClaim(
                     timer.id(),
                     timer.claimToken(),
                     timer.claimedNextRunAt(),
                     timer.intervalMinutes(),
-                    failedAt.plusMinutes(1)
+                    failedAt.plus(RETRY_DELAY)
             );
             if (!released) {
                 log.warn("Timer message claim release was skipped: timerMessageId={}", timer.id());
@@ -255,7 +252,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
             errors.add("messageTemplate is required");
         } else {
             if (template.length() > MAX_TEMPLATE_LENGTH) {
-                errors.add("messageTemplate length must be 1000 or less");
+                errors.add(TEMPLATE_LENGTH_MESSAGE);
             }
             Set<String> malformed = templateRenderer.malformedVariables(template);
             if (!malformed.isEmpty()) {
@@ -276,10 +273,10 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
             }
         }
         if (interval < MIN_INTERVAL_MINUTES || interval > MAX_INTERVAL_MINUTES) {
-            errors.add("intervalMinutes must be between 5 and 1440");
+            errors.add(INTERVAL_RANGE_MESSAGE);
         }
         if (minimumChats < MIN_CHAT_COUNT || minimumChats > MAX_CHAT_COUNT) {
-            errors.add("minChatCount must be between 1 and 10000");
+            errors.add(CHAT_COUNT_RANGE_MESSAGE);
         }
         return new ValidationState(template, interval, minimumChats, errors.stream().distinct().toList());
     }
@@ -294,8 +291,8 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
         return key != null && key.startsWith("time.");
     }
 
-    private CommandVariableContext timerContext(LocalDateTime seoulNow) {
-        return new CommandVariableContext(null, null, null, null, null, null, seoulNow);
+    private CommandVariableContext timerContext(Instant now) {
+        return new CommandVariableContext(null, null, null, null, null, null, now);
     }
 
     private TimerMessageResult result(TimerMessageRecord record) {
@@ -309,9 +306,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 record.lastSentAt(),
                 record.nextRunAt(),
                 record.createdBy(),
-                record.updatedBy(),
-                record.createDate(),
-                record.modifyDate()
+                record.updatedBy()
         );
     }
 
@@ -320,11 +315,11 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     }
 
     private String actor(String value) {
-        return value == null || value.isBlank() || "system".equals(value) ? null : value;
+        return value == null || value.isBlank() ? null : value;
     }
 
-    LocalDateTime currentDateTime() {
-        return LocalDateTime.now();
+    Instant currentTime() {
+        return Instant.now();
     }
 
     String newClaimToken() {

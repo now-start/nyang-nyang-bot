@@ -14,7 +14,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,6 +60,6 @@ public class CommandExecution {
     @Column(name = "cooldown_seconds_snapshot")
     private Integer cooldownSecondsSnapshot;
 
-    @Column(name = "calendar_date")
-    private LocalDate calendarDate;
+    @Column(name = "calendar_day_started_at")
+    private Instant calendarDayStartedAt;
 }

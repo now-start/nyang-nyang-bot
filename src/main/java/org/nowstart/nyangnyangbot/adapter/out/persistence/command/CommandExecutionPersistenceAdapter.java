@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.command;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -47,11 +46,11 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
     }
 
     @Override
-    public boolean existsCalendarDate(long commandId, String userId, LocalDate calendarDate) {
-        return executionRepository.existsByCommandIdAndUserAccountUserIdAndCalendarDate(
+    public boolean existsCalendarDayStartedAt(long commandId, String userId, Instant calendarDayStartedAt) {
+        return executionRepository.existsByCommandIdAndUserAccountUserIdAndCalendarDayStartedAt(
                 commandId,
                 userId,
-                calendarDate
+                calendarDayStartedAt
         );
     }
 
@@ -65,7 +64,7 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
                 .executedAt(data.executedAt())
                 .executionPolicySnapshot(data.executionPolicy())
                 .cooldownSecondsSnapshot(data.cooldownSeconds())
-                .calendarDate(data.calendarDate())
+                .calendarDayStartedAt(data.calendarDayStartedAt())
                 .build());
     }
 
@@ -80,8 +79,8 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
     }
 
     @Override
-    public List<LocalDate> findExecutionDates(long commandId, String userId) {
-        return executionRepository.findExecutionDates(commandId, userId);
+    public List<Instant> findCalendarDayStarts(long commandId, String userId) {
+        return executionRepository.findCalendarDayStarts(commandId, userId);
     }
 
     private LockedCommand lockedCommand(Command command) {

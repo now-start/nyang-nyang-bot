@@ -32,17 +32,9 @@ public interface AdjustPointUseCase {
         }
     }
 
-    record PointLedgerResult(
-            String userId,
-            long beforeBalance,
-            long delta,
-            long afterBalance,
-            String description,
-            boolean duplicate,
-            Long ledgerId
-    ) {
-        public static PointLedgerResult duplicate(String userId, long balance, Long ledgerId) {
-            return new PointLedgerResult(userId, balance, 0, balance, null, true, ledgerId);
+    record PointLedgerResult(Long ledgerId) {
+        public static PointLedgerResult noChange() {
+            return new PointLedgerResult(null);
         }
     }
 }

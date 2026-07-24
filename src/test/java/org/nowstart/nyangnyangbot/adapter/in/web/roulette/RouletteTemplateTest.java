@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteConfigResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteOptionResult;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.RouletteValidationResult;
@@ -32,6 +33,11 @@ class RouletteTemplateTest {
         context.setVariable("configs", List.of(config));
         context.setVariable("selectedConfigId", 1L);
         context.setVariable("config", config);
+        context.setVariable("rouletteTriggerMaxLength", ManageRouletteUseCase.MAX_TRIGGER_LENGTH);
+        context.setVariable(
+                "defaultSimulationIterations",
+                ManageRouletteUseCase.DEFAULT_SIMULATION_ITERATIONS
+        );
         context.setVariable("runsPage", new PageImpl<>(
                 List.of(run()),
                 PageRequest.of(0, 5),
@@ -52,7 +58,10 @@ class RouletteTemplateTest {
         then(html).contains("당첨");
         then(html).contains("25.00%");
         then(html).contains("검증 통과");
+        then(html).contains("id=\"roulette-trigger-token\"");
+        then(html).contains("maxlength=\"20\"");
         then(html).contains("hx-get=\"/admin/roulette/configs/1/simulation?iterations=10000\"");
+        then(html).contains("10000회 시뮬레이션");
         then(html).contains("hx-target=\"#roulette-simulation\"");
         then(html).contains("hx-get=\"/admin/roulette/runs\"");
         then(html).contains("hx-trigger=\"roulette-run-refresh from:body\"");

@@ -526,7 +526,7 @@
                     "spec": {
                       "direction": "backward",
                       "editorMode": "code",
-                  "expr": "sort_desc(topk(10, sum by (command_trigger) (count_over_time({service_name=\"nyang-nyang-bot\"} | event=\"command.executed\" | user_nickname=~\".*${user:regex}.*\" | keep command_trigger [$__range]))))",
+                  "expr": "sort_desc(topk(10, sum by (command_trigger) (count_over_time({service_name=\"nyang-nyang-bot\"} | pattern `event=command.executed commandId=<command_id> trigger=<command_trigger> nickname=<user_nickname>` | user_nickname=~\".*${user:regex}.*\" | keep command_trigger [$__range]))))",
                       "queryType": "instant"
                     },
                     "version": "v0"

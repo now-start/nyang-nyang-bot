@@ -32,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteResultQueryPort {
 
-    private static final int RECENT_ROUND_LIMIT = 5;
-
     private final RouletteConfigRepository rouletteConfigRepository;
     private final RouletteOptionRepository rouletteOptionRepository;
     private final RouletteRunRepository rouletteRunRepository;
@@ -222,8 +220,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional(readOnly = true)
     public List<Long> findRunIdsNeedingRecovery(long afterRunId, int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return rouletteRunRepository.findRunIdsNeedingRecovery(afterRunId, safeLimit);
+        return rouletteRunRepository.findRunIdsNeedingRecovery(afterRunId, limit);
     }
 
     @Override
@@ -257,7 +254,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional(readOnly = true)
     public List<RecentRound> findRecentRoundsByUserId(String userId) {
-        return rouletteRoundRepository.findRecentByUserId(userId, PageRequest.of(0, RECENT_ROUND_LIMIT)).stream()
+        return rouletteRoundRepository.findRecentByUserId(userId, PageRequest.of(0, MAX_RECENT_ROUNDS)).stream()
                 .map(round -> new RecentRound(round.getRoundNo(), round.getItemLabel()))
                 .toList();
     }
@@ -298,7 +295,9 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
             if (round == null || round.roundNo() == null || round.roundNo() != index + 1) {
                 throw new IllegalArgumentException("roulette round numbers must be contiguous from 1");
             }
-            if (round.ticket() == null || round.ticket() < 1 || round.ticket() > 10_000) {
+            if (round.ticket() == null
+                    || round.ticket() < 1
+                    || round.ticket() > RoulettePolicy.TOTAL_PROBABILITY) {
                 throw new IllegalArgumentException("roulette round ticket must be between 1 and 10000");
             }
         }
@@ -320,15 +319,13 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     private OptionResult optionResult(RouletteOption option) {
         return contractValidator.persistenceResult("roulette.option", new OptionResult(
                 option.getId(),
-                option.getRouletteConfig().getId(),
                 option.getLabel(),
                 option.getProbabilityBasisPoints(),
                 option.isLosing(),
                 option.getRewardType(),
                 option.getConversionMode(),
                 option.getPointDelta(),
-                option.getDisplayOrder(),
-                option.getCreatedAt()
+                option.getDisplayOrder()
         ));
     }
 
@@ -336,14 +333,11 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
         Donation donation = run.getDonation();
         return contractValidator.persistenceResult("roulette.run", new RunResult(
                 run.getDonationId(),
-                run.getRouletteConfig().getId(),
                 donation.getIngestionKey(),
                 donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
                 donation.getDonorDisplayName(),
                 donation.getAmount(),
-                run.getStatus(),
-                run.getCreatedAt(),
-                run.getUpdatedAt()
+                run.getCreatedAt()
         ));
     }
 
@@ -353,23 +347,16 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
         RouletteOption option = round.getRouletteOption();
         return contractValidator.persistenceResult("roulette.round", new RoundResult(
                 round.getId(),
-                run.getDonationId(),
-                round.getRouletteConfigId(),
                 donation.getIngestionKey(),
                 donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
                 donation.getDonorDisplayName(),
-                option.getId(),
                 round.getRoundNo(),
                 option.getLabel(),
                 option.isLosing(),
                 option.getRewardType(),
                 option.getConversionMode(),
                 option.getPointDelta(),
-                round.getStatus(),
-                round.getFailureReason(),
-                round.getTicket(),
-                round.getCreatedAt(),
-                round.getUpdatedAt()
+                round.getStatus()
         ));
     }
 }

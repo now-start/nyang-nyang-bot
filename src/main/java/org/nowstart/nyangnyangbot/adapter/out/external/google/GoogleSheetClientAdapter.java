@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GoogleSheetClientAdapter implements GoogleSheetPort {
 
-    private static final String RANGE = "호감도 순위표!B2:H2000";
+    private static final String RANGE = "호감도 순위표!B2:H";
 
     private final GoogleProperty googleProperty;
     private final OutboundContractValidator contractValidator;

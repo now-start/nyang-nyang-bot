@@ -63,12 +63,9 @@ class OAuthCredentialServiceTest {
                 accessToken,
                 "refresh",
                 "Bearer",
-                "scope",
                 true,
                 expiresAt,
-                version,
-                NOW,
-                NOW
+                version
         );
     }
 }

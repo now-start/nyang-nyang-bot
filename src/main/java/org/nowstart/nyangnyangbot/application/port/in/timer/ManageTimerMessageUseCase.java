@@ -6,12 +6,22 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy;
 
 public interface ManageTimerMessageUseCase {
 
-    int MAX_TEMPLATE_LENGTH = 1_000;
+    int MAX_TEMPLATE_LENGTH = TimerMessagePolicy.MAX_TEMPLATE_LENGTH;
+    int DEFAULT_INTERVAL_MINUTES = 30;
+    int DEFAULT_MIN_CHAT_COUNT = 10;
+    int MIN_INTERVAL_MINUTES = TimerMessagePolicy.MIN_INTERVAL_MINUTES;
+    int MAX_INTERVAL_MINUTES = TimerMessagePolicy.MAX_INTERVAL_MINUTES;
+    int MIN_CHAT_COUNT = TimerMessagePolicy.MIN_CHAT_COUNT;
+    int MAX_CHAT_COUNT = TimerMessagePolicy.MAX_CHAT_COUNT;
+    String TEMPLATE_LENGTH_MESSAGE = TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
+    String INTERVAL_RANGE_MESSAGE = TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
+    String CHAT_COUNT_RANGE_MESSAGE = TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
 
     List<TimerMessageResult> getTimerMessages();
 
@@ -34,13 +44,13 @@ public interface ManageTimerMessageUseCase {
 
     record CreateTimerMessage(
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
-            @Min(value = 5, message = "intervalMinutes must be between 5 and 1440")
-            @Max(value = 1440, message = "intervalMinutes must be between 5 and 1440")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
             Integer intervalMinutes,
-            @Min(value = 1, message = "minChatCount must be between 1 and 10000")
-            @Max(value = 10000, message = "minChatCount must be between 1 and 10000")
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
             Integer minChatCount,
             Boolean active,
             String actorId
@@ -48,13 +58,13 @@ public interface ManageTimerMessageUseCase {
     }
 
     record UpdateTimerMessage(
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
-            @Min(value = 5, message = "intervalMinutes must be between 5 and 1440")
-            @Max(value = 1440, message = "intervalMinutes must be between 5 and 1440")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
             Integer intervalMinutes,
-            @Min(value = 1, message = "minChatCount must be between 1 and 10000")
-            @Max(value = 10000, message = "minChatCount must be between 1 and 10000")
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
             Integer minChatCount,
             Boolean active,
             String actorId
@@ -63,7 +73,7 @@ public interface ManageTimerMessageUseCase {
 
     record PreviewTimerMessage(
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate
     ) {
     }
@@ -82,12 +92,10 @@ public interface ManageTimerMessageUseCase {
             Integer minChatCount,
             boolean active,
             long chatCountSinceLastSend,
-            LocalDateTime lastSentAt,
-            LocalDateTime nextRunAt,
+            Instant lastSentAt,
+            Instant nextRunAt,
             String createdBy,
-            String updatedBy,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            String updatedBy
     ) {
     }
 

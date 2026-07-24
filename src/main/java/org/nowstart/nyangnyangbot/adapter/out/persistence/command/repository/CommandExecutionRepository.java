@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository;
 
 import jakarta.persistence.LockModeType;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.CommandExecution;
@@ -22,21 +22,21 @@ public interface CommandExecutionRepository extends JpaRepository<CommandExecuti
 
     long countByCommandIdAndUserAccountUserId(Long commandId, String userId);
 
-    boolean existsByCommandIdAndUserAccountUserIdAndCalendarDate(
+    boolean existsByCommandIdAndUserAccountUserIdAndCalendarDayStartedAt(
             Long commandId,
             String userId,
-            LocalDate calendarDate
+            Instant calendarDayStartedAt
     );
 
     @Query("""
-            select distinct execution.calendarDate
+            select distinct execution.calendarDayStartedAt
               from CommandExecution execution
              where execution.command.id = :commandId
                and execution.userAccount.userId = :userId
-               and execution.calendarDate is not null
-             order by execution.calendarDate desc
+               and execution.calendarDayStartedAt is not null
+             order by execution.calendarDayStartedAt desc
             """)
-    List<LocalDate> findExecutionDates(
+    List<Instant> findCalendarDayStarts(
             @Param("commandId") Long commandId,
             @Param("userId") String userId
     );

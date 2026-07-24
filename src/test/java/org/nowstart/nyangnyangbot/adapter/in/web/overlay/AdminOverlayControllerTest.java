@@ -30,7 +30,7 @@ class AdminOverlayControllerTest {
     void issueToken_ShouldUseAuthenticatedAdminAsActorAndReturnFragment() {
         // 준비
         AdminOverlayController controller = new AdminOverlayController(overlayTokenService, overlayDisplayService);
-        OverlayTokenIssueResult result = new OverlayTokenIssueResult(1L, "raw-token");
+        OverlayTokenIssueResult result = new OverlayTokenIssueResult("raw-token");
         given(overlayTokenService.issueToken("admin-1")).willReturn(result);
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/admin/overlay/roulette/token");
         request.setScheme("https");

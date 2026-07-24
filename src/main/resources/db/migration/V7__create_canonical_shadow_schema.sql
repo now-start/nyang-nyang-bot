@@ -1,7 +1,7 @@
 -- nyang-nyang-bot target schema specification
 -- Dialect: MariaDB / InnoDB / utf8mb4
--- Time contract: TIMESTAMP(6) stores an absolute instant in UTC internally and is
--- read/written through a required Asia/Seoul (+09:00) database session.
+-- Time contract: TIMESTAMP(6) stores an absolute instant in UTC internally.
+-- Asia/Seoul calendar boundaries are persisted as their UTC-equivalent start instants.
 -- Flyway V7 shadow schema; legacy tables remain untouched.
 
 CREATE TABLE IF NOT EXISTS next_user_account
@@ -86,12 +86,12 @@ CREATE TABLE IF NOT EXISTS next_command_execution
     id                        BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '명령 실행 이벤트 식별자',
     command_id                BIGINT                          NOT NULL COMMENT '실행한 명령어 식별자',
     user_id                   VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '명령을 실행한 사용자 식별자',
-    executed_at               TIMESTAMP(6)                     NOT NULL COMMENT '명령 실행 확정 절대시각; Asia/Seoul 세션에서 달력일을 판정',
+    executed_at               TIMESTAMP(6)                     NOT NULL COMMENT '명령 실행 확정 절대시각',
     execution_policy_snapshot VARCHAR(32) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '실행 시점의 사용자별 재실행 제한 기준 스냅샷',
     cooldown_seconds_snapshot INTEGER                         NULL COMMENT '실행 시점의 사용자별 재실행 제한 초 스냅샷; 달력일 기준이면 NULL',
-    calendar_date             DATE                            NULL COMMENT 'Asia/Seoul 기준 명령 실행 일자; 달력일 기준에서만 저장',
+    calendar_day_started_at   TIMESTAMP(6)                     NULL COMMENT 'Asia/Seoul 달력일 시작 절대시각; 달력일 기준에서만 저장',
     PRIMARY KEY (id),
-    CONSTRAINT uk_command_execution__command_user_date UNIQUE (command_id, user_id, calendar_date),
+    CONSTRAINT uk_command_execution__command_user_day_start UNIQUE (command_id, user_id, calendar_day_started_at),
     CONSTRAINT fk_command_execution__command
         FOREIGN KEY (command_id) REFERENCES next_command (id) ON DELETE RESTRICT,
     CONSTRAINT fk_command_execution__user_account
@@ -100,10 +100,11 @@ CREATE TABLE IF NOT EXISTS next_command_execution
         CHECK ((execution_policy_snapshot = 'USER_INTERVAL'
                     AND cooldown_seconds_snapshot IS NOT NULL
                     AND cooldown_seconds_snapshot BETWEEN 5 AND 3600
-                    AND calendar_date IS NULL)
+                    AND calendar_day_started_at IS NULL)
             OR (execution_policy_snapshot = 'USER_CALENDAR_DAY'
                     AND cooldown_seconds_snapshot IS NULL
-                    AND calendar_date IS NOT NULL)),
+                    AND calendar_day_started_at IS NOT NULL
+                    AND calendar_day_started_at <= executed_at)),
     INDEX idx_command_execution__user_command_time (user_id, command_id, executed_at, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -210,18 +211,18 @@ CREATE TABLE IF NOT EXISTS next_point_adjustment_preset
 CREATE TABLE IF NOT EXISTS next_weekly_chat_count
 (
     id              BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '주간 채팅 집계 식별자',
-    week_start_date DATE                            NOT NULL COMMENT 'Asia/Seoul 기준 집계 주의 월요일',
+    week_started_at TIMESTAMP(6)                    NOT NULL COMMENT 'Asia/Seoul 기준 집계 주의 월요일 00:00 절대시각',
     user_id         VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '채팅 사용자 식별자',
     chat_count      BIGINT                          NOT NULL DEFAULT 0 COMMENT '해당 주의 누적 채팅 수',
     PRIMARY KEY (id),
-    CONSTRAINT uk_weekly_chat_count__week_user UNIQUE (week_start_date, user_id),
+    CONSTRAINT uk_weekly_chat_count__week_user UNIQUE (week_started_at, user_id),
     CONSTRAINT fk_weekly_chat_count__user_account
         FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE CASCADE,
-    CONSTRAINT ck_weekly_chat_count__monday
-        CHECK (DAYOFWEEK(week_start_date) = 2),
+    CONSTRAINT ck_weekly_chat_count__week_start
+        CHECK (MOD(UNIX_TIMESTAMP(week_started_at) - 313200, 604800) = 0),
     CONSTRAINT ck_weekly_chat_count__value
         CHECK (chat_count >= 0),
-    INDEX idx_weekly_chat_count__ranking (week_start_date, chat_count DESC, id)
+    INDEX idx_weekly_chat_count__ranking (week_started_at, chat_count DESC, id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

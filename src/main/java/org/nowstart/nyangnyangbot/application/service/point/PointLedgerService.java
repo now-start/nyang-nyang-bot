@@ -98,6 +98,6 @@ public class PointLedgerService implements AdjustPointUseCase, GrantPointUseCase
             return null;
         }
         String normalized = value.trim();
-        return normalized.isEmpty() || "system".equals(normalized) ? null : normalized;
+        return normalized.isEmpty() ? null : normalized;
     }
 }

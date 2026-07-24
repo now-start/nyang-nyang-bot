@@ -4,9 +4,6 @@ public interface IssueOverlayTokenUseCase {
 
     OverlayTokenIssueResult issueToken(String actorId);
 
-    record OverlayTokenIssueResult(
-            Long tokenId,
-            String token
-    ) {
+    record OverlayTokenIssueResult(String token) {
     }
 }

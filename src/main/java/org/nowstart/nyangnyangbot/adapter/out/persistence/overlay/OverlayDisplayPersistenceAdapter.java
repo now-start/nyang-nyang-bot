@@ -21,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
-    private static final int MAX_DISPLAY_ROUNDS = 5;
-
     private final OverlayDisplayJobRepository overlayDisplayJobRepository;
     private final RouletteRoundRepository rouletteRoundRepository;
     private final RouletteRunRepository rouletteRunRepository;
@@ -30,21 +28,21 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     @Override
     @Transactional
-    public DisplayJobResult enqueue(
+    public void enqueue(
             Long rouletteRunId,
             String idempotencyKey,
             Instant expiresAt,
             Instant createdAt
     ) {
         RouletteRun run = requireRunForUpdate(rouletteRunId);
-        return overlayDisplayJobRepository.findByIdempotencyKey(idempotencyKey)
-                .map(this::displayJobResult)
-                .orElseGet(() -> createJob(run, null, idempotencyKey, expiresAt, createdAt));
+        if (overlayDisplayJobRepository.findByIdempotencyKey(idempotencyKey).isEmpty()) {
+            createJob(run, null, idempotencyKey, expiresAt, createdAt);
+        }
     }
 
     @Override
     @Transactional
-    public DisplayJobResult replay(
+    public Long replay(
             Long rouletteRunId,
             String idempotencyKey,
             Instant expiresAt,
@@ -93,7 +91,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
         job.markDisplayed(claimToken, displayedAt);
     }
 
-    private DisplayJobResult createJob(
+    private Long createJob(
             RouletteRun run,
             OverlayDisplayJob replayOf,
             String idempotencyKey,
@@ -112,7 +110,7 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
                 .createdAt(createdAt)
                 .updatedAt(createdAt)
                 .build());
-        return displayJobResult(saved);
+        return saved.getId();
     }
 
     private RouletteRun requireRunForUpdate(Long rouletteRunId) {
@@ -130,10 +128,8 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
                 .toList();
         return contractValidator.persistenceResult("overlay.displayJob", new DisplayJobResult(
                 job.getId(),
-                run.getDonationId(),
                 run.getDonation().getDonorDisplayName(),
                 job.getClaimToken(),
-                job.getExpiresAt(),
                 roundCount,
                 rounds
         ));

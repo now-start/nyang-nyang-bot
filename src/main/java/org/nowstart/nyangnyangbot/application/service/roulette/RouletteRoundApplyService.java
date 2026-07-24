@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
+import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.MAX_FAILURE_REASON_LENGTH;
+
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
@@ -58,6 +60,8 @@ public class RouletteRoundApplyService {
         String normalized = failureReason == null || failureReason.isBlank()
                 ? "reward processing failed"
                 : failureReason.trim();
-        return normalized.length() <= 500 ? normalized : normalized.substring(0, 500);
+        return normalized.length() <= MAX_FAILURE_REASON_LENGTH
+                ? normalized
+                : normalized.substring(0, MAX_FAILURE_REASON_LENGTH);
     }
 }

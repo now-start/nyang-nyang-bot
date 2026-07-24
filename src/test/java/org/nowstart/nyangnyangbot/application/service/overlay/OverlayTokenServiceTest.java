@@ -31,7 +31,6 @@ class OverlayTokenServiceTest {
         InOrder order = inOrder(port);
         order.verify(port).revokeActiveAndFlush(issuedAt);
         order.verify(port).saveIssuedToken(service.hashToken(result.token()), "admin-1", issuedAt);
-        assertThat(result.tokenId()).isEqualTo(7L);
     }
 
     @Test

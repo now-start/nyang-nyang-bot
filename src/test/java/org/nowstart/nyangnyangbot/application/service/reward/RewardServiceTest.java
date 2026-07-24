@@ -6,7 +6,6 @@ import static org.mockito.BDDMockito.then;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -31,12 +30,8 @@ class RewardServiceTest {
         RewardPort rewardPort = Mockito.mock(RewardPort.class);
         GrantPointUseCase pointUseCase = Mockito.mock(GrantPointUseCase.class);
         RewardService service = service(rewardPort, pointUseCase);
-        given(rewardPort.findByRouletteRoundId(10L)).willReturn(Optional.empty());
-        given(pointUseCase.grant(Mockito.any())).willReturn(new PointLedgerResult(
-                "user-1", 0, 100, 100, "룰렛 결과", false, 20L
-        ));
-        given(rewardPort.createGrant(Mockito.any())).willReturn(reward(30L, 10L, 20L));
-
+        given(rewardPort.existsByRouletteRoundId(10L)).willReturn(false);
+        given(pointUseCase.grant(Mockito.any())).willReturn(new PointLedgerResult(20L));
         service.grantRoulette(new RouletteRewardCommand(
                 10L,
                 "user-1",
@@ -60,11 +55,36 @@ class RewardServiceTest {
     }
 
     @Test
+    void rouletteRewardSkipsPointAndGrantWhenRoundAlreadyHasReward() {
+        RewardPort rewardPort = Mockito.mock(RewardPort.class);
+        GrantPointUseCase pointUseCase = Mockito.mock(GrantPointUseCase.class);
+        RewardService service = service(rewardPort, pointUseCase);
+        given(rewardPort.existsByRouletteRoundId(10L)).willReturn(true);
+
+        service.grantRoulette(new RouletteRewardCommand(
+                10L,
+                "user-1",
+                "시청자",
+                "event-1",
+                "포인트",
+                RewardType.POINT,
+                ConversionMode.AUTO,
+                100L,
+                "룰렛 결과",
+                "roundNo=1"
+        ));
+
+        then(pointUseCase).shouldHaveNoInteractions();
+        then(rewardPort).should().existsByRouletteRoundId(10L);
+        then(rewardPort).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
     void getUserRewards_PropagatesBoundToPersistenceQuery() {
         RewardPort rewardPort = Mockito.mock(RewardPort.class);
         GrantPointUseCase pointUseCase = Mockito.mock(GrantPointUseCase.class);
         RewardService service = service(rewardPort, pointUseCase);
-        given(rewardPort.findByUserId("user-1", 20)).willReturn(List.of(reward(30L, 10L, 20L)));
+        given(rewardPort.findByUserId("user-1", 20)).willReturn(List.of(reward(30L, 20L)));
 
         var result = service.getUserRewards("user-1", null, 20);
 
@@ -93,11 +113,9 @@ class RewardServiceTest {
         };
     }
 
-    private RewardRecord reward(Long id, Long roundId, Long ledgerId) {
+    private RewardRecord reward(Long id, Long ledgerId) {
         return new RewardRecord(
                 id,
-                "user-1",
-                roundId,
                 ledgerId,
                 "포인트",
                 RewardType.POINT,
@@ -105,10 +123,6 @@ class RewardServiceTest {
                 100L,
                 RewardGrantStatus.CONVERTED,
                 "룰렛 결과",
-                "roundNo=1",
-                null,
-                "roulette-round:10",
-                NOW,
                 NOW
         );
     }

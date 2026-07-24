@@ -136,12 +136,9 @@ class OAuthCredentialRefreshCoordinatorTest {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                "scope",
                 true,
                 expiresAt,
-                version,
-                NOW,
-                NOW
+                version
         );
     }
 }

@@ -121,7 +121,7 @@ class PointControllerTest {
     void pointList_ShouldLimitRegularUserToOwnPointAndRewards() {
         given(queryWeeklyChatRankUseCase.getWeeklyRanks(10)).willReturn(List.of());
         given(queryPointUseCase.getMyPoint("user1"))
-                .willReturn(new PointMeResult("user1", "유저1", 100, 7, List.of()));
+                .willReturn(new PointMeResult("user1", "유저1", 100, 7));
         given(queryRewardUseCase.getUserRewards("user1", null, 20)).willReturn(List.of(
                 new RewardResult(
                         3L,

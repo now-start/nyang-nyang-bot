@@ -4,7 +4,8 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,7 @@ class TimerMessageControllerTest {
         then(timers).hasSize(1);
         then(timers.getFirst().intervalLabel()).isEqualTo("30분");
         then(timers.getFirst().chatProgressLabel()).isEqualTo("7 / 10");
+        then(timers.getFirst().nextRunLabel()).isEqualTo("2026-07-16 21:30");
     }
 
     @Test
@@ -172,7 +174,7 @@ class TimerMessageControllerTest {
     }
 
     private TimerMessageResult timer(Long id, boolean active) {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 16, 21, 0);
+        Instant now = Instant.parse("2026-07-16T12:00:00Z");
         return new TimerMessageResult(
                 id,
                 "현재 시각은 {time.time}입니다.",
@@ -180,12 +182,10 @@ class TimerMessageControllerTest {
                 10,
                 active,
                 7,
-                now.minusMinutes(30),
-                active ? now.plusMinutes(30) : null,
+                now.minus(Duration.ofMinutes(30)),
+                active ? now.plus(Duration.ofMinutes(30)) : null,
                 "admin",
-                "admin",
-                now.minusDays(1),
-                now
+                "admin"
         );
     }
 }

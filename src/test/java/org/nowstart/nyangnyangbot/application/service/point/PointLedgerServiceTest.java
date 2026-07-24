@@ -29,9 +29,7 @@ class PointLedgerServiceTest {
 
     @Test
     void adjust_NormalizesReplaySensitiveTextBeforeTransactionalWrite() {
-        given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willReturn(new PointLedgerResult(
-                "user-1", 10, 7, 17, "보상", false, 5L
-        ));
+        given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willReturn(new PointLedgerResult(5L));
 
         service.adjust(command());
 
@@ -45,7 +43,7 @@ class PointLedgerServiceTest {
     @Test
     void adjust_AfterUniqueRaceResolvesExistingEntryWithoutRetryingWrite() {
         DataIntegrityViolationException race = new DataIntegrityViolationException("duplicate key");
-        PointLedgerResult duplicate = PointLedgerResult.duplicate("user-1", 17, 5L);
+        PointLedgerResult duplicate = new PointLedgerResult(5L);
         given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willThrow(race);
         given(transactionExecutor.resolveDuplicate(org.mockito.ArgumentMatchers.any()))
                 .willReturn(Optional.of(duplicate));

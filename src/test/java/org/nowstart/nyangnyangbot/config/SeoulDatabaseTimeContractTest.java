@@ -2,9 +2,7 @@ package org.nowstart.nyangnyangbot.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -32,12 +30,6 @@ class SeoulDatabaseTimeContractTest {
     @Autowired
     private EntityManager entityManager;
 
-    @Autowired
-    private EntityManagerFactory entityManagerFactory;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @Test
     void localRuntimeNativeQueriesAndTimestampDefaultsUseSeoulSession() {
         String userId = "seoul-time-contract";
@@ -51,12 +43,6 @@ class SeoulDatabaseTimeContractTest {
             );
             LocalDateTime afterDefault = LocalDateTime.now(SEOUL).plusSeconds(2);
             assertThat(createdAt).isBetween(beforeDefault, afterDefault);
-            assertThat(objectMapper.getSerializationConfig().getTimeZone().toZoneId()).isEqualTo(SEOUL);
-            assertThat(entityManagerFactory.getProperties().get("hibernate.jdbc.time_zone"))
-                    .isEqualTo("Asia/Seoul");
-            assertThat(entityManagerFactory.getProperties()
-                    .get("hibernate.type.preferred_instant_jdbc_type"))
-                    .isEqualTo("TIMESTAMP");
             assertThat(jdbcTemplate.queryForObject(
                     "SELECT EXTRACT(TIMEZONE_HOUR FROM CURRENT_TIMESTAMP)",
                     Integer.class

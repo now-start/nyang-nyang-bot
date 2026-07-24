@@ -1,5 +1,8 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.point;
 
+import static org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.MAX_LABEL_LENGTH;
+import static org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.MAX_MANUAL_DESCRIPTION_LENGTH;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -119,7 +122,7 @@ public class PointAdjustmentController {
             @NotNull(message = "amount is required")
             Long amount,
             @NotBlank(message = "label is required")
-            @Size(max = 100, message = "label length must be 100 or less")
+            @Size(max = MAX_LABEL_LENGTH, message = "label length must be 100 or less")
             String label
     ) {
 
@@ -133,7 +136,8 @@ public class PointAdjustmentController {
             String userId,
             List<@Positive(message = "presetIds must be positive") Long> presetIds,
             Long manualAmount,
-            @Size(max = 500, message = "manualDescription length must be 500 or less")
+            @Size(max = MAX_MANUAL_DESCRIPTION_LENGTH,
+                    message = "manualDescription length must be 500 or less")
             String manualDescription
     ) {
 

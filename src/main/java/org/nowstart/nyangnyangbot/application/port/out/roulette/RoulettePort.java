@@ -8,7 +8,6 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRunStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -86,15 +85,13 @@ public interface RoulettePort {
 
     record OptionResult(
             Long id,
-            Long configId,
             String label,
             Integer probabilityBasisPoints,
             boolean losing,
             RewardType rewardType,
             ConversionMode conversionMode,
             Long pointDelta,
-            Integer displayOrder,
-            Instant createdAt
+            Integer displayOrder
     ) implements RoulettePolicy.OptionCandidate {
     }
 
@@ -115,14 +112,11 @@ public interface RoulettePort {
 
     record RunResult(
             Long id,
-            Long configId,
             String ingestionKey,
             String userId,
             String donorDisplayName,
             Long donationAmount,
-            RouletteRunStatus status,
-            Instant createdAt,
-            Instant updatedAt
+            Instant createdAt
     ) {
     }
 
@@ -132,27 +126,23 @@ public interface RoulettePort {
             long appliedCount,
             long failedCount
     ) {
+        public static RunRoundSummaryResult empty(Long runId) {
+            return new RunRoundSummaryResult(runId, 0, 0, 0);
+        }
     }
 
     record RoundResult(
             Long id,
-            Long runId,
-            Long configId,
             String ingestionKey,
             String userId,
             String donorDisplayName,
-            Long optionId,
             Integer roundNo,
             String optionLabel,
             boolean losing,
             RewardType rewardType,
             ConversionMode conversionMode,
             Long pointDelta,
-            RouletteRoundStatus status,
-            String failureReason,
-            Integer ticket,
-            Instant createdAt,
-            Instant updatedAt
+            RouletteRoundStatus status
     ) {
     }
 }

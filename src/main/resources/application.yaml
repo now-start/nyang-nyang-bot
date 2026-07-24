@@ -1,33 +1,6 @@
 spring:
   application:
     name: nyang-nyang-bot
-  jpa:
-    properties:
-      hibernate:
-        type:
-          preferred_instant_jdbc_type: TIMESTAMP
-        jdbc:
-          time_zone: Asia/Seoul
-  jackson2:
-    time-zone: Asia/Seoul
-  task:
-    scheduling:
-      pool:
-        size: 3
-      thread-name-prefix: nyang-scheduler-
-  cloud:
-    openfeign:
-      client:
-        config:
-          ChzzkOpenApiClient:
-            connectTimeout: 3000
-            readTimeout: 5000
-
-otel:
-  instrumentation:
-    logback-appender:
-      experimental:
-        capture-key-value-pair-attributes: true
 
 ---
 
@@ -36,6 +9,3 @@ spring:
     activate:
       on-profile: "!local"
     import: ${SPRING_CONFIG_IMPORT:configserver:https://spring.nowstart.org/config}
-  datasource:
-    hikari:
-      connection-init-sql: "SET time_zone = '+09:00', explicit_defaults_for_timestamp = ON"

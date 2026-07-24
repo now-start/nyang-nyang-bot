@@ -57,8 +57,7 @@ public class DonationPersistenceAdapter implements DonationPort {
                 donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
                 donation.getDonorDisplayName(),
                 donation.getAmount(),
-                donation.getMessage(),
-                donation.getReceivedAt()
+                donation.getMessage()
         ));
     }
 }

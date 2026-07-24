@@ -50,6 +50,24 @@ class OverlayDisplayServiceTest {
         then(port).should().enqueue(9L, "roulette-run:9", NOW.plusSeconds(120), NOW);
     }
 
+    @Test
+    void replayCreatesAReplayJobWithoutReturningItsDisplayPayload() {
+        OverlayTokenService tokenService = Mockito.mock(OverlayTokenService.class);
+        OverlayDisplayPort port = Mockito.mock(OverlayDisplayPort.class);
+        OverlayDisplayService service = service(tokenService, port);
+        given(port.replay(Mockito.eq(9L), Mockito.anyString(), Mockito.eq(NOW.plusSeconds(120)), Mockito.eq(NOW)))
+                .willReturn(2L);
+
+        service.replayRouletteRun(9L);
+
+        then(port).should().replay(
+                9L,
+                "roulette-run:9:replay:claim-1",
+                NOW.plusSeconds(120),
+                NOW
+        );
+    }
+
     private OverlayDisplayService service(OverlayTokenService tokenService, OverlayDisplayPort port) {
         return new OverlayDisplayService(tokenService, port) {
             @Override
@@ -67,10 +85,8 @@ class OverlayDisplayServiceTest {
     private DisplayJobResult job(String claimToken) {
         return new DisplayJobResult(
                 1L,
-                9L,
                 "후원자",
                 claimToken,
-                NOW.plusSeconds(120),
                 1,
                 List.of(new DisplayRoundResult(
                         2L,

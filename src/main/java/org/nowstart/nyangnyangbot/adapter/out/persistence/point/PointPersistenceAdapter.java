@@ -108,7 +108,7 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
     }
 
     private UserAccount actor(String actorUserId) {
-        if (actorUserId == null || actorUserId.isBlank() || "system".equals(actorUserId)) {
+        if (actorUserId == null || actorUserId.isBlank()) {
             return null;
         }
         return userAccountRepository.getReferenceById(actorUserId);
@@ -124,8 +124,7 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
                 entry.getDescription(),
                 entry.getPrivateNote(),
                 entry.getCorrectionOfEntry() == null ? null : entry.getCorrectionOfEntry().getId(),
-                entry.getActorUser() == null ? null : entry.getActorUser().getUserId(),
-                entry.getIdempotencyKey()
+                entry.getActorUser() == null ? null : entry.getActorUser().getUserId()
         );
     }
 

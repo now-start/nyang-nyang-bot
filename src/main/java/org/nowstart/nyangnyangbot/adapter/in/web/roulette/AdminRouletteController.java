@@ -103,7 +103,7 @@ public class AdminRouletteController {
                         form.title(),
                         form.triggerToken(),
                         form.pricePerRound(),
-                        form.highRoundThresholdOrDefault()
+                        form.highRoundThreshold()
                 ));
                 selectedConfigId = config.id();
                 feedback(model, "룰렛 설정 생성 완료", "success");
@@ -183,10 +183,13 @@ public class AdminRouletteController {
     @GetMapping("/configs/{configId}/simulation")
     public String simulate(
             @PathVariable Long configId,
-            @RequestParam(defaultValue = "10000") int iterations,
+            @RequestParam(required = false) Integer iterations,
             Model model
     ) {
-        model.addAttribute("simulation", manageRouletteUseCase.simulate(configId, iterations));
+        int effectiveIterations = iterations == null
+                ? ManageRouletteUseCase.DEFAULT_SIMULATION_ITERATIONS
+                : iterations;
+        model.addAttribute("simulation", manageRouletteUseCase.simulate(configId, effectiveIterations));
         return SIMULATION_FRAGMENT;
     }
 
@@ -208,6 +211,8 @@ public class AdminRouletteController {
         model.addAttribute("configs", configsPage.getContent());
         model.addAttribute("selectedConfigId", effectiveSelectedConfigId);
         model.addAttribute("config", config);
+        model.addAttribute("rouletteTriggerMaxLength", ManageRouletteUseCase.MAX_TRIGGER_LENGTH);
+        model.addAttribute("defaultSimulationIterations", ManageRouletteUseCase.DEFAULT_SIMULATION_ITERATIONS);
     }
 
     private RouletteConfigResult requireConfig(Long configId) {
@@ -239,7 +244,11 @@ public class AdminRouletteController {
             @Size(max = 100, message = "title length must be 100 or less")
             String title,
             @NotBlank(message = "triggerToken is required")
-            @Size(max = 20, message = "triggerToken length must be 20 or less")
+            @Size(
+                    min = ManageRouletteUseCase.MIN_TRIGGER_LENGTH,
+                    max = ManageRouletteUseCase.MAX_TRIGGER_LENGTH,
+                    message = ManageRouletteUseCase.TRIGGER_LENGTH_MESSAGE
+            )
             String triggerToken,
             @NotNull(message = "pricePerRound is required")
             @Positive(message = "pricePerRound must be positive")
@@ -248,9 +257,6 @@ public class AdminRouletteController {
             Integer highRoundThreshold
     ) {
 
-        Integer highRoundThresholdOrDefault() {
-            return highRoundThreshold == null ? 100 : highRoundThreshold;
-        }
     }
 
     public record RouletteOptionForm(

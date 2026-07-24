@@ -1,7 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.out.command;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
@@ -16,7 +15,7 @@ public interface CommandExecutionPort {
 
     Optional<ExecutionRecord> findLatestForUpdate(long commandId, String userId);
 
-    boolean existsCalendarDate(long commandId, String userId, LocalDate calendarDate);
+    boolean existsCalendarDayStartedAt(long commandId, String userId, Instant calendarDayStartedAt);
 
     void append(ExecutionData data);
 
@@ -24,7 +23,7 @@ public interface CommandExecutionPort {
 
     long countForUser(long commandId, String userId);
 
-    List<LocalDate> findExecutionDates(long commandId, String userId);
+    List<Instant> findCalendarDayStarts(long commandId, String userId);
 
     record LockedCommand(
             long id,
@@ -46,7 +45,7 @@ public interface CommandExecutionPort {
             Instant executedAt,
             CommandExecutionPolicy executionPolicy,
             Integer cooldownSeconds,
-            LocalDate calendarDate
+            Instant calendarDayStartedAt
     ) {
     }
 }

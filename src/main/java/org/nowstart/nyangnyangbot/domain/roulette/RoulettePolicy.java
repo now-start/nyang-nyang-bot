@@ -15,6 +15,10 @@ public class RoulettePolicy {
     public static final int TOTAL_PROBABILITY = 10_000;
     public static final int DEFAULT_HIGH_ROUND_THRESHOLD = 100;
     public static final int MAX_ROUNDS_PER_DONATION = 1_000;
+    public static final int MIN_SIMULATION_ITERATIONS = 1;
+    public static final int DEFAULT_SIMULATION_ITERATIONS = 10_000;
+    public static final int MAX_SIMULATION_ITERATIONS = 10_000;
+    public static final int MAX_FAILURE_REASON_LENGTH = 500;
 
     public RouletteActivationValidation validateActivation(
             ConfigCandidate config,
@@ -109,9 +113,6 @@ public class RoulettePolicy {
         if (!trimmedTrigger.startsWith("!")) {
             throw new IllegalArgumentException("triggerToken must start with !");
         }
-        if (trimmedTrigger.length() < 2 || trimmedTrigger.length() > 20) {
-            throw new IllegalArgumentException("triggerToken length must be between 2 and 20");
-        }
         if (pricePerRound == null || pricePerRound <= 0) {
             throw new IllegalArgumentException("pricePerRound is required");
         }
@@ -152,7 +153,7 @@ public class RoulettePolicy {
     }
 
     public int safeSimulationIterations(int iterations) {
-        return Math.max(1, Math.min(iterations, 10_000));
+        return Math.max(MIN_SIMULATION_ITERATIONS, Math.min(iterations, MAX_SIMULATION_ITERATIONS));
     }
 
     public long parseDonationAmount(String amount) {

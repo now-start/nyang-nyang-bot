@@ -71,7 +71,7 @@ class MariaDbCanonicalMigrationTest {
                             OR table_name = 'migration_cutover_metadata')
                        AND data_type = 'timestamp'
                        AND datetime_precision = 6
-                    """, Integer.class)).isEqualTo(34);
+                    """, Integer.class)).isEqualTo(36);
             assertThatThrownBy(() -> jdbc.update("""
                     INSERT INTO next_roulette_config
                         (title, trigger_token, price_per_round, high_round_threshold, status)
@@ -108,6 +108,20 @@ class MariaDbCanonicalMigrationTest {
                     UPDATE authorization_account
                        SET last_login_at = '2026-01-02 00:30:00.123456'
                      WHERE channel_id = 'streamer'
+                    """);
+            jdbc.update("""
+                    UPDATE weekly_chat_rank
+                       SET week_start_date = '2040-01-02'
+                     WHERE id = 110
+                    """);
+            assertThatThrownBy(throughV9::migrate)
+                    .hasMessageContaining("weekly_chat_rank.week_start_date")
+                    .hasMessageContaining("outside the MariaDB 10.11 TIMESTAMP range");
+            throughV9.repair();
+            jdbc.update("""
+                    UPDATE weekly_chat_rank
+                       SET week_start_date = '2026-01-05'
+                     WHERE id = 110
                     """);
             jdbc.update("""
                     UPDATE authorization_account
@@ -295,6 +309,12 @@ class MariaDbCanonicalMigrationTest {
             assertThat(configCount).isPositive();
             assertThat(optionCount).isPositive();
             assertThat(roundCount).isPositive();
+            assertThat(jdbc.queryForObject(
+                    "SELECT status FROM next_roulette_round WHERE id = 61", String.class
+            )).isEqualTo("CONFIRMED");
+            assertThat(jdbc.queryForObject(
+                    "SELECT failure_reason FROM next_roulette_round WHERE id = 61", String.class
+            )).isNull();
 
             jdbc.update("""
                     UPDATE favorite_account
@@ -313,6 +333,12 @@ class MariaDbCanonicalMigrationTest {
                      WHERE user_id = 'viewer'
                     """);
             v9.migrate();
+            assertThat(jdbc.queryForObject(
+                    "SELECT status FROM next_roulette_round WHERE id = 61", String.class
+            )).isEqualTo("FAILED");
+            assertThat(jdbc.queryForObject(
+                    "SELECT failure_reason FROM next_roulette_round WHERE id = 61", String.class
+            )).isEqualTo("legacy failure");
             assertThat(jdbc.queryForObject("""
                     SELECT COUNT(*) FROM migration_cutover_metadata
                      WHERE singleton_id = 1
@@ -492,7 +518,7 @@ class MariaDbCanonicalMigrationTest {
                      donation_text, emojis_json, donation_event_id)
                 VALUES (20, '2026-01-06 00:00:00.000000',
                         '2026-01-06 00:00:00.000000', 'CHAT', 'streamer',
-                        'viewer', '시청자', 1000, '룰렛!', '["🐱"]', 'donation-20')
+                        'viewer', '시청자', 2000, '룰렛!', '["🐱"]', 'donation-20')
                 """);
         jdbc.update("""
                 INSERT INTO timer_message
@@ -534,7 +560,7 @@ class MariaDbCanonicalMigrationTest {
                      price_per_round, round_count, items_snapshot_json, status)
                 VALUES (50, '2026-01-06 00:00:00.000000',
                         '2026-01-06 00:01:00.000000', 'donation-20', 'roulette-event:50',
-                        'viewer', '시청자', 1000, '룰렛!', 30, 1, '!룰렛', 1000, 1,
+                        'viewer', '시청자', 2000, '룰렛!', 30, 1, '!룰렛', 1000, 2,
                         ?, 'CONFIRMED')
                 """, """
                 [{"id":40,"label":"꽝","probabilityBasisPoints":5000,
@@ -550,9 +576,13 @@ class MariaDbCanonicalMigrationTest {
                      item_label, probability_basis_points, losing_item, reward_type,
                      conversion_mode, exchange_favorite_value, status, ledger_id,
                      user_upbo_id, failure_reason, ticket)
-                VALUES (60, '2026-01-06 00:00:10.000000',
-                        '2026-01-06 00:00:20.000000', 50, 1, '당첨', 5000,
-                        FALSE, 'FAVORITE', 'AUTO', 50, 'APPLIED', 11, 70, NULL, 6000)
+                VALUES
+                    (60, '2026-01-06 00:00:10.000000',
+                     '2026-01-06 00:00:20.000000', 50, 1, '당첨', 5000,
+                     FALSE, 'FAVORITE', 'AUTO', 50, 'APPLIED', 11, 70, NULL, 6000),
+                    (61, '2026-01-06 00:00:11.000000',
+                     '2026-01-06 00:00:21.000000', 50, 2, '꽝', 5000,
+                     TRUE, 'CUSTOM', 'NONE', 0, 'FAILED', NULL, NULL, 'legacy failure', 1000)
                 """);
         jdbc.update("""
                 INSERT INTO user_upbo
@@ -610,12 +640,18 @@ class MariaDbCanonicalMigrationTest {
                    AND table_name <> 'flyway_schema_history'
                    AND data_type = 'timestamp'
                    AND datetime_precision = 6
-                """, Integer.class)).isEqualTo(33);
+                """, Integer.class)).isEqualTo(35);
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.columns
                  WHERE table_schema = DATABASE()
                    AND table_name <> 'flyway_schema_history'
                    AND data_type = 'datetime'
+                """, Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name <> 'flyway_schema_history'
+                   AND data_type = 'date'
                 """, Integer.class)).isZero();
     }
 
@@ -633,6 +669,10 @@ class MariaDbCanonicalMigrationTest {
                 String.class
         )).contains("{point.balance}").doesNotContain("{favorite.balance}");
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM command_execution", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT UNIX_TIMESTAMP(week_started_at) FROM weekly_chat_count WHERE id = 110",
+                Long.class
+        )).isEqualTo(Instant.parse("2026-01-04T15:00:00Z").getEpochSecond());
         assertThat(jdbc.queryForObject(
                 "SELECT source_type FROM point_ledger_entry WHERE id = 10",
                 String.class
@@ -711,9 +751,9 @@ class MariaDbCanonicalMigrationTest {
         jdbc.update("""
                 INSERT INTO command_execution
                     (command_id, user_id, executed_at, execution_policy_snapshot,
-                     cooldown_seconds_snapshot, calendar_date)
+                     cooldown_seconds_snapshot, calendar_day_started_at)
                 VALUES (?, 'viewer', '2026-01-02 00:30:00.000000',
-                        'USER_CALENDAR_DAY', NULL, '2026-01-02')
+                        'USER_CALENDAR_DAY', NULL, '2026-01-02 00:00:00.000000')
                 """, commandId);
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM command_execution WHERE command_id = ? AND user_id = 'viewer'",
@@ -724,12 +764,12 @@ class MariaDbCanonicalMigrationTest {
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO command_execution
                     (command_id, user_id, executed_at, execution_policy_snapshot,
-                     cooldown_seconds_snapshot, calendar_date)
+                     cooldown_seconds_snapshot, calendar_day_started_at)
                 VALUES (?, 'viewer', '2026-01-02 00:30:00.000000',
-                        'USER_CALENDAR_DAY', NULL, '2026-01-01')
+                        'USER_CALENDAR_DAY', NULL, '2026-01-01 00:00:00.000000')
                 """, commandId))
                 .isInstanceOf(Exception.class)
-                .hasMessageContaining("Asia/Seoul approval time");
+                .hasMessageContaining("Asia/Seoul day-start instant");
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.columns
                  WHERE table_schema = DATABASE()
@@ -749,6 +789,39 @@ class MariaDbCanonicalMigrationTest {
                       FROM user_account
                      WHERE user_id = 'streamer'
                     """, String.class)).isEqualTo("2026-01-01 15:30:00.123456");
+
+            Long commandId = utc.queryForObject(
+                    "SELECT id FROM command WHERE trigger_token = '!호감도'", Long.class);
+            utc.update("""
+                    INSERT INTO command_execution
+                        (command_id, user_id, executed_at, execution_policy_snapshot,
+                         cooldown_seconds_snapshot, calendar_day_started_at)
+                    VALUES (?, 'viewer', '2026-01-01 15:30:00.000000',
+                            'USER_CALENDAR_DAY', NULL, '2026-01-01 15:00:00.000000')
+                    """, commandId);
+            assertThat(utc.queryForObject(
+                    "SELECT COUNT(*) FROM command_execution WHERE command_id = ? AND user_id = 'viewer'",
+                    Integer.class,
+                    commandId
+            )).isOne();
+            utc.update("DELETE FROM command_execution WHERE command_id = ? AND user_id = 'viewer'", commandId);
+
+            utc.update("""
+                    INSERT INTO weekly_chat_count (week_started_at, user_id, chat_count)
+                    VALUES ('2026-01-04 15:00:00.000000', 'streamer', 1)
+                    """);
+            assertThat(utc.queryForObject("""
+                    SELECT COUNT(*) FROM weekly_chat_count
+                     WHERE user_id = 'streamer'
+                       AND week_started_at = '2026-01-04 15:00:00.000000'
+                    """, Integer.class)).isOne();
+            utc.update("DELETE FROM weekly_chat_count WHERE user_id = 'streamer'");
+            assertThatThrownBy(() -> utc.update("""
+                    INSERT INTO weekly_chat_count (week_started_at, user_id, chat_count)
+                    VALUES ('2026-01-04 15:00:01.000000', 'streamer', 1)
+                    """))
+                    .isInstanceOf(Exception.class)
+                    .hasMessageContaining("ck_weekly_chat_count__week_start");
         }
     }
 

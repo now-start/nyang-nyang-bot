@@ -7,7 +7,10 @@ import java.util.Locale;
 
 public final class CommandTrigger {
 
-    private static final int MAX_LENGTH = 20;
+    public static final int MIN_LENGTH = 2;
+    public static final int MAX_LENGTH = 20;
+    public static final String LENGTH_MESSAGE =
+            "trigger length must be between " + MIN_LENGTH + " and " + MAX_LENGTH;
 
     private CommandTrigger() {
     }
@@ -25,8 +28,8 @@ public final class CommandTrigger {
             errors.add("trigger is required");
             return errors;
         }
-        if (value.length() < 2 || value.length() > MAX_LENGTH) {
-            errors.add("trigger length must be between 2 and " + MAX_LENGTH);
+        if (value.length() < MIN_LENGTH || value.length() > MAX_LENGTH) {
+            errors.add(LENGTH_MESSAGE);
         }
         if (value.chars().anyMatch(Character::isISOControl)) {
             errors.add("trigger must not contain control characters");

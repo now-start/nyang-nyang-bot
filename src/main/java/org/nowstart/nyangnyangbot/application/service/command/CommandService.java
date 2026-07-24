@@ -21,10 +21,6 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class CommandService implements ManageCommandUseCase {
 
-    public static final int DEFAULT_USER_COOLDOWN_SECONDS = 30;
-    private static final int MIN_USER_COOLDOWN_SECONDS = 5;
-    private static final int MAX_USER_COOLDOWN_SECONDS = 3_600;
-
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
     private final CommandVariableRegistry variableRegistry;
@@ -167,7 +163,7 @@ public class CommandService implements ManageCommandUseCase {
         String trigger = CommandTrigger.normalize(triggerValue);
         String template = cleanTemplate(messageTemplateValue);
         CommandExecutionPolicy executionPolicy = executionPolicyValue == null
-                ? CommandExecutionPolicy.USER_INTERVAL
+                ? DEFAULT_EXECUTION_POLICY
                 : executionPolicyValue;
         Integer cooldown = executionPolicy == CommandExecutionPolicy.USER_CALENDAR_DAY
                 ? null
@@ -177,7 +173,7 @@ public class CommandService implements ManageCommandUseCase {
         errors.addAll(templateErrors(template));
         if (executionPolicy == CommandExecutionPolicy.USER_INTERVAL
                 && (cooldown < MIN_USER_COOLDOWN_SECONDS || cooldown > MAX_USER_COOLDOWN_SECONDS)) {
-            errors.add("userCooldownSeconds must be between 5 and 3600");
+            errors.add(USER_COOLDOWN_RANGE_MESSAGE);
         }
         if (trigger != null) {
             commandPort.findByTrigger(trigger).ifPresent(existing -> {
@@ -196,8 +192,7 @@ public class CommandService implements ManageCommandUseCase {
             return errors;
         }
         if (template.length() > ManageCommandUseCase.MAX_TEMPLATE_LENGTH) {
-            errors.add("messageTemplate length must be "
-                    + ManageCommandUseCase.MAX_TEMPLATE_LENGTH + " or less");
+            errors.add(TEMPLATE_LENGTH_MESSAGE);
         }
         Set<String> malformed = templateRenderer.malformedVariables(template);
         if (!malformed.isEmpty()) {
@@ -225,9 +220,7 @@ public class CommandService implements ManageCommandUseCase {
                 command.executionPolicy(),
                 command.userCooldownSeconds(),
                 command.createdBy(),
-                command.updatedBy(),
-                command.createDate(),
-                command.modifyDate()
+                command.updatedBy()
         );
     }
 
@@ -236,7 +229,7 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private String actor(String value) {
-        return value == null || value.isBlank() || "system".equals(value) ? null : value;
+        return value == null || value.isBlank() ? null : value;
     }
 
     private Integer resolveUpdateCooldown(

@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
@@ -39,7 +39,7 @@ public interface TimerMessageRepository extends JpaRepository<TimerMessage, Long
                and (timer.claimExpiresAt is null or timer.claimExpiresAt < :now)
              order by timer.nextRunAt, timer.id
             """)
-    List<Long> findClaimCandidateIds(@Param("now") LocalDateTime now, Pageable pageable);
+    List<Long> findClaimCandidateIds(@Param("now") Instant now, Pageable pageable);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
@@ -56,8 +56,8 @@ public interface TimerMessageRepository extends JpaRepository<TimerMessage, Long
     int claimDue(
             @Param("timerMessageId") Long timerMessageId,
             @Param("claimToken") String claimToken,
-            @Param("now") LocalDateTime now,
-            @Param("claimExpiresAt") LocalDateTime claimExpiresAt
+            @Param("now") Instant now,
+            @Param("claimExpiresAt") Instant claimExpiresAt
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -87,10 +87,10 @@ public interface TimerMessageRepository extends JpaRepository<TimerMessage, Long
     int completeClaim(
             @Param("timerMessageId") Long timerMessageId,
             @Param("claimToken") String claimToken,
-            @Param("claimedNextRunAt") LocalDateTime claimedNextRunAt,
+            @Param("claimedNextRunAt") Instant claimedNextRunAt,
             @Param("claimedIntervalMinutes") Integer claimedIntervalMinutes,
-            @Param("sentAt") LocalDateTime sentAt,
-            @Param("nextRunAt") LocalDateTime nextRunAt
+            @Param("sentAt") Instant sentAt,
+            @Param("nextRunAt") Instant nextRunAt
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -111,8 +111,8 @@ public interface TimerMessageRepository extends JpaRepository<TimerMessage, Long
     int releaseClaim(
             @Param("timerMessageId") Long timerMessageId,
             @Param("claimToken") String claimToken,
-            @Param("claimedNextRunAt") LocalDateTime claimedNextRunAt,
+            @Param("claimedNextRunAt") Instant claimedNextRunAt,
             @Param("claimedIntervalMinutes") Integer claimedIntervalMinutes,
-            @Param("retryAt") LocalDateTime retryAt
+            @Param("retryAt") Instant retryAt
     );
 }

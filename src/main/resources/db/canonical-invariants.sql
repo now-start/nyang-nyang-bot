@@ -1,6 +1,6 @@
 -- nyang-nyang-bot target database invariants
 -- Dialect: MariaDB 10.11
--- TIMESTAMP calendar comparisons assume the required Asia/Seoul (+09:00) database session.
+-- Asia/Seoul day-start validation uses Unix epoch arithmetic and is independent of the session time zone.
 -- Apply after target-schema.sql. Flyway should execute the compound trigger bodies
 -- through its MariaDB parser or a Java migration; DELIMITER is a mariadb-client command.
 
@@ -29,9 +29,10 @@ BEFORE INSERT ON command_execution
 FOR EACH ROW
 BEGIN
     IF NEW.execution_policy_snapshot = 'USER_CALENDAR_DAY'
-       AND NOT (NEW.calendar_date <=> DATE(NEW.executed_at)) THEN
+       AND NOT (UNIX_TIMESTAMP(NEW.calendar_day_started_at)
+                <=> FLOOR((UNIX_TIMESTAMP(NEW.executed_at) + 32400) / 86400) * 86400 - 32400) THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'command_execution calendar_date must match the Asia/Seoul approval time';
+            SET MESSAGE_TEXT = 'command_execution calendar_day_started_at must be the Asia/Seoul day-start instant';
     END IF;
 END//
 

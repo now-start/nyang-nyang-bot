@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CommandVariableContext(
         String userId,
@@ -9,7 +9,7 @@ public record CommandVariableContext(
         String args,
         String arg1,
         String arg2,
-        LocalDateTime now,
+        Instant now,
         long totalCount,
         long userCount,
         int currentStreak,
@@ -22,7 +22,7 @@ public record CommandVariableContext(
             String args,
             String arg1,
             String arg2,
-            LocalDateTime now
+            Instant now
     ) {
         this(userId, nickname, command, args, arg1, arg2, now, 0, 0, 0, 0);
     }

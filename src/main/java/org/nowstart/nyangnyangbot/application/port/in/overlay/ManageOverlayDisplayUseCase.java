@@ -1,13 +1,12 @@
 package org.nowstart.nyangnyangbot.application.port.in.overlay;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 
 public interface ManageOverlayDisplayUseCase {
 
-    OverlayDisplayResult replayRouletteRun(Long rouletteRunId);
+    void replayRouletteRun(Long rouletteRunId);
 
     Optional<OverlayDisplayResult> claimNextJob(String authorizationHeader);
 
@@ -15,12 +14,9 @@ public interface ManageOverlayDisplayUseCase {
 
     record OverlayDisplayResult(
             Long displayJobId,
-            Long rouletteRunId,
             String donorDisplayName,
             String claimToken,
             Integer roundCount,
-            Integer maxAnimatedRounds,
-            Instant expiresAt,
             List<RouletteRoundResult> rounds
     ) {
     }

@@ -20,7 +20,7 @@ public class ChzzkChatConnectionScheduler {
         this.autoConnectEnabled = autoConnectEnabled;
     }
 
-    @Scheduled(fixedDelay = 1000 * 60)
+    @Scheduled(fixedDelayString = "${nyang.chzzk.connection.scheduler-delay-millis:60000}")
     public void scheduledConnect() throws URISyntaxException {
         if (!autoConnectEnabled) {
             return;

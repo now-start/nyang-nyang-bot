@@ -2,7 +2,8 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.timer;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
@@ -25,7 +26,7 @@ class TimerMessagePersistenceConcurrencyTest {
 
     @Test
     void adminEditFlushedAfterClaimCompletion_ShouldNotRestoreStaleClaimState() {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 16, 21, 0);
+        Instant now = Instant.parse("2026-07-16T12:00:00Z");
         Long timerMessageId = new TransactionTemplate(transactionManager).execute(status ->
                 timerMessageRepository.saveAndFlush(TimerMessage.builder()
                         .messageTemplate("이전 메시지")
@@ -36,7 +37,7 @@ class TimerMessagePersistenceConcurrencyTest {
                         .chatCountSinceLastSend(12)
                         .claimedChatCount(10)
                         .claimToken("claim-1")
-                        .claimExpiresAt(now.plusMinutes(2))
+                        .claimExpiresAt(now.plus(Duration.ofMinutes(2)))
                         .build()).getId()
         );
 
@@ -51,7 +52,7 @@ class TimerMessagePersistenceConcurrencyTest {
                     now,
                     30,
                     now,
-                    now.plusMinutes(30)
+                    now.plus(Duration.ofMinutes(30))
             )).isEqualTo(1));
 
             staleAdminView.update(
@@ -72,12 +73,12 @@ class TimerMessagePersistenceConcurrencyTest {
         then(saved.getClaimedChatCount()).isZero();
         then(saved.getChatCountSinceLastSend()).isEqualTo(2);
         then(saved.getLastSentAt()).isEqualTo(now);
-        then(saved.getNextRunAt()).isEqualTo(now.plusMinutes(30));
+        then(saved.getNextRunAt()).isEqualTo(now.plus(Duration.ofMinutes(30)));
     }
 
     @Test
     void completeClaim_AfterAdminDeactivation_ShouldKeepTimerUnscheduled() {
-        LocalDateTime claimedNextRunAt = LocalDateTime.of(2026, 7, 16, 21, 0);
+        Instant claimedNextRunAt = Instant.parse("2026-07-16T12:00:00Z");
         Long timerMessageId = saveClaimedTimer(
                 false,
                 30,
@@ -94,8 +95,8 @@ class TimerMessagePersistenceConcurrencyTest {
                         "claim-deactivated",
                         claimedNextRunAt,
                         30,
-                        claimedNextRunAt.plusMinutes(1),
-                        claimedNextRunAt.plusMinutes(31)
+                        claimedNextRunAt.plus(Duration.ofMinutes(1)),
+                        claimedNextRunAt.plus(Duration.ofMinutes(31))
                 )
         );
 
@@ -108,8 +109,8 @@ class TimerMessagePersistenceConcurrencyTest {
 
     @Test
     void completeClaim_AfterAdminIntervalChange_ShouldKeepAdminSchedule() {
-        LocalDateTime claimedNextRunAt = LocalDateTime.of(2026, 7, 16, 21, 0);
-        LocalDateTime adminNextRunAt = claimedNextRunAt.plusMinutes(60);
+        Instant claimedNextRunAt = Instant.parse("2026-07-16T12:00:00Z");
+        Instant adminNextRunAt = claimedNextRunAt.plus(Duration.ofMinutes(60));
         Long timerMessageId = saveClaimedTimer(
                 true,
                 30,
@@ -144,8 +145,8 @@ class TimerMessagePersistenceConcurrencyTest {
                         "claim-interval-change",
                         claimedNextRunAt,
                         30,
-                        claimedNextRunAt.plusMinutes(1),
-                        claimedNextRunAt.plusMinutes(31)
+                        claimedNextRunAt.plus(Duration.ofMinutes(1)),
+                        claimedNextRunAt.plus(Duration.ofMinutes(31))
                 )
         );
 
@@ -159,7 +160,7 @@ class TimerMessagePersistenceConcurrencyTest {
 
     @Test
     void releaseClaim_AfterAdminDeactivation_ShouldKeepTimerUnscheduled() {
-        LocalDateTime claimedNextRunAt = LocalDateTime.of(2026, 7, 16, 21, 0);
+        Instant claimedNextRunAt = Instant.parse("2026-07-16T12:00:00Z");
         Long timerMessageId = saveClaimedTimer(
                 false,
                 30,
@@ -176,7 +177,7 @@ class TimerMessagePersistenceConcurrencyTest {
                         "claim-release",
                         claimedNextRunAt,
                         30,
-                        claimedNextRunAt.plusMinutes(1)
+                        claimedNextRunAt.plus(Duration.ofMinutes(1))
                 )
         );
 
@@ -188,7 +189,7 @@ class TimerMessagePersistenceConcurrencyTest {
 
     @Test
     void claimAndComplete_ShouldAllowSingleClaimAndPreserveChatsArrivingInFlight() {
-        LocalDateTime now = LocalDateTime.of(2026, 7, 16, 21, 0);
+        Instant now = Instant.parse("2026-07-16T12:00:00Z");
         Long timerMessageId = new TransactionTemplate(transactionManager).execute(status ->
                 timerMessageRepository.saveAndFlush(TimerMessage.builder()
                         .messageTemplate("채팅 보존")
@@ -206,7 +207,7 @@ class TimerMessagePersistenceConcurrencyTest {
                         timerMessageId,
                         "claim-first",
                         now,
-                        now.plusMinutes(2)
+                        now.plus(Duration.ofMinutes(2))
                 )
         );
         int secondClaim = new TransactionTemplate(transactionManager).execute(status ->
@@ -214,7 +215,7 @@ class TimerMessagePersistenceConcurrencyTest {
                         timerMessageId,
                         "claim-second",
                         now,
-                        now.plusMinutes(2)
+                        now.plus(Duration.ofMinutes(2))
                 )
         );
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
@@ -226,8 +227,8 @@ class TimerMessagePersistenceConcurrencyTest {
                         "claim-first",
                         now,
                         30,
-                        now.plusMinutes(1),
-                        now.plusMinutes(31)
+                        now.plus(Duration.ofMinutes(1)),
+                        now.plus(Duration.ofMinutes(31))
                 )
         );
 
@@ -243,8 +244,8 @@ class TimerMessagePersistenceConcurrencyTest {
     private Long saveClaimedTimer(
             boolean active,
             int intervalMinutes,
-            LocalDateTime nextRunAt,
-            LocalDateTime claimTime,
+            Instant nextRunAt,
+            Instant claimTime,
             String claimToken,
             long chatCountSinceLastSend,
             long claimedChatCount
@@ -259,7 +260,7 @@ class TimerMessagePersistenceConcurrencyTest {
                         .chatCountSinceLastSend(chatCountSinceLastSend)
                         .claimedChatCount(claimedChatCount)
                         .claimToken(claimToken)
-                        .claimExpiresAt(claimTime.plusMinutes(2))
+                        .claimExpiresAt(claimTime.plus(Duration.ofMinutes(2)))
                         .build()).getId()
         );
     }

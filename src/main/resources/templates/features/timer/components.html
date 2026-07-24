@@ -110,18 +110,18 @@
 
 <div class="row g-3" th:fragment="editor-fields(timerMessageForm)">
     <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: number-field('timer-interval-minutes', 'intervalMinutes', '발송 간격(분)', ${timerMessageForm.intervalMinutes}, 5, 1440, null)}"></div>
+        <div th:replace="~{components/forms :: number-field('timer-interval-minutes', 'intervalMinutes', '발송 간격(분)', ${timerMessageForm.intervalMinutes}, ${timerMessageConstraints.minIntervalMinutes}, ${timerMessageConstraints.maxIntervalMinutes}, null)}"></div>
         <p class="form-text mb-0">성공적으로 발송한 시점부터 다시 계산합니다.</p>
     </div>
     <div class="col-12 col-md-6">
-        <div th:replace="~{components/forms :: number-field('timer-min-chat-count', 'minChatCount', '최소 시청자 채팅 수', ${timerMessageForm.minChatCount}, 1, 10000, null)}"></div>
+        <div th:replace="~{components/forms :: number-field('timer-min-chat-count', 'minChatCount', '최소 시청자 채팅 수', ${timerMessageForm.minChatCount}, ${timerMessageConstraints.minChatCount}, ${timerMessageConstraints.maxChatCount}, null)}"></div>
         <p class="form-text mb-0">마지막 성공 발송 이후 받은 채팅 기준입니다.</p>
     </div>
     <div class="col-12">
         <div th:replace="~{components/forms :: switch-field('timer-active', 'active', '활성', ${timerMessageForm.active}, null)}"></div>
     </div>
     <div class="col-12">
-        <div th:replace="~{components/forms :: textarea-field('timer-message-template', 'messageTemplate', '냥냥봇 발송 메시지', ${timerMessageForm.messageTemplate}, '지금 시각은 {time.time}입니다.', 5, 1000, null)}"></div>
+        <div th:replace="~{components/forms :: textarea-field('timer-message-template', 'messageTemplate', '냥냥봇 발송 메시지', ${timerMessageForm.messageTemplate}, '지금 시각은 {time.time}입니다.', 5, ${timerMessageConstraints.maxTemplateLength}, null)}"></div>
         <div class="dropdown mt-2">
             <button aria-expanded="false"
                     class="btn btn-outline-secondary btn-sm"
@@ -156,10 +156,10 @@
         th:text="${timerMessageForm.chatCountSinceLastSend + ' / ' + timerMessageForm.minChatCount}">7 / 10</dd>
     <dt class="col-5 text-secondary fw-normal">최근 발송</dt>
     <dd class="col-7 text-end tabular-nums mb-0"
-        th:text="${timerMessageForm.lastSentAt == null ? '-' : #temporals.format(timerMessageForm.lastSentAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+        th:text="${timerMessageForm.lastSentAtLabel}">-</dd>
     <dt class="col-5 text-secondary fw-normal">다음 예정</dt>
     <dd class="col-7 text-end tabular-nums mb-0"
-        th:text="${timerMessageForm.nextRunAt == null ? '-' : #temporals.format(timerMessageForm.nextRunAt, 'yyyy-MM-dd HH:mm')}">-</dd>
+        th:text="${timerMessageForm.nextRunAtLabel}">-</dd>
 </dl>
 
 <div class="d-flex flex-wrap gap-2" th:fragment="editor-actions(timerMessageForm, previewUrl, deactivateUrl)">

@@ -106,15 +106,13 @@ class ManageRouletteServiceTest {
     private OptionResult option(Long id, int probability, boolean losing) {
         return new OptionResult(
                 id,
-                1L,
                 losing ? "꽝" : "포인트",
                 probability,
                 losing,
                 losing ? RewardType.CUSTOM : RewardType.POINT,
                 losing ? ConversionMode.NONE : ConversionMode.AUTO,
                 losing ? null : 100L,
-                id.intValue(),
-                NOW
+                id.intValue()
         );
     }
 }

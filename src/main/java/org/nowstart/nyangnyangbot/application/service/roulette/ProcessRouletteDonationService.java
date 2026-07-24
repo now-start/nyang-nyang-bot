@@ -109,8 +109,9 @@ public class ProcessRouletteDonationService
 
     @Override
     public int recoverPendingRuns(int limit) {
+        int safeLimit = Math.min(Math.max(limit, MIN_BATCH_SIZE), MAX_BATCH_SIZE);
         int recovered = 0;
-        List<Long> runIds = roulettePort.findRunIdsNeedingRecovery(recoveryStart(), limit);
+        List<Long> runIds = roulettePort.findRunIdsNeedingRecovery(recoveryStart(), safeLimit);
         for (Long runId : runIds) {
             try {
                 resumeExistingRun(runId);

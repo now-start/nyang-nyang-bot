@@ -10,6 +10,9 @@ import java.util.List;
 
 public interface ManagePointAdjustmentPresetUseCase {
 
+    int MAX_LABEL_LENGTH = 100;
+    int MAX_MANUAL_DESCRIPTION_LENGTH = 500;
+
     List<PointAdjustmentPresetResult> getPresets();
 
     PointAdjustmentPresetResult createPreset(
@@ -23,7 +26,7 @@ public interface ManagePointAdjustmentPresetUseCase {
     record CreatePointAdjustmentPreset(
             @NotNull(message = "amount is required") Long amount,
             @NotBlank(message = "label is required")
-            @Size(max = 100, message = "label length must be 100 or less") String label
+            @Size(max = MAX_LABEL_LENGTH, message = "label length must be 100 or less") String label
     ) {
         @AssertTrue(message = "amount must not be zero")
         public boolean isAmountNonZero() {
@@ -35,7 +38,8 @@ public interface ManagePointAdjustmentPresetUseCase {
             @NotBlank(message = "userId is required") String userId,
             List<@Positive(message = "presetIds must be positive") Long> presetIds,
             Long manualAmount,
-            @Size(max = 500, message = "manualDescription length must be 500 or less") String manualDescription,
+            @Size(max = MAX_MANUAL_DESCRIPTION_LENGTH,
+                    message = "manualDescription length must be 500 or less") String manualDescription,
             String actorUserId
     ) {
         @AssertTrue(message = "presetIds or manualAmount is required")
