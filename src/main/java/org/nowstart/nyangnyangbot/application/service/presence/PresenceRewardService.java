@@ -9,18 +9,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.presence.RecordPresenceChatUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.transaction.TransactionContextPort;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.nowstart.nyangnyangbot.domain.presence.PresenceUserState;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.validation.annotation.Validated;
 
 @Service
@@ -29,6 +28,7 @@ import org.springframework.validation.annotation.Validated;
 public class PresenceRewardService implements ManagePresenceRewardUseCase, RecordPresenceChatUseCase {
 
     private final GrantPointUseCase grantPointUseCase;
+    private final TransactionContextPort transactionContextPort;
     private final ReentrantLock cycleLock = new ReentrantLock();
     private PresenceCycle cycle = PresenceCycle.inactive();
 
@@ -154,17 +154,10 @@ public class PresenceRewardService implements ManagePresenceRewardUseCase, Recor
     }
 
     private boolean registerTransactionCompletion(String cycleId) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            return false;
-        }
         try {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCompletion(int status) {
-                    completeApply(cycleId, status == STATUS_COMMITTED);
-                }
-            });
-            return true;
+            return transactionContextPort.registerAfterCompletion(
+                    committed -> completeApply(cycleId, committed)
+            );
         } catch (RuntimeException | Error failure) {
             completeApply(cycleId, false);
             throw failure;

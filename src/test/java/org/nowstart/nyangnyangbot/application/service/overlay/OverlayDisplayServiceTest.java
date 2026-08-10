@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ValidateOverlayTokenUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayJobResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayRoundResult;
@@ -23,7 +24,7 @@ class OverlayDisplayServiceTest {
 
     @Test
     void claimReturnsClaimTokenThatCompletionMustEcho() {
-        OverlayTokenService tokenService = Mockito.mock(OverlayTokenService.class);
+        ValidateOverlayTokenUseCase tokenService = Mockito.mock(ValidateOverlayTokenUseCase.class);
         OverlayDisplayPort port = Mockito.mock(OverlayDisplayPort.class);
         OverlayDisplayService service = service(tokenService, port);
         given(tokenService.validateToken("secret")).willReturn(true);
@@ -41,7 +42,7 @@ class OverlayDisplayServiceTest {
 
     @Test
     void enqueueUsesStableRunIdempotencyKey() {
-        OverlayTokenService tokenService = Mockito.mock(OverlayTokenService.class);
+        ValidateOverlayTokenUseCase tokenService = Mockito.mock(ValidateOverlayTokenUseCase.class);
         OverlayDisplayPort port = Mockito.mock(OverlayDisplayPort.class);
         OverlayDisplayService service = service(tokenService, port);
 
@@ -52,7 +53,7 @@ class OverlayDisplayServiceTest {
 
     @Test
     void replayCreatesAReplayJobWithoutReturningItsDisplayPayload() {
-        OverlayTokenService tokenService = Mockito.mock(OverlayTokenService.class);
+        ValidateOverlayTokenUseCase tokenService = Mockito.mock(ValidateOverlayTokenUseCase.class);
         OverlayDisplayPort port = Mockito.mock(OverlayDisplayPort.class);
         OverlayDisplayService service = service(tokenService, port);
         given(port.replay(Mockito.eq(9L), Mockito.anyString(), Mockito.eq(NOW.plusSeconds(120)), Mockito.eq(NOW)))
@@ -68,7 +69,7 @@ class OverlayDisplayServiceTest {
         );
     }
 
-    private OverlayDisplayService service(OverlayTokenService tokenService, OverlayDisplayPort port) {
+    private OverlayDisplayService service(ValidateOverlayTokenUseCase tokenService, OverlayDisplayPort port) {
         return new OverlayDisplayService(tokenService, port) {
             @Override
             Instant now() {

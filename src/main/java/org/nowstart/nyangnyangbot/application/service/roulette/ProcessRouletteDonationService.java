@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase;
@@ -18,12 +18,10 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Cre
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRunCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.OptionResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RunResult;
+import org.nowstart.nyangnyangbot.application.port.out.persistence.PersistenceFailureClassifierPort;
 import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.springframework.stereotype.Service;
-import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.dao.RecoverableDataAccessException;
-import org.springframework.dao.TransientDataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -36,6 +34,7 @@ public class ProcessRouletteDonationService
     private final RoulettePort roulettePort;
     private final RouletteRoundApplyService rouletteRoundApplyService;
     private final QueueOverlayDisplayUseCase queueOverlayDisplayUseCase;
+    private final PersistenceFailureClassifierPort persistenceFailureClassifierPort;
     private final AtomicLong recoveryCursor = new AtomicLong(-1L);
 
     @Override
@@ -162,16 +161,7 @@ public class ProcessRouletteDonationService
     }
 
     private boolean isRetryable(RuntimeException failure) {
-        Throwable cause = failure;
-        while (cause != null) {
-            if (cause instanceof TransientDataAccessException
-                    || cause instanceof RecoverableDataAccessException
-                    || cause instanceof DataAccessResourceFailureException) {
-                return true;
-            }
-            cause = cause.getCause();
-        }
-        return false;
+        return persistenceFailureClassifierPort.isRetryable(failure);
     }
 
     private void resumeExistingRun(Long runId) {

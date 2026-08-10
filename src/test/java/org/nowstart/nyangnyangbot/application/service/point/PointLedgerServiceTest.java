@@ -13,16 +13,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.PointLedgerResult;
+import org.nowstart.nyangnyangbot.application.port.out.persistence.PersistenceFailureClassifierPort;
+import org.nowstart.nyangnyangbot.application.port.out.transaction.TransactionContextPort;
 import org.nowstart.nyangnyangbot.application.service.point.PointLedgerTransactionExecutor.WriteRequest;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class PointLedgerServiceTest {
 
     @Mock
     private PointLedgerTransactionExecutor transactionExecutor;
+
+    @Mock
+    private PersistenceFailureClassifierPort persistenceFailureClassifierPort;
+
+    @Mock
+    private TransactionContextPort transactionContextPort;
 
     @InjectMocks
     private PointLedgerService service;
@@ -42,9 +48,10 @@ class PointLedgerServiceTest {
 
     @Test
     void adjust_AfterUniqueRaceResolvesExistingEntryWithoutRetryingWrite() {
-        DataIntegrityViolationException race = new DataIntegrityViolationException("duplicate key");
+        RuntimeException race = new IllegalStateException("duplicate key");
         PointLedgerResult duplicate = new PointLedgerResult(5L);
         given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willThrow(race);
+        given(persistenceFailureClassifierPort.isConflict(race)).willReturn(true);
         given(transactionExecutor.resolveDuplicate(org.mockito.ArgumentMatchers.any()))
                 .willReturn(Optional.of(duplicate));
 
@@ -59,8 +66,9 @@ class PointLedgerServiceTest {
 
     @Test
     void adjust_WhenUniqueFailureHasNoMatchingKeyRethrowsOriginalFailure() {
-        DataIntegrityViolationException race = new DataIntegrityViolationException("other constraint");
+        RuntimeException race = new IllegalStateException("other constraint");
         given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willThrow(race);
+        given(persistenceFailureClassifierPort.isConflict(race)).willReturn(true);
         given(transactionExecutor.resolveDuplicate(org.mockito.ArgumentMatchers.any()))
                 .willReturn(Optional.empty());
 
@@ -69,14 +77,23 @@ class PointLedgerServiceTest {
 
     @Test
     void adjust_WhenJoiningAggregateTransactionDoesNotHideFailureOrReadFromRollbackOnlyTransaction() {
-        DataIntegrityViolationException race = new DataIntegrityViolationException("duplicate key");
+        RuntimeException race = new IllegalStateException("duplicate key");
         given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willThrow(race);
-        TransactionSynchronizationManager.setActualTransactionActive(true);
-        try {
-            thenThrownBy(() -> service.adjust(command())).isSameAs(race);
-        } finally {
-            TransactionSynchronizationManager.clear();
-        }
+        given(persistenceFailureClassifierPort.isConflict(race)).willReturn(true);
+        given(transactionContextPort.isTransactionActive()).willReturn(true);
+
+        thenThrownBy(() -> service.adjust(command())).isSameAs(race);
+
+        org.mockito.BDDMockito.then(transactionExecutor).should(org.mockito.Mockito.never())
+                .resolveDuplicate(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void adjust_WhenFailureIsNotConflictRethrowsWithoutResolvingDuplicate() {
+        RuntimeException failure = new IllegalStateException("unavailable");
+        given(transactionExecutor.execute(org.mockito.ArgumentMatchers.any())).willThrow(failure);
+
+        thenThrownBy(() -> service.adjust(command())).isSameAs(failure);
 
         org.mockito.BDDMockito.then(transactionExecutor).should(org.mockito.Mockito.never())
                 .resolveDuplicate(org.mockito.ArgumentMatchers.any());

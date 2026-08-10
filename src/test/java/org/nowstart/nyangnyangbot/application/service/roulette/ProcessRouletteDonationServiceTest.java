@@ -12,10 +12,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.transaction.annotation.Transactional;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.persistence.PersistenceFailureClassifierPort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ConfigResult;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.OptionResult;
@@ -25,6 +24,7 @@ import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 class ProcessRouletteDonationServiceTest {
 
@@ -45,7 +45,12 @@ class ProcessRouletteDonationServiceTest {
         RoulettePort port = Mockito.mock(RoulettePort.class);
         RouletteRoundApplyService applyService = Mockito.mock(RouletteRoundApplyService.class);
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
-        ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay) {
+        ProcessRouletteDonationService service = new ProcessRouletteDonationService(
+                port,
+                applyService,
+                overlay,
+                Mockito.mock(PersistenceFailureClassifierPort.class)
+        ) {
             @Override
             Instant now() {
                 return NOW;
@@ -76,7 +81,9 @@ class ProcessRouletteDonationServiceTest {
         RoulettePort port = Mockito.mock(RoulettePort.class);
         RouletteRoundApplyService applyService = Mockito.mock(RouletteRoundApplyService.class);
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
-        ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay);
+        ProcessRouletteDonationService service = new ProcessRouletteDonationService(
+                port, applyService, overlay, Mockito.mock(PersistenceFailureClassifierPort.class)
+        );
         given(port.existsRun(7L)).willReturn(true);
         given(port.findRoundsByRunId(7L)).willReturn(List.of(round(RouletteRoundStatus.CONFIRMED)));
 
@@ -92,7 +99,8 @@ class ProcessRouletteDonationServiceTest {
         ProcessRouletteDonationService service = new ProcessRouletteDonationService(
                 port,
                 Mockito.mock(RouletteRoundApplyService.class),
-                Mockito.mock(QueueOverlayDisplayUseCase.class)
+                Mockito.mock(QueueOverlayDisplayUseCase.class),
+                Mockito.mock(PersistenceFailureClassifierPort.class)
         );
         DonationReceived anonymous = new DonationReceived(
                 "event-1", "CHAT", "streamer-1", null, "익명", "1000", "!룰렛", Map.of()
@@ -109,7 +117,9 @@ class ProcessRouletteDonationServiceTest {
         RoulettePort port = Mockito.mock(RoulettePort.class);
         RouletteRoundApplyService applyService = Mockito.mock(RouletteRoundApplyService.class);
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
-        ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay);
+        ProcessRouletteDonationService service = new ProcessRouletteDonationService(
+                port, applyService, overlay, Mockito.mock(PersistenceFailureClassifierPort.class)
+        );
         given(port.existsRun(7L)).willReturn(true);
 
         var result = service.processDonation(7L, donation());
@@ -124,12 +134,16 @@ class ProcessRouletteDonationServiceTest {
         RoulettePort port = Mockito.mock(RoulettePort.class);
         RouletteRoundApplyService applyService = Mockito.mock(RouletteRoundApplyService.class);
         QueueOverlayDisplayUseCase overlay = Mockito.mock(QueueOverlayDisplayUseCase.class);
-        ProcessRouletteDonationService service = new ProcessRouletteDonationService(port, applyService, overlay);
+        PersistenceFailureClassifierPort failureClassifier = Mockito.mock(PersistenceFailureClassifierPort.class);
+        ProcessRouletteDonationService service = new ProcessRouletteDonationService(
+                port, applyService, overlay, failureClassifier
+        );
         given(port.findMaxRunIdNeedingRecovery()).willReturn(7L);
         given(port.findRunIdsNeedingRecovery(Mockito.anyLong(), Mockito.eq(100))).willReturn(List.of(7L));
         given(port.findRoundsByRunId(7L)).willReturn(List.of(round(RouletteRoundStatus.CONFIRMED)));
-        Mockito.doThrow(new CannotAcquireLockException("retry"))
-                .when(applyService).applyRound(10L);
+        RuntimeException retryableFailure = new IllegalStateException("retry");
+        Mockito.doThrow(retryableFailure).when(applyService).applyRound(10L);
+        given(failureClassifier.isRetryable(retryableFailure)).willReturn(true);
 
         assertThat(service.recoverPendingRuns(100)).isZero();
 
@@ -144,7 +158,8 @@ class ProcessRouletteDonationServiceTest {
         ProcessRouletteDonationService service = new ProcessRouletteDonationService(
                 port,
                 Mockito.mock(RouletteRoundApplyService.class),
-                Mockito.mock(QueueOverlayDisplayUseCase.class)
+                Mockito.mock(QueueOverlayDisplayUseCase.class),
+                Mockito.mock(PersistenceFailureClassifierPort.class)
         );
 
         service.recoverPendingRuns(0);

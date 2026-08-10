@@ -1,6 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.in.weeklychat;
 
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 
 public interface RecordWeeklyChatUseCase {
 

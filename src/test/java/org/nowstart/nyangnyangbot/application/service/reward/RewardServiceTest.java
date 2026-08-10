@@ -15,7 +15,7 @@ import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.RewardRecord;
-import org.nowstart.nyangnyangbot.application.service.reward.RewardService.RouletteRewardCommand;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase.RouletteRewardCommand;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;

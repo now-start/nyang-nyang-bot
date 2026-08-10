@@ -1,4 +1,4 @@
-package org.nowstart.nyangnyangbot.adapter.in.chzzk;
+package org.nowstart.nyangnyangbot.adapter.out.socket.chzzk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

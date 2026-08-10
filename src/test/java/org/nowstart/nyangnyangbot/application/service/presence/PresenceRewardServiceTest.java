@@ -11,18 +11,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceApplyCommand;
+import org.nowstart.nyangnyangbot.application.port.out.transaction.TransactionContextPort;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class PresenceRewardServiceTest {
@@ -30,9 +30,12 @@ class PresenceRewardServiceTest {
     @Mock
     private GrantPointUseCase grantPointUseCase;
 
+    @Mock
+    private TransactionContextPort transactionContextPort;
+
     @Test
     void applyPresenceReward_UsesPresenceSourceAndStablePerCycleIdempotencyKey() {
-        PresenceRewardService service = new PresenceRewardService(grantPointUseCase);
+        PresenceRewardService service = new PresenceRewardService(grantPointUseCase, transactionContextPort);
         service.startCapture();
         service.recordChatUser(new ChatReceived(
                 "channel-1",
@@ -54,18 +57,12 @@ class PresenceRewardServiceTest {
     @Test
     void applyPresenceReward_RollbackRestoresSameCycleForRetry() {
         PresenceRewardService service = capturedService();
-        TransactionSynchronizationManager.initSynchronization();
-        try {
-            service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L));
-            List<TransactionSynchronization> synchronizations =
-                    TransactionSynchronizationManager.getSynchronizations();
+        ArgumentCaptor<Consumer<Boolean>> completionCaptor = consumerCaptor();
+        willAnswer(invocation -> true)
+                .given(transactionContextPort).registerAfterCompletion(completionCaptor.capture());
 
-            synchronizations.forEach(synchronization -> synchronization.afterCompletion(
-                    TransactionSynchronization.STATUS_ROLLED_BACK
-            ));
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
+        service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L));
+        completionCaptor.getValue().accept(false);
 
         service.applyPresenceReward(new PresenceApplyCommand(List.of("user-1"), 5L));
 
@@ -128,7 +125,7 @@ class PresenceRewardServiceTest {
     }
 
     private PresenceRewardService capturedService() {
-        PresenceRewardService service = new PresenceRewardService(grantPointUseCase);
+        PresenceRewardService service = new PresenceRewardService(grantPointUseCase, transactionContextPort);
         service.startCapture();
         service.recordChatUser(chat("user-1", "치즈냥"));
         return service;
@@ -143,5 +140,10 @@ class PresenceRewardServiceTest {
                 null,
                 1L
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private ArgumentCaptor<Consumer<Boolean>> consumerCaptor() {
+        return ArgumentCaptor.forClass(Consumer.class);
     }
 }

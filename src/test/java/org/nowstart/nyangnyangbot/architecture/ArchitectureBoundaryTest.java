@@ -92,6 +92,48 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
+    void applicationLayer_ShouldNotInspectSpringPersistenceOrTransactionContext() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
+                .filter(path -> containsAny(path,
+                        "org.springframework.dao.",
+                        "org.springframework.transaction.support."
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
+    void providerNeutralApplicationFeatures_ShouldNotDependOnChzzkInboundPorts() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
+                .filter(path -> !path.toString().contains("/chzzk/"))
+                .filter(path -> containsAny(path,
+                        "org.nowstart.nyangnyangbot.application.port.in.chzzk."
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
+    void applicationCapabilities_ShouldUsePortsInsteadOfConcreteFeatureServices() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application/service"))
+                .filter(path -> containsAny(path,
+                        "org.nowstart.nyangnyangbot.application.service.reward.RewardService",
+                        "private final OverlayTokenService"
+                ))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
     void applicationModelPackage_ShouldNotContainJavaSources() throws IOException {
         // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/model")).toList();
@@ -168,6 +210,17 @@ class ArchitectureBoundaryTest {
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application/port/out"))
                 .filter(path -> !path.getFileName().toString().endsWith("Port.java")
                         || !declaresPublicInterfaceNamedAfterFile(path))
+                .toList();
+
+        // 검증
+        then(violations).isEmpty();
+    }
+
+    @Test
+    void adapters_ShouldNotImplementInboundUseCases() throws IOException {
+        // 실행
+        List<Path> violations = javaFiles(SOURCE_ROOT.resolve("adapter"))
+                .filter(path -> containsPattern(path, "implements\\s+[^\\{]*UseCase"))
                 .toList();
 
         // 검증

@@ -1,10 +1,10 @@
-package org.nowstart.nyangnyangbot.adapter.in.chzzk;
+package org.nowstart.nyangnyangbot.adapter.out.socket.chzzk;
 
 import static org.assertj.core.api.BDDAssertions.then;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.nowstart.nyangnyangbot.adapter.in.chzzk.ChzzkSocketPayloads.DonationPayload;
+import org.nowstart.nyangnyangbot.adapter.out.socket.chzzk.ChzzkSocketPayloads.DonationPayload;
 
 class ChzzkSocketPayloadsTest {
 

@@ -2,7 +2,8 @@ package org.nowstart.nyangnyangbot.application.service.chzzk;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkSystemEventUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkSystemEventUseCase.SystemReceived;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkConfigurationPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.springframework.stereotype.Service;
@@ -10,14 +11,18 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SystemService {
+public class SystemService implements HandleChzzkSystemEventUseCase {
 
     private final ChzzkConfigurationPort chzzkConfigurationPort;
     private final ChzzkClientPort chzzkClientPort;
-    private volatile String sessionKey;
+    private boolean connecting;
+    private long connectionAttemptSequence;
+    private long activeConnectionAttemptId;
+    private String sessionKey;
 
-    public void handle(SystemReceived system) {
-        if (system == null || system.data() == null) {
+    @Override
+    public synchronized void handle(long connectionAttemptId, SystemReceived system) {
+        if (connectionAttemptId != activeConnectionAttemptId || system == null || system.data() == null) {
             return;
         }
         log.info("[SYSTEM] : {}", system);
@@ -26,15 +31,42 @@ public class SystemService {
             String connectedSessionKey = system.data().sessionKey();
             if (connectedSessionKey == null || connectedSessionKey.isBlank()) {
                 log.warn("[SYSTEM] ignored connected event without session key");
+                connecting = false;
                 return;
             }
-            chzzkClientPort.subscribeChatEvent(connectedSessionKey);
-            chzzkClientPort.subscribeDonationEvent(connectedSessionKey);
-            sessionKey = connectedSessionKey;
+            try {
+                chzzkClientPort.subscribeChatEvent(connectedSessionKey);
+                chzzkClientPort.subscribeDonationEvent(connectedSessionKey);
+                sessionKey = connectedSessionKey;
+            } finally {
+                connecting = false;
+            }
         }
     }
 
-    public boolean isConnected() {
+    @Override
+    public synchronized void handleConnectionClosed(long connectionAttemptId) {
+        if (connectionAttemptId != activeConnectionAttemptId) {
+            return;
+        }
+        activeConnectionAttemptId = 0;
+        sessionKey = null;
+        connecting = false;
+    }
+
+    public synchronized long beginConnection() {
+        if (connecting) {
+            return 0;
+        }
+        if (isConnected()) {
+            return 0;
+        }
+        connecting = true;
+        activeConnectionAttemptId = ++connectionAttemptSequence;
+        return activeConnectionAttemptId;
+    }
+
+    public synchronized boolean isConnected() {
         if (sessionKey == null) {
             return false;
         }

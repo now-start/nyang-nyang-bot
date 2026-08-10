@@ -9,7 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyChatUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;

@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
-import org.nowstart.nyangnyangbot.application.service.reward.RewardService;
-import org.nowstart.nyangnyangbot.application.service.reward.RewardService.RouletteRewardCommand;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase.RouletteRewardCommand;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -22,7 +22,7 @@ class RouletteRoundApplyServiceTest {
     @Test
     void locksConfirmedRoundGrantsRewardThenMarksApplied() {
         RoulettePort roulettePort = Mockito.mock(RoulettePort.class);
-        RewardService rewardService = Mockito.mock(RewardService.class);
+        GrantRouletteRewardUseCase rewardService = Mockito.mock(GrantRouletteRewardUseCase.class);
         RouletteRoundApplyService service = service(roulettePort, rewardService);
         given(roulettePort.findRoundByIdForUpdate(10L)).willReturn(Optional.of(round(false)));
 
@@ -35,7 +35,7 @@ class RouletteRoundApplyServiceTest {
     @Test
     void losingRoundDoesNotCreateRewardGrant() {
         RoulettePort roulettePort = Mockito.mock(RoulettePort.class);
-        RewardService rewardService = Mockito.mock(RewardService.class);
+        GrantRouletteRewardUseCase rewardService = Mockito.mock(GrantRouletteRewardUseCase.class);
         RouletteRoundApplyService service = service(roulettePort, rewardService);
         given(roulettePort.findRoundByIdForUpdate(10L)).willReturn(Optional.of(round(true)));
 
@@ -45,7 +45,10 @@ class RouletteRoundApplyServiceTest {
         then(roulettePort).should().markRoundApplied(10L, NOW);
     }
 
-    private RouletteRoundApplyService service(RoulettePort roulettePort, RewardService rewardService) {
+    private RouletteRoundApplyService service(
+            RoulettePort roulettePort,
+            GrantRouletteRewardUseCase rewardService
+    ) {
         return new RouletteRoundApplyService(roulettePort, rewardService) {
             @Override
             Instant now() {

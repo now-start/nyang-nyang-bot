@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ValidateOverlayTokenUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.QueryRouletteResultUseCase.RouletteRoundResult;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayJobResult;
@@ -22,7 +23,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     private static final int DISPLAY_TTL_SECONDS = 120;
     private static final int CLAIM_LEASE_SECONDS = 30;
 
-    private final OverlayTokenService overlayTokenService;
+    private final ValidateOverlayTokenUseCase validateOverlayTokenUseCase;
     private final OverlayDisplayPort overlayDisplayPort;
 
     @Override
@@ -109,7 +110,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
 
     private void validateAuthorization(String authorizationHeader) {
         String token = extractBearerToken(authorizationHeader);
-        if (!overlayTokenService.validateToken(token)) {
+        if (!validateOverlayTokenUseCase.validateToken(token)) {
             throw new IllegalArgumentException("invalid overlay token");
         }
     }

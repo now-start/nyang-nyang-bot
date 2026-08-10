@@ -2,45 +2,27 @@ package org.nowstart.nyangnyangbot.application.service.chzzk;
 
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
-import org.nowstart.nyangnyangbot.application.service.chat.ChatService;
-import org.nowstart.nyangnyangbot.application.service.donation.DonationService;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkChatSocketPort;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ChzzkChatConnectionService implements ConnectChzzkChatUseCase, HandleChzzkEventUseCase {
+public class ChzzkChatConnectionService implements ConnectChzzkChatUseCase {
 
     private final SystemService systemService;
-    private final ChatService chatService;
-    private final DonationService donationService;
+    private final ChzzkChatSocketPort chzzkChatSocketPort;
 
     @Override
-    public boolean isConnected() {
-        return systemService.isConnected();
+    public synchronized void connect() {
+        long connectionAttemptId = systemService.beginConnection();
+        if (connectionAttemptId == 0) {
+            return;
+        }
+        try {
+            chzzkChatSocketPort.connect(systemService.getSession(), connectionAttemptId);
+        } catch (RuntimeException | Error failure) {
+            systemService.handleConnectionClosed(connectionAttemptId);
+            throw failure;
+        }
     }
-
-    @Override
-    public String getSession() {
-        return systemService.getSession();
-    }
-
-    @Override
-    public void handleSystemEvent(SystemReceived event) {
-        systemService.handle(event);
-    }
-
-    @Override
-    public void handleChatEvent(ChatReceived event) {
-        chatService.handle(event);
-    }
-
-    @Override
-    public void handleDonationEvent(DonationReceived event) {
-        donationService.handle(event);
-    }
-
 }

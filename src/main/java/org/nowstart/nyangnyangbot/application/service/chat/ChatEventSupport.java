@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.chat;
 
 import io.micrometer.common.util.StringUtils;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 
 public final class ChatEventSupport {
 

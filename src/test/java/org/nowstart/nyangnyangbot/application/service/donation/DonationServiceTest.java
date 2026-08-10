@@ -9,7 +9,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;

@@ -4,10 +4,10 @@ import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.MAX_FAIL
 
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase.RouletteRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.RoundResult;
-import org.nowstart.nyangnyangbot.application.service.reward.RewardService;
-import org.nowstart.nyangnyangbot.application.service.reward.RewardService.RouletteRewardCommand;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RouletteRoundApplyService {
 
     private final RoulettePort roulettePort;
-    private final RewardService rewardService;
+    private final GrantRouletteRewardUseCase grantRouletteRewardUseCase;
 
     @Transactional
     public void applyRound(Long roundId) {
@@ -27,7 +27,7 @@ public class RouletteRoundApplyService {
             return;
         }
         if (!round.losing()) {
-            rewardService.grantRoulette(new RouletteRewardCommand(
+            grantRouletteRewardUseCase.grantRoulette(new RouletteRewardCommand(
                     round.id(),
                     round.userId(),
                     round.donorDisplayName(),

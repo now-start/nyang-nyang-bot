@@ -5,12 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ReconcilePointBalanceUseCase;
+import org.nowstart.nyangnyangbot.application.port.out.persistence.PersistenceFailureClassifierPort;
+import org.nowstart.nyangnyangbot.application.port.out.transaction.TransactionContextPort;
 import org.nowstart.nyangnyangbot.application.service.point.PointLedgerTransactionExecutor.WriteRequest;
 import org.nowstart.nyangnyangbot.application.service.point.PointLedgerTransactionExecutor.ReconcileRequest;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.validation.annotation.Validated;
 
 @Service
@@ -19,10 +19,12 @@ import org.springframework.validation.annotation.Validated;
 public class PointLedgerService implements AdjustPointUseCase, GrantPointUseCase, ReconcilePointBalanceUseCase {
 
     private final PointLedgerTransactionExecutor transactionExecutor;
+    private final PersistenceFailureClassifierPort persistenceFailureClassifierPort;
+    private final TransactionContextPort transactionContextPort;
 
     @Override
     public PointLedgerResult adjust(AdjustPointCommand command) {
-        boolean joinsCallerTransaction = TransactionSynchronizationManager.isActualTransactionActive();
+        boolean joinsCallerTransaction = transactionContextPort.isTransactionActive();
         String idempotencyKey = idempotencyKey(command.idempotencyKey());
         WriteRequest request = new WriteRequest(
                 command.userId(),
@@ -40,7 +42,10 @@ public class PointLedgerService implements AdjustPointUseCase, GrantPointUseCase
         );
         try {
             return transactionExecutor.execute(request);
-        } catch (DataIntegrityViolationException failure) {
+        } catch (RuntimeException failure) {
+            if (!persistenceFailureClassifierPort.isConflict(failure)) {
+                throw failure;
+            }
             if (joinsCallerTransaction) {
                 // The aggregate transaction is rollback-only; its outer boundary must observe the failure.
                 throw failure;

@@ -4,6 +4,7 @@ import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.overlay.ValidateOverlayTokenUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.domain.overlay.OverlayTokenPolicy;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OverlayTokenService implements IssueOverlayTokenUseCase {
+public class OverlayTokenService implements IssueOverlayTokenUseCase, ValidateOverlayTokenUseCase {
 
     private final OverlayTokenPolicy overlayTokenPolicy = new OverlayTokenPolicy();
     private final OverlayTokenPort overlayTokenPort;
@@ -29,6 +30,7 @@ public class OverlayTokenService implements IssueOverlayTokenUseCase {
         return new OverlayTokenIssueResult(rawToken);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public boolean validateToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {

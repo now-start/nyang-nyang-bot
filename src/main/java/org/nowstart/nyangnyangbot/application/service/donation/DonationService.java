@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ProcessRouletteDonationUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
@@ -19,13 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DonationService {
+public class DonationService implements HandleDonationEventUseCase {
 
     private final DonationPort donationPort;
     private final ObserveUserUseCase observeUserUseCase;
     private final ProcessRouletteDonationUseCase processRouletteDonationUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Override
     @Transactional
     public void handle(DonationReceived donation) {
         if (donation == null || isBlank(donation.ingestionKey()) || isBlank(donation.channelId())) {

@@ -1,10 +1,10 @@
-package org.nowstart.nyangnyangbot.adapter.in.chzzk;
+package org.nowstart.nyangnyangbot.adapter.out.socket.chzzk;
 
 import java.util.List;
 import java.util.Map;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.DonationReceived;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.SystemReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkSystemEventUseCase.SystemReceived;
+import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 
 final class ChzzkSocketPayloads {
 
@@ -87,5 +87,4 @@ final class ChzzkSocketPayloads {
             );
         }
     }
-
 }

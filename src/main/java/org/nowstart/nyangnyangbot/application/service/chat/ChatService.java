@@ -3,7 +3,8 @@ package org.nowstart.nyangnyangbot.application.service.chat;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkEventUseCase.ChatReceived;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ApprovedCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ExecuteCommand;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatService {
+public class ChatService implements HandleChatEventUseCase {
 
     private final RecordPresenceChatUseCase recordPresenceChatUseCase;
     private final RecordWeeklyChatUseCase recordWeeklyChatUseCase;
@@ -28,6 +29,7 @@ public class ChatService {
     private final CommandPort commandPort;
     private final ChzzkClientPort chzzkClientPort;
 
+    @Override
     public void handle(ChatReceived chat) {
         if (chat == null) {
             return;

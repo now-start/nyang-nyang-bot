@@ -5,6 +5,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase.RouletteRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.in.reward.QueryRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
@@ -13,7 +15,6 @@ import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.nowstart.nyangnyangbot.domain.reward.RewardPolicy;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
-import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -21,12 +22,13 @@ import org.springframework.validation.annotation.Validated;
 @Service
 @Validated
 @RequiredArgsConstructor
-public class RewardService implements QueryRewardUseCase {
+public class RewardService implements GrantRouletteRewardUseCase, QueryRewardUseCase {
 
     private final RewardPolicy rewardPolicy = new RewardPolicy();
     private final RewardPort rewardPort;
     private final GrantPointUseCase grantPointUseCase;
 
+    @Override
     @Transactional
     public void grantRoulette(RouletteRewardCommand command) {
         if (rewardPort.existsByRouletteRoundId(command.roundId())) {
@@ -151,17 +153,4 @@ public class RewardService implements QueryRewardUseCase {
         }
     }
 
-    public record RouletteRewardCommand(
-            Long roundId,
-            String userId,
-            String donorDisplayName,
-            String ingestionKey,
-            String label,
-            RewardType rewardType,
-            ConversionMode conversionMode,
-            Long pointDelta,
-            String description,
-            String privateNote
-    ) {
-    }
 }

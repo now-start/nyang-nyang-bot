@@ -3,46 +3,45 @@ package org.nowstart.nyangnyangbot.adapter.in.scheduler.chzzk;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.never;
 
-import java.net.URISyntaxException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatSocketUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @ExtendWith(MockitoExtension.class)
 class ChzzkChatConnectionSchedulerTest {
 
     @Mock
-    private ConnectChzzkChatSocketUseCase connectChzzkChatSocketUseCase;
+    private ConnectChzzkChatUseCase connectChzzkChatUseCase;
 
     @Test
     @DisplayName("자동 연결이 활성화되어 있으면 치지직 채팅 연결을 시도한다")
-    void scheduledConnect_ShouldConnect_WhenAutoConnectEnabled() throws URISyntaxException {
+    void scheduledConnect_ShouldConnect_WhenAutoConnectEnabled() {
         // 준비
-        ChzzkChatConnectionScheduler scheduler = new ChzzkChatConnectionScheduler(connectChzzkChatSocketUseCase, true);
+        ChzzkChatConnectionScheduler scheduler = new ChzzkChatConnectionScheduler(connectChzzkChatUseCase, true);
 
         // 실행
         scheduler.scheduledConnect();
 
         // 검증
-        BDDMockito.then(connectChzzkChatSocketUseCase).should().connect();
+        BDDMockito.then(connectChzzkChatUseCase).should().connect();
     }
 
     @Test
     @DisplayName("자동 연결이 비활성화되어 있으면 치지직 채팅 연결을 시도하지 않는다")
-    void scheduledConnect_ShouldNotConnect_WhenAutoConnectDisabled() throws URISyntaxException {
+    void scheduledConnect_ShouldNotConnect_WhenAutoConnectDisabled() {
         // 준비
-        ChzzkChatConnectionScheduler scheduler = new ChzzkChatConnectionScheduler(connectChzzkChatSocketUseCase, false);
+        ChzzkChatConnectionScheduler scheduler = new ChzzkChatConnectionScheduler(connectChzzkChatUseCase, false);
 
         // 실행
         scheduler.scheduledConnect();
 
         // 검증
-        BDDMockito.then(connectChzzkChatSocketUseCase).should(never()).connect();
+        BDDMockito.then(connectChzzkChatUseCase).should(never()).connect();
     }
 
     @Test
