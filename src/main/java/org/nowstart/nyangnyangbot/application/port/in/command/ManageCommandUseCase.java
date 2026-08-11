@@ -8,24 +8,22 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
+import org.nowstart.nyangnyangbot.domain.command.CommandPolicy;
 
 public interface ManageCommandUseCase {
 
-    int MAX_TEMPLATE_LENGTH = 1_000;
-    int MIN_TRIGGER_LENGTH = CommandTrigger.MIN_LENGTH;
+    int MAX_TEMPLATE_LENGTH = CommandPolicy.MAX_TEMPLATE_LENGTH;
     int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
-    CommandExecutionPolicy DEFAULT_EXECUTION_POLICY = CommandExecutionPolicy.USER_INTERVAL;
+    CommandExecutionPolicy DEFAULT_EXECUTION_POLICY = CommandPolicy.DEFAULT_EXECUTION_POLICY;
     CommandExecutionPolicy CALENDAR_DAY_EXECUTION_POLICY = CommandExecutionPolicy.USER_CALENDAR_DAY;
-    int DEFAULT_USER_COOLDOWN_SECONDS = 30;
-    int MIN_USER_COOLDOWN_SECONDS = 5;
-    int MAX_USER_COOLDOWN_SECONDS = 3_600;
-    String TEMPLATE_LENGTH_MESSAGE =
-            "messageTemplate length must be " + MAX_TEMPLATE_LENGTH + " or less";
-    String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
-    String USER_COOLDOWN_RANGE_MESSAGE = "userCooldownSeconds must be between "
-            + MIN_USER_COOLDOWN_SECONDS + " and " + MAX_USER_COOLDOWN_SECONDS;
+    int DEFAULT_USER_COOLDOWN_SECONDS = CommandPolicy.DEFAULT_USER_COOLDOWN_SECONDS;
+    int MIN_USER_COOLDOWN_SECONDS = CommandPolicy.MIN_USER_COOLDOWN_SECONDS;
+    int MAX_USER_COOLDOWN_SECONDS = CommandPolicy.MAX_USER_COOLDOWN_SECONDS;
+    String TEMPLATE_LENGTH_MESSAGE = CommandValidationMessages.TEMPLATE_LENGTH_MESSAGE;
+    String USER_COOLDOWN_RANGE_MESSAGE = CommandValidationMessages.USER_COOLDOWN_RANGE_MESSAGE;
 
     static CommandExecutionPolicy executionPolicy(String value) {
         return value == null || value.isBlank()
@@ -51,7 +49,7 @@ public interface ManageCommandUseCase {
 
     record CreateCommand(
             @NotBlank(message = "trigger is required")
-            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
+            @Size(min = CommandTrigger.MIN_LENGTH, max = MAX_TRIGGER_LENGTH, message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
             @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
@@ -78,7 +76,7 @@ public interface ManageCommandUseCase {
     }
 
     record UpdateCommand(
-            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
+            @Size(min = CommandTrigger.MIN_LENGTH, max = MAX_TRIGGER_LENGTH, message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
@@ -112,7 +110,7 @@ public interface ManageCommandUseCase {
     record ValidateCommand(
             Long commandId,
             @NotBlank(message = "trigger is required")
-            @Size(min = MIN_TRIGGER_LENGTH, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
+            @Size(min = CommandTrigger.MIN_LENGTH, max = MAX_TRIGGER_LENGTH, message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
             @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)

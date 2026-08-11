@@ -7,11 +7,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.nowstart.nyangnyangbot.domain.point.PointAdjustmentPolicy;
 
 public interface ManagePointAdjustmentPresetUseCase {
 
-    int MAX_LABEL_LENGTH = 100;
-    int MAX_MANUAL_DESCRIPTION_LENGTH = 500;
+    int MAX_LABEL_LENGTH = PointAdjustmentPolicy.MAX_LABEL_LENGTH;
+    int MAX_MANUAL_DESCRIPTION_LENGTH = PointAdjustmentPolicy.MAX_MANUAL_DESCRIPTION_LENGTH;
 
     List<PointAdjustmentPresetResult> getPresets();
 

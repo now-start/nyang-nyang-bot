@@ -1,5 +1,11 @@
 package org.nowstart.nyangnyangbot.application.port.out.command;
 
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.TEMPLATE_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.USER_COOLDOWN_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MIN_USER_COOLDOWN_SECONDS;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -10,14 +16,10 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 
 public interface CommandExecutionPort {
-
-    int MIN_USER_COOLDOWN_SECONDS = 5;
-    int MAX_USER_COOLDOWN_SECONDS = 3_600;
-    String USER_COOLDOWN_RANGE_MESSAGE = "userCooldownSeconds must be between 5 and 3600";
 
     Optional<LockedCommand> lockActiveCommand(String normalizedTrigger);
 
@@ -43,8 +45,7 @@ public interface CommandExecutionPort {
             @Size(min = CommandTrigger.MIN_LENGTH, max = CommandTrigger.MAX_LENGTH,
                     message = CommandTrigger.LENGTH_MESSAGE) String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = CommandPort.MAX_TEMPLATE_LENGTH,
-                    message = "messageTemplate length must be 1000 or less") String messageTemplate,
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE) String messageTemplate,
             @NotNull(message = "executionPolicy is required") CommandExecutionPolicy executionPolicy,
             @Min(value = MIN_USER_COOLDOWN_SECONDS, message = USER_COOLDOWN_RANGE_MESSAGE)
             @Max(value = MAX_USER_COOLDOWN_SECONDS, message = USER_COOLDOWN_RANGE_MESSAGE)

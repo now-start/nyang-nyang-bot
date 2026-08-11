@@ -1,5 +1,16 @@
 package org.nowstart.nyangnyangbot.application.service.timer;
 
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.DEFAULT_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.DEFAULT_MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

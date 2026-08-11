@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
+import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.TOTAL_PROBABILITY;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -67,7 +69,7 @@ public interface ManageRouletteUseCase {
     record AddRouletteOptionCommand(
             @NotNull @Positive Long configId,
             @NotBlank @Size(max = 100) String label,
-            @NotNull @Min(0) @Max(RoulettePolicy.TOTAL_PROBABILITY) Integer probabilityBasisPoints,
+            @NotNull @Min(0) @Max(TOTAL_PROBABILITY) Integer probabilityBasisPoints,
             Boolean losing,
             String rewardType,
             String conversionMode,

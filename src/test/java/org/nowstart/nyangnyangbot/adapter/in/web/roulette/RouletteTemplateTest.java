@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
+import static org.nowstart.nyangnyangbot.domain.chat.CommandTrigger.MAX_LENGTH;
+import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.DEFAULT_SIMULATION_ITERATIONS;
 import static org.assertj.core.api.BDDAssertions.then;
 
 import java.time.Instant;
@@ -33,10 +35,10 @@ class RouletteTemplateTest {
         context.setVariable("configs", List.of(config));
         context.setVariable("selectedConfigId", 1L);
         context.setVariable("config", config);
-        context.setVariable("rouletteTriggerMaxLength", ManageRouletteUseCase.MAX_TRIGGER_LENGTH);
+        context.setVariable("rouletteTriggerMaxLength", MAX_LENGTH);
         context.setVariable(
                 "defaultSimulationIterations",
-                ManageRouletteUseCase.DEFAULT_SIMULATION_ITERATIONS
+                DEFAULT_SIMULATION_ITERATIONS
         );
         context.setVariable("runsPage", new PageImpl<>(
                 List.of(run()),

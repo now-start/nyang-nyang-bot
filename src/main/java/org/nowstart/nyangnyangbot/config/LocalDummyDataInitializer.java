@@ -1,8 +1,8 @@
 package org.nowstart.nyangnyangbot.config;
 
-import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
-import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_INTERVAL_MINUTES;
-import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.DEFAULT_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.DEFAULT_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.DEFAULT_MIN_CHAT_COUNT;
 
 import java.time.DayOfWeek;
 import java.time.Duration;

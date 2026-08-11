@@ -1,5 +1,13 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.TEMPLATE_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.USER_COOLDOWN_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.DEFAULT_EXECUTION_POLICY;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.DEFAULT_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MIN_USER_COOLDOWN_SECONDS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -182,7 +190,7 @@ public class CommandService implements ManageCommandUseCase {
             errors.add("messageTemplate is required");
             return errors;
         }
-        if (template.length() > ManageCommandUseCase.MAX_TEMPLATE_LENGTH) {
+        if (template.length() > MAX_TEMPLATE_LENGTH) {
             errors.add(TEMPLATE_LENGTH_MESSAGE);
         }
         Set<String> malformed = templateRenderer.malformedVariables(template);

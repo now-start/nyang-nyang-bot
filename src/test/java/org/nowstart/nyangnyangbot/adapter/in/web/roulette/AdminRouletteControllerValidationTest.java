@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
+import static org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy.MAX_SIMULATION_ITERATIONS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -101,9 +102,9 @@ class AdminRouletteControllerValidationTest {
         ManageRouletteUseCase validatedUseCase = validated(manageRouletteUseCase, ManageRouletteUseCase.class);
         AdminRouletteController controller = new AdminRouletteController(validatedUseCase, queryRouletteResultUseCase);
 
-        controller.simulate(1L, ManageRouletteUseCase.MAX_SIMULATION_ITERATIONS + 1, new ConcurrentModel());
+        controller.simulate(1L, MAX_SIMULATION_ITERATIONS + 1, new ConcurrentModel());
 
-        verify(manageRouletteUseCase).simulate(1L, ManageRouletteUseCase.MAX_SIMULATION_ITERATIONS);
+        verify(manageRouletteUseCase).simulate(1L, MAX_SIMULATION_ITERATIONS);
     }
 
     @Test

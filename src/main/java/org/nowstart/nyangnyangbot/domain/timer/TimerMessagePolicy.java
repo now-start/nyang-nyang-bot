@@ -3,6 +3,8 @@ package org.nowstart.nyangnyangbot.domain.timer;
 public final class TimerMessagePolicy {
 
     public static final int MAX_TEMPLATE_LENGTH = 1_000;
+    public static final int DEFAULT_INTERVAL_MINUTES = 30;
+    public static final int DEFAULT_MIN_CHAT_COUNT = 10;
     public static final int MIN_INTERVAL_MINUTES = 5;
     public static final int MAX_INTERVAL_MINUTES = 1_440;
     public static final int MIN_CHAT_COUNT = 1;

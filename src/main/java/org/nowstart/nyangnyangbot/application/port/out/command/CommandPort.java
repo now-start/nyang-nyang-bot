@@ -1,5 +1,11 @@
 package org.nowstart.nyangnyangbot.application.port.out.command;
 
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.TEMPLATE_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.USER_COOLDOWN_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MIN_USER_COOLDOWN_SECONDS;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -15,11 +21,6 @@ import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 
 public interface CommandPort {
-
-    int MAX_TEMPLATE_LENGTH = 1_000;
-    int MIN_USER_COOLDOWN_SECONDS = 5;
-    int MAX_USER_COOLDOWN_SECONDS = 3_600;
-    String USER_COOLDOWN_RANGE_MESSAGE = "userCooldownSeconds must be between 5 and 3600";
 
     List<CommandRecord> findAllOrderByIdDesc();
 
@@ -42,7 +43,7 @@ public interface CommandPort {
                     message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             boolean active,
             @NotNull(message = "executionPolicy is required")
@@ -78,7 +79,7 @@ public interface CommandPort {
                     message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             boolean active,
             @NotNull(message = "executionPolicy is required")
@@ -116,7 +117,7 @@ public interface CommandPort {
                     message = CommandTrigger.LENGTH_MESSAGE)
             String trigger,
             @NotBlank(message = "messageTemplate is required")
-            @Size(max = MAX_TEMPLATE_LENGTH, message = "messageTemplate length must be 1000 or less")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             boolean active,
             @NotNull(message = "executionPolicy is required")

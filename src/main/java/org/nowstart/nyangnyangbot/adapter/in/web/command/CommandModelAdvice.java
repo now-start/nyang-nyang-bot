@@ -3,8 +3,8 @@ package org.nowstart.nyangnyangbot.adapter.in.web.command;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CALENDAR_DAY_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
-import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_TRIGGER_LENGTH;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_TRIGGER_LENGTH;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_USER_COOLDOWN_SECONDS;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MIN_USER_COOLDOWN_SECONDS;
 

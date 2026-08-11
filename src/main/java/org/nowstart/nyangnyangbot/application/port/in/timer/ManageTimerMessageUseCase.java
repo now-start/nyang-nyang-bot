@@ -1,5 +1,9 @@
 package org.nowstart.nyangnyangbot.application.port.in.timer;
 
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -14,15 +18,12 @@ import org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy;
 public interface ManageTimerMessageUseCase {
 
     int MAX_TEMPLATE_LENGTH = TimerMessagePolicy.MAX_TEMPLATE_LENGTH;
-    int DEFAULT_INTERVAL_MINUTES = 30;
-    int DEFAULT_MIN_CHAT_COUNT = 10;
+    int DEFAULT_INTERVAL_MINUTES = TimerMessagePolicy.DEFAULT_INTERVAL_MINUTES;
+    int DEFAULT_MIN_CHAT_COUNT = TimerMessagePolicy.DEFAULT_MIN_CHAT_COUNT;
     int MIN_INTERVAL_MINUTES = TimerMessagePolicy.MIN_INTERVAL_MINUTES;
     int MAX_INTERVAL_MINUTES = TimerMessagePolicy.MAX_INTERVAL_MINUTES;
     int MIN_CHAT_COUNT = TimerMessagePolicy.MIN_CHAT_COUNT;
     int MAX_CHAT_COUNT = TimerMessagePolicy.MAX_CHAT_COUNT;
-    String TEMPLATE_LENGTH_MESSAGE = TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
-    String INTERVAL_RANGE_MESSAGE = TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
-    String CHAT_COUNT_RANGE_MESSAGE = TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
 
     List<TimerMessageResult> getTimerMessages();
 
