@@ -1,5 +1,9 @@
 package org.nowstart.nyangnyangbot.application.port.out.point;
 
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.util.Optional;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 
@@ -18,28 +22,36 @@ public interface PointLedgerPort {
     LedgerEntryRecord append(AppendPointEntry data);
 
     record AppendPointEntry(
-            String userId,
+            @NotBlank(message = "userId is required") String userId,
             long delta,
-            PointSourceType sourceType,
+            @NotNull(message = "sourceType is required") PointSourceType sourceType,
             String sourceReference,
-            String description,
+            @NotBlank(message = "description is required") String description,
             String privateNote,
             Long correctionOfEntryId,
             String actorUserId,
-            String idempotencyKey
+            @NotBlank(message = "idempotencyKey is required") String idempotencyKey
     ) {
+        @AssertTrue(message = "delta must not be zero")
+        public boolean isDeltaNonZero() {
+            return delta != 0;
+        }
     }
 
     record LedgerEntryRecord(
-            long id,
-            String userId,
+            @Positive(message = "id must be positive") long id,
+            @NotBlank(message = "userId is required") String userId,
             long delta,
-            PointSourceType sourceType,
+            @NotNull(message = "sourceType is required") PointSourceType sourceType,
             String sourceReference,
-            String description,
+            @NotBlank(message = "description is required") String description,
             String privateNote,
             Long correctionOfEntryId,
             String actorUserId
     ) {
+        @AssertTrue(message = "delta must not be zero")
+        public boolean isDeltaNonZero() {
+            return delta != 0;
+        }
     }
 }

@@ -26,6 +26,7 @@ public class RewardPersistenceAdapter implements RewardPort {
     @Override
     @Transactional
     public void createGrant(CreateRewardCommand command) {
+        contractValidator.request("reward.createGrant", command);
         RewardGrant grant = RewardGrant.builder()
                 .userAccount(reference(UserAccount.class, command.userId()))
                 .rouletteRound(reference(RouletteRound.class, command.rouletteRoundId()))

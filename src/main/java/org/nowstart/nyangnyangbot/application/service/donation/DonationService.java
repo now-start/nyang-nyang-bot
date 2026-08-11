@@ -16,9 +16,11 @@ import org.nowstart.nyangnyangbot.application.service.roulette.RouletteRunPrepar
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class DonationService implements HandleDonationEventUseCase {
 
@@ -30,9 +32,6 @@ public class DonationService implements HandleDonationEventUseCase {
     @Override
     @Transactional
     public void handle(DonationReceived donation) {
-        if (donation == null || isBlank(donation.ingestionKey()) || isBlank(donation.channelId())) {
-            return;
-        }
         log.info("[ChzzkDonation] socket received: {}", donation);
         DonationResult existing = donationPort.findByIngestionKey(donation.ingestionKey()).orElse(null);
         if (existing != null) {
@@ -93,9 +92,6 @@ public class DonationService implements HandleDonationEventUseCase {
     }
 
     private long parseAmount(String amount) {
-        if (isBlank(amount)) {
-            return 0L;
-        }
         String digits = amount.replaceAll("\\D", "");
         if (digits.isBlank()) {
             return 0L;

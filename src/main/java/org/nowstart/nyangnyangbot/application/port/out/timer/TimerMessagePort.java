@@ -4,14 +4,17 @@ import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.CHAT_CO
 import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
 import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_CHAT_COUNT;
 import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MAX_TEMPLATE_LENGTH;
 import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_CHAT_COUNT;
 import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.MIN_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +63,7 @@ public interface TimerMessagePort {
             @Positive(groups = OutboundResult.class, message = "id must be positive")
             Long id,
             @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             @NotNull(message = "intervalMinutes is required")
             @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
@@ -80,9 +84,14 @@ public interface TimerMessagePort {
     }
 
     record CreateData(
-            @NotBlank(message = "messageTemplate is required") String messageTemplate,
-            @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
-            @NotNull(message = "minChatCount is required") Integer minChatCount,
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE) String messageTemplate,
+            @NotNull(message = "intervalMinutes is required")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE) Integer intervalMinutes,
+            @NotNull(message = "minChatCount is required")
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE) Integer minChatCount,
             boolean active,
             Instant nextRunAt,
             String createdBy,
@@ -92,9 +101,14 @@ public interface TimerMessagePort {
 
     record UpdateData(
             @NotNull(message = "id is required") @Positive(message = "id must be positive") Long id,
-            @NotBlank(message = "messageTemplate is required") String messageTemplate,
-            @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
-            @NotNull(message = "minChatCount is required") Integer minChatCount,
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE) String messageTemplate,
+            @NotNull(message = "intervalMinutes is required")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE) Integer intervalMinutes,
+            @NotNull(message = "minChatCount is required")
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE) Integer minChatCount,
             boolean active,
             Instant nextRunAt,
             boolean resetSchedule,
@@ -104,8 +118,11 @@ public interface TimerMessagePort {
 
     record ClaimedTimerMessage(
             @NotNull(message = "id is required") @Positive(message = "id must be positive") Long id,
-            @NotBlank(message = "messageTemplate is required") String messageTemplate,
-            @NotNull(message = "intervalMinutes is required") Integer intervalMinutes,
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE) String messageTemplate,
+            @NotNull(message = "intervalMinutes is required")
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE) Integer intervalMinutes,
             @NotNull(message = "claimedNextRunAt is required") Instant claimedNextRunAt,
             @NotBlank(message = "claimToken is required") String claimToken
     ) {

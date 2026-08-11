@@ -1,5 +1,8 @@
 package org.nowstart.nyangnyangbot.application.port.out.point;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -21,18 +24,22 @@ public interface PointQueryPort {
 
     long countByBalanceGreaterThan(long balance);
 
-    record PointSummaryRecord(String userId, String displayName, long balance) {
+    record PointSummaryRecord(
+            @NotBlank(message = "userId is required") String userId,
+            String displayName,
+            long balance
+    ) {
     }
 
     record PointHistoryRecord(
-            long ledgerId,
-            String userId,
+            @Positive(message = "ledgerId must be positive") long ledgerId,
+            @NotBlank(message = "userId is required") String userId,
             long delta,
             long balanceAfter,
-            PointSourceType sourceType,
-            String description,
+            @NotNull(message = "sourceType is required") PointSourceType sourceType,
+            @NotBlank(message = "description is required") String description,
             boolean correction,
-            Instant createdAt
+            @NotNull(message = "createdAt is required") Instant createdAt
     ) {
     }
 }

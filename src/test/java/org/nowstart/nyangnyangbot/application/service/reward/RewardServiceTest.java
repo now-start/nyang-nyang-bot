@@ -1,9 +1,12 @@
 package org.nowstart.nyangnyangbot.application.service.reward;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.RewardRecord;
 import org.nowstart.nyangnyangbot.application.port.in.reward.GrantRouletteRewardUseCase.RouletteRewardCommand;
+import org.nowstart.nyangnyangbot.application.port.in.reward.QueryRewardUseCase;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
@@ -96,10 +100,11 @@ class RewardServiceTest {
     void getUserRewards_RejectsUnboundedLimit() {
         RewardPort rewardPort = Mockito.mock(RewardPort.class);
         RewardService service = service(rewardPort, Mockito.mock(GrantPointUseCase.class));
+        QueryRewardUseCase validatedService = validated(service, QueryRewardUseCase.class);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.getUserRewards("user-1", null, 101))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("reward query limit must be between 1 and 100");
+        assertThatThrownBy(() -> validatedService.getUserRewards("user-1", null, 101))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("reward query limit must be 100 or less");
 
         then(rewardPort).shouldHaveNoInteractions();
     }

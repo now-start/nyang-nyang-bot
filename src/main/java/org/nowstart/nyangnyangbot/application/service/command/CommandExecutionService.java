@@ -11,6 +11,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ObserveUserCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ExecutionData;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ExecutionRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.LockedCommand;
@@ -18,8 +19,10 @@ import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class CommandExecutionService implements ExecuteCommandUseCase {
 
@@ -32,9 +35,6 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
     @Override
     @Transactional
     public Optional<ApprovedCommand> execute(ExecuteCommand request) {
-        if (request == null || request.userId() == null || request.userId().isBlank()) {
-            return Optional.empty();
-        }
         String normalizedTrigger = CommandTrigger.normalize(request.trigger());
         Optional<LockedCommand> locked = executionPort.lockActiveCommand(normalizedTrigger);
         if (locked.isEmpty()) {
@@ -43,7 +43,7 @@ public class CommandExecutionService implements ExecuteCommandUseCase {
         LockedCommand command = locked.get();
 
         // 모든 writer의 잠금 순서는 command -> user_account 이다.
-        executionPort.observeAndLockUser(request.userId(), request.displayName());
+        executionPort.observeAndLockUser(new ObserveUserCommand(request.userId(), request.displayName()));
         Instant approvedAt = executionPort.currentDatabaseTime();
         LocalDate today = approvedAt.atZone(SEOUL).toLocalDate();
         Instant calendarDayStartedAt = command.executionPolicy() == CommandExecutionPolicy.USER_CALENDAR_DAY

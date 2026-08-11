@@ -14,8 +14,9 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
-import org.nowstart.nyangnyangbot.application.port.in.weeklychat.QueryWeeklyChatRankUseCase.WeeklyChatRankView;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort.IncrementWeeklyChatCommand;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort.WeeklyChatRankRecord;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyChatRankServiceTest {
@@ -44,15 +45,18 @@ class WeeklyChatRankServiceTest {
 
         var order = inOrder(observeUserUseCase, weeklyChatCountPort);
         order.verify(observeUserUseCase).observeUser("user-1", "치즈냥");
-        order.verify(weeklyChatCountPort).increment(Instant.parse("2026-03-22T15:00:00Z"), "user-1");
+        order.verify(weeklyChatCountPort).increment(new IncrementWeeklyChatCommand(
+                Instant.parse("2026-03-22T15:00:00Z"),
+                "user-1"
+        ));
     }
 
     @Test
     void getWeeklyRanks_ReturnsAtomicAggregateProjection() {
         given(service.currentTime()).willReturn(Instant.parse("2026-03-26T12:00:00Z"));
         given(weeklyChatCountPort.findWeeklyRanks(Instant.parse("2026-03-22T15:00:00Z"), 2)).willReturn(List.of(
-                new WeeklyChatRankView(1, "치즈냥", 22L),
-                new WeeklyChatRankView(2, "고양이", 18L)
+                new WeeklyChatRankRecord(1, "치즈냥", 22L),
+                new WeeklyChatRankRecord(2, "고양이", 18L)
         ));
 
         then(service.getWeeklyRanks(2)).hasSize(2);

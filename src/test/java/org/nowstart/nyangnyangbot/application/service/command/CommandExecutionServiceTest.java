@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.command.ExecuteCommandUseCase.ExecuteCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort;
+import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ObserveUserCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ExecutionData;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.ExecutionRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort.LockedCommand;
@@ -66,7 +67,7 @@ class CommandExecutionServiceTest {
         then(result.orElseThrow().renderedMessage()).isEqualTo("10|3|2|2");
         InOrder order = inOrder(executionPort);
         order.verify(executionPort).lockActiveCommand("!출석");
-        order.verify(executionPort).observeAndLockUser("user-1", "냥이");
+        order.verify(executionPort).observeAndLockUser(new ObserveUserCommand("user-1", "냥이"));
         order.verify(executionPort).currentDatabaseTime();
         order.verify(executionPort).existsCalendarDayStartedAt(7L, "user-1", CALENDAR_DAY_STARTED_AT);
         order.verify(executionPort).append(new ExecutionData(

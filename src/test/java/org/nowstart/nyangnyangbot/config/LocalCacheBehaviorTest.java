@@ -22,6 +22,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAc
 import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
+import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort.SavePresetCommand;
 import org.nowstart.nyangnyangbot.config.cache.CacheConfig;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
@@ -86,7 +87,7 @@ class LocalCacheBehaviorTest {
         then(pointAdjustmentPresetPort.findAll().getFirst().id()).isEqualTo(1L);
         BDDMockito.then(pointAdjustmentPresetRepository).should(times(1)).findAll();
 
-        pointAdjustmentPresetPort.save(20, "추가 보너스");
+        pointAdjustmentPresetPort.save(new SavePresetCommand(20, "추가 보너스"));
 
         then(pointAdjustmentPresetPort.findAll().getFirst().id()).isEqualTo(2L);
         BDDMockito.then(pointAdjustmentPresetRepository).should(times(2)).findAll();
@@ -165,9 +166,10 @@ class LocalCacheBehaviorTest {
 
         @Bean
         PointAdjustmentPresetPort pointAdjustmentPresetPort(
-                PointAdjustmentPresetRepository pointAdjustmentPresetRepository
+                PointAdjustmentPresetRepository pointAdjustmentPresetRepository,
+                OutboundContractValidator contractValidator
         ) {
-            return new PointAdjustmentPresetPersistenceAdapter(pointAdjustmentPresetRepository);
+            return new PointAdjustmentPresetPersistenceAdapter(pointAdjustmentPresetRepository, contractValidator);
         }
 
         @Bean

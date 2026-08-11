@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
 import java.util.List;
 import java.util.Locale;
@@ -92,6 +93,21 @@ class OverlayControllerTest {
         then(view).isEqualTo("features/overlay/roulette :: overlay-wait");
         then(model.asMap()).isEmpty();
         BDDMockito.then(useCase).should().markDisplayed(1L, "claim-1", "Bearer token");
+    }
+
+    @Test
+    @DisplayName("빈 claim token은 method validation 오류를 fragment로 반환한다")
+    void markDisplayed_ShouldReturnErrorFragmentForConstraintViolation() {
+        ManageOverlayDisplayUseCase target = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
+        ManageOverlayDisplayUseCase useCase = validated(target, ManageOverlayDisplayUseCase.class);
+        OverlayController controller = new OverlayController(useCase);
+        ConcurrentModel model = new ConcurrentModel();
+
+        String view = controller.markDisplayed(1L, " ", "Bearer token", model);
+
+        then(view).isEqualTo("features/overlay/roulette :: overlay-error");
+        then(model.getAttribute("message")).isEqualTo("오버레이 표시 작업을 완료하지 못했습니다.");
+        BDDMockito.then(target).shouldHaveNoInteractions();
     }
 
     @Test

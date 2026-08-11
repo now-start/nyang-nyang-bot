@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
@@ -42,7 +43,7 @@ public class OverlayController {
             return manageOverlayDisplayUseCase.claimNextJob(authorization(authorization))
                     .map(job -> overlayJob(job, model))
                     .orElse(WAIT_FRAGMENT);
-        } catch (IllegalArgumentException exception) {
+        } catch (IllegalArgumentException | ConstraintViolationException exception) {
             model.addAttribute("message", "오버레이 토큰이 유효하지 않습니다.");
             return ERROR_FRAGMENT;
         }
@@ -63,7 +64,7 @@ public class OverlayController {
                     authorization(authorization)
             );
             return WAIT_FRAGMENT;
-        } catch (IllegalArgumentException | IllegalStateException exception) {
+        } catch (IllegalArgumentException | IllegalStateException | ConstraintViolationException exception) {
             model.addAttribute("message", "오버레이 표시 작업을 완료하지 못했습니다.");
             return ERROR_FRAGMENT;
         }

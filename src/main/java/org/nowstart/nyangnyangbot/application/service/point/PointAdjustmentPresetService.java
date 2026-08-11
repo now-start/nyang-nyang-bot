@@ -11,6 +11,7 @@ import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort.PresetRecord;
+import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort.SavePresetCommand;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
 
     @Override
     public PointAdjustmentPresetResult createPreset(CreatePointAdjustmentPreset command) {
-        return result(presetPort.save(command.amount(), command.label().trim()));
+        return result(presetPort.save(new SavePresetCommand(command.amount(), command.label().trim())));
     }
 
     @Override

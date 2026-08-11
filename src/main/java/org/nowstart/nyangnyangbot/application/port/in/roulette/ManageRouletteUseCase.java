@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 public interface ManageRouletteUseCase {
 
     int DEFAULT_SIMULATION_ITERATIONS = RoulettePolicy.DEFAULT_SIMULATION_ITERATIONS;
+    int MIN_SIMULATION_ITERATIONS = RoulettePolicy.MIN_SIMULATION_ITERATIONS;
+    int MAX_SIMULATION_ITERATIONS = RoulettePolicy.MAX_SIMULATION_ITERATIONS;
     int MIN_TRIGGER_LENGTH = CommandTrigger.MIN_LENGTH;
     int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
     String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
@@ -26,15 +28,31 @@ public interface ManageRouletteUseCase {
 
     RouletteOptionResult addOption(@Valid @NotNull AddRouletteOptionCommand command);
 
-    Page<RouletteConfigSummaryResult> getConfigs(Pageable pageable);
+    Page<RouletteConfigSummaryResult> getConfigs(
+            @NotNull(message = "pageable is required") Pageable pageable
+    );
 
-    RouletteConfigResult getConfig(Long configId);
+    RouletteConfigResult getConfig(
+            @NotNull(message = "configId is required")
+            @Positive(message = "configId must be positive") Long configId
+    );
 
-    RouletteConfigResult activateConfig(Long configId);
+    RouletteConfigResult activateConfig(
+            @NotNull(message = "configId is required")
+            @Positive(message = "configId must be positive") Long configId
+    );
 
-    RouletteConfigResult archiveConfig(Long configId);
+    RouletteConfigResult archiveConfig(
+            @NotNull(message = "configId is required")
+            @Positive(message = "configId must be positive") Long configId
+    );
 
-    RouletteSimulationResult simulate(Long configId, int iterations);
+    RouletteSimulationResult simulate(
+            @NotNull(message = "configId is required")
+            @Positive(message = "configId must be positive") Long configId,
+            @Min(value = MIN_SIMULATION_ITERATIONS, message = "iterations must be at least 1")
+            @Max(value = MAX_SIMULATION_ITERATIONS, message = "iterations must be 10000 or less") int iterations
+    );
 
     record CreateRouletteConfigCommand(
             @NotBlank @Size(max = 100) String title,

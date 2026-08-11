@@ -92,12 +92,15 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
             return Optional.empty();
         }
         return timerMessageRepository.findByIdAndClaimToken(timerMessageId, claimToken)
-                .map(timer -> new ClaimedTimerMessage(
+                .map(timer -> contractValidator.persistenceResult(
+                        "timerMessage.claimed",
+                        new ClaimedTimerMessage(
                         timer.getId(),
                         timer.getMessageTemplate(),
                         timer.getIntervalMinutes(),
                         timer.getNextRunAt(),
                         timer.getClaimToken()
+                        )
                 ));
     }
 

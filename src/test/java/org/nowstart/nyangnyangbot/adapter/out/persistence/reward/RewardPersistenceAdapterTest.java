@@ -34,7 +34,7 @@ class RewardPersistenceAdapterTest {
                 .willReturn(Mockito.mock(PointLedgerEntry.class));
         RewardPersistenceAdapter adapter = new RewardPersistenceAdapter(repository, entityManager, validator);
 
-        adapter.createGrant(new CreateRewardCommand(
+        CreateRewardCommand command = new CreateRewardCommand(
                 "user-1",
                 10L,
                 20L,
@@ -48,10 +48,12 @@ class RewardPersistenceAdapterTest {
                 null,
                 "roulette-round:10",
                 Instant.parse("2026-07-23T00:00:00Z")
-        ));
+        );
+
+        adapter.createGrant(command);
 
         Mockito.verify(repository).save(Mockito.any(RewardGrant.class));
-        Mockito.verifyNoInteractions(validator);
+        Mockito.verify(validator).request("reward.createGrant", command);
     }
 
     @Test

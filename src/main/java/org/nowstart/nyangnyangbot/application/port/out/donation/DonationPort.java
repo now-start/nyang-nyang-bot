@@ -1,7 +1,12 @@
 package org.nowstart.nyangnyangbot.application.port.out.donation;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Instant;
 import java.util.Optional;
+import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
 
 public interface DonationPort {
 
@@ -10,25 +15,26 @@ public interface DonationPort {
     DonationResult save(SaveDonationCommand command);
 
     record SaveDonationCommand(
-            String ingestionKey,
-            String donationType,
-            String recipientUserId,
+            @NotBlank(message = "ingestionKey is required") String ingestionKey,
+            @NotBlank(message = "donationType is required") String donationType,
+            @NotBlank(message = "recipientUserId is required") String recipientUserId,
             String donorUserId,
             String donorDisplayName,
-            long amount,
+            @PositiveOrZero(message = "amount must not be negative") long amount,
             String message,
-            Instant receivedAt
+            @NotNull(message = "receivedAt is required") Instant receivedAt
     ) {
     }
 
     record DonationResult(
-            Long id,
-            String ingestionKey,
-            String donationType,
-            String recipientUserId,
+            @NotNull(groups = OutboundResult.class, message = "id is required")
+            @Positive(groups = OutboundResult.class, message = "id must be positive") Long id,
+            @NotBlank(message = "ingestionKey is required") String ingestionKey,
+            @NotBlank(message = "donationType is required") String donationType,
+            @NotBlank(message = "recipientUserId is required") String recipientUserId,
             String donorUserId,
             String donorDisplayName,
-            long amount,
+            @PositiveOrZero(message = "amount must not be negative") long amount,
             String message
     ) {
     }

@@ -7,9 +7,11 @@ import org.nowstart.nyangnyangbot.application.port.in.chzzk.HandleChzzkSystemEve
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkConfigurationPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class SystemService implements HandleChzzkSystemEventUseCase {
 
@@ -22,7 +24,7 @@ public class SystemService implements HandleChzzkSystemEventUseCase {
 
     @Override
     public synchronized void handle(long connectionAttemptId, SystemReceived system) {
-        if (connectionAttemptId != activeConnectionAttemptId || system == null || system.data() == null) {
+        if (connectionAttemptId != activeConnectionAttemptId) {
             return;
         }
         log.info("[SYSTEM] : {}", system);

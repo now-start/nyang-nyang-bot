@@ -9,8 +9,10 @@ import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayTokenPort;
 import org.nowstart.nyangnyangbot.domain.overlay.OverlayTokenPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Slf4j
 @RequiredArgsConstructor
 public class OverlayTokenService implements IssueOverlayTokenUseCase, ValidateOverlayTokenUseCase {

@@ -14,8 +14,10 @@ import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPor
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort.DisplayRoundResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Slf4j
 @RequiredArgsConstructor
 public class OverlayDisplayService implements ManageOverlayDisplayUseCase, QueueOverlayDisplayUseCase {
@@ -70,9 +72,6 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     @Transactional
     public void markDisplayed(Long displayJobId, String claimToken, String authorizationHeader) {
         validateAuthorization(authorizationHeader);
-        if (claimToken == null || claimToken.isBlank()) {
-            throw new IllegalArgumentException("overlay claim token is required");
-        }
         overlayDisplayPort.markDisplayed(displayJobId, claimToken, now());
     }
 

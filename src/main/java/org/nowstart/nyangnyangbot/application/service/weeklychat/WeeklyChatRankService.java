@@ -12,11 +12,14 @@ import org.nowstart.nyangnyangbot.application.port.in.weeklychat.RecordWeeklyCha
 import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.user.ObserveUserUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort;
+import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort.IncrementWeeklyChatCommand;
 import org.nowstart.nyangnyangbot.application.service.chat.ChatEventSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, RecordWeeklyChatUseCase {
 
@@ -36,13 +39,15 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
         String nickName = ChatEventSupport.displayName(chat);
         Instant weekStartedAt = currentWeekStartedAt();
         observeUserUseCase.observeUser(userId, nickName);
-        weeklyChatCountPort.increment(weekStartedAt, userId);
+        weeklyChatCountPort.increment(new IncrementWeeklyChatCommand(weekStartedAt, userId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WeeklyChatRankView> getWeeklyRanks(int limit) {
-        return weeklyChatCountPort.findWeeklyRanks(currentWeekStartedAt(), limit);
+        return weeklyChatCountPort.findWeeklyRanks(currentWeekStartedAt(), limit).stream()
+                .map(rank -> new WeeklyChatRankView(rank.rank(), rank.displayName(), rank.chatCount()))
+                .toList();
     }
 
     Instant currentTime() {

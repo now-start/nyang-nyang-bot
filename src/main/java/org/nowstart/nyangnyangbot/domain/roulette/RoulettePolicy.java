@@ -152,10 +152,6 @@ public class RoulettePolicy {
         }
     }
 
-    public int safeSimulationIterations(int iterations) {
-        return Math.max(MIN_SIMULATION_ITERATIONS, Math.min(iterations, MAX_SIMULATION_ITERATIONS));
-    }
-
     public long parseDonationAmount(String amount) {
         if (isBlank(amount)) {
             return 0L;

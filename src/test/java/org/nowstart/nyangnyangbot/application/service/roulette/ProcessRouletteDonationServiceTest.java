@@ -4,8 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase.MAX_BATCH_SIZE;
-import static org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase.MIN_BATCH_SIZE;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.application.port.in.donation.HandleDonationEventUseCase.DonationReceived;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
+import org.nowstart.nyangnyangbot.application.port.in.roulette.RecoverRouletteRunsUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.persistence.PersistenceFailureClassifierPort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ConfigResult;
@@ -153,7 +155,7 @@ class ProcessRouletteDonationServiceTest {
     }
 
     @Test
-    void recoveryNormalizesBatchLimitAtUseCaseBoundary() {
+    void recoveryRejectsBatchLimitOutsideUseCaseContract() {
         RoulettePort port = Mockito.mock(RoulettePort.class);
         ProcessRouletteDonationService service = new ProcessRouletteDonationService(
                 port,
@@ -161,12 +163,17 @@ class ProcessRouletteDonationServiceTest {
                 Mockito.mock(QueueOverlayDisplayUseCase.class),
                 Mockito.mock(PersistenceFailureClassifierPort.class)
         );
+        RecoverRouletteRunsUseCase validatedService = validated(service, RecoverRouletteRunsUseCase.class);
 
-        service.recoverPendingRuns(0);
-        service.recoverPendingRuns(MAX_BATCH_SIZE + 1);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> validatedService.recoverPendingRuns(0))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("limit must be at least 1");
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> validatedService.recoverPendingRuns(MAX_BATCH_SIZE + 1))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("limit must be 100 or less");
 
-        then(port).should().findRunIdsNeedingRecovery(Mockito.anyLong(), Mockito.eq(MIN_BATCH_SIZE));
-        then(port).should().findRunIdsNeedingRecovery(Mockito.anyLong(), Mockito.eq(MAX_BATCH_SIZE));
+        then(port).shouldHaveNoInteractions();
     }
 
     private DonationReceived donation() {

@@ -11,8 +11,10 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Run
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class QueryRouletteResultService implements QueryRouletteResultUseCase {
 

@@ -16,9 +16,11 @@ import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.Mes
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class ChatService implements HandleChatEventUseCase {
 
@@ -31,9 +33,6 @@ public class ChatService implements HandleChatEventUseCase {
 
     @Override
     public void handle(ChatReceived chat) {
-        if (chat == null) {
-            return;
-        }
         log.info("[ChzzkChat] socket received: {}", chat);
         runBestEffort("presence", () -> recordPresenceChatUseCase.recordChatUser(chat));
         runBestEffort("weekly_chat", () -> recordWeeklyChatUseCase.recordChat(chat));

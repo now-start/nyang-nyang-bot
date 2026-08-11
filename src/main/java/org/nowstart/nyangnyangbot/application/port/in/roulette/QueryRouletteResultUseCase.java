@@ -1,12 +1,15 @@
 package org.nowstart.nyangnyangbot.application.port.in.roulette;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface QueryRouletteResultUseCase {
 
-    Page<RouletteRunSummaryResult> getRecentRuns(Pageable pageable);
+    Page<RouletteRunSummaryResult> getRecentRuns(
+            @NotNull(message = "pageable is required") Pageable pageable
+    );
 
     record RouletteRoundResult(
             Long id,

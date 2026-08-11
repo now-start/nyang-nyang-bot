@@ -105,18 +105,17 @@ public class ManageRouletteService implements ManageRouletteUseCase {
         if (!validation.activatable()) {
             throw new IllegalStateException("roulette config is not valid");
         }
-        int safeIterations = roulettePolicy.safeSimulationIterations(iterations);
         Map<String, Integer> counts = new LinkedHashMap<>();
         options.forEach(option -> counts.put(option.label(), 0));
-        for (int i = 0; i < safeIterations; i++) {
+        for (int i = 0; i < iterations; i++) {
             OptionResult selected = roulettePolicy.selectOption(options);
             counts.compute(selected.label(), (label, count) -> count + 1);
         }
-        return new RouletteSimulationResult(safeIterations, counts.entrySet().stream()
+        return new RouletteSimulationResult(iterations, counts.entrySet().stream()
                 .map(entry -> new RouletteSimulationResult.Entry(
                         entry.getKey(),
                         entry.getValue(),
-                        entry.getValue() / (double) safeIterations
+                        entry.getValue() / (double) iterations
                 ))
                 .toList());
     }

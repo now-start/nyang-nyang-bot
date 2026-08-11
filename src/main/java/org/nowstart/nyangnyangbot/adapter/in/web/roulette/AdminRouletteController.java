@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -188,8 +189,17 @@ public class AdminRouletteController {
     ) {
         int effectiveIterations = iterations == null
                 ? ManageRouletteUseCase.DEFAULT_SIMULATION_ITERATIONS
-                : iterations;
-        model.addAttribute("simulation", manageRouletteUseCase.simulate(configId, effectiveIterations));
+                : Math.min(
+                        Math.max(iterations, ManageRouletteUseCase.MIN_SIMULATION_ITERATIONS),
+                        ManageRouletteUseCase.MAX_SIMULATION_ITERATIONS
+                );
+        try {
+            model.addAttribute("simulation", manageRouletteUseCase.simulate(configId, effectiveIterations));
+        } catch (RuntimeException exception) {
+            log.warn("Failed to simulate roulette config. configId={} iterations={}",
+                    configId, effectiveIterations, exception);
+            model.addAttribute("simulationError", "룰렛 시뮬레이션에 실패했습니다.");
+        }
         return SIMULATION_FRAGMENT;
     }
 
@@ -229,7 +239,7 @@ public class AdminRouletteController {
         }
         try {
             return manageRouletteUseCase.getConfig(configId);
-        } catch (IllegalArgumentException missing) {
+        } catch (IllegalArgumentException | ConstraintViolationException missing) {
             return null;
         }
     }

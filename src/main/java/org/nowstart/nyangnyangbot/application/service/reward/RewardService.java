@@ -83,14 +83,6 @@ public class RewardService implements GrantRouletteRewardUseCase, QueryRewardUse
     @Override
     @Transactional(readOnly = true)
     public List<QueryRewardUseCase.RewardResult> getUserRewards(String userId, String status, int limit) {
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("userId is required");
-        }
-        if (limit < MIN_QUERY_LIMIT || limit > MAX_QUERY_LIMIT) {
-            throw new IllegalArgumentException(
-                    "reward query limit must be between " + MIN_QUERY_LIMIT + " and " + MAX_QUERY_LIMIT
-            );
-        }
         List<RewardRecord> rewards = status == null || status.isBlank()
                 ? rewardPort.findByUserId(userId, limit)
                 : rewardPort.findByUserIdAndStatus(userId, RewardGrantStatus.valueOf(status.trim()), limit);

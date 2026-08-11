@@ -9,15 +9,15 @@ public final class ChatEventSupport {
     }
 
     public static boolean hasSenderChannelId(ChatReceived chat) {
-        return !StringUtils.isBlank(senderChannelId(chat));
+        return !StringUtils.isBlank(chat.senderChannelId());
     }
 
     public static String senderChannelId(ChatReceived chat) {
-        return chat == null ? null : chat.senderChannelId();
+        return chat.senderChannelId();
     }
 
     public static String nickname(ChatReceived chat) {
-        if (chat == null || chat.profile() == null || StringUtils.isBlank(chat.profile().nickname())) {
+        if (chat.profile() == null || StringUtils.isBlank(chat.profile().nickname())) {
             return "";
         }
         return chat.profile().nickname();

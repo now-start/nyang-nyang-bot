@@ -248,6 +248,8 @@
 </div>
 
 <div class="vstack gap-2" id="roulette-simulation" th:fragment="roulette-simulation">
+    <div class="alert alert-danger mb-0" th:if="${simulationError != null}"
+         th:text="${simulationError}">룰렛 시뮬레이션에 실패했습니다.</div>
     <div class="small text-secondary" th:if="${simulation != null}"
          th:text="${'총 ' + #numbers.formatInteger(simulation.iterations, 0, 'COMMA') + '회'}">총 10,000회</div>
     <div class="d-flex justify-content-between gap-2 border rounded-3 px-3 py-2 tabular-nums"

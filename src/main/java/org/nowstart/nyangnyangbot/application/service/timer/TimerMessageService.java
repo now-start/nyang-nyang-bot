@@ -64,9 +64,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     @Override
     @Transactional
     public TimerMessageResult createTimerMessage(CreateTimerMessage request) {
-        if (request == null) {
-            throw new IllegalArgumentException("timerMessage is required");
-        }
         ValidationState state = validateState(
                 request.messageTemplate(),
                 request.intervalMinutes(),
@@ -93,9 +90,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     @Override
     @Transactional
     public TimerMessageResult updateTimerMessage(Long timerMessageId, UpdateTimerMessage request) {
-        if (request == null) {
-            throw new IllegalArgumentException("timerMessage is required");
-        }
         TimerMessageRecord current = timerMessagePort.findByIdForUpdate(timerMessageId)
                 .orElseThrow(() -> new IllegalArgumentException("timer message not found"));
         String template = request.messageTemplate() == null ? current.messageTemplate() : request.messageTemplate();
@@ -137,9 +131,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
 
     @Override
     public PreviewResult preview(PreviewTimerMessage request) {
-        if (request == null) {
-            throw new IllegalArgumentException("preview is required");
-        }
         ValidationState state = validateState(
                 request.messageTemplate(),
                 DEFAULT_INTERVAL_MINUTES,

@@ -43,6 +43,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional
     public ConfigResult createConfig(CreateConfigCommand command) {
+        contractValidator.request("roulette.createConfig", command);
         RouletteConfig saved = rouletteConfigRepository.save(RouletteConfig.builder()
                 .title(command.title())
                 .triggerToken(command.triggerToken())
@@ -58,6 +59,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional
     public OptionResult addOption(CreateOptionCommand command) {
+        contractValidator.request("roulette.addOption", command);
         RouletteConfig config = rouletteConfigRepository.findByIdForUpdate(command.configId())
                 .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
         if (config.getStatus() != RouletteConfigStatus.DRAFT) {
@@ -150,7 +152,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional
     public RunResult createReadyRun(CreateRunCommand command) {
-        validateRoundCommands(command.rounds());
+        contractValidator.request("roulette.createReadyRun", command);
         if (rouletteRunRepository.existsById(command.donationId())) {
             throw new IllegalStateException("roulette run already exists");
         }
@@ -199,11 +201,14 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
             return List.of();
         }
         return rouletteRoundRepository.summarizeRuns(runIds).stream()
-                .map(summary -> new RunRoundSummaryResult(
+                .map(summary -> contractValidator.persistenceResult(
+                        "roulette.runRoundSummary",
+                        new RunRoundSummaryResult(
                         summary.getRunId(),
                         summary.getRoundCount(),
                         summary.getAppliedCount(),
                         summary.getFailedCount()
+                        )
                 ))
                 .toList();
     }
@@ -255,7 +260,10 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional(readOnly = true)
     public List<RecentRound> findRecentRoundsByUserId(String userId) {
         return rouletteRoundRepository.findRecentByUserId(userId, PageRequest.of(0, MAX_RECENT_ROUNDS)).stream()
-                .map(round -> new RecentRound(round.getRoundNo(), round.getItemLabel()))
+                .map(round -> contractValidator.persistenceResult(
+                        "roulette.recentRound",
+                        new RecentRound(round.getRoundNo(), round.getItemLabel())
+                ))
                 .toList();
     }
 
@@ -284,23 +292,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
             throw new IllegalArgumentException("roulette option does not belong to config");
         }
         return option;
-    }
-
-    private void validateRoundCommands(List<CreateRoundCommand> rounds) {
-        if (rounds == null || rounds.isEmpty()) {
-            throw new IllegalArgumentException("roulette run requires at least one round");
-        }
-        for (int index = 0; index < rounds.size(); index++) {
-            CreateRoundCommand round = rounds.get(index);
-            if (round == null || round.roundNo() == null || round.roundNo() != index + 1) {
-                throw new IllegalArgumentException("roulette round numbers must be contiguous from 1");
-            }
-            if (round.ticket() == null
-                    || round.ticket() < 1
-                    || round.ticket() > RoulettePolicy.TOTAL_PROBABILITY) {
-                throw new IllegalArgumentException("roulette round ticket must be between 1 and 10000");
-            }
-        }
     }
 
     private ConfigResult configResult(RouletteConfig config) {

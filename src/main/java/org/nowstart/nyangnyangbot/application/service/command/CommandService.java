@@ -69,9 +69,6 @@ public class CommandService implements ManageCommandUseCase {
     @Override
     @Transactional
     public CommandResult updateCommand(Long commandId, UpdateCommand request) {
-        if (request == null) {
-            throw new IllegalArgumentException("command is required");
-        }
         CommandRecord current = commandPort.findByIdForUpdate(commandId)
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
         String trigger = request.trigger() == null ? current.trigger() : request.trigger();
@@ -107,9 +104,6 @@ public class CommandService implements ManageCommandUseCase {
 
     @Override
     public PreviewResult preview(PreviewCommand request) {
-        if (request == null) {
-            throw new IllegalArgumentException("preview is required");
-        }
         List<String> errors = new ArrayList<>(useCaseValidator.errors(request));
         String template = cleanTemplate(request.messageTemplate());
         errors.addAll(templateErrors(template));
@@ -138,9 +132,6 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     private ValidationState validationForCreate(CreateCommand request) {
-        if (request == null) {
-            throw new IllegalArgumentException("command is required");
-        }
         return validationForRequest(
                 null,
                 request.trigger(),

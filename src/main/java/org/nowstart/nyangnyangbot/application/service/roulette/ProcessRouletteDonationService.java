@@ -23,9 +23,11 @@ import org.nowstart.nyangnyangbot.domain.roulette.RouletteActivationValidation;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 public class ProcessRouletteDonationService
         implements ProcessRouletteDonationUseCase, RecoverRouletteRunsUseCase {
@@ -40,9 +42,6 @@ public class ProcessRouletteDonationService
     @Override
     @Transactional
     public Optional<Long> processDonation(Long donationId, DonationReceived donation) {
-        if (donationId == null || donation == null) {
-            return Optional.empty();
-        }
         if (isBlank(donation.donatorChannelId())) {
             return Optional.empty();
         }
@@ -100,7 +99,7 @@ public class ProcessRouletteDonationService
 
     @Override
     public void recoverRun(Long runId) {
-        if (runId == null || !roulettePort.existsRun(runId)) {
+        if (!roulettePort.existsRun(runId)) {
             return;
         }
         resumeExistingRun(runId);
@@ -108,9 +107,8 @@ public class ProcessRouletteDonationService
 
     @Override
     public int recoverPendingRuns(int limit) {
-        int safeLimit = Math.min(Math.max(limit, MIN_BATCH_SIZE), MAX_BATCH_SIZE);
         int recovered = 0;
-        List<Long> runIds = roulettePort.findRunIdsNeedingRecovery(recoveryStart(), safeLimit);
+        List<Long> runIds = roulettePort.findRunIdsNeedingRecovery(recoveryStart(), limit);
         for (Long runId : runIds) {
             try {
                 resumeExistingRun(runId);

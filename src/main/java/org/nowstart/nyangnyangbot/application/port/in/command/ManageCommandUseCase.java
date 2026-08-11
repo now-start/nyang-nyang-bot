@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
@@ -39,7 +40,8 @@ public interface ManageCommandUseCase {
     CommandResult createCommand(@Valid @NotNull(message = "command is required") CreateCommand request);
 
     CommandResult updateCommand(
-            Long commandId,
+            @NotNull(message = "commandId is required")
+            @Positive(message = "commandId must be positive") Long commandId,
             @Valid @NotNull(message = "command is required") UpdateCommand request
     );
 
