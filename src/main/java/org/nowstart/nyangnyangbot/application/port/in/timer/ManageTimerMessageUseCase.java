@@ -25,25 +25,28 @@ public interface ManageTimerMessageUseCase {
     int MIN_CHAT_COUNT = TimerMessagePolicy.MIN_CHAT_COUNT;
     int MAX_CHAT_COUNT = TimerMessagePolicy.MAX_CHAT_COUNT;
 
+    /** 모든 타이머 메시지를 관리 화면 표시 순서로 반환한다. */
     List<TimerMessageResult> getTimerMessages();
 
+    /** 타이머 메시지 템플릿에서 사용할 수 있는 변수를 반환한다. */
     List<VariableResult> getVariables();
 
+    /** 타이머 메시지를 생성하고 실행 일정을 초기화한다. */
     TimerMessageResult createTimerMessage(
             @Valid @NotNull(message = "timerMessage is required") CreateTimerMessage request
     );
 
+    /** 지정한 타이머 메시지를 수정하고 필요한 경우 실행 일정을 다시 계산한다. */
     TimerMessageResult updateTimerMessage(
             @NotNull(message = "timerMessageId is required")
             @Positive(message = "timerMessageId must be positive") Long timerMessageId,
             @Valid @NotNull(message = "timerMessage is required") UpdateTimerMessage request
     );
 
+    /** 전체 타이머 입력을 검증하고 저장하지 않은 채 메시지 템플릿을 렌더링한다. */
     PreviewResult preview(
             @Valid @NotNull(message = "preview is required") PreviewTimerMessage request
     );
-
-    ValidationResult validate(ValidateTimerMessage request);
 
     record CreateTimerMessage(
             @NotBlank(message = "messageTemplate is required")
@@ -77,13 +80,12 @@ public interface ManageTimerMessageUseCase {
     record PreviewTimerMessage(
             @NotBlank(message = "messageTemplate is required")
             @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
-            String messageTemplate
-    ) {
-    }
-
-    record ValidateTimerMessage(
             String messageTemplate,
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
             Integer intervalMinutes,
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
             Integer minChatCount
     ) {
     }
@@ -106,8 +108,5 @@ public interface ManageTimerMessageUseCase {
     }
 
     record PreviewResult(String message) {
-    }
-
-    record ValidationResult(boolean valid, List<String> errors) {
     }
 }

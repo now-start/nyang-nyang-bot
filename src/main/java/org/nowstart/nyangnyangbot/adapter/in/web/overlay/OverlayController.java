@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolationException;
@@ -44,6 +46,7 @@ public class OverlayController {
                     .map(job -> overlayJob(job, model))
                     .orElse(WAIT_FRAGMENT);
         } catch (IllegalArgumentException | ConstraintViolationException exception) {
+            rethrowIfInternalFailure(exception);
             model.addAttribute("message", "오버레이 토큰이 유효하지 않습니다.");
             return ERROR_FRAGMENT;
         }
@@ -65,6 +68,7 @@ public class OverlayController {
             );
             return WAIT_FRAGMENT;
         } catch (IllegalArgumentException | IllegalStateException | ConstraintViolationException exception) {
+            rethrowIfInternalFailure(exception);
             model.addAttribute("message", "오버레이 표시 작업을 완료하지 못했습니다.");
             return ERROR_FRAGMENT;
         }

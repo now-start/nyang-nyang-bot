@@ -1,11 +1,12 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.roulette;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +22,11 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.RecentRoundProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.RunRoundSummaryProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 class RoulettePersistenceAdapterTest {
@@ -35,14 +37,12 @@ class RoulettePersistenceAdapterTest {
     void activationArchivesAndFlushesExistingActiveBeforeActivatingTarget() {
         RouletteConfigRepository configRepository = Mockito.mock(RouletteConfigRepository.class);
         RouletteOptionRepository optionRepository = Mockito.mock(RouletteOptionRepository.class);
-        OutboundContractValidator validator = passThroughValidator();
         RoulettePersistenceAdapter adapter = new RoulettePersistenceAdapter(
                 configRepository,
                 optionRepository,
                 Mockito.mock(RouletteRunRepository.class),
                 Mockito.mock(RouletteRoundRepository.class),
-                Mockito.mock(DonationRepository.class),
-                validator
+                Mockito.mock(DonationRepository.class)
         );
         RouletteConfig active = config(1L, RouletteConfigStatus.ACTIVE);
         RouletteConfig target = config(2L, RouletteConfigStatus.DRAFT);
@@ -77,8 +77,7 @@ class RoulettePersistenceAdapterTest {
                 Mockito.mock(RouletteOptionRepository.class),
                 Mockito.mock(RouletteRunRepository.class),
                 roundRepository,
-                Mockito.mock(DonationRepository.class),
-                passThroughValidator()
+                Mockito.mock(DonationRepository.class)
         );
 
         var result = adapter.findRecentRoundsByUserId("user-1");
@@ -107,8 +106,7 @@ class RoulettePersistenceAdapterTest {
                 Mockito.mock(RouletteOptionRepository.class),
                 Mockito.mock(RouletteRunRepository.class),
                 roundRepository,
-                Mockito.mock(DonationRepository.class),
-                passThroughValidator()
+                Mockito.mock(DonationRepository.class)
         );
 
         var result = adapter.summarizeRuns(List.of(7L));
@@ -119,6 +117,24 @@ class RoulettePersistenceAdapterTest {
             assertThat(summary.appliedCount()).isEqualTo(999L);
             assertThat(summary.failedCount()).isEqualTo(1L);
         });
+    }
+
+    @Test
+    void findConfigs_RejectsInvalidNestedPageResult() {
+        RouletteConfigRepository configRepository = Mockito.mock(RouletteConfigRepository.class);
+        given(configRepository.findAllByOrderByIdDesc(Pageable.unpaged()))
+                .willReturn(new PageImpl<>(List.of(config(null, RouletteConfigStatus.DRAFT))));
+        RoulettePort adapter = validated(new RoulettePersistenceAdapter(
+                configRepository,
+                Mockito.mock(RouletteOptionRepository.class),
+                Mockito.mock(RouletteRunRepository.class),
+                Mockito.mock(RouletteRoundRepository.class),
+                Mockito.mock(DonationRepository.class)
+        ), RoulettePort.class);
+
+        assertThatThrownBy(() -> adapter.findConfigs(Pageable.unpaged()))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("id is required");
     }
 
     private RouletteConfig config(Long id, RouletteConfigStatus status) {
@@ -149,9 +165,4 @@ class RoulettePersistenceAdapterTest {
                 .build();
     }
 
-    private OutboundContractValidator passThroughValidator() {
-        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
-        given(validator.persistenceResult(anyString(), any())).willAnswer(invocation -> invocation.getArgument(1));
-        return validator;
-    }
 }

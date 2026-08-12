@@ -6,5 +6,6 @@ import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCas
 
 public interface RecordWeeklyChatUseCase {
 
+    /** 현재 주간 집계 구간에 채팅 발신자의 활동을 기록한다. */
     void recordChat(@Valid @NotNull(message = "chat is required") ChatReceived chat);
 }

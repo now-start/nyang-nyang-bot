@@ -1,9 +1,12 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.reward;
 
 import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
 import jakarta.persistence.EntityManager;
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.entity.RewardGr
 import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.repository.RewardGrantRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRound;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
+import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort.CreateRewardCommand;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
@@ -24,15 +27,40 @@ import org.springframework.data.domain.Pageable;
 class RewardPersistenceAdapterTest {
 
     @Test
+    void createGrantRejectsInvalidCommandBeforePersistence() {
+        RewardGrantRepository repository = Mockito.mock(RewardGrantRepository.class);
+        RewardPort adapter = validated(adapter(repository), RewardPort.class);
+        CreateRewardCommand command = new CreateRewardCommand(
+                null,
+                10L,
+                null,
+                "포인트",
+                RewardType.POINT,
+                ConversionMode.AUTO,
+                100L,
+                RewardGrantStatus.CONVERTED,
+                null,
+                null,
+                null,
+                "roulette-round:10",
+                Instant.parse("2026-07-23T00:00:00Z")
+        );
+
+        thenThrownBy(() -> adapter.createGrant(command))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("userId is required");
+        Mockito.verifyNoInteractions(repository);
+    }
+
+    @Test
     void createGrantPersistsWithoutBuildingAQueryRecord() {
         RewardGrantRepository repository = Mockito.mock(RewardGrantRepository.class);
         EntityManager entityManager = Mockito.mock(EntityManager.class);
-        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
         given(entityManager.getReference(UserAccount.class, "user-1")).willReturn(Mockito.mock(UserAccount.class));
         given(entityManager.getReference(RouletteRound.class, 10L)).willReturn(Mockito.mock(RouletteRound.class));
         given(entityManager.getReference(PointLedgerEntry.class, 20L))
                 .willReturn(Mockito.mock(PointLedgerEntry.class));
-        RewardPersistenceAdapter adapter = new RewardPersistenceAdapter(repository, entityManager, validator);
+        RewardPersistenceAdapter adapter = new RewardPersistenceAdapter(repository, entityManager);
 
         CreateRewardCommand command = new CreateRewardCommand(
                 "user-1",
@@ -53,7 +81,6 @@ class RewardPersistenceAdapterTest {
         adapter.createGrant(command);
 
         Mockito.verify(repository).save(Mockito.any(RewardGrant.class));
-        Mockito.verify(validator).request("reward.createGrant", command);
     }
 
     @Test
@@ -112,8 +139,7 @@ class RewardPersistenceAdapterTest {
     private RewardPersistenceAdapter adapter(RewardGrantRepository repository) {
         return new RewardPersistenceAdapter(
                 repository,
-                Mockito.mock(EntityManager.class),
-                Mockito.mock(OutboundContractValidator.class)
+                Mockito.mock(EntityManager.class)
         );
     }
 }

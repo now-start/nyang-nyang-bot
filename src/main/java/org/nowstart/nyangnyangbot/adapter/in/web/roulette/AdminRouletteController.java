@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.roulette;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolationException;
@@ -109,6 +111,7 @@ public class AdminRouletteController {
                 selectedConfigId = config.id();
                 feedback(model, "룰렛 설정 생성 완료", "success");
             } catch (RuntimeException exception) {
+                rethrowIfInternalFailure(exception);
                 log.warn("Failed to create roulette config. title={}, triggerToken={}",
                         form.title(), form.triggerToken(), exception);
                 feedback(model, "룰렛 설정 생성에 실패했습니다.", "danger");
@@ -143,6 +146,7 @@ public class AdminRouletteController {
                 ));
                 feedback(model, "룰렛 옵션 추가 완료", "success");
             } catch (RuntimeException exception) {
+                rethrowIfInternalFailure(exception);
                 log.warn("Failed to add roulette option. configId={}, label={}",
                         selectedConfigId, form.label(), exception);
                 feedback(model, "룰렛 옵션 추가에 실패했습니다.", "danger");
@@ -159,6 +163,7 @@ public class AdminRouletteController {
             manageRouletteUseCase.activateConfig(configId);
             feedback(model, "룰렛 활성화 완료", "success");
         } catch (RuntimeException exception) {
+            rethrowIfInternalFailure(exception);
             log.warn("Failed to activate roulette config. configId={}", configId, exception);
             feedback(model, "룰렛 활성화에 실패했습니다.", "danger");
         }
@@ -173,6 +178,7 @@ public class AdminRouletteController {
             manageRouletteUseCase.archiveConfig(configId);
             feedback(model, "룰렛 설정 보관 완료", "success");
         } catch (RuntimeException exception) {
+            rethrowIfInternalFailure(exception);
             log.warn("Failed to archive roulette config. configId={}", configId, exception);
             feedback(model, "룰렛 설정 보관에 실패했습니다.", "danger");
         }
@@ -196,6 +202,7 @@ public class AdminRouletteController {
         try {
             model.addAttribute("simulation", manageRouletteUseCase.simulate(configId, effectiveIterations));
         } catch (RuntimeException exception) {
+            rethrowIfInternalFailure(exception);
             log.warn("Failed to simulate roulette config. configId={} iterations={}",
                     configId, effectiveIterations, exception);
             model.addAttribute("simulationError", "룰렛 시뮬레이션에 실패했습니다.");
@@ -240,6 +247,7 @@ public class AdminRouletteController {
         try {
             return manageRouletteUseCase.getConfig(configId);
         } catch (IllegalArgumentException | ConstraintViolationException missing) {
+            rethrowIfInternalFailure(missing);
             return null;
         }
     }

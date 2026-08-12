@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.application.port.out.weekly;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -9,8 +10,13 @@ import java.util.List;
 
 public interface WeeklyChatCountPort {
 
-    void increment(IncrementWeeklyChatCommand command);
+    /** 지정한 주간 구간의 사용자 채팅 횟수를 원자적으로 증가시킨다. */
+    void increment(
+            @Valid @NotNull(message = "weekly chat command is required") IncrementWeeklyChatCommand command
+    );
 
+    /** 전달된 시각에 시작하는 주간 구간의 순위 사용자를 최대 {@code limit}명 반환한다. */
+    @Valid
     List<WeeklyChatRankRecord> findWeeklyRanks(Instant weekStartedAt, int limit);
 
     record IncrementWeeklyChatCommand(

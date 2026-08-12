@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.P
 
 public interface ReconcilePointBalanceUseCase {
 
+    /** 사용자의 최종 잔액이 요청한 목표 잔액과 같아지도록 원장을 조정한다. */
     PointLedgerResult reconcileToBalance(
             @Valid @NotNull(message = "command is required") ReconcilePointBalanceCommand command
     );

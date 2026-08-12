@@ -28,7 +28,6 @@ import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort.
 import org.nowstart.nyangnyangbot.application.port.out.user.UserAccountPort.ObserveUserCommand;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort.IncrementWeeklyChatCommand;
 import org.nowstart.nyangnyangbot.application.port.out.weekly.WeeklyChatCountPort.WeeklyChatRankRecord;
-import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
 
 class OutboundPortContractTest {
 
@@ -131,12 +130,12 @@ class OutboundPortContractTest {
     }
 
     @Test
-    void persistedCommandResult_ShouldRequireIdentityOnlyInOutboundResultGroup() {
-        then(resultMessages(new CommandRecord(
+    void outboundResults_ShouldDeclareRequiredFieldsInDefaultGroup() {
+        then(messages(new CommandRecord(
                 null, null, null, false, null, null, null
         ))).contains("id is required", "trigger is required", "messageTemplate is required");
 
-        then(resultMessages(new ConfigResult(null, null, null, null, null, null, null, null)))
+        then(messages(new ConfigResult(null, null, null, null, null, null, null, null)))
                 .contains(
                         "id is required",
                         "title is required",
@@ -147,18 +146,18 @@ class OutboundPortContractTest {
                         "createdAt is required",
                         "updatedAt is required"
                 );
-        then(resultMessages(new DisplayJobResult(null, null, null, -1, null)))
+        then(messages(new DisplayJobResult(null, null, null, -1, null)))
                 .contains(
                         "id is required",
                         "claimToken is required",
                         "roundCount must not be negative",
                         "rounds are required"
                 );
-        then(resultMessages(new WeeklyChatRankRecord(0, null, -1L)))
+        then(messages(new WeeklyChatRankRecord(0, null, -1L)))
                 .contains("rank must be positive", "chatCount must not be negative");
-        then(resultMessages(new WeeklyChatRankRecord(null, null, null)))
+        then(messages(new WeeklyChatRankRecord(null, null, null)))
                 .contains("rank is required", "chatCount is required");
-        then(resultMessages(new RecentRound(null, null)))
+        then(messages(new RecentRound(null, null)))
                 .contains("roundNo is required", "itemLabel is required");
     }
 
@@ -168,9 +167,4 @@ class OutboundPortContractTest {
                 .collect(java.util.stream.Collectors.toSet());
     }
 
-    private Set<String> resultMessages(Object value) {
-        return validator.validate(value, jakarta.validation.groups.Default.class, OutboundResult.class).stream()
-                .map(violation -> violation.getMessage())
-                .collect(java.util.stream.Collectors.toSet());
-    }
 }

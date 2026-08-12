@@ -14,12 +14,15 @@ public interface ManagePointAdjustmentPresetUseCase {
     int MAX_LABEL_LENGTH = PointAdjustmentPolicy.MAX_LABEL_LENGTH;
     int MAX_MANUAL_DESCRIPTION_LENGTH = PointAdjustmentPolicy.MAX_MANUAL_DESCRIPTION_LENGTH;
 
+    /** 관리자가 사용할 수 있는 모든 포인트 조정 프리셋을 반환한다. */
     List<PointAdjustmentPresetResult> getPresets();
 
+    /** 재사용할 수 있는 포인트 조정 프리셋을 생성한다. */
     PointAdjustmentPresetResult createPreset(
             @Valid @NotNull(message = "command is required") CreatePointAdjustmentPreset command
     );
 
+    /** 선택한 프리셋과 선택적인 수동 조정값을 사용자에게 적용한다. */
     void applyAdjustments(
             @Valid @NotNull(message = "command is required") ApplyPointAdjustments command
     );

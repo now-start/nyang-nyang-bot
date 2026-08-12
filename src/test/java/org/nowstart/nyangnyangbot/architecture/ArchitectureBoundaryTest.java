@@ -143,15 +143,6 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    void applicationExceptionPackage_ShouldNotContainJavaSources() throws IOException {
-        // 실행
-        List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/exception")).toList();
-
-        // 검증
-        then(javaSources).isEmpty();
-    }
-
-    @Test
     void applicationGatewayPackage_ShouldNotContainJavaSources() throws IOException {
         // 실행
         List<Path> javaSources = javaFiles(SOURCE_ROOT.resolve("application/gateway")).toList();

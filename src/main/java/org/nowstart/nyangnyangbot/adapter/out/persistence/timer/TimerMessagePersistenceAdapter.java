@@ -8,20 +8,20 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMess
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class TimerMessagePersistenceAdapter implements TimerMessagePort {
 
     private final TimerMessageRepository timerMessageRepository;
     private final UserAccountRepository userAccountRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     public List<TimerMessageRecord> findAllOrderByIdDesc() {
@@ -37,7 +37,6 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
 
     @Override
     public TimerMessageRecord create(CreateData data) {
-        contractValidator.request("timerMessage.create", data);
         TimerMessage saved = timerMessageRepository.save(TimerMessage.builder()
                 .messageTemplate(data.messageTemplate())
                 .intervalMinutes(data.intervalMinutes())
@@ -54,7 +53,6 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
 
     @Override
     public TimerMessageRecord update(UpdateData data) {
-        contractValidator.request("timerMessage.update", data);
         TimerMessage timer = timerMessageRepository.findByIdForUpdate(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("timer message not found"));
         timer.update(
@@ -92,15 +90,12 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
             return Optional.empty();
         }
         return timerMessageRepository.findByIdAndClaimToken(timerMessageId, claimToken)
-                .map(timer -> contractValidator.persistenceResult(
-                        "timerMessage.claimed",
-                        new ClaimedTimerMessage(
+                .map(timer -> new ClaimedTimerMessage(
                         timer.getId(),
                         timer.getMessageTemplate(),
                         timer.getIntervalMinutes(),
                         timer.getNextRunAt(),
                         timer.getClaimToken()
-                        )
                 ));
     }
 
@@ -143,7 +138,7 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
     }
 
     private TimerMessageRecord record(TimerMessage timer) {
-        return contractValidator.persistenceResult("timerMessage.record", new TimerMessageRecord(
+        return new TimerMessageRecord(
                 timer.getId(),
                 timer.getMessageTemplate(),
                 timer.getIntervalMinutes(),
@@ -154,7 +149,7 @@ public class TimerMessagePersistenceAdapter implements TimerMessagePort {
                 timer.getNextRunAt(),
                 userId(timer.getCreatedByUser()),
                 userId(timer.getUpdatedByUser())
-        ));
+        );
     }
 
     private UserAccount actor(String userId) {

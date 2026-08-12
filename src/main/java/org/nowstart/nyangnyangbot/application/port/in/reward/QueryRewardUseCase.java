@@ -11,6 +11,7 @@ public interface QueryRewardUseCase {
     int MIN_QUERY_LIMIT = 1;
     int MAX_QUERY_LIMIT = 100;
 
+    /** 사용자의 보상을 최대 {@code limit}개 반환하며, 상태가 주어지면 해당 상태로 필터링한다. */
     List<RewardResult> getUserRewards(
             @NotBlank(message = "userId is required") String userId,
             String status,

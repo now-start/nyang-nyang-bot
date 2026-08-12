@@ -10,18 +10,18 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.Com
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class CommandExecutionPersistenceAdapter implements CommandExecutionPort {
 
     private final CommandRepository commandRepository;
     private final CommandExecutionRepository executionRepository;
     private final UserAccountRepository userAccountRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     public Optional<LockedCommand> lockActiveCommand(String normalizedTrigger) {
@@ -30,7 +30,6 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
 
     @Override
     public void observeAndLockUser(ObserveUserCommand command) {
-        contractValidator.request("commandExecution.observeAndLockUser", command);
         userAccountRepository.observe(command.userId(), command.displayName());
         userAccountRepository.findByIdForUpdate(command.userId())
                 .orElseThrow(() -> new IllegalStateException("Observed user account was not found"));
@@ -38,10 +37,7 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
 
     @Override
     public Instant currentDatabaseTime() {
-        return contractValidator.persistenceResult(
-                "commandExecution.currentDatabaseTime",
-                userAccountRepository.currentDatabaseTime()
-        );
+        return userAccountRepository.currentDatabaseTime();
     }
 
     @Override
@@ -62,7 +58,6 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
 
     @Override
     public void append(ExecutionData data) {
-        contractValidator.request("commandExecution.append", data);
         Command command = commandRepository.getReferenceById(data.commandId());
         UserAccount user = userAccountRepository.getReferenceById(data.userId());
         executionRepository.saveAndFlush(CommandExecution.builder()
@@ -91,19 +86,16 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
     }
 
     private LockedCommand lockedCommand(Command command) {
-        return contractValidator.persistenceResult("commandExecution.lockedCommand", new LockedCommand(
+        return new LockedCommand(
                 command.getId(),
                 command.getTriggerToken(),
                 command.getMessageTemplate(),
                 command.getExecutionPolicy(),
                 command.getUserCooldownSeconds()
-        ));
+        );
     }
 
     private ExecutionRecord executionRecord(CommandExecution execution) {
-        return contractValidator.persistenceResult(
-                "commandExecution.executionRecord",
-                new ExecutionRecord(execution.getExecutedAt())
-        );
+        return new ExecutionRecord(execution.getExecutedAt());
     }
 }

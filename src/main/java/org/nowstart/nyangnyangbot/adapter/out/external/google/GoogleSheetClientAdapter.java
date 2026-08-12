@@ -12,34 +12,42 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.nowstart.nyangnyangbot.adapter.out.external.google.response.GoogleSheetRowResponse;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
+import org.nowstart.nyangnyangbot.application.exception.ExternalSystemException;
 import org.nowstart.nyangnyangbot.application.port.out.google.GoogleSheetPort;
 import org.nowstart.nyangnyangbot.config.property.GoogleProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class GoogleSheetClientAdapter implements GoogleSheetPort {
 
     private static final String RANGE = "호감도 순위표!B2:H";
 
     private final GoogleProperty googleProperty;
-    private final OutboundContractValidator contractValidator;
 
     @Override
-    @SneakyThrows
     public List<GoogleSheetRow> readPointRows() {
-        GoogleCredentials credentials = loadCredentials();
-        Sheets sheets = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), new HttpCredentialsAdapter(credentials))
-                .setApplicationName("google-sheet-project")
-                .build();
+        List<List<Object>> values;
+        try {
+            GoogleCredentials credentials = loadCredentials();
+            Sheets sheets = new Sheets.Builder(
+                    new NetHttpTransport(),
+                    GsonFactory.getDefaultInstance(),
+                    new HttpCredentialsAdapter(credentials)
+            )
+                    .setApplicationName("google-sheet-project")
+                    .build();
 
-        List<List<Object>> values = sheets.spreadsheets()
-                .values()
-                .get(googleProperty.id(), RANGE)
-                .execute().getValues();
+            values = sheets.spreadsheets()
+                    .values()
+                    .get(googleProperty.id(), RANGE)
+                    .execute().getValues();
+        } catch (IOException exception) {
+            throw new ExternalSystemException("Google Sheets API request failed", exception);
+        }
 
         return toRows(values);
     }
@@ -54,13 +62,9 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
         if (values == null) {
             return List.of();
         }
-        List<GoogleSheetRow> rows = values.stream()
+        return values.stream()
                 .map(GoogleSheetRowResponse::new)
                 .flatMap(response -> response.toGoogleSheetRow().stream())
                 .toList();
-        for (int index = 0; index < rows.size(); index++) {
-            contractValidator.externalResponse("googleSheet.readPointRows[" + index + "]", rows.get(index));
-        }
-        return rows;
     }
 }

@@ -21,7 +21,6 @@ import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUs
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.PreviewResult;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.TimerMessageResult;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.UpdateTimerMessage;
-import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.ValidationResult;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
 
@@ -102,8 +101,8 @@ class TimerMessageControllerTest {
 
     @Test
     void preview_WhenInvalid_ShouldNotRenderPreview() {
-        given(manageTimerMessageUseCase.validate(any()))
-                .willReturn(new ValidationResult(false, List.of("messageTemplate is required")));
+        given(manageTimerMessageUseCase.preview(any()))
+                .willThrow(new IllegalArgumentException("messageTemplate is required"));
         ConcurrentModel model = new ConcurrentModel();
 
         String view = controller.preview(TimerMessageForm.empty(), model);
@@ -113,15 +112,11 @@ class TimerMessageControllerTest {
                 (TimerMessageController.ReviewView) model.getAttribute("timerReview");
         then(review.valid()).isFalse();
         then(review.errors()).containsExactly("messageTemplate is required");
-        org.mockito.BDDMockito.then(manageTimerMessageUseCase)
-                .should(org.mockito.Mockito.never())
-                .preview(any());
+        org.mockito.BDDMockito.then(manageTimerMessageUseCase).should().preview(any());
     }
 
     @Test
     void preview_WhenValid_ShouldReturnValidationAndRenderedMessageTogether() {
-        given(manageTimerMessageUseCase.validate(any()))
-                .willReturn(new ValidationResult(true, List.of()));
         given(manageTimerMessageUseCase.preview(any()))
                 .willReturn(new PreviewResult("현재 시각은 21:00입니다."));
         ConcurrentModel model = new ConcurrentModel();

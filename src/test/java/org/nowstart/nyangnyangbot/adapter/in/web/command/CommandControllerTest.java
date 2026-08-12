@@ -1,11 +1,13 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
 import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,10 +23,9 @@ import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.Varia
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
+import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidationResult;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
 
@@ -166,7 +167,6 @@ class CommandControllerTest {
     @Test
     void preview_ShouldValidateFullFormAndReturnCombinedReview() {
         // 준비
-        given(manageCommandUseCase.validate(any())).willReturn(new ValidationResult(true, List.of()));
         given(manageCommandUseCase.preview(any())).willReturn(new PreviewResult("치즈냥님의 호감도는 100 입니다.💛"));
         CommandForm form = new CommandForm(
                 null,
@@ -186,8 +186,8 @@ class CommandControllerTest {
         then(review.valid()).isTrue();
         then(review.errors()).isEmpty();
         then(review.previewMessage()).isEqualTo("치즈냥님의 호감도는 100 입니다.💛");
-        ArgumentCaptor<ValidateCommand> captor = ArgumentCaptor.forClass(ValidateCommand.class);
-        org.mockito.BDDMockito.then(manageCommandUseCase).should().validate(captor.capture());
+        ArgumentCaptor<PreviewCommand> captor = ArgumentCaptor.forClass(PreviewCommand.class);
+        org.mockito.BDDMockito.then(manageCommandUseCase).should().preview(captor.capture());
         then(captor.getValue().trigger()).isEqualTo("!호감도");
         then(captor.getValue().messageTemplate())
                 .isEqualTo("{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛");
@@ -197,8 +197,8 @@ class CommandControllerTest {
     @Test
     void preview_ShouldReturnValidationErrorsWithoutRenderingPreview() {
         // 준비
-        given(manageCommandUseCase.validate(any()))
-                .willReturn(new ValidationResult(false, List.of("trigger already exists")));
+        given(manageCommandUseCase.preview(any()))
+                .willThrow(new IllegalArgumentException("trigger already exists"));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
@@ -210,9 +210,7 @@ class CommandControllerTest {
         then(review.valid()).isFalse();
         then(review.errors()).containsExactly("trigger already exists");
         then(review.previewMessage()).isNull();
-        org.mockito.BDDMockito.then(manageCommandUseCase)
-                .should(org.mockito.Mockito.never())
-                .preview(any());
+        org.mockito.BDDMockito.then(manageCommandUseCase).should().preview(any());
     }
 
     @Test
@@ -250,6 +248,23 @@ class CommandControllerTest {
         then(view).isEqualTo("features/command/regions :: command-editor-region");
         then(model.getAttribute("saveError"))
                 .isEqualTo("messageTemplate is required, trigger is required");
+    }
+
+    @Test
+    void save_ShouldRethrowReturnValueViolation() throws NoSuchMethodException {
+        var validator = Validation.buildDefaultValidatorFactory().getValidator();
+        var method = CommandControllerTest.class.getDeclaredMethod("invalidReturnValue");
+        var violations = validator.forExecutables().validateReturnValue(this, method, invalidReturnValue());
+        ConstraintViolationException exception = new ConstraintViolationException(violations);
+        given(manageCommandUseCase.createCommand(any(CreateCommand.class))).willThrow(exception);
+
+        thenThrownBy(() -> controller.save(CommandForm.empty(), false, null, response, new ConcurrentModel()))
+                .isSameAs(exception);
+    }
+
+    @NotBlank(message = "result is required")
+    private String invalidReturnValue() {
+        return "";
     }
 
     @Test

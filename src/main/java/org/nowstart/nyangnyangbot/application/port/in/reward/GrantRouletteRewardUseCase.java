@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.domain.type.RewardType;
 
 public interface GrantRouletteRewardUseCase {
 
+    /** 해당 룰렛 회차의 보상이 아직 지급되지 않았다면 보상을 지급한다. */
     void grantRoulette(
             @Valid @NotNull(message = "command is required") RouletteRewardCommand command
     );

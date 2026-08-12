@@ -26,29 +26,36 @@ public interface ManageRouletteUseCase {
     int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
     String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
 
+    /** 초안 상태의 룰렛 설정을 생성한다. */
     RouletteConfigResult createConfig(@Valid @NotNull CreateRouletteConfigCommand command);
 
+    /** 초안 상태의 룰렛 설정에 선택지를 추가한다. */
     RouletteOptionResult addOption(@Valid @NotNull AddRouletteOptionCommand command);
 
+    /** 룰렛 설정을 최신 생성 순으로 반환한다. */
     Page<RouletteConfigSummaryResult> getConfigs(
             @NotNull(message = "pageable is required") Pageable pageable
     );
 
+    /** 지정한 룰렛 설정과 선택지를 반환한다. */
     RouletteConfigResult getConfig(
             @NotNull(message = "configId is required")
             @Positive(message = "configId must be positive") Long configId
     );
 
+    /** 초안 설정을 활성화하고 이전 활성 설정을 보관 상태로 변경한다. */
     RouletteConfigResult activateConfig(
             @NotNull(message = "configId is required")
             @Positive(message = "configId must be positive") Long configId
     );
 
+    /** 지정한 룰렛 설정을 보관 상태로 변경한다. */
     RouletteConfigResult archiveConfig(
             @NotNull(message = "configId is required")
             @Positive(message = "configId must be positive") Long configId
     );
 
+    /** 룰렛 실행이나 보상을 생성하지 않고 지정한 설정을 시뮬레이션한다. */
     RouletteSimulationResult simulate(
             @NotNull(message = "configId is required")
             @Positive(message = "configId must be positive") Long configId,

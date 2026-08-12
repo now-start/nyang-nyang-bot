@@ -2,8 +2,9 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.timer;
 
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
+import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ import org.mockito.Mockito;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.entity.TimerMessage;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.timer.repository.TimerMessageRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.application.validation.outbound.PersistenceDataContractException;
+import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort;
 
 class TimerMessagePersistenceAdapterTest {
 
@@ -28,15 +29,13 @@ class TimerMessagePersistenceAdapterTest {
                 .build();
         given(repository.claimDue(1L, "claim-1", now, now.plusSeconds(120))).willReturn(1);
         given(repository.findByIdAndClaimToken(1L, "claim-1")).willReturn(Optional.of(invalid));
-        TimerMessagePersistenceAdapter adapter = new TimerMessagePersistenceAdapter(
+        TimerMessagePort adapter = validated(new TimerMessagePersistenceAdapter(
                 repository,
-                Mockito.mock(UserAccountRepository.class),
-                outboundContractValidator()
-        );
+                Mockito.mock(UserAccountRepository.class)
+        ), TimerMessagePort.class);
 
         thenThrownBy(() -> adapter.claimDue(1L, "claim-1", now, now.plusSeconds(120)))
-                .isInstanceOf(PersistenceDataContractException.class)
-                .hasMessageContaining("operation=timerMessage.claimed")
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("intervalMinutes must be between 5 and 1440");
     }
 }

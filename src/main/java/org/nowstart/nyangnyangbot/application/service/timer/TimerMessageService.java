@@ -30,7 +30,6 @@ import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort.Ti
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
 import org.nowstart.nyangnyangbot.application.service.command.CommandVariableContext;
 import org.nowstart.nyangnyangbot.application.service.command.CommandVariableRegistry;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -49,7 +48,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     private final ChzzkClientPort chzzkClientPort;
     private final CommandTemplateRenderer templateRenderer;
     private final CommandVariableRegistry variableRegistry;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,7 +77,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 request.messageTemplate(),
                 request.intervalMinutes(),
                 request.minChatCount(),
-                useCaseValidator.errors(request)
+                List.of()
         );
         requireValid(state);
         boolean active = Boolean.TRUE.equals(request.active());
@@ -110,7 +108,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 template,
                 interval,
                 minChatCount,
-                useCaseValidator.errors(request)
+                List.of()
         );
         requireValid(state);
         boolean active = request.active() == null ? current.active() : request.active();
@@ -144,9 +142,9 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
     public PreviewResult preview(PreviewTimerMessage request) {
         ValidationState state = validateState(
                 request.messageTemplate(),
-                DEFAULT_INTERVAL_MINUTES,
-                DEFAULT_MIN_CHAT_COUNT,
-                useCaseValidator.errors(request)
+                request.intervalMinutes(),
+                request.minChatCount(),
+                List.of()
         );
         requireValid(state);
         Set<String> requestedVariables = templateRenderer.variables(state.messageTemplate());
@@ -155,20 +153,6 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
                 variableRegistry.resolve(requestedVariables, timerContext(currentTime()))
         );
         return new PreviewResult(rendered);
-    }
-
-    @Override
-    public ValidationResult validate(ValidateTimerMessage request) {
-        if (request == null) {
-            return new ValidationResult(false, List.of("timerMessage is required"));
-        }
-        ValidationState state = validateState(
-                request.messageTemplate(),
-                request.intervalMinutes(),
-                request.minChatCount(),
-                List.of()
-        );
-        return new ValidationResult(state.errors().isEmpty(), state.errors());
     }
 
     @Override

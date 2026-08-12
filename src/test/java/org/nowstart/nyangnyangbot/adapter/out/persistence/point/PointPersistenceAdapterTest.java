@@ -2,7 +2,6 @@ package org.nowstart.nyangnyangbot.adapter.out.persistence.point;
 
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
-import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -36,8 +35,7 @@ class PointPersistenceAdapterTest {
         given(ledgerRepository.findByIdempotencyKey("reward:1")).willReturn(Optional.of(entry));
         PointPersistenceAdapter adapter = new PointPersistenceAdapter(
                 ledgerRepository,
-                Mockito.mock(UserAccountRepository.class),
-                outboundContractValidator()
+                Mockito.mock(UserAccountRepository.class)
         );
 
         var result = adapter.findByIdempotencyKey("reward:1").orElseThrow();

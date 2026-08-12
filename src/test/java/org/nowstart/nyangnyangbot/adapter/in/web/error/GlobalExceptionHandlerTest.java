@@ -18,10 +18,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.nowstart.nyangnyangbot.application.validation.outbound.ExternalResponseContractException;
-import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundRequestContractException;
-import org.nowstart.nyangnyangbot.application.validation.outbound.PersistenceDataContractException;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.nowstart.nyangnyangbot.application.exception.ExternalSystemException;
 
 class GlobalExceptionHandlerTest {
 
@@ -79,27 +78,21 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handleOutboundRequestContract_ShouldReturnInternalServerErrorWithoutDetails() throws Exception {
-        mockMvc.perform(get("/test/outbound-request-contract"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("내부 요청 계약을 처리하지 못했습니다."));
-    }
-
-    @Test
-    void handleExternalResponseContract_ShouldReturnBadGatewayWithoutDetails() throws Exception {
-        mockMvc.perform(get("/test/external-response-contract"))
+    void handleExternalSystem_ShouldReturnBadGatewayWithoutDetails() throws Exception {
+        mockMvc.perform(get("/test/external-system"))
                 .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.message").value("외부 시스템 응답 계약이 올바르지 않습니다."));
+                .andExpect(jsonPath("$.message").value("외부 시스템이 요청을 정상적으로 처리하지 못했습니다."));
     }
 
     @Test
-    void handlePersistenceDataContract_ShouldReturnInternalServerErrorWithoutDetails() throws Exception {
-        mockMvc.perform(get("/test/persistence-data-contract"))
+    void handleReturnValueViolation_ShouldReturnInternalServerErrorWithoutDetails() throws Exception {
+        mockMvc.perform(get("/test/return-value-violation"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("저장 데이터 계약이 올바르지 않습니다."));
+                .andExpect(jsonPath("$.message").value("내부 데이터 계약이 올바르지 않습니다."));
     }
 
-    @RestController
+    @Controller
+    @ResponseBody
     static class ThrowingController {
 
         @GetMapping("/test/illegal-argument")
@@ -118,19 +111,22 @@ class GlobalExceptionHandlerTest {
             throw new ConstraintViolationException(validator.validate(new FieldValidationRequest("")));
         }
 
-        @GetMapping("/test/outbound-request-contract")
-        String outboundRequestContract() {
-            throw new OutboundRequestContractException("secret contract detail");
+        @GetMapping("/test/external-system")
+        String externalSystem() {
+            throw new ExternalSystemException("secret upstream detail");
         }
 
-        @GetMapping("/test/external-response-contract")
-        String externalResponseContract() {
-            throw new ExternalResponseContractException("secret upstream detail");
+        @GetMapping("/test/return-value-violation")
+        String returnValueViolation() throws NoSuchMethodException {
+            var validator = Validation.buildDefaultValidatorFactory().getValidator();
+            var method = ThrowingController.class.getDeclaredMethod("invalidReturnValue");
+            var violations = validator.forExecutables().validateReturnValue(this, method, invalidReturnValue());
+            throw new ConstraintViolationException(violations);
         }
 
-        @GetMapping("/test/persistence-data-contract")
-        String persistenceDataContract() {
-            throw new PersistenceDataContractException("secret database detail");
+        @NotBlank(message = "result is required")
+        String invalidReturnValue() {
+            return "";
         }
 
         @PostMapping("/test/validation/field")

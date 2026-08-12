@@ -5,7 +5,6 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import jakarta.validation.Validation;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,13 +17,11 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidateCommand;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CreateData;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.UpdateData;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointQueryPort;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 
 @ExtendWith(MockitoExtension.class)
 class CommandServiceTest {
@@ -159,16 +156,14 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행
-        var validation = service.validate(new ValidateCommand(
+        thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
                 "!테스트",
                 "{viewer.nickname} {viewer.unknown}",
                 30
-        ));
-
-        // 검증
-        then(validation.valid()).isFalse();
-        then(validation.errors()).contains("unknown template variables: viewer.unknown");
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unknown template variables: viewer.unknown");
     }
 
     @Test
@@ -177,21 +172,16 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행
-        var validation = service.validate(new ValidateCommand(
+        thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
                 "!테스트",
                 "{viewer_name} {1bad}",
                 30
-        ));
-
-        // 검증
-        then(validation.valid()).isFalse();
-        then(validation.errors()).anySatisfy(error ->
-                then(error)
-                        .contains("malformed template variables")
-                        .contains("viewer_name")
-                        .contains("1bad")
-        );
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("malformed template variables")
+                .hasMessageContaining("viewer_name")
+                .hasMessageContaining("1bad");
     }
 
     @Test
@@ -200,24 +190,22 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행
-        var longValidation = service.validate(new ValidateCommand(
+        thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
                 "!12345678901234567890",
                 "{viewer.nickname}",
                 30
-        ));
-        var controlValidation = service.validate(new ValidateCommand(
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("trigger length must be between 2 and 20");
+        thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
                 "!\u0007공지",
                 "{viewer.nickname}",
                 30
-        ));
-
-        // 검증
-        then(longValidation.valid()).isFalse();
-        then(longValidation.errors()).contains("trigger length must be between 2 and 20");
-        then(controlValidation.valid()).isFalse();
-        then(controlValidation.errors()).contains("trigger must not contain control characters");
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("trigger must not contain control characters");
     }
 
     @Test
@@ -226,16 +214,14 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행
-        var validation = service.validate(new ValidateCommand(
+        thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
                 "!공지",
                 "{viewer.nickname}",
                 0
-        ));
-
-        // 검증
-        then(validation.valid()).isFalse();
-        then(validation.errors()).contains("userCooldownSeconds must be between 5 and 3600");
+        )))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("userCooldownSeconds must be between 5 and 3600");
     }
 
     @Test
@@ -244,7 +230,7 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행
-        var validation = service.validate(new ValidateCommand(
+        var result = service.preview(new PreviewCommand(
                 null,
                 "!긴템플릿",
                 "{invocation.arg1}".repeat(50),
@@ -252,8 +238,7 @@ class CommandServiceTest {
         ));
 
         // 검증
-        then(validation.valid()).isTrue();
-        then(validation.errors()).isEmpty();
+        then(result.message()).isEqualTo("첫번째".repeat(50));
     }
 
     @Test
@@ -297,8 +282,11 @@ class CommandServiceTest {
 
         // 실행
         var result = service.preview(new PreviewCommand(
+                null,
+                "!테스트",
                 "{viewer.nickname} {invocation.command} {invocation.args} "
-                        + "{invocation.arg1} {invocation.arg2} {point.balance}"
+                        + "{invocation.arg1} {invocation.arg2} {point.balance}",
+                30
         ));
 
         // 검증
@@ -327,7 +315,9 @@ class CommandServiceTest {
         CommandService service = service();
 
         // 실행 및 검증
-        thenThrownBy(() -> service.preview(new PreviewCommand("{nickname}님의 호감도는 {favorite}")))
+        thenThrownBy(() -> service.preview(new PreviewCommand(
+                null, "!테스트", "{nickname}님의 호감도는 {favorite}", 30
+        )))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("unknown template variables: favorite, nickname");
     }
@@ -337,11 +327,7 @@ class CommandServiceTest {
                 new CoreCommandVariableContributor(),
                 new PointCommandVariableContributor(pointQueryPort)
         ));
-        return new CommandService(commandPort, templateRenderer, variableRegistry, validator());
-    }
-
-    private UseCaseValidator validator() {
-        return new UseCaseValidator(Validation.buildDefaultValidatorFactory().getValidator());
+        return new CommandService(commandPort, templateRenderer, variableRegistry);
     }
 
     private CommandRecord record(

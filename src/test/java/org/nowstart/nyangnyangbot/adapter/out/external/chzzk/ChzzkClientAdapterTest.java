@@ -4,8 +4,9 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.nowstart.nyangnyangbot.support.MethodValidationTestSupport.validated;
 
-import jakarta.validation.Validation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +18,8 @@ import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.Authorizat
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.ChzzkApiResponse;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.SessionResponse;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.AuthorizationTokenCommand;
-import org.nowstart.nyangnyangbot.application.validation.outbound.ExternalResponseContractException;
-import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundRequestContractException;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
+import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
+import org.nowstart.nyangnyangbot.application.exception.ExternalSystemException;
 
 @ExtendWith(MockitoExtension.class)
 class ChzzkClientAdapterTest {
@@ -57,17 +57,33 @@ class ChzzkClientAdapterTest {
         );
 
         thenThrownBy(() -> adapter.getAccessToken(command))
-                .isInstanceOf(ExternalResponseContractException.class)
+                .isInstanceOf(ExternalSystemException.class)
                 .hasMessage("CHZZK API request failed: operation=getAccessToken, code=401")
                 .hasMessageNotContaining("sensitive upstream detail");
     }
 
     @Test
-    void getAccessToken_ShouldRejectInvalidRequestBeforeExternalCall() {
-        AuthorizationTokenCommand command = new AuthorizationTokenCommand(null, null, null, null, null, null);
+    void getAccessToken_ShouldWrapTransportFailure() {
+        AuthorizationTokenCommand command = new AuthorizationTokenCommand(
+                "authorization_code", "client", "secret", "code", "state", null
+        );
+        RuntimeException transportFailure = new RuntimeException("sensitive transport detail");
+        given(chzzkOpenApiClient.getAccessToken(AuthorizationRequest.from(command))).willThrow(transportFailure);
 
         thenThrownBy(() -> adapter().getAccessToken(command))
-                .isInstanceOf(OutboundRequestContractException.class)
+                .isInstanceOf(ExternalSystemException.class)
+                .hasMessage("CHZZK API request failed: operation=getAccessToken")
+                .hasCause(transportFailure)
+                .hasMessageNotContaining("sensitive transport detail");
+    }
+
+    @Test
+    void getAccessToken_ShouldRejectInvalidRequestBeforeExternalCall() {
+        AuthorizationTokenCommand command = new AuthorizationTokenCommand(null, null, null, null, null, null);
+        ChzzkClientPort validatedAdapter = validated(adapter(), ChzzkClientPort.class);
+
+        thenThrownBy(() -> validatedAdapter.getAccessToken(command))
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("grantType is required");
         org.mockito.BDDMockito.then(chzzkOpenApiClient).should(never()).getAccessToken(org.mockito.ArgumentMatchers.any());
     }
@@ -81,8 +97,10 @@ class ChzzkClientAdapterTest {
                 new ChzzkApiResponse<>(200, "OK", new AuthorizationResponse(null, null, "Bearer", 3600, "chat"))
         );
 
-        thenThrownBy(() -> adapter().getAccessToken(command))
-                .isInstanceOf(ExternalResponseContractException.class)
+        ChzzkClientPort validatedAdapter = validated(adapter(), ChzzkClientPort.class);
+
+        thenThrownBy(() -> validatedAdapter.getAccessToken(command))
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("accessToken is required")
                 .hasMessageContaining("refreshToken is required");
     }
@@ -104,8 +122,10 @@ class ChzzkClientAdapterTest {
                 new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, null, null, null, null))
         );
 
-        thenThrownBy(() -> adapter().getSession("client", "secret"))
-                .isInstanceOf(ExternalResponseContractException.class)
+        ChzzkClientPort validatedAdapter = validated(adapter(), ChzzkClientPort.class);
+
+        thenThrownBy(() -> validatedAdapter.getSession("client", "secret"))
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("url is required");
     }
 
@@ -115,8 +135,10 @@ class ChzzkClientAdapterTest {
                 new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 0, 0, null))
         );
 
-        thenThrownBy(() -> adapter().getSessionList("client", "secret"))
-                .isInstanceOf(ExternalResponseContractException.class)
+        ChzzkClientPort validatedAdapter = validated(adapter(), ChzzkClientPort.class);
+
+        thenThrownBy(() -> validatedAdapter.getSessionList("client", "secret"))
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("data is required");
     }
 
@@ -152,15 +174,14 @@ class ChzzkClientAdapterTest {
                 new ChzzkApiResponse<>(200, "OK", new SessionResponse(null, 0, 1, 1, List.of(session)))
         );
 
-        thenThrownBy(() -> adapter().getSessionList("client", "secret"))
-                .isInstanceOf(ExternalResponseContractException.class)
+        ChzzkClientPort validatedAdapter = validated(adapter(), ChzzkClientPort.class);
+
+        thenThrownBy(() -> validatedAdapter.getSessionList("client", "secret"))
+                .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("subscribedEvents is required");
     }
 
     private ChzzkClientAdapter adapter() {
-        return new ChzzkClientAdapter(
-                chzzkOpenApiClient,
-                new OutboundContractValidator(Validation.buildDefaultValidatorFactory().getValidator())
-        );
+        return new ChzzkClientAdapter(chzzkOpenApiClient);
     }
 }

@@ -10,11 +10,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.nowstart.nyangnyangbot.application.validation.outbound.ExternalResponseContractException;
-import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundRequestContractException;
-import org.nowstart.nyangnyangbot.application.validation.outbound.PersistenceDataContractException;
+import org.nowstart.nyangnyangbot.application.exception.ExternalSystemException;
 
 /**
  * REST 컨트롤러에 적용되는 예외 처리. 처리되지 않은 예외가 스택트레이스와 함께
@@ -22,7 +19,7 @@ import org.nowstart.nyangnyangbot.application.validation.outbound.PersistenceDat
  * 인증/인가(401/403) 예외는 Spring Security 필터 체인이 처리하므로 여기서 다루지 않는다.
  */
 @Slf4j
-@RestControllerAdvice(annotations = RestController.class)
+@RestControllerAdvice(basePackages = "org.nowstart.nyangnyangbot.adapter.in.web")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -42,6 +39,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException exception) {
+        if (WebExceptionSupport.isReturnValueViolation(exception)) {
+            log.error("[500] Out Port 반환 계약 검증 실패", exception);
+            return response(HttpStatus.INTERNAL_SERVER_ERROR, "내부 데이터 계약이 올바르지 않습니다.");
+        }
         // REST 클라이언트가 실패 필드를 식별할 수 있도록 프로퍼티 경로를 보존한다.
         String message = exception.getConstraintViolations().stream()
                 .sorted((left, right) -> left.getPropertyPath().toString()
@@ -52,22 +53,10 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.BAD_REQUEST, message);
     }
 
-    @ExceptionHandler(OutboundRequestContractException.class)
-    public ResponseEntity<ErrorResponse> handleOutboundRequestContract(OutboundRequestContractException exception) {
-        log.error("[500] Port Out 요청 계약 위반", exception);
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, "내부 요청 계약을 처리하지 못했습니다.");
-    }
-
-    @ExceptionHandler(ExternalResponseContractException.class)
-    public ResponseEntity<ErrorResponse> handleExternalResponseContract(ExternalResponseContractException exception) {
-        log.error("[502] 외부 응답 계약 위반", exception);
-        return response(HttpStatus.BAD_GATEWAY, "외부 시스템 응답 계약이 올바르지 않습니다.");
-    }
-
-    @ExceptionHandler(PersistenceDataContractException.class)
-    public ResponseEntity<ErrorResponse> handlePersistenceDataContract(PersistenceDataContractException exception) {
-        log.error("[500] 영속성 데이터 계약 위반", exception);
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, "저장 데이터 계약이 올바르지 않습니다.");
+    @ExceptionHandler(ExternalSystemException.class)
+    public ResponseEntity<ErrorResponse> handleExternalSystem(ExternalSystemException exception) {
+        log.error("[502] 외부 시스템 처리 실패", exception);
+        return response(HttpStatus.BAD_GATEWAY, "외부 시스템이 요청을 정상적으로 처리하지 못했습니다.");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

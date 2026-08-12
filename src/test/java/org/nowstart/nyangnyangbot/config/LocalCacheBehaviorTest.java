@@ -4,7 +4,6 @@ import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
-import static org.nowstart.nyangnyangbot.support.OutboundContractTestSupport.outboundContractValidator;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +18,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.point.PointAdjustmentP
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointAdjustmentPreset;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointAdjustmentPresetRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort.SavePresetCommand;
@@ -151,25 +149,18 @@ class LocalCacheBehaviorTest {
     static class TestConfig {
 
         @Bean
-        OutboundContractValidator outboundContractValidatorBean() {
-            return outboundContractValidator();
-        }
-
-        @Bean
         CommandPort commandPort(
                 CommandRepository commandRepository,
-                UserAccountRepository userAccountRepository,
-                OutboundContractValidator contractValidator
+                UserAccountRepository userAccountRepository
         ) {
-            return new CommandPersistenceAdapter(commandRepository, userAccountRepository, contractValidator);
+            return new CommandPersistenceAdapter(commandRepository, userAccountRepository);
         }
 
         @Bean
         PointAdjustmentPresetPort pointAdjustmentPresetPort(
-                PointAdjustmentPresetRepository pointAdjustmentPresetRepository,
-                OutboundContractValidator contractValidator
+                PointAdjustmentPresetRepository pointAdjustmentPresetRepository
         ) {
-            return new PointAdjustmentPresetPersistenceAdapter(pointAdjustmentPresetRepository, contractValidator);
+            return new PointAdjustmentPresetPersistenceAdapter(pointAdjustmentPresetRepository);
         }
 
         @Bean

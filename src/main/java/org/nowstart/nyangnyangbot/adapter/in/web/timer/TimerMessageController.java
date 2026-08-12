@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.timer;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
 import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_INTERVAL_MINUTES;
 import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_MIN_CHAT_COUNT;
 
@@ -15,7 +16,6 @@ import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUs
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.PreviewTimerMessage;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.TimerMessageResult;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.UpdateTimerMessage;
-import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.ValidateTimerMessage;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -75,21 +75,17 @@ public class TimerMessageController {
     @PostMapping("/preview")
     public String preview(@ModelAttribute TimerMessageForm form, Model model) {
         TimerMessageForm normalized = form.withDefaults();
-        var validation = manageTimerMessageUseCase.validate(new ValidateTimerMessage(
-                normalized.messageTemplate(),
-                normalized.intervalMinutes(),
-                normalized.minChatCount()
-        ));
-        if (!validation.valid()) {
-            model.addAttribute("timerReview", new ReviewView(false, validation.errors(), null));
-            return TIMER_REVIEW_FRAGMENT;
-        }
         try {
             var preview = manageTimerMessageUseCase.preview(
-                    new PreviewTimerMessage(normalized.messageTemplate())
+                    new PreviewTimerMessage(
+                            normalized.messageTemplate(),
+                            normalized.intervalMinutes(),
+                            normalized.minChatCount()
+                    )
             );
             model.addAttribute("timerReview", new ReviewView(true, List.of(), preview.message()));
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("timerReview", new ReviewView(false, List.of(inputErrorMessage(e)), null));
         }
         return TIMER_REVIEW_FRAGMENT;
@@ -116,6 +112,7 @@ public class TimerMessageController {
             model.addAttribute("saveMessage", "저장됨");
             response.addHeader("HX-Trigger", TIMER_LIST_REFRESH_TRIGGER);
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("timerMessageForm", activeForm);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
@@ -143,6 +140,7 @@ public class TimerMessageController {
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", TIMER_LIST_REFRESH_TRIGGER);
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
         return TIMER_EDITOR_FRAGMENT;

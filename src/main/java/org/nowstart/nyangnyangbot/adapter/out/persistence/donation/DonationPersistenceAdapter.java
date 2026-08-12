@@ -6,18 +6,18 @@ import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.donation.DonationPort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class DonationPersistenceAdapter implements DonationPort {
 
     private final DonationRepository donationRepository;
     private final EntityManager entityManager;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -28,7 +28,6 @@ public class DonationPersistenceAdapter implements DonationPort {
     @Override
     @Transactional
     public DonationResult save(SaveDonationCommand command) {
-        contractValidator.request("donation.save", command);
         Donation donation = Donation.builder()
                 .ingestionKey(command.ingestionKey())
                 .donationType(command.donationType())
@@ -49,7 +48,7 @@ public class DonationPersistenceAdapter implements DonationPort {
     }
 
     private DonationResult donationResult(Donation donation) {
-        return contractValidator.persistenceResult("donation.result", new DonationResult(
+        return new DonationResult(
                 donation.getId(),
                 donation.getIngestionKey(),
                 donation.getDonationType(),
@@ -58,6 +57,6 @@ public class DonationPersistenceAdapter implements DonationPort {
                 donation.getDonorDisplayName(),
                 donation.getAmount(),
                 donation.getMessage()
-        ));
+        );
     }
 }

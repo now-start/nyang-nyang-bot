@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CALENDAR_DAY_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
@@ -13,7 +14,6 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.PreviewCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
-import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.ValidateCommand;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.VariableResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -69,15 +69,11 @@ public class CommandController {
     @PostMapping("/preview")
     public String preview(@ModelAttribute CommandForm form, Model model) {
         CommandForm normalizedForm = form.withDefaults();
-        var validation = manageCommandUseCase.validate(validateCommand(normalizedForm));
-        if (!validation.valid()) {
-            model.addAttribute("reviewResult", new ReviewView(false, validation.errors(), null));
-            return COMMAND_REVIEW_FRAGMENT;
-        }
         try {
-            var result = manageCommandUseCase.preview(new PreviewCommand(normalizedForm.messageTemplate()));
+            var result = manageCommandUseCase.preview(previewCommand(normalizedForm));
             model.addAttribute("reviewResult", new ReviewView(true, List.of(), result.message()));
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("reviewResult", new ReviewView(false, List.of(inputErrorMessage(e)), null));
         }
         return COMMAND_REVIEW_FRAGMENT;
@@ -104,6 +100,7 @@ public class CommandController {
             model.addAttribute("saveMessage", "저장됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("commandForm", activeForm);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
@@ -131,6 +128,7 @@ public class CommandController {
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
         } catch (IllegalArgumentException | ConstraintViolationException e) {
+            rethrowIfInternalFailure(e);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
         return COMMAND_EDITOR_FRAGMENT;
@@ -224,8 +222,8 @@ public class CommandController {
         );
     }
 
-    private ValidateCommand validateCommand(CommandForm form) {
-        return new ValidateCommand(
+    private PreviewCommand previewCommand(CommandForm form) {
+        return new PreviewCommand(
                 form.commandId(),
                 form.trigger(),
                 form.messageTemplate(),

@@ -11,20 +11,20 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.command.entity.Command
 import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.CommandRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class CommandPersistenceAdapter implements CommandPort {
 
     private final CommandRepository commandRepository;
     private final UserAccountRepository userAccountRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     public List<CommandRecord> findAllOrderByIdDesc() {
@@ -54,7 +54,6 @@ public class CommandPersistenceAdapter implements CommandPort {
     @Override
     @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, allEntries = true)
     public CommandRecord create(CreateData data) {
-        contractValidator.request("command.create", data);
         Command saved = commandRepository.save(Command.builder()
                 .triggerToken(data.trigger())
                 .messageTemplate(data.messageTemplate())
@@ -70,7 +69,6 @@ public class CommandPersistenceAdapter implements CommandPort {
     @Override
     @CacheEvict(cacheNames = CacheNames.COMMAND_ACTIVE_BY_TRIGGER, allEntries = true)
     public CommandRecord update(UpdateData data) {
-        contractValidator.request("command.update", data);
         Command command = commandRepository.findByIdForUpdate(data.id())
                 .orElseThrow(() -> new IllegalArgumentException("command not found"));
         command.update(
@@ -85,7 +83,7 @@ public class CommandPersistenceAdapter implements CommandPort {
     }
 
     private CommandRecord commandRecord(Command entity) {
-        return contractValidator.persistenceResult("command.commandRecord", new CommandRecord(
+        return new CommandRecord(
                 entity.getId(),
                 entity.getTriggerToken(),
                 entity.getMessageTemplate(),
@@ -94,7 +92,7 @@ public class CommandPersistenceAdapter implements CommandPort {
                 entity.getUserCooldownSeconds(),
                 userId(entity.getCreatedByUser()),
                 userId(entity.getUpdatedByUser())
-        ));
+        );
     }
 
     private UserAccount actorReference(String userId) {

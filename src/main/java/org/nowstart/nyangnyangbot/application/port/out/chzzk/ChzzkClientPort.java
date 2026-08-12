@@ -9,19 +9,38 @@ import java.util.List;
 
 public interface ChzzkClientPort {
 
-    AuthorizationToken getAccessToken(AuthorizationTokenCommand request);
+    /** 인가 요청으로 OAuth 액세스 토큰을 발급받는다. */
+    @Valid
+    AuthorizationToken getAccessToken(
+            @Valid @NotNull(message = "authorization request is required") AuthorizationTokenCommand request
+    );
 
-    UserResult getUser(String authorization);
+    /** 인가 정보에 해당하는 CHZZK 사용자를 반환한다. */
+    @Valid
+    UserResult getUser(@NotBlank(message = "authorization is required") String authorization);
 
-    void sendMessage(MessageCommand request);
+    /** 설정된 CHZZK 채널로 채팅 메시지를 전송한다. */
+    void sendMessage(@Valid @NotNull(message = "message request is required") MessageCommand request);
 
-    void subscribeChatEvent(String sessionKey);
+    /** 세션이 채팅 이벤트를 수신하도록 구독한다. */
+    void subscribeChatEvent(@NotBlank(message = "sessionKey is required") String sessionKey);
 
-    void subscribeDonationEvent(String sessionKey);
+    /** 세션이 후원 이벤트를 수신하도록 구독한다. */
+    void subscribeDonationEvent(@NotBlank(message = "sessionKey is required") String sessionKey);
 
-    SessionListResult getSessionList(String clientId, String clientSecret);
+    /** 전달된 클라이언트 인증 정보로 사용 가능한 세션 목록을 반환한다. */
+    @Valid
+    SessionListResult getSessionList(
+            @NotBlank(message = "clientId is required") String clientId,
+            @NotBlank(message = "clientSecret is required") String clientSecret
+    );
 
-    SessionResult getSession(String clientId, String clientSecret);
+    /** 전달된 클라이언트 인증 정보로 채팅 세션을 반환한다. */
+    @Valid
+    SessionResult getSession(
+            @NotBlank(message = "clientId is required") String clientId,
+            @NotBlank(message = "clientSecret is required") String clientSecret
+    );
 
     record AuthorizationToken(
             @NotBlank(message = "accessToken is required")

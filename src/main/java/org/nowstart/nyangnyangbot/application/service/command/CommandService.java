@@ -1,7 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
-import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.TEMPLATE_LENGTH_MESSAGE;
-import static org.nowstart.nyangnyangbot.application.validation.CommandValidationMessages.USER_COOLDOWN_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.TEMPLATE_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.USER_COOLDOWN_RANGE_MESSAGE;
 import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.DEFAULT_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.DEFAULT_USER_COOLDOWN_SECONDS;
 import static org.nowstart.nyangnyangbot.domain.command.CommandPolicy.MAX_TEMPLATE_LENGTH;
@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,6 @@ public class CommandService implements ManageCommandUseCase {
     private final CommandPort commandPort;
     private final CommandTemplateRenderer templateRenderer;
     private final CommandVariableRegistry variableRegistry;
-    private final UseCaseValidator useCaseValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -93,7 +91,7 @@ public class CommandService implements ManageCommandUseCase {
                 template,
                 executionPolicy,
                 cooldown,
-                useCaseValidator.errors(request)
+                List.of()
         );
         requireValid(state);
         CommandRecord saved = commandPort.update(new CommandPort.UpdateData(
@@ -111,32 +109,22 @@ public class CommandService implements ManageCommandUseCase {
     }
 
     @Override
-    public PreviewResult preview(PreviewCommand request) {
-        List<String> errors = new ArrayList<>(useCaseValidator.errors(request));
-        String template = cleanTemplate(request.messageTemplate());
-        errors.addAll(templateErrors(template));
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", errors.stream().distinct().toList()));
-        }
-        Set<String> variables = templateRenderer.variables(template);
-        return new PreviewResult(templateRenderer.render(template, variableRegistry.sampleValues(variables)));
-    }
-
-    @Override
     @Transactional(readOnly = true)
-    public ValidationResult validate(ValidateCommand request) {
-        if (request == null) {
-            return new ValidationResult(false, List.of("command is required"));
-        }
+    public PreviewResult preview(PreviewCommand request) {
         ValidationState state = validationForRequest(
                 request.commandId(),
                 request.trigger(),
                 request.messageTemplate(),
                 request.executionPolicy(),
                 request.userCooldownSeconds(),
-                useCaseValidator.errors(request)
+                List.of()
         );
-        return new ValidationResult(state.errors().isEmpty(), state.errors());
+        requireValid(state);
+        Set<String> variables = templateRenderer.variables(state.messageTemplate());
+        return new PreviewResult(templateRenderer.render(
+                state.messageTemplate(),
+                variableRegistry.sampleValues(variables)
+        ));
     }
 
     private ValidationState validationForCreate(CreateCommand request) {
@@ -146,7 +134,7 @@ public class CommandService implements ManageCommandUseCase {
                 request.messageTemplate(),
                 request.executionPolicy(),
                 request.userCooldownSeconds(),
-                useCaseValidator.errors(request)
+                List.of()
         );
     }
 

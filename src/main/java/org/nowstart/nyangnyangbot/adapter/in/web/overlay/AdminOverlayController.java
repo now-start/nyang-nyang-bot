@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -67,6 +69,7 @@ public class AdminOverlayController {
             model.addAttribute("message", "오버레이 재송출 대기열에 추가했습니다.");
             model.addAttribute("tone", "success");
         } catch (RuntimeException exception) {
+            rethrowIfInternalFailure(exception);
             log.warn("Failed to replay roulette overlay run. rouletteRunId={}", rouletteRunId, exception);
             model.addAttribute("message", "오버레이 재송출에 실패했습니다.");
             model.addAttribute("tone", "danger");

@@ -1,5 +1,6 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.point;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
 import static org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.MAX_LABEL_LENGTH;
 import static org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase.MAX_MANUAL_DESCRIPTION_LENGTH;
 
@@ -97,6 +98,7 @@ public class PointAdjustmentController {
             model.addAttribute("tone", "success");
             response.addHeader("HX-Trigger", APPLY_SUCCESS_TRIGGER);
         } catch (RuntimeException e) {
+            rethrowIfInternalFailure(e);
             log.warn("Failed to apply point adjustments. userId={}", form.userId(), e);
             model.addAttribute("message", "포인트 조정 실패");
             model.addAttribute("tone", "danger");

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface QueryRouletteResultUseCase {
 
+    /** 최근 룰렛 실행과 각 실행의 회차 요약을 반환한다. */
     Page<RouletteRunSummaryResult> getRecentRuns(
             @NotNull(message = "pageable is required") Pageable pageable
     );

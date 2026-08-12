@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.doReturn;
 import static org.mockito.BDDMockito.given;
 
-import jakarta.validation.Validation;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.CreateTimerMessage;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.PreviewTimerMessage;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.UpdateTimerMessage;
-import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.ValidateTimerMessage;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort.MessageCommand;
 import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort;
@@ -31,7 +29,6 @@ import org.nowstart.nyangnyangbot.application.port.out.timer.TimerMessagePort.Up
 import org.nowstart.nyangnyangbot.application.service.command.CommandTemplateRenderer;
 import org.nowstart.nyangnyangbot.application.service.command.CommandVariableRegistry;
 import org.nowstart.nyangnyangbot.application.service.command.CoreCommandVariableContributor;
-import org.nowstart.nyangnyangbot.application.validation.UseCaseValidator;
 
 @ExtendWith(MockitoExtension.class)
 class TimerMessageServiceTest {
@@ -107,32 +104,28 @@ class TimerMessageServiceTest {
     void validate_ShouldAllowOnlyTimeVariables() {
         TimerMessageService service = spyService();
 
-        var valid = service.validate(new ValidateTimerMessage("현재 {time.datetime}", 10, 5));
-        var invalid = service.validate(new ValidateTimerMessage("안녕 {viewer.nickname}", 10, 5));
-
-        then(valid.valid()).isTrue();
-        then(invalid.valid()).isFalse();
-        then(invalid.errors()).contains("timer messageTemplate cannot use variables: viewer.nickname");
+        then(service.preview(new PreviewTimerMessage("현재 {time.datetime}", 10, 5)).message())
+                .isEqualTo("현재 2026-07-16 12:00");
+        thenThrownBy(() -> service.preview(new PreviewTimerMessage("안녕 {viewer.nickname}", 10, 5)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("timer messageTemplate cannot use variables: viewer.nickname");
     }
 
     @Test
     void validate_ShouldRejectOutOfRangeIntervalAndChatCount() {
         TimerMessageService service = spyService();
 
-        var result = service.validate(new ValidateTimerMessage("공지", 4, 10_001));
-
-        then(result.valid()).isFalse();
-        then(result.errors()).contains(
-                "intervalMinutes must be between 5 and 1440",
-                "minChatCount must be between 1 and 10000"
-        );
+        thenThrownBy(() -> service.preview(new PreviewTimerMessage("공지", 4, 10_001)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("intervalMinutes must be between 5 and 1440")
+                .hasMessageContaining("minChatCount must be between 1 and 10000");
     }
 
     @Test
     void preview_ShouldRenderTimeVariableAtCurrentTime() {
         TimerMessageService service = spyService();
 
-        var result = service.preview(new PreviewTimerMessage("지금은 {time.datetime}"));
+        var result = service.preview(new PreviewTimerMessage("지금은 {time.datetime}", 10, 5));
 
         then(result.message()).isEqualTo("지금은 2026-07-16 12:00");
     }
@@ -230,15 +223,11 @@ class TimerMessageServiceTest {
         CommandVariableRegistry variableRegistry = new CommandVariableRegistry(List.of(
                 new CoreCommandVariableContributor()
         ));
-        UseCaseValidator validator = new UseCaseValidator(
-                Validation.buildDefaultValidatorFactory().getValidator()
-        );
         return new TimerMessageService(
                 timerMessagePort,
                 chzzkClientPort,
                 new CommandTemplateRenderer(),
-                variableRegistry,
-                validator
+                variableRegistry
         );
     }
 

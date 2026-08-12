@@ -9,21 +9,21 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.Point
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointLedgerEntryRepository.PointSummaryProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointLedgerPort;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointQueryPort;
 import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort {
 
     private final PointLedgerEntryRepository ledgerRepository;
     private final UserAccountRepository userAccountRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     public boolean lockUser(String userId, String displayName, boolean createIfMissing) {
@@ -57,7 +57,6 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
 
     @Override
     public LedgerEntryRecord append(AppendPointEntry data) {
-        contractValidator.request("point.append", data);
         UserAccount user = userAccountRepository.getReferenceById(data.userId());
         UserAccount actor = actor(data.actorUserId());
         PointLedgerEntry correction = data.correctionOfEntryId() == null
@@ -118,7 +117,7 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
     }
 
     private LedgerEntryRecord ledgerRecord(PointLedgerEntry entry) {
-        return contractValidator.persistenceResult("point.ledgerEntry", new LedgerEntryRecord(
+        return new LedgerEntryRecord(
                 entry.getId(),
                 entry.getUserAccount().getUserId(),
                 entry.getDelta(),
@@ -128,19 +127,19 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
                 entry.getPrivateNote(),
                 entry.getCorrectionOfEntry() == null ? null : entry.getCorrectionOfEntry().getId(),
                 entry.getActorUser() == null ? null : entry.getActorUser().getUserId()
-        ));
+        );
     }
 
     private PointSummaryRecord summaryRecord(PointSummaryProjection projection) {
-        return contractValidator.persistenceResult("point.summary", new PointSummaryRecord(
+        return new PointSummaryRecord(
                 projection.getUserId(),
                 projection.getDisplayName(),
                 projection.getBalance() == null ? 0L : projection.getBalance()
-        ));
+        );
     }
 
     private PointHistoryRecord historyRecord(PointHistoryProjection projection) {
-        return contractValidator.persistenceResult("point.history", new PointHistoryRecord(
+        return new PointHistoryRecord(
                 projection.getLedgerId(),
                 projection.getUserId(),
                 projection.getDelta(),
@@ -149,6 +148,6 @@ public class PointPersistenceAdapter implements PointLedgerPort, PointQueryPort 
                 projection.getDescription(),
                 projection.getCorrectionOfEntryId() != null,
                 projection.getCreatedAt()
-        ));
+        );
     }
 }

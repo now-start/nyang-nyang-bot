@@ -4,19 +4,19 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.entity.PointAdjustmentPreset;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointAdjustmentPresetRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
 import org.nowstart.nyangnyangbot.config.cache.CacheNames;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class PointAdjustmentPresetPersistenceAdapter implements PointAdjustmentPresetPort {
 
     private final PointAdjustmentPresetRepository presetRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     @Cacheable(cacheNames = CacheNames.POINT_ADJUSTMENT_PRESETS)
@@ -27,7 +27,6 @@ public class PointAdjustmentPresetPersistenceAdapter implements PointAdjustmentP
     @Override
     @CacheEvict(cacheNames = CacheNames.POINT_ADJUSTMENT_PRESETS, allEntries = true)
     public PresetRecord save(SavePresetCommand command) {
-        contractValidator.request("pointAdjustmentPreset.save", command);
         return record(presetRepository.save(PointAdjustmentPreset.builder()
                 .amount(command.amount())
                 .label(command.label())
@@ -35,9 +34,6 @@ public class PointAdjustmentPresetPersistenceAdapter implements PointAdjustmentP
     }
 
     private PresetRecord record(PointAdjustmentPreset preset) {
-        return contractValidator.persistenceResult(
-                "pointAdjustmentPreset.record",
-                new PresetRecord(preset.getId(), preset.getAmount(), preset.getLabel())
-        );
+        return new PresetRecord(preset.getId(), preset.getAmount(), preset.getLabel());
     }
 }

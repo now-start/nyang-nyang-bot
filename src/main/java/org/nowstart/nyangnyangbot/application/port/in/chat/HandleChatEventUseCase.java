@@ -8,6 +8,7 @@ import java.util.Map;
 
 public interface HandleChatEventUseCase {
 
+    /** 설정된 채널에서 수신한 채팅 이벤트를 처리한다. */
     void handle(@Valid @NotNull(message = "chat is required") ChatReceived event);
 
     record ChatReceived(

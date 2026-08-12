@@ -15,7 +15,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteOptionRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RecentRouletteResultQueryPort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
@@ -27,8 +26,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteResultQueryPort {
 
@@ -37,13 +38,11 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     private final RouletteRunRepository rouletteRunRepository;
     private final RouletteRoundRepository rouletteRoundRepository;
     private final DonationRepository donationRepository;
-    private final OutboundContractValidator contractValidator;
     private final RoulettePolicy roulettePolicy = new RoulettePolicy();
 
     @Override
     @Transactional
     public ConfigResult createConfig(CreateConfigCommand command) {
-        contractValidator.request("roulette.createConfig", command);
         RouletteConfig saved = rouletteConfigRepository.save(RouletteConfig.builder()
                 .title(command.title())
                 .triggerToken(command.triggerToken())
@@ -59,7 +58,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional
     public OptionResult addOption(CreateOptionCommand command) {
-        contractValidator.request("roulette.addOption", command);
         RouletteConfig config = rouletteConfigRepository.findByIdForUpdate(command.configId())
                 .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
         if (config.getStatus() != RouletteConfigStatus.DRAFT) {
@@ -152,7 +150,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Override
     @Transactional
     public RunResult createReadyRun(CreateRunCommand command) {
-        contractValidator.request("roulette.createReadyRun", command);
         if (rouletteRunRepository.existsById(command.donationId())) {
             throw new IllegalStateException("roulette run already exists");
         }
@@ -201,14 +198,11 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
             return List.of();
         }
         return rouletteRoundRepository.summarizeRuns(runIds).stream()
-                .map(summary -> contractValidator.persistenceResult(
-                        "roulette.runRoundSummary",
-                        new RunRoundSummaryResult(
+                .map(summary -> new RunRoundSummaryResult(
                         summary.getRunId(),
                         summary.getRoundCount(),
                         summary.getAppliedCount(),
                         summary.getFailedCount()
-                        )
                 ))
                 .toList();
     }
@@ -260,10 +254,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional(readOnly = true)
     public List<RecentRound> findRecentRoundsByUserId(String userId) {
         return rouletteRoundRepository.findRecentByUserId(userId, PageRequest.of(0, MAX_RECENT_ROUNDS)).stream()
-                .map(round -> contractValidator.persistenceResult(
-                        "roulette.recentRound",
-                        new RecentRound(round.getRoundNo(), round.getItemLabel())
-                ))
+                .map(round -> new RecentRound(round.getRoundNo(), round.getItemLabel()))
                 .toList();
     }
 
@@ -295,7 +286,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     }
 
     private ConfigResult configResult(RouletteConfig config) {
-        return contractValidator.persistenceResult("roulette.config", new ConfigResult(
+        return new ConfigResult(
                 config.getId(),
                 config.getTitle(),
                 config.getTriggerToken(),
@@ -304,11 +295,11 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
                 config.getStatus(),
                 config.getCreatedAt(),
                 config.getUpdatedAt()
-        ));
+        );
     }
 
     private OptionResult optionResult(RouletteOption option) {
-        return contractValidator.persistenceResult("roulette.option", new OptionResult(
+        return new OptionResult(
                 option.getId(),
                 option.getLabel(),
                 option.getProbabilityBasisPoints(),
@@ -317,26 +308,26 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
                 option.getConversionMode(),
                 option.getPointDelta(),
                 option.getDisplayOrder()
-        ));
+        );
     }
 
     private RunResult runResult(RouletteRun run) {
         Donation donation = run.getDonation();
-        return contractValidator.persistenceResult("roulette.run", new RunResult(
+        return new RunResult(
                 run.getDonationId(),
                 donation.getIngestionKey(),
                 donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
                 donation.getDonorDisplayName(),
                 donation.getAmount(),
                 run.getCreatedAt()
-        ));
+        );
     }
 
     private RoundResult roundResult(RouletteRound round) {
         RouletteRun run = round.getRouletteRun();
         Donation donation = run.getDonation();
         RouletteOption option = round.getRouletteOption();
-        return contractValidator.persistenceResult("roulette.round", new RoundResult(
+        return new RoundResult(
                 round.getId(),
                 donation.getIngestionKey(),
                 donation.getDonorUserAccount() == null ? null : donation.getDonorUserAccount().getUserId(),
@@ -348,6 +339,6 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
                 option.getConversionMode(),
                 option.getPointDelta(),
                 round.getStatus()
-        ));
+        );
     }
 }

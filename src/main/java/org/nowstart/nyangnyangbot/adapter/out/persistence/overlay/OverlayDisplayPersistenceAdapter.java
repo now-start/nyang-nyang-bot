@@ -10,21 +10,21 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.Roulet
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.DisplayRoundProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.overlay.OverlayDisplayPort;
 import org.nowstart.nyangnyangbot.domain.type.OverlayDisplayStatus;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
 
     private final OverlayDisplayJobRepository overlayDisplayJobRepository;
     private final RouletteRoundRepository rouletteRoundRepository;
     private final RouletteRunRepository rouletteRunRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     @Transactional
@@ -126,17 +126,17 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
                 .stream()
                 .map(this::roundResult)
                 .toList();
-        return contractValidator.persistenceResult("overlay.displayJob", new DisplayJobResult(
+        return new DisplayJobResult(
                 job.getId(),
                 run.getDonation().getDonorDisplayName(),
                 job.getClaimToken(),
                 roundCount,
                 rounds
-        ));
+        );
     }
 
     private DisplayRoundResult roundResult(DisplayRoundProjection round) {
-        return contractValidator.persistenceResult("overlay.displayRound", new DisplayRoundResult(
+        return new DisplayRoundResult(
                 round.getId(),
                 round.getRoundNo(),
                 round.getOptionLabel(),
@@ -146,6 +146,6 @@ public class OverlayDisplayPersistenceAdapter implements OverlayDisplayPort {
                 round.getPointDelta(),
                 round.getStatus(),
                 round.getFailureReason()
-        ));
+        );
     }
 }

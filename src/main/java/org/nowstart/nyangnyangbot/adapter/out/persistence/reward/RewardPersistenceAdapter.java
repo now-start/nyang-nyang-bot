@@ -8,25 +8,24 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.entity.RewardGr
 import org.nowstart.nyangnyangbot.adapter.out.persistence.reward.repository.RewardGrantRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRound;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.reward.RewardPort;
 import org.nowstart.nyangnyangbot.domain.type.RewardGrantStatus;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class RewardPersistenceAdapter implements RewardPort {
 
     private final RewardGrantRepository rewardGrantRepository;
     private final EntityManager entityManager;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     @Transactional
     public void createGrant(CreateRewardCommand command) {
-        contractValidator.request("reward.createGrant", command);
         RewardGrant grant = RewardGrant.builder()
                 .userAccount(reference(UserAccount.class, command.userId()))
                 .rouletteRound(reference(RouletteRound.class, command.rouletteRoundId()))
@@ -78,7 +77,7 @@ public class RewardPersistenceAdapter implements RewardPort {
     }
 
     private RewardRecord rewardRecord(RewardGrant grant) {
-        return contractValidator.persistenceResult("reward.grant", new RewardRecord(
+        return new RewardRecord(
                 grant.getId(),
                 grant.getPointLedgerEntry() == null ? null : grant.getPointLedgerEntry().getId(),
                 grant.getLabel(),
@@ -88,7 +87,7 @@ public class RewardPersistenceAdapter implements RewardPort {
                 grant.getStatus(),
                 grant.getDescription(),
                 grant.getCreatedAt()
-        ));
+        );
     }
 
     private <T> T reference(Class<T> type, Object id) {

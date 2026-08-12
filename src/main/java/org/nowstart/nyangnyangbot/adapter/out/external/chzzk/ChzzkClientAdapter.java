@@ -2,6 +2,7 @@ package org.nowstart.nyangnyangbot.adapter.out.external.chzzk;
 
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.client.ChzzkOpenApiClient;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.request.AuthorizationRequest;
@@ -10,68 +11,65 @@ import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.Authorizat
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.ChzzkApiResponse;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.SessionResponse;
 import org.nowstart.nyangnyangbot.adapter.out.external.chzzk.response.UserResponse;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.chzzk.ChzzkClientPort;
-import org.nowstart.nyangnyangbot.application.validation.outbound.ExternalResponseContractException;
+import org.nowstart.nyangnyangbot.application.exception.ExternalSystemException;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class ChzzkClientAdapter implements ChzzkClientPort {
 
     private final ChzzkOpenApiClient chzzkOpenApi;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     public AuthorizationToken getAccessToken(AuthorizationTokenCommand request) {
-        contractValidator.request("chzzk.getAccessToken", request);
         return requireContent(
                 "getAccessToken",
-                chzzkOpenApi.getAccessToken(AuthorizationRequest.from(request)),
+                execute("getAccessToken", () -> chzzkOpenApi.getAccessToken(AuthorizationRequest.from(request))),
                 AuthorizationResponse::toAuthorizationToken
         );
     }
 
     @Override
     public UserResult getUser(String authorization) {
-        requireText("chzzk.getUser", "authorization", authorization);
-        return requireContent("getUser", chzzkOpenApi.getUser(authorization), UserResponse::toUserResult);
+        return requireContent(
+                "getUser",
+                execute("getUser", () -> chzzkOpenApi.getUser(authorization)),
+                UserResponse::toUserResult
+        );
     }
 
     @Override
     public void sendMessage(MessageCommand request) {
-        contractValidator.request("chzzk.sendMessage", request);
-        chzzkOpenApi.sendMessage(MessageRequest.from(request));
+        execute("sendMessage", () -> chzzkOpenApi.sendMessage(MessageRequest.from(request)));
     }
 
     @Override
     public void subscribeChatEvent(String sessionKey) {
-        requireText("chzzk.subscribeChatEvent", "sessionKey", sessionKey);
-        chzzkOpenApi.subscribeChatEvent(sessionKey);
+        execute("subscribeChatEvent", () -> chzzkOpenApi.subscribeChatEvent(sessionKey));
     }
 
     @Override
     public void subscribeDonationEvent(String sessionKey) {
-        requireText("chzzk.subscribeDonationEvent", "sessionKey", sessionKey);
-        chzzkOpenApi.subscribeDonationEvent(sessionKey);
+        execute("subscribeDonationEvent", () -> chzzkOpenApi.subscribeDonationEvent(sessionKey));
     }
 
     @Override
     public SessionListResult getSessionList(String clientId, String clientSecret) {
-        requireClientCredentials("chzzk.getSessionList", clientId, clientSecret);
         return requireContent(
                 "getSessionList",
-                chzzkOpenApi.getSessionList(clientId, clientSecret),
+                execute("getSessionList", () -> chzzkOpenApi.getSessionList(clientId, clientSecret)),
                 SessionResponse::toSessionListResult
         );
     }
 
     @Override
     public SessionResult getSession(String clientId, String clientSecret) {
-        requireClientCredentials("chzzk.getSession", clientId, clientSecret);
         return requireContent(
                 "getSession",
-                chzzkOpenApi.getSession(clientId, clientSecret),
+                execute("getSession", () -> chzzkOpenApi.getSession(clientId, clientSecret)),
                 SessionResponse::toSessionResult
         );
     }
@@ -83,23 +81,27 @@ public class ChzzkClientAdapter implements ChzzkClientPort {
     ) {
         if (response == null || !Objects.equals(response.code(), 200) || response.content() == null) {
             Integer code = response == null ? null : response.code();
-            throw new ExternalResponseContractException("CHZZK API request failed: operation=%s, code=%s"
+            throw new ExternalSystemException("CHZZK API request failed: operation=%s, code=%s"
                     .formatted(operation, code));
         }
-        return contractValidator.externalResponse(operation, converter.apply(response.content()));
+        return converter.apply(response.content());
     }
 
-    private void requireClientCredentials(String operation, String clientId, String clientSecret) {
-        requireText(operation, "clientId", clientId);
-        requireText(operation, "clientSecret", clientSecret);
+    private <T> T execute(String operation, Supplier<T> request) {
+        try {
+            return request.get();
+        } catch (ExternalSystemException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw new ExternalSystemException("CHZZK API request failed: operation=" + operation, exception);
+        }
     }
 
-    private void requireText(String operation, String field, String value) {
-        contractValidator.request(operation + "." + field, new RequiredText(value));
+    private void execute(String operation, Runnable request) {
+        execute(operation, () -> {
+            request.run();
+            return null;
+        });
     }
 
-    private record RequiredText(
-            @jakarta.validation.constraints.NotBlank(message = "value is required") String value
-    ) {
-    }
 }

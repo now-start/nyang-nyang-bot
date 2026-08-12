@@ -17,7 +17,6 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.Roulet
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.DisplayRoundProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
@@ -32,7 +31,6 @@ class OverlayDisplayPersistenceAdapterTest {
         OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
         RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
         RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
-        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
         RouletteRun run = Mockito.mock(RouletteRun.class);
         Donation donation = Mockito.mock(Donation.class);
         OverlayDisplayJob job = Mockito.mock(OverlayDisplayJob.class);
@@ -53,10 +51,8 @@ class OverlayDisplayPersistenceAdapterTest {
         given(roundRepository.countByRouletteRun_DonationId(9L)).willReturn(1000L);
         given(roundRepository.findDisplayRoundsByRunId(Mockito.eq(9L), Mockito.any(Pageable.class)))
                 .willReturn(displayedRounds);
-        given(validator.persistenceResult(Mockito.anyString(), Mockito.any()))
-                .willAnswer(invocation -> invocation.getArgument(1));
         OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
-                jobRepository, roundRepository, runRepository, validator
+                jobRepository, roundRepository, runRepository
         );
 
         var result = adapter.claimNext(NOW, "claim-1", NOW.plusSeconds(30)).orElseThrow();
@@ -75,7 +71,6 @@ class OverlayDisplayPersistenceAdapterTest {
         OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
         RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
         RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
-        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
         RouletteRun run = Mockito.mock(RouletteRun.class);
         OverlayDisplayJob saved = Mockito.mock(OverlayDisplayJob.class);
         given(runRepository.findByIdForUpdate(9L)).willReturn(Optional.of(run));
@@ -83,14 +78,13 @@ class OverlayDisplayPersistenceAdapterTest {
         given(jobRepository.save(Mockito.any())).willReturn(saved);
         given(saved.getId()).willReturn(1L);
         OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
-                jobRepository, roundRepository, runRepository, validator
+                jobRepository, roundRepository, runRepository
         );
 
         adapter.enqueue(9L, "roulette-run:9", NOW.plusSeconds(120), NOW);
 
         then(jobRepository).should().save(Mockito.any(OverlayDisplayJob.class));
         then(roundRepository).shouldHaveNoInteractions();
-        then(validator).shouldHaveNoInteractions();
     }
 
     @Test
@@ -98,7 +92,6 @@ class OverlayDisplayPersistenceAdapterTest {
         OverlayDisplayJobRepository jobRepository = Mockito.mock(OverlayDisplayJobRepository.class);
         RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
         RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
-        OutboundContractValidator validator = Mockito.mock(OutboundContractValidator.class);
         RouletteRun run = Mockito.mock(RouletteRun.class);
         OverlayDisplayJob replayOf = Mockito.mock(OverlayDisplayJob.class);
         OverlayDisplayJob saved = Mockito.mock(OverlayDisplayJob.class);
@@ -108,7 +101,7 @@ class OverlayDisplayPersistenceAdapterTest {
         given(jobRepository.save(Mockito.any())).willReturn(saved);
         given(saved.getId()).willReturn(2L);
         OverlayDisplayPersistenceAdapter adapter = new OverlayDisplayPersistenceAdapter(
-                jobRepository, roundRepository, runRepository, validator
+                jobRepository, roundRepository, runRepository
         );
 
         Long displayJobId = adapter.replay(
@@ -120,7 +113,6 @@ class OverlayDisplayPersistenceAdapterTest {
 
         assertThat(displayJobId).isEqualTo(2L);
         then(roundRepository).shouldHaveNoInteractions();
-        then(validator).shouldHaveNoInteractions();
     }
 
     private DisplayRoundProjection round(int roundNo) {

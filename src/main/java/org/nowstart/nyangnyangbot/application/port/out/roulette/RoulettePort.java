@@ -12,7 +12,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.nowstart.nyangnyangbot.application.validation.outbound.OutboundResult;
 import org.nowstart.nyangnyangbot.domain.roulette.RoulettePolicy;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
@@ -23,40 +22,77 @@ import org.springframework.data.domain.Pageable;
 
 public interface RoulettePort {
 
-    ConfigResult createConfig(CreateConfigCommand command);
+    /** 초안 상태의 룰렛 설정을 저장한다. */
+    @Valid
+    ConfigResult createConfig(
+            @Valid @NotNull(message = "roulette config command is required") CreateConfigCommand command
+    );
 
-    OptionResult addOption(CreateOptionCommand command);
+    /** 초안 상태의 룰렛 설정에 선택지를 저장한다. */
+    @Valid
+    OptionResult addOption(
+            @Valid @NotNull(message = "roulette option command is required") CreateOptionCommand command
+    );
 
+    /** 룰렛 설정을 최신순으로 반환한다. */
+    @Valid
     Page<ConfigResult> findConfigs(Pageable pageable);
 
+    /** 식별자로 룰렛 설정을 조회한다. */
+    @Valid
     Optional<ConfigResult> findConfigById(Long configId);
 
+    /** 룰렛 설정의 선택지를 표시 순서로 반환한다. */
+    @Valid
     List<OptionResult> findOptionsByConfigId(Long configId);
 
+    /** 활성 룰렛 설정을 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
+    @Valid
     Optional<ConfigResult> findActiveConfigForUpdate();
 
+    /** 유효한 초안 설정을 활성화하고 다른 활성 설정을 보관 상태로 변경한다. */
+    @Valid
     ConfigResult activateConfig(Long configId, Instant activatedAt);
 
+    /** 지정한 시각에 해당 룰렛 설정을 보관 상태로 변경한다. */
+    @Valid
     ConfigResult archiveConfig(Long configId, Instant archivedAt);
 
+    /** 후원 식별자에 해당하는 룰렛 실행이 이미 존재하는지 반환한다. */
     boolean existsRun(Long donationId);
 
-    RunResult createReadyRun(CreateRunCommand command);
+    /** 대상 후원의 준비 완료 실행과 모든 회차를 원자적으로 생성한다. */
+    @Valid
+    RunResult createReadyRun(
+            @Valid @NotNull(message = "roulette run command is required") CreateRunCommand command
+    );
 
+    /** 룰렛 실행을 최신순으로 반환한다. */
+    @Valid
     Page<RunResult> findRecentRuns(Pageable pageable);
 
+    /** 전달된 실행 식별자별 회차 개수 요약을 반환한다. */
+    @Valid
     List<RunRoundSummaryResult> summarizeRuns(List<Long> runIds);
 
+    /** 룰렛 실행의 회차를 회차 번호 오름차순으로 반환한다. */
+    @Valid
     List<RoundResult> findRoundsByRunId(Long runId);
 
+    /** {@code afterRunId}를 기준으로 순환 정렬한 복구 대상 실행 식별자를 반환한다. */
     List<Long> findRunIdsNeedingRecovery(long afterRunId, int limit);
 
+    /** 복구 대상 중 가장 큰 실행 식별자를 반환하며, 대상이 없으면 {@code null}을 반환한다. */
     Long findMaxRunIdNeedingRecovery();
 
+    /** 식별자로 회차를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
+    @Valid
     Optional<RoundResult> findRoundByIdForUpdate(Long roundId);
 
+    /** 잠근 회차를 적용 완료 상태로 변경한다. */
     void markRoundApplied(Long roundId, Instant appliedAt);
 
+    /** 잠근 회차를 전달된 사유와 함께 실패 상태로 변경한다. */
     void markRoundFailed(Long roundId, String failureReason, Instant failedAt);
 
     record CreateConfigCommand(
@@ -89,8 +125,8 @@ public interface RoulettePort {
     }
 
     record ConfigResult(
-            @NotNull(groups = OutboundResult.class, message = "id is required")
-            @Positive(groups = OutboundResult.class, message = "id must be positive") Long id,
+            @NotNull(message = "id is required")
+            @Positive(message = "id must be positive") Long id,
             @NotBlank(message = "title is required") String title,
             @NotBlank(message = "triggerToken is required") String triggerToken,
             @NotNull(message = "pricePerRound is required")
@@ -104,8 +140,8 @@ public interface RoulettePort {
     }
 
     record OptionResult(
-            @NotNull(groups = OutboundResult.class, message = "id is required")
-            @Positive(groups = OutboundResult.class, message = "id must be positive") Long id,
+            @NotNull(message = "id is required")
+            @Positive(message = "id must be positive") Long id,
             @NotBlank(message = "label is required") String label,
             @NotNull(message = "probabilityBasisPoints is required")
             @PositiveOrZero(message = "probabilityBasisPoints must not be negative")
@@ -159,8 +195,8 @@ public interface RoulettePort {
     }
 
     record RunResult(
-            @NotNull(groups = OutboundResult.class, message = "id is required")
-            @Positive(groups = OutboundResult.class, message = "id must be positive") Long id,
+            @NotNull(message = "id is required")
+            @Positive(message = "id must be positive") Long id,
             @NotBlank(message = "ingestionKey is required") String ingestionKey,
             @NotBlank(message = "userId is required") String userId,
             String donorDisplayName,
@@ -183,8 +219,8 @@ public interface RoulettePort {
     }
 
     record RoundResult(
-            @NotNull(groups = OutboundResult.class, message = "id is required")
-            @Positive(groups = OutboundResult.class, message = "id must be positive") Long id,
+            @NotNull(message = "id is required")
+            @Positive(message = "id must be positive") Long id,
             @NotBlank(message = "ingestionKey is required") String ingestionKey,
             @NotBlank(message = "userId is required") String userId,
             String donorDisplayName,

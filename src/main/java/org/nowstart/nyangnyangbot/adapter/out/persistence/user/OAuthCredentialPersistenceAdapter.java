@@ -7,19 +7,19 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.OAuthCrede
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.OAuthCredentialRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
-import org.nowstart.nyangnyangbot.adapter.out.validation.OutboundContractValidator;
 import org.nowstart.nyangnyangbot.application.port.out.user.OAuthCredentialPort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @RequiredArgsConstructor
 public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
 
     private final UserAccountRepository userAccountRepository;
     private final OAuthCredentialRepository credentialRepository;
-    private final OutboundContractValidator contractValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,7 +42,6 @@ public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
     @Override
     @Transactional
     public OAuthCredentialRecord saveLogin(SaveOAuthCredential command) {
-        contractValidator.request("oauthCredential.saveLogin", command);
         Instant now = userAccountRepository.currentDatabaseTime();
         userAccountRepository.observe(command.userId(), command.displayName());
         UserAccount account = userAccountRepository.findById(command.userId()).orElseThrow();
@@ -70,7 +69,6 @@ public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
             long expectedCredentialVersion,
             SaveOAuthCredential command
     ) {
-        contractValidator.request("oauthCredential.updateToken", command);
         if (!userId.equals(command.userId())) {
             throw new IllegalArgumentException("OAuth userId does not match the credential owner");
         }
@@ -97,7 +95,7 @@ public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
 
     private OAuthCredentialRecord record(OAuthCredential credential) {
         UserAccount account = credential.getUserAccount();
-        return contractValidator.persistenceResult("oauthCredential.record", new OAuthCredentialRecord(
+        return new OAuthCredentialRecord(
                 account.getUserId(),
                 account.getDisplayName(),
                 credential.getAccessToken(),
@@ -106,6 +104,6 @@ public class OAuthCredentialPersistenceAdapter implements OAuthCredentialPort {
                 account.isAdmin(),
                 credential.getAccessTokenExpiresAt(),
                 credential.getCredentialVersion()
-        ));
+        );
     }
 }

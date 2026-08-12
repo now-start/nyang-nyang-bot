@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface ExecuteCommandUseCase {
 
+    /** 실행 가능한 명령어를 수행하고 승인된 응답을 반환하며, 실행이 거부되면 빈 값을 반환한다. */
     Optional<ApprovedCommand> execute(
             @Valid @NotNull(message = "command is required") ExecuteCommand command
     );

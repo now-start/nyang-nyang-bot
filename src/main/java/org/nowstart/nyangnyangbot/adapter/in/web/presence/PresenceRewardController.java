@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.presence;
 
+import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -92,6 +94,7 @@ public class PresenceRewardController {
             model.addAttribute("resetPresenceList", true);
             response.addHeader("HX-Trigger", APPLY_SUCCESS_TRIGGER);
         } catch (RuntimeException e) {
+            rethrowIfInternalFailure(e);
             log.warn("Failed to apply presence reward.", e);
             model.addAttribute("message", "생존자 보상 실패");
             model.addAttribute("tone", "danger");

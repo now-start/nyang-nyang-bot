@@ -9,6 +9,7 @@ import org.nowstart.nyangnyangbot.domain.point.PointSourceType;
 
 public interface AdjustPointUseCase {
 
+    /** 포인트 증감분을 반영하고 생성된 원장 항목을 반환하며, 멱등 중복 요청이면 변경 없음으로 반환한다. */
     PointLedgerResult adjust(@Valid @NotNull(message = "command is required") AdjustPointCommand command);
 
     @Builder

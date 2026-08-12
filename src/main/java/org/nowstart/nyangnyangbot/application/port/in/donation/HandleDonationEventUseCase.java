@@ -7,6 +7,7 @@ import java.util.Map;
 
 public interface HandleDonationEventUseCase {
 
+    /** 후원 이벤트를 처리하며, 동일한 수집 키로 이미 처리된 이벤트는 중복 저장하지 않는다. */
     void handle(@Valid @NotNull(message = "donation is required") DonationReceived event);
 
     record DonationReceived(
