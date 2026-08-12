@@ -27,8 +27,6 @@ public class SystemService implements HandleChzzkSystemEventUseCase {
         if (connectionAttemptId != activeConnectionAttemptId) {
             return;
         }
-        log.info("[SYSTEM] : {}", system);
-
         if ("connected".equalsIgnoreCase(system.type())) {
             String connectedSessionKey = system.data().sessionKey();
             if (connectedSessionKey == null || connectedSessionKey.isBlank()) {

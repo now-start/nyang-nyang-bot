@@ -79,7 +79,7 @@ public class ChatService implements HandleChatEventUseCase {
                         command.commandId(), command.trigger(), nickname);
     }
 
-    String firstToken(String content) {
+    private String firstToken(String content) {
         String[] tokens = tokens(content);
         return tokens.length == 0 ? null : tokens[0];
     }

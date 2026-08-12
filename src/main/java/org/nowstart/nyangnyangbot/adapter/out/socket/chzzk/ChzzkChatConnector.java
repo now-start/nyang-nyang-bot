@@ -36,7 +36,6 @@ public class ChzzkChatConnector implements ChzzkChatSocketPort {
 
     @Override
     public synchronized void connect(String sessionUrl, long connectionAttemptId) {
-        log.info("[ChzzkChat][START]");
         activeConnectionAttemptId = connectionAttemptId;
 
         if (socket != null) {

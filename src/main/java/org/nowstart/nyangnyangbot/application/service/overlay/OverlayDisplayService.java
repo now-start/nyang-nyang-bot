@@ -85,7 +85,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
         }
     }
 
-    OverlayDisplayResult overlayDisplayResult(DisplayJobResult job) {
+    private OverlayDisplayResult overlayDisplayResult(DisplayJobResult job) {
         return new OverlayDisplayResult(
                 job.id(),
                 job.donorDisplayName(),

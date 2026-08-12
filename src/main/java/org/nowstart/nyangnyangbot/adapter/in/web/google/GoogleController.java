@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.google.SyncGoogleSheetUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -12,7 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/google")
@@ -31,16 +29,11 @@ public class GoogleController {
     )
     @PostMapping("/sync")
     public String syncDatabase(HttpServletResponse response, Model model) {
-        runSync();
+        syncGoogleSheetUseCase.synchronizePoints();
         model.addAttribute("message", "데이터 동기화 완료");
         model.addAttribute("tone", "success");
         response.addHeader("HX-Trigger", POINT_BOARD_REFRESH_TRIGGER);
         return SYNC_FEEDBACK_FRAGMENT;
     }
 
-    private void runSync() {
-        log.info("[DBSync][START]");
-        syncGoogleSheetUseCase.synchronizePoints();
-        log.info("[DBSync][END]");
-    }
 }
