@@ -29,14 +29,43 @@ class SystemServiceTest {
     @Test
     void handle_ShouldSubscribeChatAndDonationAndTrackConnectedSession() {
         SystemService service = new SystemService(chzzkConfigurationPort, chzzkClientPort);
-        given(chzzkConfigurationPort.clientId()).willReturn("client");
-        given(chzzkConfigurationPort.clientSecret()).willReturn("secret");
-        given(chzzkClientPort.getSessionList("client", "secret")).willReturn(new SessionListResult(
-                null,
-                null,
-                null,
-                List.of(new SessionListResult.SessionData("session-1", null, null, List.of()))
+        givenConnectedSession("session-1");
+
+        long connectionAttemptId = service.beginConnection();
+        service.handle(connectionAttemptId, new SystemReceived(
+                "connected",
+                new SystemReceived.SystemData("session-1", null, null)
         ));
+
+        BDDMockito.then(chzzkClientPort).should().subscribeChatEvent("session-1");
+        BDDMockito.then(chzzkClientPort).should().subscribeDonationEvent("session-1");
+        then(service.isConnected()).isTrue();
+    }
+
+    @Test
+    void handle_ShouldKeepChatAndConnectionWhenDonationSubscriptionFails() {
+        SystemService service = new SystemService(chzzkConfigurationPort, chzzkClientPort);
+        givenConnectedSession("session-1");
+        BDDMockito.willThrow(new RuntimeException("donation scope missing"))
+                .given(chzzkClientPort).subscribeDonationEvent("session-1");
+
+        long connectionAttemptId = service.beginConnection();
+        service.handle(connectionAttemptId, new SystemReceived(
+                "connected",
+                new SystemReceived.SystemData("session-1", null, null)
+        ));
+
+        BDDMockito.then(chzzkClientPort).should().subscribeChatEvent("session-1");
+        BDDMockito.then(chzzkClientPort).should().subscribeDonationEvent("session-1");
+        then(service.isConnected()).isTrue();
+    }
+
+    @Test
+    void handle_ShouldAttemptDonationAndKeepConnectionWhenChatSubscriptionFails() {
+        SystemService service = new SystemService(chzzkConfigurationPort, chzzkClientPort);
+        givenConnectedSession("session-1");
+        BDDMockito.willThrow(new RuntimeException("chat scope missing"))
+                .given(chzzkClientPort).subscribeChatEvent("session-1");
 
         long connectionAttemptId = service.beginConnection();
         service.handle(connectionAttemptId, new SystemReceived(
@@ -118,5 +147,16 @@ class SystemServiceTest {
         BDDMockito.then(chzzkClientPort).should(never()).subscribeChatEvent("closed-session");
         BDDMockito.then(chzzkClientPort).should(never()).subscribeDonationEvent("closed-session");
         then(service.beginConnection()).isGreaterThan(connectionAttemptId);
+    }
+
+    private void givenConnectedSession(String sessionKey) {
+        given(chzzkConfigurationPort.clientId()).willReturn("client");
+        given(chzzkConfigurationPort.clientSecret()).willReturn("secret");
+        given(chzzkClientPort.getSessionList("client", "secret")).willReturn(new SessionListResult(
+                null,
+                null,
+                null,
+                List.of(new SessionListResult.SessionData(sessionKey, null, null, List.of()))
+        ));
     }
 }

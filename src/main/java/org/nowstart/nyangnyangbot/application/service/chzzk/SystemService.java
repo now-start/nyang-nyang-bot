@@ -35,12 +35,20 @@ public class SystemService implements HandleChzzkSystemEventUseCase {
                 return;
             }
             try {
-                chzzkClientPort.subscribeChatEvent(connectedSessionKey);
-                chzzkClientPort.subscribeDonationEvent(connectedSessionKey);
                 sessionKey = connectedSessionKey;
+                subscribe("CHAT", () -> chzzkClientPort.subscribeChatEvent(connectedSessionKey));
+                subscribe("DONATION", () -> chzzkClientPort.subscribeDonationEvent(connectedSessionKey));
             } finally {
                 connecting = false;
             }
+        }
+    }
+
+    private void subscribe(String eventType, Runnable subscription) {
+        try {
+            subscription.run();
+        } catch (RuntimeException exception) {
+            log.warn("[SYSTEM] {} subscription failed; other subscriptions remain active", eventType, exception);
         }
     }
 
