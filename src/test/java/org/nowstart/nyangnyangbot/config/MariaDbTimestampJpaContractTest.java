@@ -19,6 +19,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointLedgerEntryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository.WeeklyChatCountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
@@ -64,6 +65,9 @@ class MariaDbTimestampJpaContractTest {
 
     @Autowired
     private PointLedgerEntryRepository pointLedgerEntryRepository;
+
+    @Autowired
+    private WeeklyChatCountRepository weeklyChatCountRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -163,6 +167,21 @@ class MariaDbTimestampJpaContractTest {
                 .singleElement()
                 .extracting(PointLedgerEntryRepository.PointHistoryProjection::getCreatedAt)
                 .isEqualTo(EXPECTED_INSTANT);
+
+        Instant weekStartedAt = Instant.parse("2025-12-28T15:00:00Z");
+        weeklyChatCountRepository.increment(weekStartedAt.getEpochSecond(), account.getUserId());
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT UNIX_TIMESTAMP(week_started_at)
+                       FROM weekly_chat_count
+                      WHERE user_id = ?
+                     """)) {
+            statement.setString(1, account.getUserId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                assertThat(resultSet.next()).isTrue();
+                assertThat(resultSet.getLong(1)).isEqualTo(weekStartedAt.getEpochSecond());
+            }
+        }
     }
 
     private static String queryString(Connection connection, String sql) throws SQLException {

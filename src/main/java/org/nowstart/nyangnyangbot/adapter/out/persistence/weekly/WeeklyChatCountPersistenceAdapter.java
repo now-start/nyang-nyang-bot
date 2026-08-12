@@ -19,7 +19,7 @@ public class WeeklyChatCountPersistenceAdapter implements WeeklyChatCountPort {
 
     @Override
     public void increment(IncrementWeeklyChatCommand command) {
-        repository.increment(command.weekStartedAt(), command.userId());
+        repository.increment(command.weekStartedAt().getEpochSecond(), command.userId());
     }
 
     @Override

@@ -14,10 +14,13 @@ public interface WeeklyChatCountRepository extends JpaRepository<WeeklyChatCount
     @Modifying(flushAutomatically = true)
     @Query(value = """
             insert into weekly_chat_count (week_started_at, user_id, chat_count)
-            values (:weekStartedAt, :userId, 1)
+            values (from_unixtime(:weekStartedAtEpochSecond), :userId, 1)
             on duplicate key update chat_count = chat_count + 1
             """, nativeQuery = true)
-    int increment(@Param("weekStartedAt") Instant weekStartedAt, @Param("userId") String userId);
+    int increment(
+            @Param("weekStartedAtEpochSecond") long weekStartedAtEpochSecond,
+            @Param("userId") String userId
+    );
 
     @Query("""
             select weekly.userAccount.displayName as displayName, weekly.chatCount as chatCount
