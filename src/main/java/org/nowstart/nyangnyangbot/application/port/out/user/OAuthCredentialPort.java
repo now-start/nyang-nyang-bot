@@ -11,11 +11,9 @@ import java.util.Optional;
 public interface OAuthCredentialPort {
 
     /** 사용자가 소유한 OAuth 인증 정보를 조회한다. */
-    @Valid
     Optional<OAuthCredentialRecord> findByUserId(String userId);
 
     /** 사용자의 OAuth 인증 정보를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
     Optional<OAuthCredentialRecord> findByUserIdForUpdate(String userId);
 
     /** 데이터베이스 서버의 현재 시각을 반환한다. */

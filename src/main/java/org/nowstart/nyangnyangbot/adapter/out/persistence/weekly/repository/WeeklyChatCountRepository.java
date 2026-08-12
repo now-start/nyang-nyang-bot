@@ -1,6 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.repository;
 
-import java.time.Instant;
 import java.util.List;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.weekly.entity.WeeklyChatCount;
 import org.springframework.data.domain.Pageable;
@@ -22,14 +21,15 @@ public interface WeeklyChatCountRepository extends JpaRepository<WeeklyChatCount
             @Param("userId") String userId
     );
 
-    @Query("""
-            select weekly.userAccount.displayName as displayName, weekly.chatCount as chatCount
-              from WeeklyChatCount weekly
-             where weekly.weekStartedAt = :weekStartedAt
-             order by weekly.chatCount desc, weekly.userAccount.displayName asc, weekly.id asc
-            """)
+    @Query(value = """
+            select account.display_name as displayName, weekly.chat_count as chatCount
+              from weekly_chat_count weekly
+              join user_account account on account.user_id = weekly.user_id
+             where weekly.week_started_at = from_unixtime(:weekStartedAtEpochSecond)
+             order by weekly.chat_count desc, account.display_name asc, weekly.id asc
+            """, nativeQuery = true)
     List<WeeklyChatProjection> findWeeklyRanks(
-            @Param("weekStartedAt") Instant weekStartedAt,
+            @Param("weekStartedAtEpochSecond") long weekStartedAtEpochSecond,
             Pageable pageable
     );
 

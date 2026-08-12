@@ -11,8 +11,7 @@ import java.util.Optional;
 public interface DonationPort {
 
     /** 멱등성 키인 수집 키로 이전에 저장된 후원을 조회한다. */
-    @Valid
-    Optional<DonationResult> findByIngestionKey(String ingestionKey);
+    Optional<@Valid DonationResult> findByIngestionKey(String ingestionKey);
 
     /** 후원을 저장하고 저장된 결과를 반환한다. */
     @Valid

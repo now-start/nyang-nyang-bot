@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -170,6 +171,7 @@ class MariaDbTimestampJpaContractTest {
 
         Instant weekStartedAt = Instant.parse("2025-12-28T15:00:00Z");
         weeklyChatCountRepository.increment(weekStartedAt.getEpochSecond(), account.getUserId());
+        weeklyChatCountRepository.increment(weekStartedAt.getEpochSecond(), account.getUserId());
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      SELECT UNIX_TIMESTAMP(week_started_at)
@@ -182,6 +184,19 @@ class MariaDbTimestampJpaContractTest {
                 assertThat(resultSet.getLong(1)).isEqualTo(weekStartedAt.getEpochSecond());
             }
         }
+        assertThat(weeklyChatCountRepository.findWeeklyRanks(
+                weekStartedAt.getEpochSecond(),
+                PageRequest.of(0, 10)
+        ))
+                .singleElement()
+                .satisfies(rank -> {
+                    assertThat(rank.getDisplayName()).isEqualTo(account.getDisplayName());
+                    assertThat(rank.getChatCount()).isEqualTo(2L);
+                });
+        assertThat(weeklyChatCountRepository.findWeeklyRanks(
+                weekStartedAt.plusSeconds(7 * 24 * 60 * 60).getEpochSecond(),
+                PageRequest.of(0, 10)
+        )).isEmpty();
     }
 
     private static String queryString(Connection connection, String sql) throws SQLException {

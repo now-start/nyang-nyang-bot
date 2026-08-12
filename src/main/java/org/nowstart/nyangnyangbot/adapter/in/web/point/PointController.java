@@ -86,6 +86,14 @@ public class PointController {
         return POINT_HISTORY_FRAGMENT;
     }
 
+    @Operation(summary = "주간 채팅 순위 fragment 조회")
+    @GetMapping("/weekly-ranks")
+    public String weeklyChatRanks(Model model, Authentication authentication) {
+        model.addAttribute("weeklyChatRanks", weeklyChatRanks());
+        model.addAttribute("currentNickName", currentDisplayName(authentication));
+        return "features/point/components :: weekly-ranks";
+    }
+
     private PointListModel pointListModel(Pageable pageable, String nickName, Authentication authentication) {
         boolean admin = isAdmin(authentication);
         String currentUserId = currentUserId(authentication);
@@ -175,6 +183,14 @@ public class PointController {
             return null;
         }
         return authentication.getName();
+    }
+
+    private String currentDisplayName(Authentication authentication) {
+        String userId = currentUserId(authentication);
+        if (userId == null) {
+            return null;
+        }
+        return queryPointUseCase.getCurrentDisplayName(userId).orElse(null);
     }
 
     private record PointListModel(

@@ -51,7 +51,7 @@ public class WeeklyChatRankService implements QueryWeeklyChatRankUseCase, Record
     }
 
     Instant currentTime() {
-        return Instant.now();
+        return weeklyChatCountPort.currentDatabaseTime();
     }
 
     private Instant currentWeekStartedAt() {

@@ -19,12 +19,10 @@ public interface RewardPort {
     boolean existsByRouletteRoundId(Long rouletteRoundId);
 
     /** 사용자의 최근 보상을 최대 {@code limit}개 반환한다. */
-    @Valid
-    List<RewardRecord> findByUserId(String userId, int limit);
+    List<@Valid RewardRecord> findByUserId(String userId, int limit);
 
     /** 사용자의 최근 보상 중 요청한 상태의 항목을 최대 {@code limit}개 반환한다. */
-    @Valid
-    List<RewardRecord> findByUserIdAndStatus(String userId, RewardGrantStatus status, int limit);
+    List<@Valid RewardRecord> findByUserIdAndStatus(String userId, RewardGrantStatus status, int limit);
 
     record CreateRewardCommand(
             @NotBlank(message = "userId is required") String userId,

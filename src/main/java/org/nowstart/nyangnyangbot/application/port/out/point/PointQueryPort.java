@@ -14,20 +14,16 @@ import org.springframework.data.domain.Pageable;
 public interface PointQueryPort {
 
     /** 전달된 페이지 조건에 따라 사용자 포인트 요약을 반환한다. */
-    @Valid
-    Page<PointSummaryRecord> findAll(Pageable pageable);
+    Page<@Valid PointSummaryRecord> findAll(Pageable pageable);
 
     /** 표시 이름 검색어와 일치하는 포인트 요약을 반환한다. */
-    @Valid
-    Page<PointSummaryRecord> findByDisplayName(Pageable pageable, String displayName);
+    Page<@Valid PointSummaryRecord> findByDisplayName(Pageable pageable, String displayName);
 
     /** 등록된 사용자의 포인트 요약을 반환한다. */
-    @Valid
-    Optional<PointSummaryRecord> findByUserId(String userId);
+    Optional<@Valid PointSummaryRecord> findByUserId(String userId);
 
     /** 사용자의 최근 원장 항목을 최대 {@code limit}개 반환한다. */
-    @Valid
-    List<PointHistoryRecord> findHistory(String userId, int limit);
+    List<@Valid PointHistoryRecord> findHistory(String userId, int limit);
 
     /** 등록된 사용자의 잔액을 반환하며, 원장 항목이 없으면 0을 반환한다. */
     Optional<Long> findBalanceByUserId(String userId);

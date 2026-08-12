@@ -10,14 +10,17 @@ import java.util.List;
 
 public interface WeeklyChatCountPort {
 
+    /** 데이터베이스 서버의 현재 시각을 반환한다. */
+    @NotNull(message = "database time is required")
+    Instant currentDatabaseTime();
+
     /** 지정한 주간 구간의 사용자 채팅 횟수를 원자적으로 증가시킨다. */
     void increment(
             @Valid @NotNull(message = "weekly chat command is required") IncrementWeeklyChatCommand command
     );
 
     /** 전달된 시각에 시작하는 주간 구간의 순위 사용자를 최대 {@code limit}명 반환한다. */
-    @Valid
-    List<WeeklyChatRankRecord> findWeeklyRanks(Instant weekStartedAt, int limit);
+    List<@Valid WeeklyChatRankRecord> findWeeklyRanks(Instant weekStartedAt, int limit);
 
     record IncrementWeeklyChatCommand(
             @NotNull(message = "weekStartedAt is required") Instant weekStartedAt,

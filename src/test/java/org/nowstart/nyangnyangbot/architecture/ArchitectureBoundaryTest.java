@@ -109,7 +109,7 @@ class ArchitectureBoundaryTest {
     void providerNeutralApplicationFeatures_ShouldNotDependOnChzzkInboundPorts() throws IOException {
         // 실행
         List<Path> violations = javaFiles(SOURCE_ROOT.resolve("application"))
-                .filter(path -> !path.toString().contains("/chzzk/"))
+                .filter(path -> !path.toString().replace('\\', '/').contains("/chzzk/"))
                 .filter(path -> containsAny(path,
                         "org.nowstart.nyangnyangbot.application.port.in.chzzk."
                 ))

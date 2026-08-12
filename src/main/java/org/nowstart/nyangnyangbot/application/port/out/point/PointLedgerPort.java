@@ -22,12 +22,10 @@ public interface PointLedgerPort {
     long balance(String userId);
 
     /** 멱등성 키로 생성된 원장 항목을 조회한다. */
-    @Valid
-    Optional<LedgerEntryRecord> findByIdempotencyKey(String idempotencyKey);
+    Optional<@Valid LedgerEntryRecord> findByIdempotencyKey(String idempotencyKey);
 
     /** 정정 대상 원장 항목을 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<LedgerEntryRecord> findCorrectionTargetForUpdate(long ledgerEntryId);
+    Optional<@Valid LedgerEntryRecord> findCorrectionTargetForUpdate(long ledgerEntryId);
 
     /** 지정한 원장 항목을 참조하는 정정 항목이 이미 존재하는지 반환한다. */
     boolean hasCorrection(long ledgerEntryId);

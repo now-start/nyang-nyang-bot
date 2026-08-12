@@ -37,8 +37,7 @@ public interface OverlayDisplayPort {
     void markExpiredMissed(Instant current);
 
     /** 다음 실행 가능한 작업을 원자적으로 선점하며, 가능한 작업이 없으면 빈 값을 반환한다. */
-    @Valid
-    Optional<DisplayJobResult> claimNext(Instant current, String claimToken, Instant claimExpiresAt);
+    Optional<@Valid DisplayJobResult> claimNext(Instant current, String claimToken, Instant claimExpiresAt);
 
     /** 전달된 토큰이 활성 선점을 소유한 경우에만 작업을 표시 완료로 변경한다. */
     void markDisplayed(Long displayJobId, String claimToken, Instant displayedAt);

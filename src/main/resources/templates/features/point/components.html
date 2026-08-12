@@ -80,7 +80,12 @@
             </div>
         </div>
     </section>
-    <section aria-labelledby="weekly-rank-heading" class="card">
+    <section aria-labelledby="weekly-rank-heading"
+             class="card"
+             hx-swap="outerHTML"
+             hx-trigger="every 15s"
+             th:fragment="weekly-ranks(weeklyChatRanks, currentNickName)"
+             th:hx-get="@{/points/weekly-ranks}">
         <div class="card-body py-3">
             <h2 class="small text-secondary fw-normal mb-2" id="weekly-rank-heading">주간 채팅 순위 TOP 10</h2>
             <div aria-label="주간 채팅 순위 티커"

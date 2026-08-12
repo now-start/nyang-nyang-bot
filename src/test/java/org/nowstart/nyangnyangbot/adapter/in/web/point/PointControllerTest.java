@@ -195,6 +195,22 @@ class PointControllerTest {
         });
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void weeklyChatRanks_ShouldReturnPollingFragment() {
+        var rank = new QueryWeeklyChatRankUseCase.WeeklyChatRankView(1, "치즈냥", 12L);
+        given(queryWeeklyChatRankUseCase.getWeeklyRanks(10)).willReturn(List.of(rank));
+        given(queryPointUseCase.getCurrentDisplayName("user1")).willReturn(java.util.Optional.of("유저1"));
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller.weeklyChatRanks(model, userAuthentication());
+
+        then(view).isEqualTo("features/point/components :: weekly-ranks");
+        then((List<PointController.WeeklyChatRankView>) model.get("weeklyChatRanks"))
+                .containsExactly(new PointController.WeeklyChatRankView(1, "치즈냥", 12L));
+        then(model.get("currentNickName")).isEqualTo("유저1");
+    }
+
     private Authentication adminAuthentication() {
         return authentication("admin", "ROLE_ADMIN");
     }

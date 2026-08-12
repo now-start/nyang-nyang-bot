@@ -12,8 +12,7 @@ public interface RecentRouletteResultQueryPort {
     int MAX_RECENT_ROUNDS = 5;
 
     /** 조회 사용자의 최근 룰렛 회차를 최대 {@value #MAX_RECENT_ROUNDS}개 반환한다. */
-    @Valid
-    List<RecentRound> findRecentRoundsByUserId(String userId);
+    List<@Valid RecentRound> findRecentRoundsByUserId(String userId);
 
     record RecentRound(
             @NotNull(message = "roundNo is required")

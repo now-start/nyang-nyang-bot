@@ -23,8 +23,7 @@ import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 public interface CommandExecutionPort {
 
     /** 정규화된 트리거로 활성 명령어를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<LockedCommand> lockActiveCommand(String normalizedTrigger);
+    Optional<@Valid LockedCommand> lockActiveCommand(String normalizedTrigger);
 
     /** 사용자를 생성하거나 갱신하고 현재 트랜잭션 동안 해당 사용자의 쓰기 잠금을 유지한다. */
     void observeAndLockUser(
@@ -36,8 +35,7 @@ public interface CommandExecutionPort {
     Instant currentDatabaseTime();
 
     /** 사용자의 최근 실행 기록을 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<ExecutionRecord> findLatestForUpdate(long commandId, String userId);
+    Optional<@Valid ExecutionRecord> findLatestForUpdate(long commandId, String userId);
 
     /** 사용자가 지정한 달력 날짜 구간에 해당 명령어를 이미 실행했는지 반환한다. */
     boolean existsCalendarDayStartedAt(long commandId, String userId, Instant calendarDayStartedAt);

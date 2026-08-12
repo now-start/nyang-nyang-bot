@@ -23,12 +23,10 @@ import java.util.Optional;
 public interface TimerMessagePort {
 
     /** 모든 타이머 메시지를 식별자 내림차순으로 반환한다. */
-    @Valid
-    List<TimerMessageRecord> findAllOrderByIdDesc();
+    List<@Valid TimerMessageRecord> findAllOrderByIdDesc();
 
     /** 타이머 메시지를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<TimerMessageRecord> findByIdForUpdate(Long timerMessageId);
+    Optional<@Valid TimerMessageRecord> findByIdForUpdate(Long timerMessageId);
 
     /** 새 타이머 메시지를 저장하고 저장된 결과를 반환한다. */
     @Valid
@@ -45,8 +43,7 @@ public interface TimerMessagePort {
     List<Long> findClaimCandidateIds(Instant now, int limit);
 
     /** 실행할 메시지를 원자적으로 선점하며, 더 이상 선점할 수 없으면 빈 값을 반환한다. */
-    @Valid
-    Optional<ClaimedTimerMessage> claimDue(
+    Optional<@Valid ClaimedTimerMessage> claimDue(
             Long timerMessageId,
             String claimToken,
             Instant now,

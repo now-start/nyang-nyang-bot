@@ -8,8 +8,7 @@ import java.util.List;
 public interface GoogleSheetPort {
 
     /** 설정된 Google Sheet에서 포인트 잔액 행을 읽는다. */
-    @Valid
-    List<GoogleSheetRow> readPointRows();
+    List<@Valid GoogleSheetRow> readPointRows();
 
     record GoogleSheetRow(
             @NotBlank(message = "displayName is required") String displayName,

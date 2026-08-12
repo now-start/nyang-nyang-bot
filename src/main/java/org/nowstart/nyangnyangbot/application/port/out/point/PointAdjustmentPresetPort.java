@@ -10,8 +10,7 @@ import java.util.List;
 public interface PointAdjustmentPresetPort {
 
     /** 모든 포인트 조정 프리셋을 반환한다. */
-    @Valid
-    List<PresetRecord> findAll();
+    List<@Valid PresetRecord> findAll();
 
     /** 포인트 조정 프리셋을 저장하고 저장된 결과를 반환한다. */
     @Valid

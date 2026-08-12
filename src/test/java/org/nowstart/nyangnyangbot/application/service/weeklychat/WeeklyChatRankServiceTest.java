@@ -3,6 +3,7 @@ package org.nowstart.nyangnyangbot.application.service.weeklychat;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
 import java.util.List;
@@ -60,5 +61,42 @@ class WeeklyChatRankServiceTest {
         ));
 
         then(service.getWeeklyRanks(2)).hasSize(2);
+    }
+
+    @Test
+    void recordChat_ShouldKeepPreviousWeekUntilSeoulMondayMidnight() {
+        given(service.currentTime()).willReturn(Instant.parse("2026-03-22T14:59:59.999999Z"));
+        ChatReceived chat = chat();
+
+        service.recordChat(chat);
+
+        verify(weeklyChatCountPort).increment(new IncrementWeeklyChatCommand(
+                Instant.parse("2026-03-15T15:00:00Z"),
+                "user-1"
+        ));
+    }
+
+    @Test
+    void recordChat_ShouldStartNewWeekAtSeoulMondayMidnight() {
+        given(service.currentTime()).willReturn(Instant.parse("2026-03-22T15:00:00Z"));
+        ChatReceived chat = chat();
+
+        service.recordChat(chat);
+
+        verify(weeklyChatCountPort).increment(new IncrementWeeklyChatCommand(
+                Instant.parse("2026-03-22T15:00:00Z"),
+                "user-1"
+        ));
+    }
+
+    private ChatReceived chat() {
+        return new ChatReceived(
+                "channel-1",
+                "user-1",
+                new ChatReceived.Profile("치즈냥", List.of(), true),
+                "안녕",
+                null,
+                0L
+        );
     }
 }

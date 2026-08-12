@@ -24,20 +24,16 @@ import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 public interface CommandPort {
 
     /** 모든 명령어를 식별자 내림차순으로 반환한다. */
-    @Valid
-    List<CommandRecord> findAllOrderByIdDesc();
+    List<@Valid CommandRecord> findAllOrderByIdDesc();
 
     /** 식별자로 명령어를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<CommandRecord> findByIdForUpdate(Long commandId);
+    Optional<@Valid CommandRecord> findByIdForUpdate(Long commandId);
 
     /** 정규화된 트리거로 명령어를 조회한다. */
-    @Valid
-    Optional<CommandRecord> findByTrigger(String trigger);
+    Optional<@Valid CommandRecord> findByTrigger(String trigger);
 
     /** 활성 명령어를 정규화된 트리거를 키로 하는 맵으로 반환한다. */
-    @Valid
-    Map<String, CommandRecord> findActiveCommandsByTrigger();
+    Map<String, @Valid CommandRecord> findActiveCommandsByTrigger();
 
     /** 새 명령어를 저장하고 저장된 결과를 반환한다. */
     @Valid

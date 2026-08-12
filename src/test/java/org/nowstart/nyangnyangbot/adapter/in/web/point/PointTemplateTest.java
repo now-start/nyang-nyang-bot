@@ -30,6 +30,8 @@ class PointTemplateTest {
         String html = templateEngine().process("index", context);
 
         then(html).contains("id=\"point-board-region\"");
+        then(html).contains("hx-get=\"/points/weekly-ranks\"");
+        then(html).contains("hx-trigger=\"every 15s\"");
         then(html).contains("hx-get=\"/points/list");
         then(html).contains("hx-get=\"/points/history?userId=user1");
         then(html).contains("hx-get=\"/points/adjustments/modal?userId=user1");

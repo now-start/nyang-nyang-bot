@@ -35,20 +35,16 @@ public interface RoulettePort {
     );
 
     /** 룰렛 설정을 최신순으로 반환한다. */
-    @Valid
-    Page<ConfigResult> findConfigs(Pageable pageable);
+    Page<@Valid ConfigResult> findConfigs(Pageable pageable);
 
     /** 식별자로 룰렛 설정을 조회한다. */
-    @Valid
-    Optional<ConfigResult> findConfigById(Long configId);
+    Optional<@Valid ConfigResult> findConfigById(Long configId);
 
     /** 룰렛 설정의 선택지를 표시 순서로 반환한다. */
-    @Valid
-    List<OptionResult> findOptionsByConfigId(Long configId);
+    List<@Valid OptionResult> findOptionsByConfigId(Long configId);
 
     /** 활성 룰렛 설정을 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<ConfigResult> findActiveConfigForUpdate();
+    Optional<@Valid ConfigResult> findActiveConfigForUpdate();
 
     /** 유효한 초안 설정을 활성화하고 다른 활성 설정을 보관 상태로 변경한다. */
     @Valid
@@ -68,16 +64,13 @@ public interface RoulettePort {
     );
 
     /** 룰렛 실행을 최신순으로 반환한다. */
-    @Valid
-    Page<RunResult> findRecentRuns(Pageable pageable);
+    Page<@Valid RunResult> findRecentRuns(Pageable pageable);
 
     /** 전달된 실행 식별자별 회차 개수 요약을 반환한다. */
-    @Valid
-    List<RunRoundSummaryResult> summarizeRuns(List<Long> runIds);
+    List<@Valid RunRoundSummaryResult> summarizeRuns(List<Long> runIds);
 
     /** 룰렛 실행의 회차를 회차 번호 오름차순으로 반환한다. */
-    @Valid
-    List<RoundResult> findRoundsByRunId(Long runId);
+    List<@Valid RoundResult> findRoundsByRunId(Long runId);
 
     /** {@code afterRunId}를 기준으로 순환 정렬한 복구 대상 실행 식별자를 반환한다. */
     List<Long> findRunIdsNeedingRecovery(long afterRunId, int limit);
@@ -86,8 +79,7 @@ public interface RoulettePort {
     Long findMaxRunIdNeedingRecovery();
 
     /** 식별자로 회차를 조회하고 현재 트랜잭션 동안 쓰기 잠금을 유지한다. */
-    @Valid
-    Optional<RoundResult> findRoundByIdForUpdate(Long roundId);
+    Optional<@Valid RoundResult> findRoundByIdForUpdate(Long roundId);
 
     /** 잠근 회차를 적용 완료 상태로 변경한다. */
     void markRoundApplied(Long roundId, Instant appliedAt);
