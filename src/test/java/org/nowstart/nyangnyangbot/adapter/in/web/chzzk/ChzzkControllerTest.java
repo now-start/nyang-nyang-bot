@@ -40,21 +40,15 @@ class ChzzkControllerTest {
     }
 
     @Test
-    @DisplayName("연결 중 예외가 발생하면 실패 피드백 fragment를 반환한다")
-    void connect_ShouldReturnFailureFeedback_WhenConnectionFails() {
+    @DisplayName("연결 중 예상하지 못한 예외가 발생하면 전파한다")
+    void connect_ShouldPropagateUnexpectedFailure() {
         // 준비
         BDDMockito.willThrow(new IllegalArgumentException("invalid session URL"))
                 .given(connectChzzkChatUseCase)
                 .connect();
-        Model model = new ExtendedModelMap();
-
-        // 실행
-        String view = chzzkController.connect(model);
-
-        // 검증
-        then(view).isEqualTo("components/feedback :: alert");
-        then(model.asMap().get("message")).isEqualTo("치지직 채팅 연결 실패");
-        then(model.asMap().get("tone")).isEqualTo("danger");
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> chzzkController.connect(new ExtendedModelMap())
+        ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

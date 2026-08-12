@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.command;
 
+import org.nowstart.nyangnyangbot.application.exception.CommandManagementException;
+
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -146,7 +148,7 @@ class CommandServiceTest {
                 30,
                 "admin-1"
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("trigger already exists");
     }
 
@@ -162,7 +164,7 @@ class CommandServiceTest {
                 "{viewer.nickname} {viewer.unknown}",
                 30
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("unknown template variables: viewer.unknown");
     }
 
@@ -178,7 +180,7 @@ class CommandServiceTest {
                 "{viewer_name} {1bad}",
                 30
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("malformed template variables")
                 .hasMessageContaining("viewer_name")
                 .hasMessageContaining("1bad");
@@ -196,7 +198,7 @@ class CommandServiceTest {
                 "{viewer.nickname}",
                 30
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("trigger length must be between 2 and 20");
         thenThrownBy(() -> service.preview(new PreviewCommand(
                 null,
@@ -204,7 +206,7 @@ class CommandServiceTest {
                 "{viewer.nickname}",
                 30
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("trigger must not contain control characters");
     }
 
@@ -220,7 +222,7 @@ class CommandServiceTest {
                 "{viewer.nickname}",
                 0
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessageContaining("userCooldownSeconds must be between 5 and 3600");
     }
 
@@ -318,7 +320,7 @@ class CommandServiceTest {
         thenThrownBy(() -> service.preview(new PreviewCommand(
                 null, "!테스트", "{nickname}님의 호감도는 {favorite}", 30
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CommandManagementException.class)
                 .hasMessage("unknown template variables: favorite, nickname");
     }
 

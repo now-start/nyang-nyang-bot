@@ -1,6 +1,8 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.error;
 
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import java.util.stream.StreamSupport;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,7 +41,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException exception) {
-        if (WebExceptionSupport.isReturnValueViolation(exception)) {
+        if (isReturnValueViolation(exception)) {
             log.error("[500] Out Port 반환 계약 검증 실패", exception);
             return response(HttpStatus.INTERNAL_SERVER_ERROR, "내부 데이터 계약이 올바르지 않습니다.");
         }
@@ -77,5 +79,11 @@ public class GlobalExceptionHandler {
             return fieldError.getField() + ": " + fieldError.getDefaultMessage();
         }
         return error.getDefaultMessage();
+    }
+
+    private boolean isReturnValueViolation(ConstraintViolationException exception) {
+        return exception.getConstraintViolations().stream()
+                .flatMap(violation -> StreamSupport.stream(violation.getPropertyPath().spliterator(), false))
+                .anyMatch(node -> node.getKind() == ElementKind.RETURN_VALUE);
     }
 }

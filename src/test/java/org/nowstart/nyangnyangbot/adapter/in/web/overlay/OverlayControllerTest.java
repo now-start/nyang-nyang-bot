@@ -96,13 +96,12 @@ class OverlayControllerTest {
     }
 
     @Test
-    @DisplayName("빈 claim token은 method validation 오류를 fragment로 반환한다")
-    void markDisplayed_ShouldReturnErrorFragmentForConstraintViolation() {
+    @DisplayName("빈 claim token은 오류 fragment로 반환한다")
+    void markDisplayed_ShouldReturnErrorFragmentForBlankClaimToken() {
         ManageOverlayDisplayUseCase target = BDDMockito.mock(ManageOverlayDisplayUseCase.class);
         ManageOverlayDisplayUseCase useCase = validated(target, ManageOverlayDisplayUseCase.class);
         OverlayController controller = new OverlayController(useCase);
         ConcurrentModel model = new ConcurrentModel();
-
         String view = controller.markDisplayed(1L, " ", "Bearer token", model);
 
         then(view).isEqualTo("features/overlay/roulette :: overlay-error");

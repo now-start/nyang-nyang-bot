@@ -1,12 +1,11 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.exception.OverlayDisplayException;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.IssueOverlayTokenUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -68,8 +67,7 @@ public class AdminOverlayController {
             manageOverlayDisplayUseCase.replayRouletteRun(rouletteRunId);
             model.addAttribute("message", "오버레이 재송출 대기열에 추가했습니다.");
             model.addAttribute("tone", "success");
-        } catch (RuntimeException exception) {
-            rethrowIfInternalFailure(exception);
+        } catch (OverlayDisplayException exception) {
             log.warn("Failed to replay roulette overlay run. rouletteRunId={}", rouletteRunId, exception);
             model.addAttribute("message", "오버레이 재송출에 실패했습니다.");
             model.addAttribute("tone", "danger");

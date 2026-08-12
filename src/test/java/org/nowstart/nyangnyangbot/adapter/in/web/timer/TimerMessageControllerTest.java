@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nowstart.nyangnyangbot.adapter.in.web.timer.TimerMessageController.TimerMessageForm;
+import org.nowstart.nyangnyangbot.application.exception.TimerMessageManagementException;
 import org.nowstart.nyangnyangbot.adapter.in.web.timer.TimerMessageController.TimerMessageView;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.CreateTimerMessage;
@@ -23,6 +24,8 @@ import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUs
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.UpdateTimerMessage;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 @ExtendWith(MockitoExtension.class)
 class TimerMessageControllerTest {
@@ -102,10 +105,11 @@ class TimerMessageControllerTest {
     @Test
     void preview_WhenInvalid_ShouldNotRenderPreview() {
         given(manageTimerMessageUseCase.preview(any()))
-                .willThrow(new IllegalArgumentException("messageTemplate is required"));
+                .willThrow(new TimerMessageManagementException("messageTemplate is required"));
         ConcurrentModel model = new ConcurrentModel();
 
-        String view = controller.preview(TimerMessageForm.empty(), model);
+        TimerMessageForm form = TimerMessageForm.empty();
+        String view = controller.preview(form, bindingResult(form), model);
 
         then(view).isEqualTo("features/timer/regions :: timer-review-region");
         TimerMessageController.ReviewView review =
@@ -121,9 +125,10 @@ class TimerMessageControllerTest {
                 .willReturn(new PreviewResult("현재 시각은 21:00입니다."));
         ConcurrentModel model = new ConcurrentModel();
 
-        String view = controller.preview(new TimerMessageForm(
+        TimerMessageForm form = new TimerMessageForm(
                 null, "현재 시각은 {time.time}입니다.", 30, 10, true, 0L, null, null
-        ), model);
+        );
+        String view = controller.preview(form, bindingResult(form), model);
 
         then(view).isEqualTo("features/timer/regions :: timer-review-region");
         TimerMessageController.ReviewView review =
@@ -138,7 +143,8 @@ class TimerMessageControllerTest {
                 .willReturn(timer(1L, false));
         ConcurrentModel model = new ConcurrentModel();
 
-        String view = controller.save(TimerMessageForm.empty(), false, null, response, model);
+        TimerMessageForm form = TimerMessageForm.empty();
+        String view = controller.save(form, bindingResult(form), false, null, response, model);
 
         then(view).isEqualTo("features/timer/regions :: timer-editor-region");
         then(model.getAttribute("saveMessage")).isEqualTo("저장됨");
@@ -182,5 +188,9 @@ class TimerMessageControllerTest {
                 "admin",
                 "admin"
         );
+    }
+
+    private BindingResult bindingResult(TimerMessageForm form) {
+        return new BeanPropertyBindingResult(form, "timerMessageForm");
     }
 }

@@ -108,7 +108,7 @@ class PointAdjustmentControllerTest {
 
     @Test
     void applyAdjustments_ShouldReturnFailureWithoutRefresh_WhenUseCaseFails() {
-        BDDMockito.willThrow(new IllegalArgumentException("invalid"))
+        BDDMockito.willThrow(new org.nowstart.nyangnyangbot.application.exception.PointAdjustmentException("invalid"))
                 .given(managePointAdjustmentPresetUseCase)
                 .applyAdjustments(any(ApplyPointAdjustments.class));
         MockHttpServletResponse response = new MockHttpServletResponse();

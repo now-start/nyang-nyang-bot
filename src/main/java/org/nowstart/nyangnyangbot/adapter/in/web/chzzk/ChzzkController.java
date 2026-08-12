@@ -1,11 +1,8 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.chzzk;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.nowstart.nyangnyangbot.application.port.in.chzzk.ConnectChzzkChatUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -15,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequiredArgsConstructor
-@Slf4j
 @RequestMapping("/chzzk")
 @Tag(name = "Chzzk Chat", description = "치지직 채팅 소켓 연결 관리 API")
 public class ChzzkController {
@@ -28,16 +24,9 @@ public class ChzzkController {
     @PostMapping("/connect")
     @PreAuthorize("hasRole('ADMIN')")
     public String connect(Model model) {
-        try {
-            connectChzzkChatUseCase.connect();
-            model.addAttribute("message", "치지직 채팅 연결 완료");
-            model.addAttribute("tone", "success");
-        } catch (RuntimeException e) {
-            rethrowIfInternalFailure(e);
-            log.warn("Failed to connect CHZZK chat socket.", e);
-            model.addAttribute("message", "치지직 채팅 연결 실패");
-            model.addAttribute("tone", "danger");
-        }
+        connectChzzkChatUseCase.connect();
+        model.addAttribute("message", "치지직 채팅 연결 완료");
+        model.addAttribute("tone", "success");
         return FEEDBACK_FRAGMENT;
     }
 }

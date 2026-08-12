@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.PointAdjustmentException;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.point.ManagePointAdjustmentPresetUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.point.PointAdjustmentPresetPort;
@@ -43,23 +44,32 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
     @Override
     public void applyAdjustments(ApplyPointAdjustments command) {
         List<PresetRecord> presets = selectedPresets(command.presetIds());
-        long delta = 0;
-        for (PresetRecord preset : presets) {
-            delta = Math.addExact(delta, preset.amount());
-        }
-        if (command.manualAmount() != null) {
-            delta = Math.addExact(delta, command.manualAmount());
+        long delta;
+        try {
+            delta = 0;
+            for (PresetRecord preset : presets) {
+                delta = Math.addExact(delta, preset.amount());
+            }
+            if (command.manualAmount() != null) {
+                delta = Math.addExact(delta, command.manualAmount());
+            }
+        } catch (ArithmeticException exception) {
+            throw new PointAdjustmentException("Point adjustment amount is out of range", exception);
         }
         String description = description(presets, command.manualAmount(), command.manualDescription());
-        adjustPointUseCase.adjust(AdjustPointUseCase.AdjustPointCommand.builder()
-                .userId(command.userId())
-                .delta(delta)
-                .sourceType(PointSourceType.ADMIN_ADJUSTMENT)
-                .description(description)
-                .actorUserId(command.actorUserId())
-                .allowNegativeBalance(true)
-                .createIfMissing(false)
-                .build());
+        try {
+            adjustPointUseCase.adjust(AdjustPointUseCase.AdjustPointCommand.builder()
+                    .userId(command.userId())
+                    .delta(delta)
+                    .sourceType(PointSourceType.ADMIN_ADJUSTMENT)
+                    .description(description)
+                    .actorUserId(command.actorUserId())
+                    .allowNegativeBalance(true)
+                    .createIfMissing(false)
+                    .build());
+        } catch (IllegalArgumentException exception) {
+            throw new PointAdjustmentException(exception.getMessage(), exception);
+        }
     }
 
     private List<PresetRecord> selectedPresets(List<Long> ids) {
@@ -70,14 +80,14 @@ public class PointAdjustmentPresetService implements ManagePointAdjustmentPreset
         if (uniqueIds.size() != ids.size()) {
             LinkedHashSet<Long> seen = new LinkedHashSet<>();
             List<Long> duplicates = ids.stream().filter(id -> !seen.add(id)).distinct().toList();
-            throw new IllegalArgumentException("Duplicate preset ids are not allowed: " + duplicates);
+            throw new PointAdjustmentException("Duplicate preset ids are not allowed: " + duplicates);
         }
         Map<Long, PresetRecord> found = presetPort.findAll().stream()
                 .filter(item -> uniqueIds.contains(item.id()))
                 .collect(Collectors.toMap(PresetRecord::id, item -> item));
         if (found.size() != ids.size()) {
             List<Long> missingIds = ids.stream().filter(id -> !found.containsKey(id)).toList();
-            throw new IllegalArgumentException("Missing presets: " + missingIds);
+            throw new PointAdjustmentException("Missing presets: " + missingIds);
         }
         return ids.stream().map(found::get).toList();
     }

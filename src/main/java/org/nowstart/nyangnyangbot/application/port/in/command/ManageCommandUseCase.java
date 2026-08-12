@@ -16,6 +16,7 @@ public interface ManageCommandUseCase {
 
     int MAX_TEMPLATE_LENGTH = CommandPolicy.MAX_TEMPLATE_LENGTH;
     int MAX_TRIGGER_LENGTH = CommandTrigger.MAX_LENGTH;
+    String TRIGGER_LENGTH_MESSAGE = CommandTrigger.LENGTH_MESSAGE;
     CommandExecutionPolicy DEFAULT_EXECUTION_POLICY = CommandPolicy.DEFAULT_EXECUTION_POLICY;
     CommandExecutionPolicy CALENDAR_DAY_EXECUTION_POLICY = CommandExecutionPolicy.USER_CALENDAR_DAY;
     int DEFAULT_USER_COOLDOWN_SECONDS = CommandPolicy.DEFAULT_USER_COOLDOWN_SECONDS;

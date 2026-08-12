@@ -1,14 +1,26 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.command;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CALENDAR_DAY_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_EXECUTION_POLICY;
 import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.DEFAULT_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_TRIGGER_LENGTH;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MAX_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.MIN_USER_COOLDOWN_SECONDS;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.TEMPLATE_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.TRIGGER_LENGTH_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.USER_COOLDOWN_RANGE_MESSAGE;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.CommandManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
@@ -19,6 +31,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,11 +63,12 @@ public class CommandController {
         if (commandId == null) {
             return COMMAND_EDITOR_FRAGMENT;
         }
-        try {
-            model.addAttribute("commandForm", commandForm(commandId));
+        Optional<CommandForm> commandForm = commandForm(commandId);
+        if (commandForm.isPresent()) {
+            model.addAttribute("commandForm", commandForm.orElseThrow());
             addCommandVariables(model);
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("saveError", inputErrorMessage(e));
+        } else {
+            model.addAttribute("saveError", COMMAND_NOT_FOUND_MESSAGE);
         }
         return COMMAND_EDITOR_FRAGMENT;
     }
@@ -67,13 +81,16 @@ public class CommandController {
     }
 
     @PostMapping("/preview")
-    public String preview(@ModelAttribute CommandForm form, Model model) {
+    public String preview(@Valid @ModelAttribute CommandForm form, BindingResult bindingResult, Model model) {
         CommandForm normalizedForm = form.withDefaults();
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("reviewResult", new ReviewView(false, validationMessages(bindingResult), null));
+            return COMMAND_REVIEW_FRAGMENT;
+        }
         try {
             var result = manageCommandUseCase.preview(previewCommand(normalizedForm));
             model.addAttribute("reviewResult", new ReviewView(true, List.of(), result.message()));
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (CommandManagementException e) {
             model.addAttribute("reviewResult", new ReviewView(false, List.of(inputErrorMessage(e)), null));
         }
         return COMMAND_REVIEW_FRAGMENT;
@@ -81,7 +98,8 @@ public class CommandController {
 
     @PostMapping
     public String save(
-            @ModelAttribute CommandForm form,
+            @Valid @ModelAttribute CommandForm form,
+            BindingResult bindingResult,
             @RequestParam(defaultValue = "false") boolean active,
             Authentication authentication,
             HttpServletResponse response,
@@ -89,6 +107,11 @@ public class CommandController {
     ) {
         CommandForm activeForm = form.withActive(active);
         addCommandVariables(model);
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("commandForm", activeForm);
+            model.addAttribute("saveError", String.join(", ", validationMessages(bindingResult)));
+            return COMMAND_EDITOR_FRAGMENT;
+        }
         try {
             CommandResult result = activeForm.commandId() == null
                     ? manageCommandUseCase.createCommand(createCommand(activeForm, actor(authentication)))
@@ -99,8 +122,7 @@ public class CommandController {
             model.addAttribute("commandForm", CommandForm.from(result));
             model.addAttribute("saveMessage", "저장됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (CommandManagementException e) {
             model.addAttribute("commandForm", activeForm);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
@@ -127,8 +149,7 @@ public class CommandController {
             model.addAttribute("commandForm", CommandForm.from(result));
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", COMMAND_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (CommandManagementException e) {
             model.addAttribute("saveError", inputErrorMessage(e));
         }
         return COMMAND_EDITOR_FRAGMENT;
@@ -179,25 +200,26 @@ public class CommandController {
         );
     }
 
-    private String inputErrorMessage(RuntimeException exception) {
-        if (exception instanceof ConstraintViolationException violationException) {
-            return violationException.getConstraintViolations().stream()
-                    .map(violation -> violation.getMessage())
-                    .sorted()
-                    .distinct()
-                    .collect(java.util.stream.Collectors.joining(", "));
-        }
+    private String inputErrorMessage(CommandManagementException exception) {
         return "command not found".equals(exception.getMessage())
                 ? COMMAND_NOT_FOUND_MESSAGE
                 : exception.getMessage();
     }
 
-    private CommandForm commandForm(Long commandId) {
+    private List<String> validationMessages(BindingResult bindingResult) {
+        return bindingResult.getAllErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(java.util.Objects::nonNull)
+                .sorted()
+                .distinct()
+                .toList();
+    }
+
+    private Optional<CommandForm> commandForm(Long commandId) {
         return manageCommandUseCase.getCommands().stream()
                 .filter(command -> commandId.equals(command.id()))
                 .findFirst()
-                .map(CommandForm::from)
-                .orElseThrow(() -> new IllegalArgumentException(COMMAND_NOT_FOUND_MESSAGE));
+                .map(CommandForm::from);
     }
 
     private CreateCommand createCommand(CommandForm form, String actor) {
@@ -241,10 +263,17 @@ public class CommandController {
 
     public record CommandForm(
             Long commandId,
+            @NotBlank(message = "trigger is required")
+            @Size(min = 2, max = MAX_TRIGGER_LENGTH, message = TRIGGER_LENGTH_MESSAGE)
             String trigger,
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
             Boolean active,
+            @NotBlank(message = "executionPolicy is required")
             String executionPolicy,
+            @Min(value = MIN_USER_COOLDOWN_SECONDS, message = USER_COOLDOWN_RANGE_MESSAGE)
+            @Max(value = MAX_USER_COOLDOWN_SECONDS, message = USER_COOLDOWN_RANGE_MESSAGE)
             Integer userCooldownSeconds
     ) {
 

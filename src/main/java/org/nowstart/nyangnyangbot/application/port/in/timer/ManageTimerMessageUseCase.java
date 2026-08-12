@@ -1,9 +1,5 @@
 package org.nowstart.nyangnyangbot.application.port.in.timer;
 
-import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
-import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
-import static org.nowstart.nyangnyangbot.domain.timer.TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -24,6 +20,9 @@ public interface ManageTimerMessageUseCase {
     int MAX_INTERVAL_MINUTES = TimerMessagePolicy.MAX_INTERVAL_MINUTES;
     int MIN_CHAT_COUNT = TimerMessagePolicy.MIN_CHAT_COUNT;
     int MAX_CHAT_COUNT = TimerMessagePolicy.MAX_CHAT_COUNT;
+    String TEMPLATE_LENGTH_MESSAGE = TimerMessagePolicy.TEMPLATE_LENGTH_MESSAGE;
+    String INTERVAL_RANGE_MESSAGE = TimerMessagePolicy.INTERVAL_RANGE_MESSAGE;
+    String CHAT_COUNT_RANGE_MESSAGE = TimerMessagePolicy.CHAT_COUNT_RANGE_MESSAGE;
 
     /** 모든 타이머 메시지를 관리 화면 표시 순서로 반환한다. */
     List<TimerMessageResult> getTimerMessages();

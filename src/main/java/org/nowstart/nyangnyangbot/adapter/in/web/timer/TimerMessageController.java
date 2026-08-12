@@ -1,16 +1,29 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.timer;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
 import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_INTERVAL_MINUTES;
 import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.DEFAULT_MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.MAX_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.MAX_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.MAX_TEMPLATE_LENGTH;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.MIN_CHAT_COUNT;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.MIN_INTERVAL_MINUTES;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.CHAT_COUNT_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.INTERVAL_RANGE_MESSAGE;
+import static org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.TEMPLATE_LENGTH_MESSAGE;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.TimerMessageManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.CreateTimerMessage;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase.PreviewTimerMessage;
@@ -20,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,11 +69,12 @@ public class TimerMessageController {
     @GetMapping("/editor")
     public String editor(@RequestParam(required = false) Long timerMessageId, Model model) {
         if (timerMessageId != null) {
-            try {
-                model.addAttribute("timerMessageForm", timerMessageForm(timerMessageId));
+            Optional<TimerMessageForm> timerMessageForm = timerMessageForm(timerMessageId);
+            if (timerMessageForm.isPresent()) {
+                model.addAttribute("timerMessageForm", timerMessageForm.orElseThrow());
                 addTimerVariables(model);
-            } catch (IllegalArgumentException e) {
-                model.addAttribute("saveError", inputErrorMessage(e));
+            } else {
+                model.addAttribute("saveError", TIMER_NOT_FOUND_MESSAGE);
             }
         }
         return TIMER_EDITOR_FRAGMENT;
@@ -73,8 +88,12 @@ public class TimerMessageController {
     }
 
     @PostMapping("/preview")
-    public String preview(@ModelAttribute TimerMessageForm form, Model model) {
+    public String preview(@Valid @ModelAttribute TimerMessageForm form, BindingResult bindingResult, Model model) {
         TimerMessageForm normalized = form.withDefaults();
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("timerReview", new ReviewView(false, validationMessages(bindingResult), null));
+            return TIMER_REVIEW_FRAGMENT;
+        }
         try {
             var preview = manageTimerMessageUseCase.preview(
                     new PreviewTimerMessage(
@@ -84,8 +103,7 @@ public class TimerMessageController {
                     )
             );
             model.addAttribute("timerReview", new ReviewView(true, List.of(), preview.message()));
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (TimerMessageManagementException e) {
             model.addAttribute("timerReview", new ReviewView(false, List.of(inputErrorMessage(e)), null));
         }
         return TIMER_REVIEW_FRAGMENT;
@@ -93,7 +111,8 @@ public class TimerMessageController {
 
     @PostMapping
     public String save(
-            @ModelAttribute TimerMessageForm form,
+            @Valid @ModelAttribute TimerMessageForm form,
+            BindingResult bindingResult,
             @RequestParam(defaultValue = "false") boolean active,
             Authentication authentication,
             HttpServletResponse response,
@@ -101,6 +120,11 @@ public class TimerMessageController {
     ) {
         TimerMessageForm activeForm = form.withActive(active).withDefaults();
         addTimerVariables(model);
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("timerMessageForm", activeForm);
+            model.addAttribute("saveError", String.join(", ", validationMessages(bindingResult)));
+            return TIMER_EDITOR_FRAGMENT;
+        }
         try {
             TimerMessageResult result = activeForm.timerMessageId() == null
                     ? manageTimerMessageUseCase.createTimerMessage(createTimerMessage(activeForm, actor(authentication)))
@@ -111,8 +135,7 @@ public class TimerMessageController {
             model.addAttribute("timerMessageForm", TimerMessageForm.from(result));
             model.addAttribute("saveMessage", "저장됨");
             response.addHeader("HX-Trigger", TIMER_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (TimerMessageManagementException e) {
             model.addAttribute("timerMessageForm", activeForm);
             model.addAttribute("saveError", inputErrorMessage(e));
         }
@@ -139,19 +162,17 @@ public class TimerMessageController {
             model.addAttribute("timerMessageForm", TimerMessageForm.from(result));
             model.addAttribute("saveMessage", "비활성화됨");
             response.addHeader("HX-Trigger", TIMER_LIST_REFRESH_TRIGGER);
-        } catch (IllegalArgumentException | ConstraintViolationException e) {
-            rethrowIfInternalFailure(e);
+        } catch (TimerMessageManagementException e) {
             model.addAttribute("saveError", inputErrorMessage(e));
         }
         return TIMER_EDITOR_FRAGMENT;
     }
 
-    private TimerMessageForm timerMessageForm(Long timerMessageId) {
+    private Optional<TimerMessageForm> timerMessageForm(Long timerMessageId) {
         return manageTimerMessageUseCase.getTimerMessages().stream()
                 .filter(timer -> timerMessageId.equals(timer.id()))
                 .findFirst()
-                .map(TimerMessageForm::from)
-                .orElseThrow(() -> new IllegalArgumentException(TIMER_NOT_FOUND_MESSAGE));
+                .map(TimerMessageForm::from);
     }
 
     private void addTimerVariables(Model model) {
@@ -178,17 +199,19 @@ public class TimerMessageController {
         );
     }
 
-    private String inputErrorMessage(RuntimeException exception) {
-        if (exception instanceof ConstraintViolationException violationException) {
-            return violationException.getConstraintViolations().stream()
-                    .map(violation -> violation.getMessage())
-                    .sorted()
-                    .distinct()
-                    .collect(java.util.stream.Collectors.joining(", "));
-        }
+    private String inputErrorMessage(TimerMessageManagementException exception) {
         return "timer message not found".equals(exception.getMessage())
                 ? TIMER_NOT_FOUND_MESSAGE
                 : exception.getMessage();
+    }
+
+    private List<String> validationMessages(BindingResult bindingResult) {
+        return bindingResult.getAllErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(java.util.Objects::nonNull)
+                .sorted()
+                .distinct()
+                .toList();
     }
 
     private String actor(Authentication authentication) {
@@ -197,8 +220,14 @@ public class TimerMessageController {
 
     public record TimerMessageForm(
             Long timerMessageId,
+            @NotBlank(message = "messageTemplate is required")
+            @Size(max = MAX_TEMPLATE_LENGTH, message = TEMPLATE_LENGTH_MESSAGE)
             String messageTemplate,
+            @Min(value = MIN_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
+            @Max(value = MAX_INTERVAL_MINUTES, message = INTERVAL_RANGE_MESSAGE)
             Integer intervalMinutes,
+            @Min(value = MIN_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
+            @Max(value = MAX_CHAT_COUNT, message = CHAT_COUNT_RANGE_MESSAGE)
             Integer minChatCount,
             Boolean active,
             Long chatCountSinceLastSend,

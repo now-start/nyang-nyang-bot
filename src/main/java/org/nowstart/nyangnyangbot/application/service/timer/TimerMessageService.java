@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.exception.TimerMessageManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.timer.ManageTimerMessageUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.timer.RecordTimerChatUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.timer.RunTimerMessagesUseCase;
@@ -269,7 +270,7 @@ public class TimerMessageService implements ManageTimerMessageUseCase, RecordTim
 
     private void requireValid(ValidationState state) {
         if (!state.errors().isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", state.errors()));
+            throw new TimerMessageManagementException(String.join(", ", state.errors()));
         }
     }
 

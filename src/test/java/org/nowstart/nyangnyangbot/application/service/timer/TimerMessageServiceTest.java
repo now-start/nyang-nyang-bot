@@ -1,5 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.timer;
 
+import org.nowstart.nyangnyangbot.application.exception.TimerMessageManagementException;
+
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -107,7 +109,7 @@ class TimerMessageServiceTest {
         then(service.preview(new PreviewTimerMessage("현재 {time.datetime}", 10, 5)).message())
                 .isEqualTo("현재 2026-07-16 12:00");
         thenThrownBy(() -> service.preview(new PreviewTimerMessage("안녕 {viewer.nickname}", 10, 5)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(TimerMessageManagementException.class)
                 .hasMessageContaining("timer messageTemplate cannot use variables: viewer.nickname");
     }
 
@@ -116,7 +118,7 @@ class TimerMessageServiceTest {
         TimerMessageService service = spyService();
 
         thenThrownBy(() -> service.preview(new PreviewTimerMessage("공지", 4, 10_001)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(TimerMessageManagementException.class)
                 .hasMessageContaining("intervalMinutes must be between 5 and 1440")
                 .hasMessageContaining("minChatCount must be between 1 and 10000");
     }
@@ -208,7 +210,7 @@ class TimerMessageServiceTest {
         thenThrownBy(() -> service.createTimerMessage(
                 new CreateTimerMessage("{time.unknown}", 10, 5, true, "admin-1")
         ))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(TimerMessageManagementException.class)
                 .hasMessage("unknown template variables: time.unknown");
     }
 

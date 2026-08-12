@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.exception.OverlayDisplayException;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.QueueOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ValidateOverlayTokenUseCase;
@@ -44,12 +45,17 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     @Transactional
     public void replayRouletteRun(Long rouletteRunId) {
         Instant current = now();
-        Long displayJobId = overlayDisplayPort.replay(
-                rouletteRunId,
-                "roulette-run:" + rouletteRunId + ":replay:" + newClaimToken(),
-                current.plusSeconds(DISPLAY_TTL_SECONDS),
-                current
-        );
+        Long displayJobId;
+        try {
+            displayJobId = overlayDisplayPort.replay(
+                    rouletteRunId,
+                    "roulette-run:" + rouletteRunId + ":replay:" + newClaimToken(),
+                    current.plusSeconds(DISPLAY_TTL_SECONDS),
+                    current
+            );
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new OverlayDisplayException(exception.getMessage(), exception);
+        }
         log.info("level=AUDIT action=overlay.replay result=success rouletteRunId={} displayJobId={}",
                 rouletteRunId, displayJobId);
     }
@@ -72,7 +78,11 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     @Transactional
     public void markDisplayed(Long displayJobId, String claimToken, String authorizationHeader) {
         validateAuthorization(authorizationHeader);
-        overlayDisplayPort.markDisplayed(displayJobId, claimToken, now());
+        try {
+            overlayDisplayPort.markDisplayed(displayJobId, claimToken, now());
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new OverlayDisplayException(exception.getMessage(), exception);
+        }
     }
 
     OverlayDisplayResult overlayDisplayResult(DisplayJobResult job) {
@@ -110,7 +120,7 @@ public class OverlayDisplayService implements ManageOverlayDisplayUseCase, Queue
     private void validateAuthorization(String authorizationHeader) {
         String token = extractBearerToken(authorizationHeader);
         if (!validateOverlayTokenUseCase.validateToken(token)) {
-            throw new IllegalArgumentException("invalid overlay token");
+            throw new OverlayDisplayException("invalid overlay token");
         }
     }
 

@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.google;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
-
 import jakarta.servlet.http.HttpServletResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,17 +31,10 @@ public class GoogleController {
     )
     @PostMapping("/sync")
     public String syncDatabase(HttpServletResponse response, Model model) {
-        try {
-            runSync();
-            model.addAttribute("message", "데이터 동기화 완료");
-            model.addAttribute("tone", "success");
-            response.addHeader("HX-Trigger", POINT_BOARD_REFRESH_TRIGGER);
-        } catch (RuntimeException e) {
-            rethrowIfInternalFailure(e);
-            log.warn("[DBSync][FAILED]", e);
-            model.addAttribute("message", "데이터 동기화 실패");
-            model.addAttribute("tone", "danger");
-        }
+        runSync();
+        model.addAttribute("message", "데이터 동기화 완료");
+        model.addAttribute("tone", "success");
+        response.addHeader("HX-Trigger", POINT_BOARD_REFRESH_TRIGGER);
         return SYNC_FEEDBACK_FRAGMENT;
     }
 

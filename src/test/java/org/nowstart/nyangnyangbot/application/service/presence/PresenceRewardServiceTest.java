@@ -82,7 +82,7 @@ class PresenceRewardServiceTest {
                 List.of("user-1", "user-1", "missing-user"),
                 5L
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(org.nowstart.nyangnyangbot.application.exception.PresenceRewardException.class)
                 .hasMessage("presence targets were not captured: [missing-user]");
 
         verify(grantPointUseCase, never()).grant(org.mockito.ArgumentMatchers.any());
@@ -110,7 +110,7 @@ class PresenceRewardServiceTest {
             then(grantStarted.await(5, TimeUnit.SECONDS)).isTrue();
 
             thenThrownBy(service::startCapture)
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(org.nowstart.nyangnyangbot.application.exception.PresenceRewardException.class)
                     .hasMessage("presence rewards are being applied");
 
             allowGrantToFinish.countDown();

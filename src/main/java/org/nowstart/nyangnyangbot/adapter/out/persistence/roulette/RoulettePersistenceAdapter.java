@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.RouletteStateException;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteConfig;
@@ -59,9 +60,9 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional
     public OptionResult addOption(CreateOptionCommand command) {
         RouletteConfig config = rouletteConfigRepository.findByIdForUpdate(command.configId())
-                .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
+                .orElseThrow(() -> new RouletteStateException("roulette config not found"));
         if (config.getStatus() != RouletteConfigStatus.DRAFT) {
-            throw new IllegalStateException("roulette options can only be added to DRAFT config");
+            throw new RouletteStateException("roulette options can only be added to DRAFT config");
         }
         RouletteOption saved = rouletteOptionRepository.save(RouletteOption.builder()
                 .rouletteConfig(config)
@@ -110,19 +111,19 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional
     public ConfigResult activateConfig(Long configId, java.time.Instant activatedAt) {
         RouletteConfig target = rouletteConfigRepository.findByIdForUpdate(configId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
+                .orElseThrow(() -> new RouletteStateException("roulette config not found"));
         if (target.getStatus() == RouletteConfigStatus.ACTIVE) {
             return configResult(target);
         }
         if (target.getStatus() != RouletteConfigStatus.DRAFT) {
-            throw new IllegalStateException("only DRAFT roulette config can be activated");
+            throw new RouletteStateException("only DRAFT roulette config can be activated");
         }
         var options = rouletteOptionRepository.findByRouletteConfig_IdOrderByDisplayOrderAscIdAsc(configId);
         var validation = roulettePolicy.validateActivation(configResult(target), options.stream()
                 .map(this::optionResult)
                 .toList());
         if (!validation.activatable()) {
-            throw new IllegalStateException(String.join(", ", validation.reasons()));
+            throw new RouletteStateException(String.join(", ", validation.reasons()));
         }
         rouletteConfigRepository.findByStatusForUpdate(RouletteConfigStatus.ACTIVE)
                 .stream()
@@ -137,8 +138,12 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     @Transactional
     public ConfigResult archiveConfig(Long configId, java.time.Instant archivedAt) {
         RouletteConfig config = rouletteConfigRepository.findByIdForUpdate(configId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
-        config.archive(archivedAt);
+                .orElseThrow(() -> new RouletteStateException("roulette config not found"));
+        try {
+            config.archive(archivedAt);
+        } catch (IllegalStateException exception) {
+            throw new RouletteStateException(exception.getMessage(), exception);
+        }
         return configResult(config);
     }
 

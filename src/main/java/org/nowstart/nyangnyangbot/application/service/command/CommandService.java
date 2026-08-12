@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.exception.CommandManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandPort.CommandRecord;
@@ -76,7 +77,7 @@ public class CommandService implements ManageCommandUseCase {
     @Transactional
     public CommandResult updateCommand(Long commandId, UpdateCommand request) {
         CommandRecord current = commandPort.findByIdForUpdate(commandId)
-                .orElseThrow(() -> new IllegalArgumentException("command not found"));
+                .orElseThrow(() -> new CommandManagementException("command not found"));
         String trigger = request.trigger() == null ? current.trigger() : request.trigger();
         String template = request.messageTemplate() == null
                 ? current.messageTemplate()
@@ -194,7 +195,7 @@ public class CommandService implements ManageCommandUseCase {
 
     private void requireValid(ValidationState state) {
         if (!state.errors().isEmpty()) {
-            throw new IllegalArgumentException(String.join(", ", state.errors()));
+            throw new CommandManagementException(String.join(", ", state.errors()));
         }
     }
 

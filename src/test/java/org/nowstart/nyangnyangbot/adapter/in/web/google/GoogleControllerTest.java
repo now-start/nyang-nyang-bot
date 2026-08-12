@@ -45,23 +45,15 @@ class GoogleControllerTest {
     }
 
     @Test
-    @DisplayName("서비스 예외를 실패 alert fragment로 변환한다")
-    void syncDatabase_ShouldReturnFailureAlertFragment_WhenServiceFails() {
+    @DisplayName("예상하지 못한 서비스 예외를 전파한다")
+    void syncDatabase_ShouldPropagateUnexpectedFailure() {
         // 준비
         BDDMockito.willThrow(new IllegalStateException("sync failed"))
                 .given(syncGoogleSheetUseCase)
                 .synchronizePoints();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        ExtendedModelMap model = new ExtendedModelMap();
-
-        // 실행
-        String view = googleController.syncDatabase(response, model);
-
-        // 검증
-        then(view).isEqualTo("components/feedback :: alert");
-        then(model.get("message")).isEqualTo("데이터 동기화 실패");
-        then(model.get("tone")).isEqualTo("danger");
-        then(response.getHeader("HX-Trigger")).isNull();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> googleController.syncDatabase(
+                new MockHttpServletResponse(), new ExtendedModelMap()
+        )).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

@@ -20,6 +20,7 @@ import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.Comma
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.CommandView;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.ReviewView;
 import org.nowstart.nyangnyangbot.adapter.in.web.command.CommandController.VariableGroupView;
+import org.nowstart.nyangnyangbot.application.exception.CommandManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CommandResult;
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.CreateCommand;
@@ -28,6 +29,8 @@ import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCa
 import org.nowstart.nyangnyangbot.application.port.in.command.ManageCommandUseCase.UpdateCommand;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 
 @ExtendWith(MockitoExtension.class)
 class CommandControllerTest {
@@ -178,7 +181,7 @@ class CommandControllerTest {
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.preview(form, model);
+        String view = controller.preview(form, bindingResult(form), model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-review-region");
@@ -198,11 +201,12 @@ class CommandControllerTest {
     void preview_ShouldReturnValidationErrorsWithoutRenderingPreview() {
         // 준비
         given(manageCommandUseCase.preview(any()))
-                .willThrow(new IllegalArgumentException("trigger already exists"));
+                .willThrow(new CommandManagementException("trigger already exists"));
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.preview(CommandForm.empty(), model);
+        CommandForm form = CommandForm.empty();
+        String view = controller.preview(form, bindingResult(form), model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-review-region");
@@ -221,7 +225,8 @@ class CommandControllerTest {
         ConcurrentModel model = new ConcurrentModel();
 
         // 실행
-        String view = controller.save(CommandForm.empty(), false, null, response, model);
+        CommandForm form = CommandForm.empty();
+        String view = controller.save(form, bindingResult(form), false, null, response, model);
 
         // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");
@@ -233,21 +238,20 @@ class CommandControllerTest {
     }
 
     @Test
-    void save_ShouldRenderBeanValidationFailureInEditor() {
+    void save_ShouldRenderBindingFailureInEditor() {
         // 준비
-        var invalid = new CreateCommand(null, null, false, null, null);
-        var violations = Validation.buildDefaultValidatorFactory().getValidator().validate(invalid);
-        given(manageCommandUseCase.createCommand(any(CreateCommand.class)))
-                .willThrow(new ConstraintViolationException(violations));
+        CommandForm form = CommandForm.empty();
+        BindingResult bindingResult = bindingResult(form);
+        bindingResult.rejectValue("trigger", "required", "trigger is required");
+        bindingResult.rejectValue("messageTemplate", "required", "messageTemplate is required");
         ConcurrentModel model = new ConcurrentModel();
 
-        // 실행
-        String view = controller.save(CommandForm.empty(), false, null, response, model);
+        String view = controller.save(form, bindingResult, false, null, response, model);
 
-        // 검증
         then(view).isEqualTo("features/command/regions :: command-editor-region");
-        then(model.getAttribute("saveError"))
-                .isEqualTo("messageTemplate is required, trigger is required");
+        then(model.getAttribute("saveError")).isEqualTo("messageTemplate is required, trigger is required");
+        org.mockito.BDDMockito.then(manageCommandUseCase).should().getVariables();
+        org.mockito.BDDMockito.then(manageCommandUseCase).shouldHaveNoMoreInteractions();
     }
 
     @Test
@@ -258,7 +262,10 @@ class CommandControllerTest {
         ConstraintViolationException exception = new ConstraintViolationException(violations);
         given(manageCommandUseCase.createCommand(any(CreateCommand.class))).willThrow(exception);
 
-        thenThrownBy(() -> controller.save(CommandForm.empty(), false, null, response, new ConcurrentModel()))
+        CommandForm form = CommandForm.empty();
+        thenThrownBy(() -> controller.save(
+                form, bindingResult(form), false, null, response, new ConcurrentModel()
+        ))
                 .isSameAs(exception);
     }
 
@@ -281,7 +288,7 @@ class CommandControllerTest {
         );
 
         // 실행
-        controller.save(form, true, null, response, new ConcurrentModel());
+        controller.save(form, bindingResult(form), true, null, response, new ConcurrentModel());
 
         // 검증
         ArgumentCaptor<CreateCommand> captor = ArgumentCaptor.forClass(CreateCommand.class);
@@ -339,5 +346,9 @@ class CommandControllerTest {
                 "admin",
                 "admin"
         );
+    }
+
+    private BindingResult bindingResult(CommandForm form) {
+        return new BeanPropertyBindingResult(form, "commandForm");
     }
 }

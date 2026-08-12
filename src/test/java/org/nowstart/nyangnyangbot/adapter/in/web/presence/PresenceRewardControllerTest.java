@@ -129,7 +129,9 @@ class PresenceRewardControllerTest {
 
     @Test
     void applyPresenceReward_ShouldKeepSelection_WhenUseCaseFails() {
-        BDDMockito.willThrow(new IllegalArgumentException("presence targets are required"))
+        BDDMockito.willThrow(new org.nowstart.nyangnyangbot.application.exception.PresenceRewardException(
+                        "presence targets are required"
+                ))
                 .given(managePresenceRewardUseCase)
                 .applyPresenceReward(any(PresenceApplyCommand.class));
         MockHttpServletResponse response = new MockHttpServletResponse();

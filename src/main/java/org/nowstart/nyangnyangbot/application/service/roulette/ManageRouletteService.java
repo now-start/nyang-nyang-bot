@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.RouletteManagementException;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.ConfigResult;
@@ -30,7 +31,11 @@ public class ManageRouletteService implements ManageRouletteUseCase {
 
     @Override
     public RouletteConfigResult createConfig(CreateRouletteConfigCommand command) {
-        roulettePolicy.validateConfigInput(command.title(), command.triggerToken(), command.pricePerRound());
+        try {
+            roulettePolicy.validateConfigInput(command.title(), command.triggerToken(), command.pricePerRound());
+        } catch (IllegalArgumentException exception) {
+            throw new RouletteManagementException(exception.getMessage(), exception);
+        }
         ConfigResult config = roulettePort.createConfig(new CreateConfigCommand(
                 command.title().trim(),
                 command.triggerToken().trim(),
@@ -45,17 +50,23 @@ public class ManageRouletteService implements ManageRouletteUseCase {
 
     @Override
     public RouletteOptionResult addOption(AddRouletteOptionCommand command) {
-        RewardType rewardType = parseRewardType(command.rewardType());
-        ConversionMode conversionMode = parseConversionMode(command.conversionMode());
+        RewardType rewardType;
+        ConversionMode conversionMode;
         boolean losing = Boolean.TRUE.equals(command.losing());
-        roulettePolicy.validateOptionInput(
-                command.label(),
-                command.probabilityBasisPoints(),
-                losing,
-                rewardType,
-                conversionMode,
-                command.pointDelta()
-        );
+        try {
+            rewardType = parseRewardType(command.rewardType());
+            conversionMode = parseConversionMode(command.conversionMode());
+            roulettePolicy.validateOptionInput(
+                    command.label(),
+                    command.probabilityBasisPoints(),
+                    losing,
+                    rewardType,
+                    conversionMode,
+                    command.pointDelta()
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new RouletteManagementException(exception.getMessage(), exception);
+        }
         OptionResult option = roulettePort.addOption(new CreateOptionCommand(
                 command.configId(),
                 command.label().trim(),
@@ -87,7 +98,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
         List<OptionResult> options = roulettePort.findOptionsByConfigId(configId);
         RouletteActivationValidation validation = roulettePolicy.validateActivation(config, options);
         if (!validation.activatable()) {
-            throw new IllegalStateException(String.join(", ", validation.reasons()));
+            throw new RouletteManagementException(String.join(", ", validation.reasons()));
         }
         return configResult(roulettePort.activateConfig(configId, now()), options);
     }
@@ -103,7 +114,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
         List<OptionResult> options = roulettePort.findOptionsByConfigId(configId);
         RouletteActivationValidation validation = roulettePolicy.validateActivation(requireConfig(configId), options);
         if (!validation.activatable()) {
-            throw new IllegalStateException("roulette config is not valid");
+            throw new RouletteManagementException("roulette config is not valid");
         }
         Map<String, Integer> counts = new LinkedHashMap<>();
         options.forEach(option -> counts.put(option.label(), 0));
@@ -174,7 +185,7 @@ public class ManageRouletteService implements ManageRouletteUseCase {
 
     private ConfigResult requireConfig(Long configId) {
         return roulettePort.findConfigById(configId)
-                .orElseThrow(() -> new IllegalArgumentException("roulette config not found"));
+                .orElseThrow(() -> new RouletteManagementException("roulette config not found"));
     }
 
     private RewardType parseRewardType(String value) {

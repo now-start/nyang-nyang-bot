@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.application.service.roulette;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -8,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.nowstart.nyangnyangbot.application.exception.RouletteStateException;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.AddRouletteOptionCommand;
 import org.nowstart.nyangnyangbot.application.port.in.roulette.ManageRouletteUseCase.CreateRouletteConfigCommand;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
@@ -52,6 +54,32 @@ class ManageRouletteServiceTest {
                 1L, "포인트", 7_000, false, RewardType.POINT, ConversionMode.AUTO, 100L, 0, NOW
         ));
         assertThat(result.pointDelta()).isEqualTo(100L);
+    }
+
+    @Test
+    void addOptionPropagatesKnownRouletteStateFailure() {
+        RoulettePort port = Mockito.mock(RoulettePort.class);
+        ManageRouletteService service = service(port);
+        RouletteStateException failure = new RouletteStateException(
+                "roulette options can only be added to DRAFT config"
+        );
+        given(port.addOption(Mockito.any())).willThrow(failure);
+
+        assertThatThrownBy(() -> service.addOption(new AddRouletteOptionCommand(
+                1L, "포인트", 7_000, false, "POINT", "AUTO", 100L, null
+        ))).isSameAs(failure);
+    }
+
+    @Test
+    void addOptionDoesNotTranslateUnexpectedInfrastructureFailure() {
+        RoulettePort port = Mockito.mock(RoulettePort.class);
+        ManageRouletteService service = service(port);
+        RuntimeException failure = new RuntimeException("database unavailable");
+        given(port.addOption(Mockito.any())).willThrow(failure);
+
+        assertThatThrownBy(() -> service.addOption(new AddRouletteOptionCommand(
+                1L, "포인트", 7_000, false, "POINT", "AUTO", 100L, null
+        ))).isSameAs(failure);
     }
 
     @Test

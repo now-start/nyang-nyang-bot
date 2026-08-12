@@ -1,11 +1,9 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.overlay;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.OverlayDisplayException;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.overlay.ManageOverlayDisplayUseCase.OverlayDisplayResult;
 import org.springframework.http.HttpHeaders;
@@ -45,8 +43,7 @@ public class OverlayController {
             return manageOverlayDisplayUseCase.claimNextJob(authorization(authorization))
                     .map(job -> overlayJob(job, model))
                     .orElse(WAIT_FRAGMENT);
-        } catch (IllegalArgumentException | ConstraintViolationException exception) {
-            rethrowIfInternalFailure(exception);
+        } catch (OverlayDisplayException exception) {
             model.addAttribute("message", "오버레이 토큰이 유효하지 않습니다.");
             return ERROR_FRAGMENT;
         }
@@ -60,6 +57,10 @@ public class OverlayController {
             @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorization,
             Model model
     ) {
+        if (displayJobId == null || displayJobId <= 0 || claimToken == null || claimToken.isBlank()) {
+            model.addAttribute("message", "오버레이 표시 작업을 완료하지 못했습니다.");
+            return ERROR_FRAGMENT;
+        }
         try {
             manageOverlayDisplayUseCase.markDisplayed(
                     displayJobId,
@@ -67,8 +68,7 @@ public class OverlayController {
                     authorization(authorization)
             );
             return WAIT_FRAGMENT;
-        } catch (IllegalArgumentException | IllegalStateException | ConstraintViolationException exception) {
-            rethrowIfInternalFailure(exception);
+        } catch (OverlayDisplayException exception) {
             model.addAttribute("message", "오버레이 표시 작업을 완료하지 못했습니다.");
             return ERROR_FRAGMENT;
         }
@@ -81,7 +81,7 @@ public class OverlayController {
 
     private String authorization(String authorization) {
         if (authorization == null || authorization.isBlank()) {
-            throw new IllegalArgumentException("overlay authorization is required");
+            throw new OverlayDisplayException("overlay authorization is required");
         }
         return authorization;
     }

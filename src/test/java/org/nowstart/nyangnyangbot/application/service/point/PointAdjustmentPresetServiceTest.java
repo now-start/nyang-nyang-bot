@@ -43,7 +43,7 @@ class PointAdjustmentPresetServiceTest {
         thenThrownBy(() -> service.applyAdjustments(new ApplyPointAdjustments(
                 "user-1", List.of(1L, 1L, 2L, 2L), null, null, "admin-1"
         )))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(org.nowstart.nyangnyangbot.application.exception.PointAdjustmentException.class)
                 .hasMessage("Duplicate preset ids are not allowed: [1, 2]");
 
         Mockito.verifyNoInteractions(presetPort, adjustPointUseCase);
@@ -61,7 +61,10 @@ class PointAdjustmentPresetServiceTest {
 
         thenThrownBy(() -> service.applyAdjustments(new ApplyPointAdjustments(
                 "user-1", List.of(1L, 2L), null, null, "admin-1"
-        ))).isInstanceOf(ArithmeticException.class);
+        )))
+                .isInstanceOf(org.nowstart.nyangnyangbot.application.exception.PointAdjustmentException.class)
+                .hasMessage("Point adjustment amount is out of range")
+                .hasCauseInstanceOf(ArithmeticException.class);
 
         Mockito.verifyNoInteractions(adjustPointUseCase);
     }
@@ -75,7 +78,10 @@ class PointAdjustmentPresetServiceTest {
 
         thenThrownBy(() -> service.applyAdjustments(new ApplyPointAdjustments(
                 "user-1", List.of(1L), 1L, "하나", "admin-1"
-        ))).isInstanceOf(ArithmeticException.class);
+        )))
+                .isInstanceOf(org.nowstart.nyangnyangbot.application.exception.PointAdjustmentException.class)
+                .hasMessage("Point adjustment amount is out of range")
+                .hasCauseInstanceOf(ArithmeticException.class);
 
         Mockito.verifyNoInteractions(adjustPointUseCase);
     }

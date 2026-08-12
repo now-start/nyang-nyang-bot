@@ -1,7 +1,5 @@
 package org.nowstart.nyangnyangbot.adapter.in.web.presence;
 
-import static org.nowstart.nyangnyangbot.adapter.in.web.error.WebExceptionSupport.rethrowIfInternalFailure;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nowstart.nyangnyangbot.application.exception.PresenceRewardException;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceApplyCommand;
 import org.nowstart.nyangnyangbot.application.port.in.presence.ManagePresenceRewardUseCase.PresenceUserSnapshot;
@@ -93,8 +92,7 @@ public class PresenceRewardController {
             model.addAttribute("tone", "success");
             model.addAttribute("resetPresenceList", true);
             response.addHeader("HX-Trigger", APPLY_SUCCESS_TRIGGER);
-        } catch (RuntimeException e) {
-            rethrowIfInternalFailure(e);
+        } catch (PresenceRewardException e) {
             log.warn("Failed to apply presence reward.", e);
             model.addAttribute("message", "생존자 보상 실패");
             model.addAttribute("tone", "danger");

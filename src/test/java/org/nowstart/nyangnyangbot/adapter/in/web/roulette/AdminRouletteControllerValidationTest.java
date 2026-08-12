@@ -87,7 +87,6 @@ class AdminRouletteControllerValidationTest {
         ManageRouletteUseCase validatedUseCase = validated(manageRouletteUseCase, ManageRouletteUseCase.class);
         AdminRouletteController controller = new AdminRouletteController(validatedUseCase, queryRouletteResultUseCase);
         ConcurrentModel model = new ConcurrentModel();
-
         String view = controller.simulate(0L, 100, model);
 
         org.assertj.core.api.Assertions.assertThat(view)
@@ -112,7 +111,6 @@ class AdminRouletteControllerValidationTest {
         ManageRouletteUseCase validatedUseCase = validated(manageRouletteUseCase, ManageRouletteUseCase.class);
         AdminRouletteController controller = new AdminRouletteController(validatedUseCase, queryRouletteResultUseCase);
         ConcurrentModel model = new ConcurrentModel();
-
         String view = controller.getConfigs(0L, 0, 20, model);
 
         org.assertj.core.api.Assertions.assertThat(view)

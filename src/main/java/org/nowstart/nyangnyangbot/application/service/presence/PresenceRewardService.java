@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
+import org.nowstart.nyangnyangbot.application.exception.PresenceRewardException;
 import org.nowstart.nyangnyangbot.application.port.in.chat.HandleChatEventUseCase.ChatReceived;
 import org.nowstart.nyangnyangbot.application.port.in.point.AdjustPointUseCase.AdjustPointCommand;
 import org.nowstart.nyangnyangbot.application.port.in.point.GrantPointUseCase;
@@ -130,17 +131,17 @@ public class PresenceRewardService implements ManagePresenceRewardUseCase, Recor
         cycleLock.lock();
         try {
             if (cycle.status() != CycleStatus.ACTIVE) {
-                throw new IllegalStateException("presence cycle is not active");
+                throw new PresenceRewardException("presence cycle is not active");
             }
             List<String> distinctUserIds = userIds.stream().distinct().toList();
             if (distinctUserIds.isEmpty()) {
-                throw new IllegalArgumentException("presence targets are required");
+                throw new PresenceRewardException("presence targets are required");
             }
             List<String> missingUserIds = distinctUserIds.stream()
                     .filter(userId -> !cycle.users().containsKey(userId))
                     .toList();
             if (!missingUserIds.isEmpty()) {
-                throw new IllegalArgumentException("presence targets were not captured: " + missingUserIds);
+                throw new PresenceRewardException("presence targets were not captured: " + missingUserIds);
             }
             List<PresenceUserState> targets = distinctUserIds.stream()
                     .map(cycle.users()::get)
@@ -178,7 +179,7 @@ public class PresenceRewardService implements ManagePresenceRewardUseCase, Recor
 
     private void requireNotApplying() {
         if (cycle.status() == CycleStatus.APPLYING) {
-            throw new IllegalStateException("presence rewards are being applied");
+            throw new PresenceRewardException("presence rewards are being applied");
         }
     }
 
