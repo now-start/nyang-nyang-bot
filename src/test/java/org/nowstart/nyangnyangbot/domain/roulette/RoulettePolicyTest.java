@@ -11,8 +11,6 @@ import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.Opt
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteProcessingStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 class RoulettePolicyTest {
 
@@ -88,14 +86,6 @@ class RoulettePolicyTest {
                 1L
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("roundCount exceeds maximum " + RoulettePolicy.MAX_ROUNDS_PER_DONATION);
-    }
-
-    @Test
-    void processingStatusIsDerivedFromRoundStates() {
-        assertThat(policy.processingStatus(List.of(RouletteRoundStatus.APPLIED, RouletteRoundStatus.APPLIED)))
-                .isEqualTo(RouletteProcessingStatus.APPLIED);
-        assertThat(policy.processingStatus(List.of(RouletteRoundStatus.APPLIED, RouletteRoundStatus.FAILED)))
-                .isEqualTo(RouletteProcessingStatus.PARTIALLY_APPLIED);
     }
 
     private ConfigResult config() {

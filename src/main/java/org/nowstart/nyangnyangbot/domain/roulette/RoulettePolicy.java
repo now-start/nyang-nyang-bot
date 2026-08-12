@@ -7,8 +7,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.nowstart.nyangnyangbot.domain.chat.CommandTrigger;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
-import org.nowstart.nyangnyangbot.domain.type.RouletteProcessingStatus;
-import org.nowstart.nyangnyangbot.domain.type.RouletteRoundStatus;
 
 public class RoulettePolicy {
 
@@ -165,21 +163,6 @@ public class RoulettePolicy {
         } catch (NumberFormatException ex) {
             return 0L;
         }
-    }
-
-    public RouletteProcessingStatus processingStatus(List<RouletteRoundStatus> statuses) {
-        long applied = statuses.stream().filter(status -> status == RouletteRoundStatus.APPLIED).count();
-        long failed = statuses.stream().filter(status -> status == RouletteRoundStatus.FAILED).count();
-        if (!statuses.isEmpty() && applied == statuses.size()) {
-            return RouletteProcessingStatus.APPLIED;
-        }
-        if (!statuses.isEmpty() && failed == statuses.size()) {
-            return RouletteProcessingStatus.FAILED;
-        }
-        if (applied > 0 || failed > 0) {
-            return RouletteProcessingStatus.PARTIALLY_APPLIED;
-        }
-        return RouletteProcessingStatus.CONFIRMED;
     }
 
     private boolean isBlank(String value) {
