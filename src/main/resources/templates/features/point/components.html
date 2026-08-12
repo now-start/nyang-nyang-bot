@@ -83,6 +83,7 @@
     <section aria-labelledby="weekly-rank-heading"
              class="card"
              hx-swap="outerHTML"
+             hx-target="this"
              hx-trigger="every 15s"
              th:fragment="weekly-ranks(weeklyChatRanks, currentNickName)"
              th:hx-get="@{/points/weekly-ranks}">
