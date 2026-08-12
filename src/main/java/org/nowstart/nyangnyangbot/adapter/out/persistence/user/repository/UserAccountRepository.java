@@ -31,6 +31,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
             """, nativeQuery = true)
     int observe(@Param("userId") String userId, @Param("displayName") String displayName);
 
-    @Query(value = "select CURRENT_TIMESTAMP(6)", nativeQuery = true)
+    @Query("select instant")
     Instant currentDatabaseTime();
 }

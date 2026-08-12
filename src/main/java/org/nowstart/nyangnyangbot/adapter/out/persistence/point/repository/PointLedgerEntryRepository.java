@@ -88,7 +88,8 @@ public interface PointLedgerEntryRepository extends JpaRepository<PointLedgerEnt
                    history.source_type as sourceType,
                    history.description as description,
                    history.correction_of_entry_id as correctionOfEntryId,
-                   history.created_at as createdAt
+                   cast(unix_timestamp(history.created_at) * 1000000 as signed)
+                       as createdAtEpochMicros
               from (
                     select entry.*,
                            sum(entry.delta) over (
@@ -126,6 +127,14 @@ public interface PointLedgerEntryRepository extends JpaRepository<PointLedgerEnt
 
         Long getCorrectionOfEntryId();
 
-        Instant getCreatedAt();
+        Long getCreatedAtEpochMicros();
+
+        default Instant getCreatedAt() {
+            long epochMicros = getCreatedAtEpochMicros();
+            return Instant.ofEpochSecond(
+                    Math.floorDiv(epochMicros, 1_000_000L),
+                    Math.floorMod(epochMicros, 1_000_000L) * 1_000L
+            );
+        }
     }
 }

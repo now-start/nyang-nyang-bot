@@ -16,6 +16,7 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointLedgerEntryRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,9 @@ class MariaDbTimestampJpaContractTest {
 
     @Autowired
     private UserAccountRepository userAccountRepository;
+
+    @Autowired
+    private PointLedgerEntryRepository pointLedgerEntryRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -137,6 +141,28 @@ class MariaDbTimestampJpaContractTest {
             statement.execute("SET time_zone = '+00:00'");
             assertThat(queryLastLoginAt(connection)).isEqualTo(EXPECTED_UTC_TIME);
         }
+
+        Instant beforeDatabaseTime = Instant.now().minusSeconds(2);
+        Instant databaseTime = userAccountRepository.currentDatabaseTime();
+        Instant afterDatabaseTime = Instant.now().plusSeconds(2);
+        assertThat(databaseTime).isBetween(beforeDatabaseTime, afterDatabaseTime);
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO point_ledger_entry (
+                         user_id, delta, source_type, description, idempotency_key, created_at
+                     ) VALUES (?, 1, 'ADMIN_ADJUSTMENT', 'timestamp contract', ?, ?)
+                     """)) {
+            statement.setString(1, account.getUserId());
+            statement.setString(2, "timestamp-contract-ledger");
+            statement.setObject(3, EXPECTED_SEOUL_TIME);
+            statement.executeUpdate();
+        }
+
+        assertThat(pointLedgerEntryRepository.findHistory(account.getUserId(), 1))
+                .singleElement()
+                .extracting(PointLedgerEntryRepository.PointHistoryProjection::getCreatedAt)
+                .isEqualTo(EXPECTED_INSTANT);
     }
 
     private static String queryString(Connection connection, String sql) throws SQLException {
