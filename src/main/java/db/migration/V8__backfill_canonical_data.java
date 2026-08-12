@@ -228,30 +228,7 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                  ORDER BY id
                 """);
 
-        executeUpdate(connection, """
-                INSERT INTO next_point_ledger_entry
-                    (id, user_id, delta, source_type, source_reference, description,
-                     private_note, correction_of_entry_id, actor_user_id,
-                     idempotency_key, created_at)
-                SELECT id, favorite_account_user_id, delta,
-                       CASE source_type
-                           WHEN 'ATTENDANCE' THEN 'PRESENCE_REWARD'
-                           WHEN 'SHEET_MIGRATION' THEN 'GOOGLE_SHEET_SYNC'
-                           WHEN 'UPBO_MANUAL' THEN 'REWARD_MANUAL'
-                           WHEN 'UPBO_ROULETTE' THEN 'REWARD_ROULETTE'
-                           ELSE source_type
-                       END,
-                       CASE WHEN source_id IS NULL OR TRIM(source_id) = ''
-                            THEN NULL ELSE source_id END,
-                       COALESCE(NULLIF(TRIM(public_description), ''), NULLIF(TRIM(history), '')),
-                       private_memo, correction_of_ledger_id,
-                       CASE WHEN actor_id IS NULL OR TRIM(actor_id) = ''
-                                      OR LOWER(TRIM(actor_id)) = 'system'
-                            THEN NULL ELSE actor_id END,
-                       idempotency_key, create_date
-                  FROM favorite_history
-                 ORDER BY id
-                """);
+        backfillPointLedgerEntries(connection);
 
         executeUpdate(connection, """
                 INSERT INTO next_point_adjustment_preset (id, label, amount, created_at)
@@ -292,6 +269,102 @@ public final class V8__backfill_canonical_data extends BaseJavaMigration {
                   FROM overlay_token
                  ORDER BY id
                 """);
+    }
+
+    private void backfillPointLedgerEntries(Connection connection) throws SQLException {
+        String select = """
+                SELECT id, favorite_account_user_id, delta, source_type, source_id,
+                       public_description, history, private_memo, correction_of_ledger_id,
+                       actor_id, idempotency_key, create_date
+                  FROM favorite_history
+                 ORDER BY id
+                """;
+        String insert = """
+                INSERT INTO next_point_ledger_entry
+                    (id, user_id, delta, source_type, source_reference, description,
+                     private_note, correction_of_entry_id, actor_user_id,
+                     idempotency_key, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (Statement query = connection.createStatement();
+             ResultSet rows = query.executeQuery(select);
+             PreparedStatement statement = connection.prepareStatement(insert)) {
+            while (rows.next()) {
+                long id = rows.getLong("id");
+                String userId = rows.getString("favorite_account_user_id");
+                try {
+                    validateUserId(userId);
+                    statement.setLong(1, id);
+                    statement.setString(2, userId);
+                    statement.setLong(3, requiredLong(rows, "delta"));
+                    statement.setString(4, canonicalPointSourceType(
+                            requiredText(rows, "source_type")));
+                    statement.setString(5, nullableText(rows.getString("source_id")));
+                    statement.setString(6, pointDescription(rows));
+                    statement.setString(7, rows.getString("private_memo"));
+                    statement.setObject(8, rows.getObject("correction_of_ledger_id", Long.class));
+                    statement.setString(9, nullableActorId(rows.getString("actor_id")));
+                    statement.setString(10, requiredText(rows, "idempotency_key"));
+                    statement.setObject(11, requiredDateTime(rows, "create_date"));
+                    int inserted = statement.executeUpdate();
+                    if (inserted != 1) {
+                        throw new SQLException("Expected one inserted row but inserted " + inserted);
+                    }
+                } catch (SQLException exception) {
+                    throw new SQLException("Failed to backfill favorite_history id " + id
+                            + " for user " + userId, exception);
+                }
+            }
+        }
+    }
+
+    private long requiredLong(ResultSet resultSet, String column) throws SQLException {
+        long value = resultSet.getLong(column);
+        if (resultSet.wasNull()) {
+            throw new SQLException(column + " is required for legacy row");
+        }
+        return value;
+    }
+
+    private String canonicalPointSourceType(String sourceType) {
+        return switch (sourceType) {
+            case "ATTENDANCE" -> "PRESENCE_REWARD";
+            case "SHEET_MIGRATION" -> "GOOGLE_SHEET_SYNC";
+            case "UPBO_MANUAL" -> "REWARD_MANUAL";
+            case "UPBO_ROULETTE" -> "REWARD_ROULETTE";
+            default -> sourceType;
+        };
+    }
+
+    private String pointDescription(ResultSet rows) throws SQLException {
+        String publicDescription = nullIfBlank(rows.getString("public_description"));
+        if (publicDescription != null) {
+            return publicDescription;
+        }
+        String history = nullIfBlank(rows.getString("history"));
+        if (history == null) {
+            throw new SQLException("public_description or history is required for legacy row");
+        }
+        return history;
+    }
+
+    private String nullableActorId(String actorId) {
+        String normalized = nullIfBlank(actorId);
+        if (normalized == null || "system".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        return actorId;
+    }
+
+    private String nullIfBlank(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String nullableText(String value) {
+        return nullIfBlank(value) == null ? null : value;
     }
 
     private void validateUserId(String userId) throws SQLException {

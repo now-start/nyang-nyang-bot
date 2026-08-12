@@ -155,6 +155,13 @@ class MariaDbCanonicalMigrationTest {
                      WHERE id = 80
                     """);
             assertStableSnapshotIsolationRequired(dataSource, "8");
+            jdbc.update("UPDATE favorite_history SET source_type = 'UNKNOWN' WHERE id = 10");
+            Flyway pointLedgerFailure = migrate(dataSource, "8");
+            assertThatThrownBy(pointLedgerFailure::migrate)
+                    .hasMessageContaining("Failed to backfill favorite_history id 10")
+                    .hasMessageContaining("for user viewer");
+            pointLedgerFailure.repair();
+            jdbc.update("UPDATE favorite_history SET source_type = 'ATTENDANCE' WHERE id = 10");
             Instant beforeBackfillInstant = Instant.now().minusSeconds(2);
             LocalDateTime beforeBackfill = jdbc.queryForObject(
                     "SELECT CURRENT_TIMESTAMP(6)", LocalDateTime.class);
