@@ -168,6 +168,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
         if (config.getStatus() != RouletteConfigStatus.ACTIVE) {
             throw new IllegalStateException("roulette config is not ACTIVE");
         }
+        validateCompleteRoundSequence(command, donation, config);
 
         Map<Long, RouletteOption> options = new HashMap<>();
         rouletteOptionRepository.findByRouletteConfig_IdOrderByDisplayOrderAscIdAsc(config.getId())
@@ -244,6 +245,7 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     public void markRoundApplied(Long roundId, java.time.Instant appliedAt) {
         RouletteRound round = rouletteRoundRepository.findByIdForUpdate(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette round not found"));
+        requireReadyRun(round);
         round.markApplied(appliedAt);
     }
 
@@ -252,7 +254,30 @@ public class RoulettePersistenceAdapter implements RoulettePort, RecentRouletteR
     public void markRoundFailed(Long roundId, String failureReason, java.time.Instant failedAt) {
         RouletteRound round = rouletteRoundRepository.findByIdForUpdate(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("roulette round not found"));
+        requireReadyRun(round);
         round.markFailed(failureReason, failedAt);
+    }
+
+    private void validateCompleteRoundSequence(
+            CreateRunCommand command,
+            Donation donation,
+            RouletteConfig config
+    ) {
+        long expectedRoundCount = donation.getAmount() / config.getPricePerRound();
+        if (expectedRoundCount < 1 || command.rounds().size() != expectedRoundCount) {
+            throw new IllegalStateException("roulette run requires the complete round sequence");
+        }
+        for (int index = 0; index < command.rounds().size(); index++) {
+            if (command.rounds().get(index).roundNo() != index + 1) {
+                throw new IllegalStateException("roulette run requires the complete round sequence");
+            }
+        }
+    }
+
+    private void requireReadyRun(RouletteRound round) {
+        if (round.getRouletteRun().getStatus() != RouletteRunStatus.READY) {
+            throw new IllegalStateException("roulette round can only be processed after run is READY");
+        }
     }
 
     @Override

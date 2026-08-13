@@ -14,7 +14,7 @@ class TimerMessageFlywayMigrationTest {
                     + "INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
 
     @Test
-    void flywayMigration_ShouldCreateDuplicateSafeTimerMessageSchema() {
+    void canonicalBaseline_ShouldCreateDuplicateSafeTimerMessageSchema() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
                 "jdbc:h2:mem:timer-message-flyway-test" + H2_MARIADB_OPTIONS,
                 "sa",
@@ -30,7 +30,7 @@ class TimerMessageFlywayMigrationTest {
 
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from \"flyway_schema_history\" "
-                        + "where \"success\" = true and \"version\" = '5'",
+                        + "where \"success\" = true and \"version\" = '1'",
                 Integer.class
         )).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(

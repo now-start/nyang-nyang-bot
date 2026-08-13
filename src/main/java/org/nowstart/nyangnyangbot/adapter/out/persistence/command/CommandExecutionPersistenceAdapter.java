@@ -1,6 +1,7 @@
 package org.nowstart.nyangnyangbot.adapter.out.persistence.command;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.command.repository.Com
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.entity.UserAccount;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.user.repository.UserAccountRepository;
 import org.nowstart.nyangnyangbot.application.port.out.command.CommandExecutionPort;
+import org.nowstart.nyangnyangbot.domain.command.CommandExecutionPolicy;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -18,6 +20,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RequiredArgsConstructor
 public class CommandExecutionPersistenceAdapter implements CommandExecutionPort {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final CommandRepository commandRepository;
     private final CommandExecutionRepository executionRepository;
@@ -58,6 +62,7 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
 
     @Override
     public void append(ExecutionData data) {
+        validateCalendarDayStart(data);
         Command command = commandRepository.getReferenceById(data.commandId());
         UserAccount user = userAccountRepository.getReferenceById(data.userId());
         executionRepository.saveAndFlush(CommandExecution.builder()
@@ -68,6 +73,16 @@ public class CommandExecutionPersistenceAdapter implements CommandExecutionPort 
                 .cooldownSecondsSnapshot(data.cooldownSeconds())
                 .calendarDayStartedAt(data.calendarDayStartedAt())
                 .build());
+    }
+
+    private void validateCalendarDayStart(ExecutionData data) {
+        if (data.executionPolicy() != CommandExecutionPolicy.USER_CALENDAR_DAY) {
+            return;
+        }
+        Instant expected = data.executedAt().atZone(SEOUL).toLocalDate().atStartOfDay(SEOUL).toInstant();
+        if (!expected.equals(data.calendarDayStartedAt())) {
+            throw new IllegalArgumentException("calendarDayStartedAt must be the Asia/Seoul day start");
+        }
     }
 
     @Override

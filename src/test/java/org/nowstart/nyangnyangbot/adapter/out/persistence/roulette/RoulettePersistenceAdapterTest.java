@@ -13,9 +13,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.entity.Donation;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.donation.repository.DonationRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteConfig;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteOption;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRound;
+import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.entity.RouletteRun;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteConfigRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteOptionRepository;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository;
@@ -23,9 +26,12 @@ import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.Ro
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRoundRepository.RunRoundSummaryProjection;
 import org.nowstart.nyangnyangbot.adapter.out.persistence.roulette.repository.RouletteRunRepository;
 import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRoundCommand;
+import org.nowstart.nyangnyangbot.application.port.out.roulette.RoulettePort.CreateRunCommand;
 import org.nowstart.nyangnyangbot.domain.type.ConversionMode;
 import org.nowstart.nyangnyangbot.domain.type.RewardType;
 import org.nowstart.nyangnyangbot.domain.type.RouletteConfigStatus;
+import org.nowstart.nyangnyangbot.domain.type.RouletteRunStatus;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
@@ -62,6 +68,57 @@ class RoulettePersistenceAdapterTest {
         order.verify(configRepository).saveAndFlush(target);
         assertThat(active.getStatus()).isEqualTo(RouletteConfigStatus.ARCHIVED);
         assertThat(result.status()).isEqualTo(RouletteConfigStatus.ACTIVE);
+    }
+
+    @Test
+    void createReadyRunRejectsIncompleteRoundSequence() {
+        RouletteConfigRepository configRepository = Mockito.mock(RouletteConfigRepository.class);
+        RouletteRunRepository runRepository = Mockito.mock(RouletteRunRepository.class);
+        DonationRepository donationRepository = Mockito.mock(DonationRepository.class);
+        Donation donation = Mockito.mock(Donation.class);
+        given(donation.getAmount()).willReturn(2_000L);
+        given(donationRepository.findById(7L)).willReturn(Optional.of(donation));
+        given(configRepository.findByIdForUpdate(2L))
+                .willReturn(Optional.of(config(2L, RouletteConfigStatus.ACTIVE)));
+        RoulettePersistenceAdapter adapter = new RoulettePersistenceAdapter(
+                configRepository,
+                Mockito.mock(RouletteOptionRepository.class),
+                runRepository,
+                Mockito.mock(RouletteRoundRepository.class),
+                donationRepository
+        );
+
+        assertThatThrownBy(() -> adapter.createReadyRun(new CreateRunCommand(
+                7L,
+                2L,
+                NOW,
+                List.of(new CreateRoundCommand(1L, 1, 1))
+        )))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("roulette run requires the complete round sequence");
+        Mockito.verify(runRepository, Mockito.never()).save(Mockito.any());
+    }
+
+    @Test
+    void markRoundAppliedRejectsBuildingRun() {
+        RouletteRoundRepository roundRepository = Mockito.mock(RouletteRoundRepository.class);
+        RouletteRound round = Mockito.mock(RouletteRound.class);
+        RouletteRun run = Mockito.mock(RouletteRun.class);
+        given(round.getRouletteRun()).willReturn(run);
+        given(run.getStatus()).willReturn(RouletteRunStatus.BUILDING);
+        given(roundRepository.findByIdForUpdate(3L)).willReturn(Optional.of(round));
+        RoulettePersistenceAdapter adapter = new RoulettePersistenceAdapter(
+                Mockito.mock(RouletteConfigRepository.class),
+                Mockito.mock(RouletteOptionRepository.class),
+                Mockito.mock(RouletteRunRepository.class),
+                roundRepository,
+                Mockito.mock(DonationRepository.class)
+        );
+
+        assertThatThrownBy(() -> adapter.markRoundApplied(3L, NOW))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("roulette round can only be processed after run is READY");
+        Mockito.verify(round, Mockito.never()).markApplied(Mockito.any());
     }
 
     @Test

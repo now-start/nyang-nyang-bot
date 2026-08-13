@@ -1,10 +1,10 @@
--- nyang-nyang-bot target schema specification
+-- Initial canonical schema. Runtime business invariants are enforced by the application.
 -- Dialect: MariaDB / InnoDB / utf8mb4
 -- Time contract: TIMESTAMP(6) stores an absolute instant in UTC internally.
 -- Asia/Seoul calendar boundaries are persisted as their UTC-equivalent start instants.
--- Flyway V7 shadow schema; legacy tables remain untouched.
+-- Existing databases must be recreated before using this reset Flyway history.
 
-CREATE TABLE IF NOT EXISTS next_user_account
+CREATE TABLE user_account
 (
     user_id       VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT 'CHZZK 사용자 식별자',
     display_name  VARCHAR(100)                    NULL COMMENT '현재 표시 이름',
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS next_user_account
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '서비스가 인지한 CHZZK 사용자 계정';
 
-CREATE TABLE IF NOT EXISTS next_oauth_credential
+CREATE TABLE oauth_credential
 (
     user_id                 VARCHAR(64) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '인증된 사용자 식별자',
     access_token            TEXT                            NOT NULL COMMENT 'OAuth access token 원문; 로그와 응답에 노출하지 않음',
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS next_oauth_credential
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 갱신 시각',
     PRIMARY KEY (user_id),
     CONSTRAINT fk_oauth_credential__user_account
-        FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE CASCADE,
     CONSTRAINT ck_oauth_credential__version
         CHECK (credential_version >= 0)
 ) ENGINE = InnoDB
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS next_oauth_credential
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '사용자별 CHZZK OAuth 자격 증명';
 
-CREATE TABLE IF NOT EXISTS next_command
+CREATE TABLE command
 (
     id                    BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '명령어 식별자',
     trigger_token         VARCHAR(20)                     NOT NULL COMMENT '채팅에서 명령어를 식별하는 토큰',
@@ -63,9 +63,9 @@ CREATE TABLE IF NOT EXISTS next_command
     PRIMARY KEY (id),
     CONSTRAINT uk_command__trigger_token UNIQUE (trigger_token),
     CONSTRAINT fk_command__created_by_user
-        FOREIGN KEY (created_by_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT fk_command__updated_by_user
-        FOREIGN KEY (updated_by_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (updated_by_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT ck_command__trigger_token
         CHECK (CHAR_LENGTH(trigger_token) BETWEEN 2 AND 20),
     CONSTRAINT ck_command__active
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS next_command
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '사용자 정의 채팅 명령어';
 
-CREATE TABLE IF NOT EXISTS next_command_execution
+CREATE TABLE command_execution
 (
     id                        BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '명령 실행 이벤트 식별자',
     command_id                BIGINT                          NOT NULL COMMENT '실행한 명령어 식별자',
@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS next_command_execution
     PRIMARY KEY (id),
     CONSTRAINT uk_command_execution__command_user_day_start UNIQUE (command_id, user_id, calendar_day_started_at),
     CONSTRAINT fk_command_execution__command
-        FOREIGN KEY (command_id) REFERENCES next_command (id) ON DELETE RESTRICT,
+        FOREIGN KEY (command_id) REFERENCES command (id) ON DELETE RESTRICT,
     CONSTRAINT fk_command_execution__user_account
-        FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT ck_command_execution__policy
         CHECK ((execution_policy_snapshot = 'USER_INTERVAL'
                     AND cooldown_seconds_snapshot IS NOT NULL
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS next_command_execution
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '전체·사용자별 횟수와 일별 연속 실행을 계산하는 명령 실행 이벤트';
 
-CREATE TABLE IF NOT EXISTS next_timer_message
+CREATE TABLE timer_message
 (
     id                         BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '타이머 메시지 식별자',
     message_template           VARCHAR(1000)                   NOT NULL COMMENT '주기적으로 렌더링할 메시지 템플릿',
@@ -131,9 +131,9 @@ CREATE TABLE IF NOT EXISTS next_timer_message
         ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '최종 변경 시각',
     PRIMARY KEY (id),
     CONSTRAINT fk_timer_message__created_by_user
-        FOREIGN KEY (created_by_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT fk_timer_message__updated_by_user
-        FOREIGN KEY (updated_by_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (updated_by_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT ck_timer_message__interval
         CHECK (interval_minutes BETWEEN 5 AND 1440),
     CONSTRAINT ck_timer_message__minimum_chat
@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS next_timer_message
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '채팅량과 주기를 기준으로 전송하는 타이머 메시지';
 
-CREATE TABLE IF NOT EXISTS next_point_ledger_entry
+CREATE TABLE point_ledger_entry
 (
     id                     BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '포인트 원장 항목 식별자',
     user_id                VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '포인트 소유 사용자 식별자',
@@ -171,12 +171,12 @@ CREATE TABLE IF NOT EXISTS next_point_ledger_entry
     CONSTRAINT uk_point_ledger_entry__idempotency UNIQUE (idempotency_key),
     CONSTRAINT uk_point_ledger_entry__correction UNIQUE (correction_of_entry_id),
     CONSTRAINT fk_point_ledger_entry__user_account
-        FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_point_ledger_entry__correction
         FOREIGN KEY (correction_of_entry_id, user_id)
-            REFERENCES next_point_ledger_entry (id, user_id) ON DELETE RESTRICT,
+            REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_point_ledger_entry__actor_user
-        FOREIGN KEY (actor_user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (actor_user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT ck_point_ledger_entry__delta
         CHECK (delta <> 0),
     CONSTRAINT ck_point_ledger_entry__source
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS next_point_ledger_entry
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '수정하지 않는 포인트 증감 원장';
 
-CREATE TABLE IF NOT EXISTS next_point_adjustment_preset
+CREATE TABLE point_adjustment_preset
 (
     id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '포인트 조정 프리셋 식별자',
     label      VARCHAR(100) NOT NULL COMMENT '관리 화면에 표시할 조정 사유',
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS next_point_adjustment_preset
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '관리자 포인트 조정에 재사용하는 프리셋';
 
-CREATE TABLE IF NOT EXISTS next_weekly_chat_count
+CREATE TABLE weekly_chat_count
 (
     id              BIGINT                          NOT NULL AUTO_INCREMENT COMMENT '주간 채팅 집계 식별자',
     week_started_at TIMESTAMP(6)                    NOT NULL COMMENT 'Asia/Seoul 기준 집계 주의 월요일 00:00 절대시각',
@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS next_weekly_chat_count
     PRIMARY KEY (id),
     CONSTRAINT uk_weekly_chat_count__week_user UNIQUE (week_started_at, user_id),
     CONSTRAINT fk_weekly_chat_count__user_account
-        FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE CASCADE,
     CONSTRAINT ck_weekly_chat_count__week_start
         CHECK (MOD(UNIX_TIMESTAMP(week_started_at) - 313200, 604800) = 0),
     CONSTRAINT ck_weekly_chat_count__value
@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS next_weekly_chat_count
   COLLATE = utf8mb4_unicode_ci
     COMMENT = 'Asia/Seoul 기준 사용자별 주간 채팅 수';
 
-CREATE TABLE IF NOT EXISTS next_donation
+CREATE TABLE donation
 (
     id                 BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '후원 식별자',
     ingestion_key      VARCHAR(255) COLLATE utf8mb4_nopad_bin NOT NULL COMMENT '수신 프레임별 애플리케이션 생성 식별자 또는 이관된 레거시 이벤트 키',
@@ -242,9 +242,9 @@ CREATE TABLE IF NOT EXISTS next_donation
     PRIMARY KEY (id),
     CONSTRAINT uk_donation__ingestion_key UNIQUE (ingestion_key),
     CONSTRAINT fk_donation__recipient_user
-        FOREIGN KEY (recipient_user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (recipient_user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_donation__donor_user
-        FOREIGN KEY (donor_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (donor_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT ck_donation__amount
         CHECK (amount >= 0),
     INDEX idx_donation__recipient_received (recipient_user_id, received_at, id),
@@ -254,7 +254,7 @@ CREATE TABLE IF NOT EXISTS next_donation
   COLLATE = utf8mb4_unicode_ci
     COMMENT = 'CHZZK에서 수신한 후원 이벤트';
 
-CREATE TABLE IF NOT EXISTS next_roulette_config
+CREATE TABLE roulette_config
 (
     id                   BIGINT       NOT NULL AUTO_INCREMENT COMMENT '불변 룰렛 설정 버전 식별자',
     title                VARCHAR(100) NOT NULL COMMENT '관리용 룰렛 설정 이름',
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS next_roulette_config
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '활성화 이후 내용을 변경하지 않는 룰렛 설정 버전';
 
-CREATE TABLE IF NOT EXISTS next_roulette_option
+CREATE TABLE roulette_option
 (
     id                       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '불변 룰렛 옵션 식별자',
     roulette_config_id       BIGINT       NOT NULL COMMENT '소속 룰렛 설정 버전 식별자',
@@ -299,7 +299,7 @@ CREATE TABLE IF NOT EXISTS next_roulette_option
     PRIMARY KEY (id),
     CONSTRAINT uk_roulette_option__id_config UNIQUE (id, roulette_config_id),
     CONSTRAINT fk_roulette_option__roulette_config
-        FOREIGN KEY (roulette_config_id) REFERENCES next_roulette_config (id) ON DELETE CASCADE,
+        FOREIGN KEY (roulette_config_id) REFERENCES roulette_config (id) ON DELETE CASCADE,
     CONSTRAINT ck_roulette_option__probability
         CHECK (probability_basis_points BETWEEN 0 AND 10000),
     CONSTRAINT ck_roulette_option__losing_flag
@@ -322,7 +322,7 @@ CREATE TABLE IF NOT EXISTS next_roulette_option
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '특정 불변 룰렛 설정에 속한 선택 옵션';
 
-CREATE TABLE IF NOT EXISTS next_roulette_run
+CREATE TABLE roulette_run
 (
     donation_id        BIGINT      NOT NULL COMMENT '룰렛을 시작한 후원 식별자',
     roulette_config_id BIGINT      NOT NULL COMMENT '실행에 사용한 불변 룰렛 설정 식별자',
@@ -333,9 +333,9 @@ CREATE TABLE IF NOT EXISTS next_roulette_run
     PRIMARY KEY (donation_id),
     CONSTRAINT uk_roulette_run__id_config UNIQUE (donation_id, roulette_config_id),
     CONSTRAINT fk_roulette_run__donation
-        FOREIGN KEY (donation_id) REFERENCES next_donation (id) ON DELETE RESTRICT,
+        FOREIGN KEY (donation_id) REFERENCES donation (id) ON DELETE RESTRICT,
     CONSTRAINT fk_roulette_run__roulette_config
-        FOREIGN KEY (roulette_config_id) REFERENCES next_roulette_config (id) ON DELETE RESTRICT,
+        FOREIGN KEY (roulette_config_id) REFERENCES roulette_config (id) ON DELETE RESTRICT,
     CONSTRAINT ck_roulette_run__status
         CHECK (status IN ('BUILDING', 'READY')),
     INDEX idx_roulette_run__config_created (roulette_config_id, created_at, donation_id)
@@ -344,7 +344,7 @@ CREATE TABLE IF NOT EXISTS next_roulette_run
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '한 후원에 대해 한 번 생성되는 룰렛 실행';
 
-CREATE TABLE IF NOT EXISTS next_roulette_round
+CREATE TABLE roulette_round
 (
     id                 BIGINT       NOT NULL AUTO_INCREMENT COMMENT '룰렛 회차 식별자',
     roulette_run_id    BIGINT       NOT NULL COMMENT '소속 룰렛 실행의 후원 식별자',
@@ -361,10 +361,10 @@ CREATE TABLE IF NOT EXISTS next_roulette_round
     CONSTRAINT uk_roulette_round__run_round UNIQUE (roulette_run_id, round_no),
     CONSTRAINT fk_roulette_round__roulette_run
         FOREIGN KEY (roulette_run_id, roulette_config_id)
-            REFERENCES next_roulette_run (donation_id, roulette_config_id) ON DELETE RESTRICT,
+            REFERENCES roulette_run (donation_id, roulette_config_id) ON DELETE RESTRICT,
     CONSTRAINT fk_roulette_round__roulette_option
         FOREIGN KEY (roulette_option_id, roulette_config_id)
-            REFERENCES next_roulette_option (id, roulette_config_id) ON DELETE RESTRICT,
+            REFERENCES roulette_option (id, roulette_config_id) ON DELETE RESTRICT,
     CONSTRAINT ck_roulette_round__number
         CHECK (round_no >= 1),
     CONSTRAINT ck_roulette_round__ticket
@@ -379,7 +379,7 @@ CREATE TABLE IF NOT EXISTS next_roulette_round
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '불변 옵션을 참조하는 룰렛의 개별 추첨 회차';
 
-CREATE TABLE IF NOT EXISTS next_reward_grant
+CREATE TABLE reward_grant
 (
     id                    BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '사용자에게 지급된 보상 식별자',
     user_id               VARCHAR(64) COLLATE utf8mb4_nopad_bin  NOT NULL COMMENT '보상을 받은 사용자 식별자',
@@ -402,14 +402,14 @@ CREATE TABLE IF NOT EXISTS next_reward_grant
     CONSTRAINT uk_reward_grant__ledger_user UNIQUE (point_ledger_entry_id, user_id),
     CONSTRAINT uk_reward_grant__idempotency UNIQUE (idempotency_key),
     CONSTRAINT fk_reward_grant__user_account
-        FOREIGN KEY (user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_reward_grant__roulette_round
-        FOREIGN KEY (roulette_round_id) REFERENCES next_roulette_round (id) ON DELETE RESTRICT,
+        FOREIGN KEY (roulette_round_id) REFERENCES roulette_round (id) ON DELETE RESTRICT,
     CONSTRAINT fk_reward_grant__point_ledger_entry
         FOREIGN KEY (point_ledger_entry_id, user_id)
-            REFERENCES next_point_ledger_entry (id, user_id) ON DELETE RESTRICT,
+            REFERENCES point_ledger_entry (id, user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_reward_grant__actor_user
-        FOREIGN KEY (actor_user_id) REFERENCES next_user_account (user_id) ON DELETE RESTRICT,
+        FOREIGN KEY (actor_user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT,
     CONSTRAINT ck_reward_grant__origin
         CHECK ((roulette_round_id IS NULL AND actor_user_id IS NOT NULL)
             OR (roulette_round_id IS NOT NULL AND actor_user_id IS NULL)),
@@ -434,7 +434,7 @@ CREATE TABLE IF NOT EXISTS next_reward_grant
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '사용자에게 실제 지급된 보상 인스턴스';
 
-CREATE TABLE IF NOT EXISTS next_overlay_access_token
+CREATE TABLE overlay_access_token
 (
     id                BIGINT                                         NOT NULL AUTO_INCREMENT COMMENT '오버레이 접근 토큰 식별자',
     token_hash        CHAR(43) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT '원문 토큰 SHA-256 해시의 Base64URL 문자열',
@@ -448,7 +448,7 @@ CREATE TABLE IF NOT EXISTS next_overlay_access_token
     CONSTRAINT uk_overlay_access_token__hash UNIQUE (token_hash),
     CONSTRAINT uk_overlay_access_token__single_active UNIQUE (active_slot),
     CONSTRAINT fk_overlay_access_token__issued_by_user
-        FOREIGN KEY (issued_by_user_id) REFERENCES next_user_account (user_id) ON DELETE SET NULL,
+        FOREIGN KEY (issued_by_user_id) REFERENCES user_account (user_id) ON DELETE SET NULL,
     CONSTRAINT ck_overlay_access_token__hash
         CHECK (CHAR_LENGTH(token_hash) = 43 AND token_hash NOT REGEXP '[^A-Za-z0-9_-]'),
     CONSTRAINT ck_overlay_access_token__revocation
@@ -459,7 +459,7 @@ CREATE TABLE IF NOT EXISTS next_overlay_access_token
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '브라우저 오버레이 접근에 사용하는 해시 토큰';
 
-CREATE TABLE IF NOT EXISTS next_overlay_display_job
+CREATE TABLE overlay_display_job
 (
     id               BIGINT                           NOT NULL AUTO_INCREMENT COMMENT '오버레이 표시 작업 식별자',
     roulette_run_id  BIGINT                           NOT NULL COMMENT '표시할 룰렛 실행의 후원 식별자',
@@ -477,10 +477,10 @@ CREATE TABLE IF NOT EXISTS next_overlay_display_job
     CONSTRAINT uk_overlay_display_job__idempotency UNIQUE (idempotency_key),
     CONSTRAINT uk_overlay_display_job__id_run UNIQUE (id, roulette_run_id),
     CONSTRAINT fk_overlay_display_job__roulette_run
-        FOREIGN KEY (roulette_run_id) REFERENCES next_roulette_run (donation_id) ON DELETE RESTRICT,
+        FOREIGN KEY (roulette_run_id) REFERENCES roulette_run (donation_id) ON DELETE RESTRICT,
     CONSTRAINT fk_overlay_display_job__replay
         FOREIGN KEY (replay_of_job_id, roulette_run_id)
-            REFERENCES next_overlay_display_job (id, roulette_run_id) ON DELETE RESTRICT,
+            REFERENCES overlay_display_job (id, roulette_run_id) ON DELETE RESTRICT,
     CONSTRAINT ck_overlay_display_job__status
         CHECK (status IN ('PENDING', 'DISPLAYING', 'DISPLAYED', 'MISSED')),
     CONSTRAINT ck_overlay_display_job__claim_pair
@@ -500,18 +500,12 @@ CREATE TABLE IF NOT EXISTS next_overlay_display_job
   COLLATE = utf8mb4_unicode_ci
     COMMENT = '오버레이가 원자적으로 선점하여 표시하는 룰렛 작업';
 
--- Temporary control row. V8 captures one database timestamp and the initial legacy
--- snapshot checksum; V9 verifies that snapshot and stores the validated target checksum.
--- V10 removes this table after the canonical cutover succeeds.
-CREATE TABLE IF NOT EXISTS migration_cutover_metadata
-(
-    singleton_id    TINYINT     NOT NULL COMMENT '항상 1인 단일 제어 행',
-    cutover_at      TIMESTAMP(6) NOT NULL COMMENT 'V8 백필이 캡처한 DB 시각',
-    source_checksum CHAR(64)    NULL COMMENT 'V8 스냅샷 후 V9이 재검증한 레거시 SHA-256',
-    target_checksum CHAR(64)    NULL COMMENT 'V9이 계산한 canonical 정본 SHA-256',
-    PRIMARY KEY (singleton_id),
-    CONSTRAINT ck_migration_cutover_metadata__singleton CHECK (singleton_id = 1)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci
-    COMMENT = 'V7~V10 사이에만 존재하는 컷오버 검증 메타데이터';
+INSERT INTO command (
+    trigger_token,
+    message_template,
+    is_active,
+    execution_policy,
+    user_cooldown_seconds
+) VALUES
+    ('!호감도', '{viewer.nickname}님의 호감도는 {point.balance} 입니다.💛', TRUE, 'USER_INTERVAL', 30),
+    ('!룰렛결과', '{viewer.nickname}님의 {roulette.recentSummary}', TRUE, 'USER_INTERVAL', 30);

@@ -189,7 +189,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 포인트 중심 봇�
 - JVM과 MariaDB system/session time zone은 배포 환경에서 `Asia/Seoul`로 통일한다. Config Server는 Hibernate `Instant`의 MariaDB `TIMESTAMP` 바인딩에 필요한 `preferred_instant_jdbc_type=TIMESTAMP`만 제공하고, 애플리케이션별 Hibernate/Jackson time zone과 Hikari session 초기화는 두지 않는다. 외부 API, 도메인, JPA 엔티티와 포트의 런타임 시각은 `Instant`를 유지한다. 레거시 `DATETIME`은 서울 wall-clock으로 해석하고, canonical 절대시각과 서울 달력 경계는 모두 `TIMESTAMP(6)`에 UTC로 내부 저장하되 `+09:00` DB session을 통해 읽고 쓴다. `LocalDate`는 서울 달력 규칙을 계산하는 동안에만 일시적으로 사용하고 출력 경계에서 서울 시간대로 포맷한다.
 - Grafana 대시보드는 `docs/grafana_dashboard.json`을 사용한다.
 - 배포 전 최소 검증은 `sh gradlew test`이다.
-- canonical 전환은 V6.1에서 MariaDB session 계약을 먼저 검증하고, V7~V9에서 shadow schema 생성·backfill·검증을 끝낸 뒤 V10에서 승인된 컷오버를 수행한다. 절차와 복구 조건은 `docs/database/schema-redesign.md`를 따른다.
+- Flyway 이력은 초기화했으며 신규 DB는 단일 `V1__canonical_schema.sql`로 trigger 없는 canonical 스키마를 구성한다. 기존 Flyway 이력과의 업그레이드는 지원하지 않으므로 배포 전에 데이터베이스를 재생성해야 한다. V1 실행 전 MariaDB `+09:00` session, `explicit_defaults_for_timestamp=ON`, 비-`MAXDB` SQL mode를 검증한다.
 
 ## Documentation Policy
 
