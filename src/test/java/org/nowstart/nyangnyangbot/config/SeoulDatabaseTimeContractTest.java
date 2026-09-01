@@ -84,4 +84,39 @@ class SeoulDatabaseTimeContractTest {
                 .extracting(UserAccount::getLastLoginAt)
                 .isEqualTo(expectedInstant);
     }
+
+    @Test
+    @Transactional
+    void observingUserOnlyUpdatesTimestampWhenDisplayNameChanges() {
+        String userId = "observe-user-timestamp";
+        LocalDateTime originalUpdatedAt = LocalDateTime.of(2026, 1, 1, 0, 0);
+        jdbcTemplate.update("""
+                INSERT INTO user_account (user_id, display_name, is_admin, created_at, updated_at)
+                VALUES (?, ?, FALSE, ?, ?)
+                """, userId, "same-name", originalUpdatedAt, originalUpdatedAt);
+
+        userAccountRepository.observe(userId, null);
+        userAccountRepository.observe(userId, "");
+        userAccountRepository.observe(userId, "   ");
+        userAccountRepository.observe(userId, "same-name");
+
+        assertThat(updatedAt(userId)).isEqualTo(originalUpdatedAt);
+
+        userAccountRepository.observe(userId, "changed-name");
+
+        assertThat(updatedAt(userId)).isAfter(originalUpdatedAt);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT display_name FROM user_account WHERE user_id = ?",
+                String.class,
+                userId
+        )).isEqualTo("changed-name");
+    }
+
+    private LocalDateTime updatedAt(String userId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT updated_at FROM user_account WHERE user_id = ?",
+                LocalDateTime.class,
+                userId
+        );
+    }
 }

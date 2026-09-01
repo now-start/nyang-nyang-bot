@@ -24,10 +24,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
                 :userId, :displayName, false, null, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
             ) on duplicate key update
                 display_name = case
-                    when :displayName is null or :displayName = '' then display_name
+                    when :displayName is null or trim(:displayName) = '' then display_name
                     else :displayName
-                end,
-                updated_at = CURRENT_TIMESTAMP(6)
+                end
             """, nativeQuery = true)
     int observe(@Param("userId") String userId, @Param("displayName") String displayName);
 
