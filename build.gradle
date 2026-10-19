@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.nowstart'
-version = '5.9.9'
+version = '5.9.10'
 
 springBoot {
     buildInfo()
@@ -77,4 +77,11 @@ test {
 bootRun {
     systemProperty 'spring.profiles.active',
             System.getProperty('spring.profiles.active', System.getenv('SPRING_PROFILES_ACTIVE') ?: 'local')
+}
+
+tasks.named('bootBuildImage') {
+    buildpacks = ['urn:cnb:builder:paketo-buildpacks/java', 'docker.io/paketobuildpacks/health-checker:latest']
+    environment.put('BP_HEALTH_CHECKER_ENABLED', 'true')
+    environment.put('BPE_DEFAULT_THC_PORT', '8081')
+    environment.put('BPE_DEFAULT_THC_PATH', '/actuator/health/liveness')
 }
