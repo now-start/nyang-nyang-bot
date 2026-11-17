@@ -6,10 +6,11 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.nowstart.nyangnyangbot.adapter.out.external.google.response.GoogleSheetRowResponse;
@@ -52,9 +53,16 @@ public class GoogleSheetClientAdapter implements GoogleSheetPort {
         return toRows(values);
     }
 
-    private GoogleCredentials loadCredentials() throws IOException {
-        try (InputStream keyStream = Files.newInputStream(Path.of(googleProperty.key()))) {
-            return GoogleCredentials.fromStream(keyStream).createScoped(SheetsScopes.SPREADSHEETS);
+    GoogleCredentials loadCredentials() throws IOException {
+        String keyJson = googleProperty.key();
+        if (keyJson == null || keyJson.isBlank()) {
+            throw new IOException("Google service account JSON is required");
+        }
+        try (InputStream stream = new ByteArrayInputStream(keyJson.getBytes(StandardCharsets.UTF_8))) {
+            return ServiceAccountCredentials.fromStream(stream).createScoped(SheetsScopes.SPREADSHEETS);
+        } catch (IOException | IllegalArgumentException exception) {
+            // Parser errors may contain credential data; do not retain the original cause.
+            throw new IOException("Invalid Google service account JSON");
         }
     }
 
