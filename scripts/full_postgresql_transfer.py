@@ -68,6 +68,7 @@ def source_snapshot():
     try:
         with conn.cursor() as c:
             c.execute("SET SESSION time_zone='+00:00'")
+            c.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
             c.execute('SET TRANSACTION READ ONLY')
             c.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT')
             c.execute('SELECT TABLE_NAME, TABLE_TYPE, ENGINE, AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME')
@@ -198,7 +199,7 @@ def main():
         old=load(args.path);new=source_snapshot()
         if set(old['tables']) != set(new['tables']): raise ValueError('source inventory changed')
         for name,table in old['tables'].items():
-            if table['sha256'] != new['tables'][name]['sha256'] or table['next_id'] != new['tables'][name]['next_id']:
+            if any(table[key] != new['tables'][name][key] for key in ('sha256', 'next_id', 'columns', 'ddl')):
                 raise ValueError('source changed: '+name)
         print('SOURCE_UNCHANGED')
 

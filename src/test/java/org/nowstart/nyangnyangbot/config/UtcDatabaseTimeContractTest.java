@@ -111,6 +111,11 @@ class UtcDatabaseTimeContractTest {
                 String.class,
                 userId
         )).isEqualTo("changed-name");
+
+        LocalDateTime beforeCaseChange = updatedAt(userId);
+        userAccountRepository.observe(userId, "CHANGED-NAME");
+        assertThat(updatedAt(userId)).isAfter(beforeCaseChange);
+
     }
 
     private LocalDateTime updatedAt(String userId) {

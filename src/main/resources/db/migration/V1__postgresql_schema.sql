@@ -3,7 +3,7 @@ CREATE COLLATION unicode_ci (provider = icu, locale = 'und-u-ks-level1', determi
 
 CREATE FUNCTION touch_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-    IF NEW IS DISTINCT FROM OLD AND NEW.updated_at IS NOT DISTINCT FROM OLD.updated_at THEN
+    IF to_jsonb(NEW) IS DISTINCT FROM to_jsonb(OLD) AND NEW.updated_at IS NOT DISTINCT FROM OLD.updated_at THEN
         NEW.updated_at := statement_timestamp();
     END IF;
     RETURN NEW;
