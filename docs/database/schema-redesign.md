@@ -2,8 +2,7 @@
 
 현재 데이터베이스 스키마의 단일 기준은
 [`V1__postgresql_schema.sql`](../../src/main/resources/db/migration/V1__postgresql_schema.sql)이다.
-Flyway 이력은 이 V1부터 새로 시작하며 이전 버전의 데이터베이스를 업그레이드하지 않는다.
-6.x는 PostgreSQL 전용이다. 기존 데이터는 전체 검증 이관 후 새 PostgreSQL 스키마에서 사용한다.
+Flyway는 신규 PostgreSQL 18 데이터베이스에 이 V1을 적용한다.
 
 ## 운영 원칙
 

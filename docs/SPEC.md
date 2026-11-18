@@ -189,7 +189,7 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 포인트 중심 봇�
 - 실제 시각은 PostgreSQL `timestamptz(6)`와 Java `Instant`로 처리한다. DB 세션은 UTC이고 달력 집계·출력 기준은 `Asia/Seoul`이다. Hibernate는 PostgreSQL 기본 Instant 매핑을 사용하며 Hikari는 연결마다 세션 시간대를 설정한다.
 - Grafana 대시보드는 `docs/grafana_dashboard.json`을 사용한다.
 - 배포 전 최소 검증은 `sh gradlew test`이다.
-- 6.x 신규 PostgreSQL DB는 `V1__postgresql_schema.sql`로 초기화한다. 기존 데이터는 전체 대조 이관하며 `updated_at`만 감사 trigger로 관리한다. 기동 시 PostgreSQL writable primary 및 UTC 세션을 확인한다.
+- 신규 PostgreSQL DB는 `V1__postgresql_schema.sql`로 초기화한다. `updated_at`은 실제 행 변경 시 감사 trigger로 갱신한다. 기동 시 PostgreSQL writable primary 및 UTC 세션을 확인한다.
 
 ## Documentation Policy
 
