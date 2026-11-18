@@ -34,7 +34,7 @@ public final class PostgresqlTestDatabase implements ApplicationContextInitializ
                 "spring.datasource.url", source.getUrl(),
                 "spring.datasource.username", "nyang_test",
                 "spring.datasource.password", "nyang_test",
-                "spring.datasource.hikari.connection-init-sql", "SET TIME ZONE 'Asia/Seoul'")));
+                "spring.datasource.hikari.connection-init-sql", "SET TIME ZONE 'UTC'")));
     }
 
     static DriverManagerDataSource create(String schema) {
@@ -50,7 +50,7 @@ public final class PostgresqlTestDatabase implements ApplicationContextInitializ
             protected Connection getConnectionFromDriver(Properties properties) throws SQLException {
                 Connection connection = super.getConnectionFromDriver(properties);
                 try (Statement statement = connection.createStatement()) {
-                    statement.execute("SET TIME ZONE 'Asia/Seoul'");
+                    statement.execute("SET TIME ZONE 'UTC'");
                 } catch (SQLException failure) {
                     connection.close();
                     throw failure;

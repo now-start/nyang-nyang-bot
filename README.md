@@ -14,6 +14,7 @@ CHZZK 채널용 Spring Boot 봇입니다. 핵심 기능은 호감도 원장, 리
 - DB: PostgreSQL 18. `NYANG_DATABASE_URL`, `NYANG_DATABASE_USERNAME`, `NYANG_DATABASE_PASSWORD`로 연결을 지정합니다.
 - 기본 로컬 URL: `jdbc:postgresql://localhost:5432/nyang_nyang_bot?sslmode=disable`
 - 운영은 TLS(`sslmode=require`)와 primary 전용 접속을 사용합니다.
+- 서버·DB 세션은 UTC, 실제 시각은 `Instant`/`timestamptz(6)`입니다. 서울 달력 집계·화면 표시·새벽 4시 동기화 스케줄은 `Asia/Seoul`을 명시합니다.
 
 로컬 계정:
 

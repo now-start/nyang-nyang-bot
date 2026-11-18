@@ -26,7 +26,7 @@ spring:
     username: ${NYANG_DATABASE_USERNAME:nyang}
     password: ${NYANG_DATABASE_PASSWORD:nyang}
     hikari:
-      connection-init-sql: SET TIME ZONE 'Asia/Seoul'
+      connection-init-sql: SET TIME ZONE 'UTC'
   jpa:
     properties:
       hibernate:

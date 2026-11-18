@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("local")
-class SeoulDatabaseTimeContractTest {
+class UtcDatabaseTimeContractTest {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
@@ -31,7 +31,7 @@ class SeoulDatabaseTimeContractTest {
     private EntityManager entityManager;
 
     @Test
-    void localRuntimeNativeQueriesAndTimestampDefaultsUseSeoulSession() {
+    void utcStorageAndSeoulDisplayAreIndependent() {
         String userId = "seoul-time-contract";
         LocalDateTime beforeDefault = LocalDateTime.now(SEOUL).minusSeconds(2);
         jdbcTemplate.update("INSERT INTO user_account (user_id, is_admin) VALUES (?, FALSE)", userId);
@@ -46,7 +46,7 @@ class SeoulDatabaseTimeContractTest {
             assertThat(jdbcTemplate.queryForObject(
                     "SELECT EXTRACT(TIMEZONE_HOUR FROM CURRENT_TIMESTAMP)",
                     Integer.class
-            )).isEqualTo(9);
+            )).isZero();
 
             Instant beforeNative = Instant.now().minusSeconds(2);
             Instant databaseNow = userAccountRepository.currentDatabaseTime();
@@ -59,7 +59,7 @@ class SeoulDatabaseTimeContractTest {
 
     @Test
     @Transactional
-    void instantValuesRoundTripThroughSeoulTimestampSession() {
+    void instantValuesRoundTripThroughUtcSession() {
         Instant expectedInstant = Instant.parse("2026-01-01T15:30:00.123456Z");
         LocalDateTime expectedWallClock = LocalDateTime.of(
                 2026, 1, 2, 0, 30, 0, 123_456_000);
@@ -76,7 +76,7 @@ class SeoulDatabaseTimeContractTest {
 
         jdbcTemplate.update("""
                 INSERT INTO user_account (user_id, is_admin, last_login_at)
-                VALUES ('seoul-jdbc-write', FALSE, '2026-01-02 00:30:00.123456')
+                VALUES ('seoul-jdbc-write', FALSE, '2026-01-02 00:30:00.123456+09:00')
                 """);
         entityManager.clear();
         assertThat(userAccountRepository.findById("seoul-jdbc-write"))
@@ -93,7 +93,8 @@ class SeoulDatabaseTimeContractTest {
         jdbcTemplate.update("""
                 INSERT INTO user_account (user_id, display_name, is_admin, created_at, updated_at)
                 VALUES (?, ?, FALSE, ?, ?)
-                """, userId, "same-name", originalUpdatedAt, originalUpdatedAt);
+                """, userId, "same-name", originalUpdatedAt.atZone(SEOUL).toOffsetDateTime(),
+                originalUpdatedAt.atZone(SEOUL).toOffsetDateTime());
 
         userAccountRepository.observe(userId, null);
         userAccountRepository.observe(userId, "");

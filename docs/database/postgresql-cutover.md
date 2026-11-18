@@ -27,7 +27,7 @@
 4. `import --database nyang_nyang_bot --schema schema.sql`로 빈 대상에 원자적으로 적재한다.
    새 설치 기본 명령은 원본 명령 데이터로 대체한다. 생성 컬럼은 DB가 재계산하고 대조한다.
 5. `verify`로 커밋 후 전체 데이터를 다시 비교하고 `verify-source`로 원본 불변을 확인한다.
-6. Config URL/TLS/primary, 세션 시간대를 전환하고 6.x를 배포한다.
+6. Config URL/TLS/primary, UTC 세션 시간대를 적용하고 6.x를 배포한다.
 7. health, 실제 DB 접속, 오류와 중복 실행 여부를 확인한다.
 
 현재 리허설: 전체 17테이블 8,592행의 전 컬럼 대조 일치. 운영 쓰기가 진행 중인

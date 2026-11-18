@@ -186,10 +186,10 @@ Nyang-Nyang Bot은 CHZZK 채널 운영을 위한 호감도 포인트 중심 봇�
 - 기본 운영 설정은 config server에서 가져온다.
 - `local` profile은 config server와 discovery를 끈다.
 - Google Sheets 동기화는 관리자 액션이며 시트에 존재하는 사용자 잔액을 원장의 기준값으로 보정한다.
-- 실제 시각은 PostgreSQL `timestamptz(6)`와 Java `Instant`로 처리한다. DB 세션과 달력 집계·출력 기준은 `Asia/Seoul`이다. Hibernate는 PostgreSQL 기본 Instant 매핑을 사용하며 Hikari는 연결마다 세션 시간대를 설정한다.
+- 실제 시각은 PostgreSQL `timestamptz(6)`와 Java `Instant`로 처리한다. DB 세션은 UTC이고 달력 집계·출력 기준은 `Asia/Seoul`이다. Hibernate는 PostgreSQL 기본 Instant 매핑을 사용하며 Hikari는 연결마다 세션 시간대를 설정한다.
 - Grafana 대시보드는 `docs/grafana_dashboard.json`을 사용한다.
 - 배포 전 최소 검증은 `sh gradlew test`이다.
-- 6.x 신규 PostgreSQL DB는 `V1__postgresql_schema.sql`로 초기화한다. 기존 데이터는 전체 대조 이관하며 `updated_at`만 감사 trigger로 관리한다. 기동 시 PostgreSQL writable primary 및 Asia/Seoul 세션을 확인한다.
+- 6.x 신규 PostgreSQL DB는 `V1__postgresql_schema.sql`로 초기화한다. 기존 데이터는 전체 대조 이관하며 `updated_at`만 감사 trigger로 관리한다. 기동 시 PostgreSQL writable primary 및 UTC 세션을 확인한다.
 
 ## Documentation Policy
 

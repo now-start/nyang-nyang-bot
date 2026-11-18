@@ -43,6 +43,7 @@ class GoogleSheetSyncSchedulerTest {
         // 검증
         then(scheduled).isNotNull();
         then(scheduled.cron()).isEqualTo("${nyang.google.sync.cron:0 0 4 * * ?}");
+        then(scheduled.zone()).isEqualTo("Asia/Seoul");
     }
 
     @Test

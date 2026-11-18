@@ -17,7 +17,7 @@ class PostgresqlContractTest {
         var source = PostgresqlTestDatabase.create("postgres_contract");
         try (Connection connection = source.getConnection(); Statement statement = connection.createStatement()) {
             PostgresqlSessionContractValidator.requireCanonicalSession(connection);
-            statement.execute("SET TIME ZONE 'UTC'");
+            statement.execute("SET TIME ZONE 'Asia/Seoul'");
             assertThatThrownBy(() -> PostgresqlSessionContractValidator.requireCanonicalSession(connection))
                     .isInstanceOf(SQLException.class);
         }

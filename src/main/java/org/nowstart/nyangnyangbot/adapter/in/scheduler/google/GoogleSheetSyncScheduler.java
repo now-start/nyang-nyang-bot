@@ -13,7 +13,7 @@ public class GoogleSheetSyncScheduler {
 
     private final SyncGoogleSheetUseCase syncGoogleSheetUseCase;
 
-    @Scheduled(cron = "${nyang.google.sync.cron:0 0 4 * * ?}")
+    @Scheduled(cron = "${nyang.google.sync.cron:0 0 4 * * ?}", zone = "Asia/Seoul")
     public void syncDatabase() {
         syncGoogleSheetUseCase.synchronizePoints();
     }

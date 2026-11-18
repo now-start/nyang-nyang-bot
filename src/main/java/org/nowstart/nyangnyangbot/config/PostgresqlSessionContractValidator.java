@@ -15,9 +15,9 @@ final class PostgresqlSessionContractValidator {
         try (Statement statement = connection.createStatement();
              ResultSet result = statement.executeQuery(
                      "SELECT current_setting('TimeZone'), pg_is_in_recovery(), current_setting('transaction_read_only')")) {
-            if (!result.next() || !"Asia/Seoul".equals(result.getString(1))
+            if (!result.next() || !"UTC".equals(result.getString(1))
                     || result.getBoolean(2) || !"off".equals(result.getString(3))) {
-                throw new SQLException("Writable PostgreSQL primary with Asia/Seoul session is required");
+                throw new SQLException("Writable PostgreSQL primary with UTC session is required");
             }
         }
     }
