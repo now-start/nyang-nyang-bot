@@ -88,7 +88,7 @@ public interface PointLedgerEntryRepository extends JpaRepository<PointLedgerEnt
                    history.source_type as sourceType,
                    history.description as description,
                    history.correction_of_entry_id as correctionOfEntryId,
-                   cast(unix_timestamp(history.created_at) * 1000000 as signed)
+                   cast(extract(epoch from history.created_at) * 1000000 as bigint)
                        as createdAtEpochMicros
               from (
                     select entry.*,

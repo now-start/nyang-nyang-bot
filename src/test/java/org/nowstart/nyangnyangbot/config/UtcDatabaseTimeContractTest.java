@@ -19,6 +19,28 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("local")
 class UtcDatabaseTimeContractTest {
 
+    @Autowired
+    private org.nowstart.nyangnyangbot.adapter.out.persistence.point.repository.PointLedgerEntryRepository ledger;
+
+    @Test
+    @Transactional
+    void pointHistoryPreservesMicrosecondsAndBalanceBeforeLimit() {
+        jdbcTemplate.update("INSERT INTO user_account (user_id, is_admin) VALUES ('history-contract', FALSE)");
+        jdbcTemplate.update("""
+                INSERT INTO point_ledger_entry
+                    (user_id, delta, source_type, description, idempotency_key, created_at)
+                VALUES ('history-contract', 10, 'REWARD_MANUAL', 'first', 'history-first',
+                        '2026-11-18 23:59:59.123456+09'),
+                       ('history-contract', -3, 'REWARD_MANUAL', 'second', 'history-second',
+                        '2026-11-19 00:00:00.654321+09')
+                """);
+        var history = ledger.findHistory("history-contract", 1);
+        assertThat(history).hasSize(1);
+        assertThat(history.getFirst().getBalanceAfter()).isEqualTo(7L);
+        assertThat(history.getFirst().getDelta()).isEqualTo(-3L);
+        assertThat(history.getFirst().getCreatedAt()).isEqualTo(Instant.parse("2026-11-18T15:00:00.654321Z"));
+    }
+
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     @Autowired
