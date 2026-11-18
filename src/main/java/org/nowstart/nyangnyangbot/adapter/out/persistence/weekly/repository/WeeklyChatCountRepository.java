@@ -13,8 +13,9 @@ public interface WeeklyChatCountRepository extends JpaRepository<WeeklyChatCount
     @Modifying(flushAutomatically = true)
     @Query(value = """
             insert into weekly_chat_count (week_started_at, user_id, chat_count)
-            values (from_unixtime(:weekStartedAtEpochSecond), :userId, 1)
-            on duplicate key update chat_count = chat_count + 1
+            values (to_timestamp(:weekStartedAtEpochSecond), :userId, 1)
+            on conflict (week_started_at, user_id) do update
+            set chat_count = weekly_chat_count.chat_count + 1
             """, nativeQuery = true)
     int increment(
             @Param("weekStartedAtEpochSecond") long weekStartedAtEpochSecond,
@@ -25,7 +26,7 @@ public interface WeeklyChatCountRepository extends JpaRepository<WeeklyChatCount
             select account.display_name as displayName, weekly.chat_count as chatCount
               from weekly_chat_count weekly
               join user_account account on account.user_id = weekly.user_id
-             where weekly.week_started_at = from_unixtime(:weekStartedAtEpochSecond)
+             where weekly.week_started_at = to_timestamp(:weekStartedAtEpochSecond)
              order by weekly.chat_count desc, account.display_name asc, weekly.id asc
             """, nativeQuery = true)
     List<WeeklyChatProjection> findWeeklyRanks(

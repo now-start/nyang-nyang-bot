@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.nowstart'
-version = '5.9.12'
+version = '6.0.0'
 
 springBoot {
     buildInfo()
@@ -53,13 +53,12 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    developmentOnly 'org.springframework.boot:spring-boot-h2console'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    runtimeOnly 'org.flywaydb:flyway-mysql'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-    testRuntimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
 }
 
 dependencyManagement {

@@ -1,22 +1,21 @@
 # Canonical database schema
 
 현재 데이터베이스 스키마의 단일 기준은
-[`V1__canonical_schema.sql`](../../src/main/resources/db/migration/V1__canonical_schema.sql)이다.
+[`V1__postgresql_schema.sql`](../../src/main/resources/db/migration/V1__postgresql_schema.sql)이다.
 Flyway 이력은 이 V1부터 새로 시작하며 이전 버전의 데이터베이스를 업그레이드하지 않는다.
-기존 환경은 배포 전에 데이터베이스를 백업하고 재생성해야 한다.
+6.x는 PostgreSQL 전용이다. 기존 데이터는 전체 검증 이관 후 새 PostgreSQL 스키마에서 사용한다.
 
 ## 운영 원칙
 
 - 업무 테이블은 16개다.
-- 런타임 DB에는 업무 trigger를 설치하지 않는다.
+- `updated_at` 감사 시각은 실제 행 변경 시에만 PostgreSQL trigger로 갱신한다.
 - 상태 전이와 업무 불변성은 애플리케이션의 서비스, 엔티티, 영속성 어댑터가 검증한다.
 - DB는 PK, FK, UNIQUE, CHECK와 인덱스로 구조적 무결성을 보장한다.
 - Hibernate는 `ddl-auto=validate`를 사용하며 스키마 생성과 변경은 Flyway만 담당한다.
-- MariaDB system/session time zone은 `Asia/Seoul`로 통일한다.
-- Flyway 실행 전에 `+09:00` session, `explicit_defaults_for_timestamp=ON`, 비-`MAXDB`
-  SQL mode를 검증한다.
-- 절대시각과 서울 달력 경계는 `TIMESTAMP(6)`에 저장하고 애플리케이션에서는 `Instant`를
-  사용한다.
+- DB 세션은 `Asia/Seoul`이며 writable PostgreSQL primary 연결을 기동 시 검증한다.
+- 실제 시각은 `TIMESTAMP(6) WITH TIME ZONE`에 저장하고 Java `Instant`로 처리한다.
+- 서울 달력 경계 계산은 `Asia/Seoul`을 명시한다. 저장값은 세션/JVM 시간대와 무관한 실제 시각이다.
+- 식별자/상태는 `C` collation, 일반 문자열은 대소문자·악센트 비구분 ICU collation을 사용한다.
 
 ## 테이블
 

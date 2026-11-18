@@ -31,7 +31,7 @@ public class OverlayAccessToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "token_hash", nullable = false, length = 43, columnDefinition = "CHAR(43)", updatable = false)
+    @Column(name = "token_hash", nullable = false, length = 43, updatable = false)
     private String tokenHash;
 
     @ManyToOne(fetch = FetchType.LAZY)

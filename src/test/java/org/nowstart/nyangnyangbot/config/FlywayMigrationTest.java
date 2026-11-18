@@ -14,18 +14,10 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 class FlywayMigrationTest {
 
-    private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;TIME ZONE=Asia/Seoul;"
-                    + "INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
-
     @Test
     @DisplayName("V1 canonical schema를 신규 DB에 적용할 수 있다")
     void flywayMigration_ShouldApplyCanonicalBaselineToEmptyDatabase() {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-migration-test" + H2_MARIADB_OPTIONS,
-                "sa",
-                ""
-        );
+        DriverManagerDataSource dataSource = PostgresqlTestDatabase.create("flyway_migration_test");
 
         Flyway.configure()
                 .dataSource(dataSource)
@@ -35,12 +27,12 @@ class FlywayMigrationTest {
 
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         assertThat(jdbc.queryForObject(
-                "select count(*) from information_schema.tables where table_schema = 'PUBLIC' "
+                "select count(*) from information_schema.tables where table_schema = current_schema() "
                         + "and lower(table_name) <> 'flyway_schema_history'",
                 Integer.class
         )).isEqualTo(16);
         assertThat(jdbc.queryForObject(
-                "select count(*) from information_schema.referential_constraints",
+                "select count(*) from information_schema.referential_constraints where constraint_schema = current_schema()",
                 Integer.class
         )).isEqualTo(25);
         assertThat(jdbc.queryForObject(
@@ -67,11 +59,7 @@ class FlywayMigrationTest {
     @Test
     @DisplayName("baseline은 모든 JPA 엔티티 테이블을 생성한다")
     void flywayMigration_ShouldCreateTablesForJpaEntities() {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:flyway-entity-test" + H2_MARIADB_OPTIONS,
-                "sa",
-                ""
-        );
+        DriverManagerDataSource dataSource = PostgresqlTestDatabase.create("flyway_entity_test");
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
@@ -82,7 +70,7 @@ class FlywayMigrationTest {
         List<String> missingTables = entityTableNames().stream()
                 .filter(table -> jdbc.queryForObject(
                         "select count(*) from information_schema.tables "
-                                + "where table_schema = 'PUBLIC' and lower(table_name) = ?",
+                                + "where table_schema = current_schema() and lower(table_name) = ?",
                         Integer.class,
                         table
                 ) == 0)

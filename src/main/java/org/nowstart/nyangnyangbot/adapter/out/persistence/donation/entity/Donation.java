@@ -63,7 +63,7 @@ public class Donation {
     private Long amount;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "LONGTEXT", updatable = false)
+    @Column(columnDefinition = "TEXT", updatable = false)
     private String message;
 
     @Column(name = "received_at", nullable = false, updatable = false)

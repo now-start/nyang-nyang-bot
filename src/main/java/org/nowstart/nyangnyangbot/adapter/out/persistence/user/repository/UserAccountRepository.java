@@ -22,9 +22,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
                 user_id, display_name, is_admin, last_login_at, created_at, updated_at
             ) values (
                 :userId, :displayName, false, null, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-            ) on duplicate key update
+            ) on conflict (user_id) do update set
                 display_name = case
-                    when :displayName is null or trim(:displayName) = '' then display_name
+                    when :displayName is null or trim(:displayName) = '' then user_account.display_name
                     else :displayName
                 end
             """, nativeQuery = true)

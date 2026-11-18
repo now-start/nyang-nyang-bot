@@ -18,11 +18,9 @@ public class CanonicalFlywayMigrationStrategy implements FlywayMigrationStrategy
 
     private void validateSession(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection()) {
-            if (connection.getMetaData().getDatabaseProductName().contains("MariaDB")) {
-                MariaDbSessionContractValidator.requireCanonicalSession(connection);
-            }
+            PostgresqlSessionContractValidator.requireCanonicalSession(connection);
         } catch (SQLException exception) {
-            throw new IllegalStateException("MariaDB session contract validation failed", exception);
+            throw new IllegalStateException("PostgreSQL session contract validation failed", exception);
         }
     }
 }

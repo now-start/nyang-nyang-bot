@@ -9,17 +9,9 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 class TimerMessageFlywayMigrationTest {
 
-    private static final String H2_MARIADB_OPTIONS =
-            ";MODE=MariaDB;TIME ZONE=Asia/Seoul;"
-                    + "INIT=CREATE DOMAIN IF NOT EXISTS LONGTEXT AS LONGVARCHAR;DB_CLOSE_DELAY=-1";
-
     @Test
     void canonicalBaseline_ShouldCreateDuplicateSafeTimerMessageSchema() {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:timer-message-flyway-test" + H2_MARIADB_OPTIONS,
-                "sa",
-                ""
-        );
+        DriverManagerDataSource dataSource = PostgresqlTestDatabase.create("timer_message_flyway_test");
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
@@ -34,25 +26,25 @@ class TimerMessageFlywayMigrationTest {
                 Integer.class
         )).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where lower(table_name) = 'timer_message'",
+                "select count(*) from information_schema.tables where table_schema = current_schema() and lower(table_name) = 'timer_message'",
                 Integer.class
         )).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'timer_message' and lower(column_name) in "
+                        + "where table_schema = current_schema() and lower(table_name) = 'timer_message' and lower(column_name) in "
                         + "('next_run_at', 'chat_count_since_last_send', 'claimed_chat_count', "
                         + "'claim_token', 'claim_expires_at', 'last_sent_at')",
                 Integer.class
         )).isEqualTo(6);
         assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.indexes "
-                        + "where lower(table_name) = 'timer_message' "
-                        + "and lower(index_name) = 'idx_timer_message__due'",
+                "select count(*) from pg_indexes "
+                        + "where schemaname = current_schema() and lower(tablename) = 'timer_message' "
+                        + "and lower(indexname) = 'idx_timer_message__due'",
                 Integer.class
         )).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from information_schema.columns "
-                        + "where lower(table_name) = 'command' and lower(column_name) like 'timer_%'",
+                        + "where table_schema = current_schema() and lower(table_name) = 'command' and lower(column_name) like 'timer_%'",
                 Integer.class
         )).isZero();
     }

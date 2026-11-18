@@ -11,8 +11,9 @@ CHZZK 채널용 Spring Boot 봇입니다. 핵심 기능은 호감도 원장, 리
 - 기본 profile은 `local`입니다.
 - 기본 URL: `http://localhost:8080`
 - 로컬 테스트 로그인: `http://localhost:8080/local/test-login`
-- local DB: H2 in-memory
-- H2 console: `http://localhost:8080/h2-console`
+- DB: PostgreSQL 18. `NYANG_DATABASE_URL`, `NYANG_DATABASE_USERNAME`, `NYANG_DATABASE_PASSWORD`로 연결을 지정합니다.
+- 기본 로컬 URL: `jdbc:postgresql://localhost:5432/nyang_nyang_bot?sslmode=disable`
+- 운영은 TLS(`sslmode=require`)와 primary 전용 접속을 사용합니다.
 
 로컬 계정:
 
@@ -30,6 +31,8 @@ $env:CHZZK_CLIENT_SECRET=""
 ```
 
 ## Test
+
+Docker가 필요합니다. Testcontainers가 격리 PostgreSQL 18을 실행하며 운영 DB를 사용하지 않습니다.
 
 ```powershell
 .\gradlew.bat test
