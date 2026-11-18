@@ -37,7 +37,7 @@ class SeoulDatabaseTimeContractTest {
         jdbcTemplate.update("INSERT INTO user_account (user_id, is_admin) VALUES (?, FALSE)", userId);
         try {
             LocalDateTime createdAt = jdbcTemplate.queryForObject(
-                    "SELECT created_at FROM user_account WHERE user_id = ?",
+                    "SELECT created_at AT TIME ZONE 'Asia/Seoul' FROM user_account WHERE user_id = ?",
                     LocalDateTime.class,
                     userId
             );
@@ -70,7 +70,7 @@ class SeoulDatabaseTimeContractTest {
                 .lastLoginAt(expectedInstant)
                 .build());
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT last_login_at FROM user_account WHERE user_id = 'seoul-jpa-write'",
+                "SELECT last_login_at AT TIME ZONE 'Asia/Seoul' FROM user_account WHERE user_id = 'seoul-jpa-write'",
                 LocalDateTime.class
         )).isEqualTo(expectedWallClock);
 
@@ -114,7 +114,7 @@ class SeoulDatabaseTimeContractTest {
 
     private LocalDateTime updatedAt(String userId) {
         return jdbcTemplate.queryForObject(
-                "SELECT updated_at FROM user_account WHERE user_id = ?",
+                "SELECT updated_at AT TIME ZONE 'Asia/Seoul' FROM user_account WHERE user_id = ?",
                 LocalDateTime.class,
                 userId
         );

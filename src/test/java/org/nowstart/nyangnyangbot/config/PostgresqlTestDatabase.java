@@ -1,6 +1,10 @@
 package org.nowstart.nyangnyangbot.config;
 
 import java.util.Map;
+import java.util.Properties;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.MapPropertySource;
@@ -41,6 +45,18 @@ public final class PostgresqlTestDatabase implements ApplicationContextInitializ
         jdbc.execute("CREATE SCHEMA " + schema);
         String url = root.getUrl();
         return new DriverManagerDataSource(url + (url.contains("?") ? "&" : "?")
-                + "currentSchema=" + schema + "&options=-c%20TimeZone=Asia/Seoul", "nyang_test", "nyang_test");
+                + "currentSchema=" + schema, "nyang_test", "nyang_test") {
+            @Override
+            protected Connection getConnectionFromDriver(Properties properties) throws SQLException {
+                Connection connection = super.getConnectionFromDriver(properties);
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("SET TIME ZONE 'Asia/Seoul'");
+                } catch (SQLException failure) {
+                    connection.close();
+                    throw failure;
+                }
+                return connection;
+            }
+        };
     }
 }
