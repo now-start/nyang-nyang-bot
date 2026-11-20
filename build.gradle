@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.nowstart'
-version = '6.0.1'
+version = '6.0.2'
 
 springBoot {
     buildInfo()
@@ -76,9 +76,4 @@ test {
 bootRun {
     systemProperty 'spring.profiles.active',
             System.getProperty('spring.profiles.active', System.getenv('SPRING_PROFILES_ACTIVE') ?: 'local')
-}
-
-tasks.named('bootBuildImage') {
-    buildpacks = ['urn:cnb:builder:paketo-buildpacks/java', 'docker.io/paketobuildpacks/health-checker:latest']
-    environment.put('BP_HEALTH_CHECKER_ENABLED', 'true')
 }
