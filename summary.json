@@ -1,0 +1,11 @@
+{
+  "covered": 2988,
+  "missed": 827,
+  "total": 3815,
+  "line_percent": 78.3,
+  "branch_percent": 59.8,
+  "branch_covered": 814,
+  "branch_missed": 547,
+  "source_sha": "fe86bdbbcb29ba853a0c04486728b0a731b46f07",
+  "scope": "build/reports/jacoco/root/jacoco.xml"
+}
