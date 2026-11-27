@@ -1,12 +1,6 @@
 spring:
   application:
     name: nyang-nyang-bot
-  datasource:
-    hikari:
-      connection-init-sql: SET TIME ZONE 'UTC'
-  jpa:
-    properties:
-      hibernate.jdbc.time_zone: UTC
 
 ---
 
