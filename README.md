@@ -1,5 +1,8 @@
 # Nyang-Nyang Bot
 
+[![JaCoCo 라인 커버리지](https://github.com/now-start/nyang-nyang-bot/blob/coverage/jacoco.svg?raw=true)](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml)
+[![JaCoCo 분기 커버리지](https://github.com/now-start/nyang-nyang-bot/blob/coverage/jacoco-branches.svg?raw=true)](https://github.com/now-start/nyang-nyang-bot/actions/workflows/build.yaml)
+
 CHZZK 채널용 Spring Boot 봇입니다. 핵심 기능은 호감도 원장, 리워드 보유 목록, 생존자 보상, 룰렛, OBS 오버레이, 관리자 명령어와 타이머 메시지 관리입니다.
 
 ## Local Run
